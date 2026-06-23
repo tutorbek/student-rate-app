@@ -391,7 +391,9 @@ function App() {
 
       {/* Main Panel Content */}
       <main className="main-content">
-        {renderContent()}
+        <div key={activeTab} className="page-fade-in">
+          {renderContent()}
+        </div>
       </main>
 
       {/* Toast Notification Popups */}

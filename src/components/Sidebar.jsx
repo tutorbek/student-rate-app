@@ -269,11 +269,15 @@ const Sidebar = ({ activeTab, setActiveTab, userRole, onLogout }) => {
           bottom: 0;
           left: 0;
           right: 0;
-          height: 72px;
+          /* Height = icon area + safe area for iPhone home indicator */
+          height: calc(64px + env(safe-area-inset-bottom));
           border-top: 1px solid #000000;
           justify-content: space-around;
-          align-items: center;
-          padding: 0 12px;
+          align-items: flex-start;
+          padding-top: 0;
+          padding-bottom: env(safe-area-inset-bottom);
+          padding-left: env(safe-area-inset-left);
+          padding-right: env(safe-area-inset-right);
           z-index: 100;
           background: #ffffff;
         }
@@ -289,8 +293,12 @@ const Sidebar = ({ activeTab, setActiveTab, userRole, onLogout }) => {
           color: #000000;
           cursor: pointer;
           flex: 1;
-          height: 100%;
-          transition: all var(--transition-fast);
+          height: 64px; /* Fixed icon area, safe area handled by nav padding */
+          /* Smooth native-feel touch response */
+          transition: background var(--transition-fast), color var(--transition-fast);
+          -webkit-tap-highlight-color: transparent;
+          touch-action: manipulation;
+          user-select: none;
         }
 
         .mobile-link.active {
