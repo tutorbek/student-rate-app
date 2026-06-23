@@ -102,105 +102,105 @@ const History = ({ groups, students, transactions, onDeleteTransaction, showToas
 
   return (
     <div className="history-container">
-      <div className="page-header flex-col-mobile">
+      <div className="page-header">
         <div>
           <h2 className="page-title">Baholash Tarixi</h2>
           <p className="page-subtitle">Barcha berilgan ballar (likelar) jurnali va ularni tahrirlash</p>
         </div>
+      </div>
 
-        {/* Filters and Search wrapper */}
-        <div className="history-filters">
-          <div className="filter-group-row">
-            {/* Group Filter */}
-            <div className="custom-dropdown-container group-filter-dropdown">
-              <button 
-                type="button" 
-                className="filter-select-btn" 
-                onClick={() => setIsGroupDropdownOpen(!isGroupDropdownOpen)}
-              >
-                <span>{selectedGroupId === 'all' ? 'Barcha guruhlar' : (groups.find(g => g.id === selectedGroupId)?.name || 'Guruhsiz')}</span>
-                <span className="dropdown-arrow">▼</span>
-              </button>
-              {isGroupDropdownOpen && (
-                <div className="custom-dropdown-list glass">
+      {/* Filters and Search wrapper - separated from header for cleaner responsive design */}
+      <div className="history-filters-bar glass-card">
+        <div className="filter-group-row">
+          {/* Group Filter */}
+          <div className="custom-dropdown-container group-filter-dropdown">
+            <button 
+              type="button" 
+              className="filter-select-btn" 
+              onClick={() => setIsGroupDropdownOpen(!isGroupDropdownOpen)}
+            >
+              <span>{selectedGroupId === 'all' ? 'Barcha guruhlar' : (groups.find(g => g.id === selectedGroupId)?.name || 'Guruhsiz')}</span>
+              <span className="dropdown-arrow">▼</span>
+            </button>
+            {isGroupDropdownOpen && (
+              <div className="custom-dropdown-list glass">
+                <div 
+                  className={`custom-dropdown-item ${selectedGroupId === 'all' ? 'active' : ''}`}
+                  onClick={() => {
+                    setSelectedGroupId('all');
+                    setIsGroupDropdownOpen(false);
+                  }}
+                >
+                  Barcha guruhlar
+                </div>
+                {groups.map((group) => (
                   <div 
-                    className={`custom-dropdown-item ${selectedGroupId === 'all' ? 'active' : ''}`}
+                    key={group.id}
+                    className={`custom-dropdown-item ${selectedGroupId === group.id ? 'active' : ''}`}
                     onClick={() => {
-                      setSelectedGroupId('all');
+                      setSelectedGroupId(group.id);
                       setIsGroupDropdownOpen(false);
                     }}
                   >
-                    Barcha guruhlar
+                    {group.name}
                   </div>
-                  {groups.map((group) => (
-                    <div 
-                      key={group.id}
-                      className={`custom-dropdown-item ${selectedGroupId === group.id ? 'active' : ''}`}
-                      onClick={() => {
-                        setSelectedGroupId(group.id);
-                        setIsGroupDropdownOpen(false);
-                      }}
-                    >
-                      {group.name}
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
+                ))}
+              </div>
+            )}
+          </div>
 
-            {/* Student Filter */}
-            <div className="custom-dropdown-container student-filter-dropdown">
-              <button 
-                type="button" 
-                className="filter-select-btn" 
-                onClick={() => setIsStudentDropdownOpen(!isStudentDropdownOpen)}
-              >
-                <span>{selectedStudentId === 'all' ? 'Barcha talabalar' : (students.find(s => s.id === selectedStudentId)?.name || 'Talabasiz')}</span>
-                <span className="dropdown-arrow">▼</span>
-              </button>
-              {isStudentDropdownOpen && (
-                <div className="custom-dropdown-list glass">
+          {/* Student Filter */}
+          <div className="custom-dropdown-container student-filter-dropdown">
+            <button 
+              type="button" 
+              className="filter-select-btn" 
+              onClick={() => setIsStudentDropdownOpen(!isStudentDropdownOpen)}
+            >
+              <span>{selectedStudentId === 'all' ? 'Barcha talabalar' : (students.find(s => s.id === selectedStudentId)?.name || 'Talabasiz')}</span>
+              <span className="dropdown-arrow">▼</span>
+            </button>
+            {isStudentDropdownOpen && (
+              <div className="custom-dropdown-list glass">
+                <div 
+                  className={`custom-dropdown-item ${selectedStudentId === 'all' ? 'active' : ''}`}
+                  onClick={() => {
+                    setSelectedStudentId('all');
+                    setIsStudentDropdownOpen(false);
+                  }}
+                >
+                  Barcha talabalar
+                </div>
+                {filteredStudentsForDropdown.map((student) => (
                   <div 
-                    className={`custom-dropdown-item ${selectedStudentId === 'all' ? 'active' : ''}`}
+                    key={student.id}
+                    className={`custom-dropdown-item ${selectedStudentId === student.id ? 'active' : ''}`}
                     onClick={() => {
-                      setSelectedStudentId('all');
+                      setSelectedStudentId(student.id);
                       setIsStudentDropdownOpen(false);
                     }}
                   >
-                    Barcha talabalar
+                    {student.name}
                   </div>
-                  {filteredStudentsForDropdown.map((student) => (
-                    <div 
-                      key={student.id}
-                      className={`custom-dropdown-item ${selectedStudentId === student.id ? 'active' : ''}`}
-                      onClick={() => {
-                        setSelectedStudentId(student.id);
-                        setIsStudentDropdownOpen(false);
-                      }}
-                    >
-                      {student.name}
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Search */}
-          <div className="search-wrapper">
-            <input
-              type="text"
-              className="form-input search-input"
-              placeholder="Izoh bo'yicha qidirish..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-            {searchQuery && (
-              <button className="clear-search-btn" onClick={() => setSearchQuery('')}>
-                ✕
-              </button>
+                ))}
+              </div>
             )}
           </div>
+        </div>
+
+        {/* Search */}
+        <div className="search-wrapper">
+          <input
+            type="text"
+            className="form-input search-input"
+            placeholder="Izoh bo'yicha qidirish..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+          {searchQuery && (
+            <button className="clear-search-btn" onClick={() => setSearchQuery('')}>
+              ✕
+            </button>
+          )}
         </div>
       </div>
 
@@ -293,10 +293,16 @@ const History = ({ groups, students, transactions, onDeleteTransaction, showToas
           animation: fade-in 0.4s ease-out;
         }
 
-        .history-filters {
+        .history-filters-bar {
           display: flex;
-          gap: 12px;
+          justify-content: space-between;
           align-items: center;
+          gap: 16px;
+          margin-bottom: 24px;
+          padding: 16px 24px;
+          background: #ffffff;
+          border: 1px solid #000000;
+          border-radius: 0;
         }
 
         .filter-group-row {
@@ -506,10 +512,11 @@ const History = ({ groups, students, transactions, onDeleteTransaction, showToas
         }
 
         @media (max-width: 900px) {
-          .history-filters {
+          .history-filters-bar {
             flex-direction: column;
             align-items: stretch;
-            width: 100%;
+            gap: 12px;
+            padding: 16px;
           }
           .filter-group-row {
             flex-direction: column;
