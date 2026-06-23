@@ -1,0 +1,371 @@
+import React, { useState, useEffect } from 'react';
+import Sidebar from './components/Sidebar';
+import Dashboard from './components/Dashboard';
+import GroupsList from './components/GroupsList';
+import GroupDetail from './components/GroupDetail';
+import Leaderboard from './components/Leaderboard';
+import History from './components/History';
+import Settings from './components/Settings';
+
+import {
+  getGroups,
+  getStudents,
+  getTransactions,
+  getQuickTags,
+  addGroup,
+  deleteGroup,
+  addStudent,
+  deleteStudent,
+  addTransaction,
+  deleteTransaction,
+  updateGroup,
+  updateStudent,
+} from './utils/db';
+
+function App() {
+  const [activeTab, setActiveTab] = useState(() => {
+    return localStorage.getItem('rsa_active_tab') || 'dashboard';
+  });
+  const [selectedGroupId, setSelectedGroupId] = useState(() => {
+    const saved = localStorage.getItem('rsa_selected_group_id');
+    return saved ? JSON.parse(saved) : null;
+  });
+
+  useEffect(() => {
+    localStorage.setItem('rsa_active_tab', activeTab);
+  }, [activeTab]);
+
+  useEffect(() => {
+    localStorage.setItem('rsa_selected_group_id', JSON.stringify(selectedGroupId));
+  }, [selectedGroupId]);
+
+  const [isAuthenticated, setIsAuthenticated] = useState(() => {
+    return sessionStorage.getItem('rsa_authenticated') === 'true';
+  });
+  const [loginPassword, setLoginPassword] = useState('');
+  const [loginError, setLoginError] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [loginLoading, setLoginLoading] = useState(false);
+
+  const handleLoginSubmit = (e) => {
+    e.preventDefault();
+    if (!loginPassword) {
+      setLoginError("Parolni kiriting!");
+      return;
+    }
+    setLoginLoading(true);
+    setLoginError('');
+
+    fetch('http://localhost:3001/api/auth', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ password: loginPassword }),
+    })
+      .then((res) => {
+        if (!res.ok) {
+          throw new Error("Noto'g'ri parol!");
+        }
+        return res.json();
+      })
+      .then((data) => {
+        if (data.success) {
+          sessionStorage.setItem('rsa_authenticated', 'true');
+          setIsAuthenticated(true);
+          showToast("Muvaffaqiyatli kirdingiz!", "success");
+        }
+      })
+      .catch((err) => {
+        setLoginError(err.message || "Xatolik yuz berdi!");
+      })
+      .finally(() => {
+        setLoginLoading(false);
+      });
+  };
+
+  // Sync state
+  const [groups, setGroups] = useState([]);
+  const [students, setStudents] = useState([]);
+  const [transactions, setTransactions] = useState([]);
+  const [quickTags, setQuickTags] = useState([]);
+  const [isLoaded, setIsLoaded] = useState(false);
+
+  // Toast notifications state
+  const [toast, setToast] = useState(null);
+
+  // Show dynamic toast
+  const showToast = (message, type = 'info') => {
+    const id = Date.now();
+    setToast({ id, message, type });
+  };
+
+  // Load database from file server on mount
+  useEffect(() => {
+    fetch('http://localhost:3001/api/db')
+      .then((res) => {
+        if (!res.ok) throw new Error("Server error");
+        return res.json();
+      })
+      .then((data) => {
+        if (data) {
+          setGroups(data.groups || []);
+          setStudents(data.students || []);
+          setTransactions(data.transactions || []);
+          setQuickTags(data.quickTags || []);
+        }
+        setIsLoaded(true);
+      })
+      .catch((err) => {
+        console.error("Fayldan yuklashda xatolik, LocalStorage ishlatilmoqda:", err);
+        setGroups(getGroups());
+        setStudents(getStudents());
+        setTransactions(getTransactions());
+        setQuickTags(getQuickTags());
+        setIsLoaded(true);
+      });
+  }, []);
+
+  // Save database to file server whenever state changes
+  useEffect(() => {
+    if (!isLoaded) return;
+
+    const db = { groups, students, transactions, quickTags };
+
+    // Synchronize to LocalStorage as backup
+    localStorage.setItem('rsa_groups', JSON.stringify(groups));
+    localStorage.setItem('rsa_students', JSON.stringify(students));
+    localStorage.setItem('rsa_transactions', JSON.stringify(transactions));
+    localStorage.setItem('rsa_quick_tags', JSON.stringify(quickTags));
+
+    // Send to local JSON storage server
+    fetch('http://localhost:3001/api/db', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(db),
+    }).catch((err) => {
+      console.error("Faylga yozishda xatolik:", err);
+    });
+  }, [groups, students, transactions, quickTags, isLoaded]);
+
+  // Clear toast after timeout
+  useEffect(() => {
+    if (!toast) return;
+    const timer = setTimeout(() => {
+      setToast(null);
+    }, 3000);
+    return () => clearTimeout(timer);
+  }, [toast]);
+
+  // Reload data from LocalStorage (for Import/Reset)
+  const reloadDatabase = () => {
+    setGroups(getGroups());
+    setStudents(getStudents());
+    setTransactions(getTransactions());
+    setQuickTags(getQuickTags());
+    setSelectedGroupId(null);
+  };
+
+  // Actions
+  const handleAddGroup = (name, icon) => {
+    addGroup(name, icon);
+    setGroups(getGroups());
+  };
+
+  const handleDeleteGroup = (id) => {
+    deleteGroup(id);
+    setGroups(getGroups());
+    setStudents(getStudents());
+    setTransactions(getTransactions());
+    if (selectedGroupId === id) {
+      setSelectedGroupId(null);
+    }
+  };
+
+  const handleAddStudent = (name, groupId, emoji, color) => {
+    addStudent(name, groupId, emoji, color);
+    setStudents(getStudents());
+  };
+
+  const handleUpdateStudent = (id, name, emoji, color) => {
+    updateStudent(id, name, emoji, color);
+    setStudents(getStudents());
+  };
+
+  const handleDeleteStudent = (id) => {
+    deleteStudent(id);
+    setStudents(getStudents());
+    setTransactions(getTransactions());
+  };
+
+  const handleUpdateGroup = (id, name, icon) => {
+    updateGroup(id, name, icon);
+    setGroups(getGroups());
+  };
+
+  const handleAwardPoints = (studentId, amount, comment) => {
+    addTransaction(studentId, amount, comment);
+    setTransactions(getTransactions());
+  };
+
+  const handleDeleteTransaction = (id) => {
+    deleteTransaction(id);
+    setTransactions(getTransactions());
+  };
+
+  // Handle Tab Switch (reset selected group if navigating away from groups page)
+  const handleTabChange = (tabId) => {
+    setActiveTab(tabId);
+    if (tabId !== 'groups') {
+      setSelectedGroupId(null);
+    }
+  };
+
+  // Select Group Helper
+  const handleSelectGroup = (groupId) => {
+    setSelectedGroupId(groupId);
+    setActiveTab('groups');
+  };
+
+  // Render Page Content
+  const renderContent = () => {
+    switch (activeTab) {
+      case 'dashboard':
+        return <Dashboard setActiveTab={handleTabChange} onSelectGroup={handleSelectGroup} />;
+      case 'groups':
+        if (selectedGroupId) {
+          const group = groups.find((g) => g.id === selectedGroupId);
+          if (!group) {
+            setSelectedGroupId(null);
+            return null;
+          }
+          return (
+            <GroupDetail
+              group={group}
+              students={students}
+              transactions={transactions}
+              quickTags={quickTags}
+              onBack={() => setSelectedGroupId(null)}
+              onAddStudent={handleAddStudent}
+              onUpdateStudent={handleUpdateStudent}
+              onDeleteStudent={handleDeleteStudent}
+              onAwardPoints={handleAwardPoints}
+              onDeleteTransaction={handleDeleteTransaction}
+              showToast={showToast}
+            />
+          );
+        }
+        return (
+          <GroupsList
+            groups={groups}
+            students={students}
+            onSelectGroup={handleSelectGroup}
+            onAddGroup={handleAddGroup}
+            onUpdateGroup={handleUpdateGroup}
+            onDeleteGroup={handleDeleteGroup}
+            showToast={showToast}
+          />
+        );
+      case 'leaderboard':
+        return <Leaderboard groups={groups} students={students} transactions={transactions} />;
+      case 'history':
+        return (
+          <History
+            groups={groups}
+            students={students}
+            transactions={transactions}
+            onDeleteTransaction={handleDeleteTransaction}
+            showToast={showToast}
+          />
+        );
+      case 'settings':
+        return (
+          <Settings
+            quickTags={quickTags}
+            setQuickTags={setQuickTags}
+            onReloadDatabase={reloadDatabase}
+            showToast={showToast}
+          />
+        );
+      default:
+        return <Dashboard setActiveTab={handleSelectGroup} />;
+    }
+  };
+
+  if (!isAuthenticated) {
+    return (
+      <div className="login-wrapper">
+        <div className="login-card glass">
+          <h2 className="login-title">INSIGHTPLUS</h2>
+          <p className="login-subtitle">Tizimga kirish uchun parolni kiriting</p>
+          <form onSubmit={handleLoginSubmit}>
+            <div className="form-group">
+              <label className="form-label">Parol</label>
+              <div className="password-input-wrapper">
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  className="form-input password-input"
+                  placeholder="••••••••"
+                  value={loginPassword}
+                  onChange={(e) => setLoginPassword(e.target.value)}
+                  autoFocus
+                />
+                <button
+                  type="button"
+                  className="password-toggle-btn"
+                  onClick={() => setShowPassword(!showPassword)}
+                  title={showPassword ? "Yashirish" : "Ko'rsatish"}
+                >
+                  {showPassword ? '👁️' : '🙈'}
+                </button>
+              </div>
+              {loginError && <p className="login-error-text">{loginError}</p>}
+            </div>
+            <button type="submit" className="btn btn-primary login-btn scale-active" disabled={loginLoading}>
+              {loginLoading ? "Tekshirilmoqda..." : "KIRISH"}
+            </button>
+          </form>
+        </div>
+        
+        {toast && (
+          <div className="toast-container">
+            <div className={`toast toast-${toast.type} glass`}>
+              <span className="toast-icon">
+                {toast.type === 'success' ? '✓' : toast.type === 'error' ? '⚠️' : 'ℹ️'}
+              </span>
+              <span className="toast-message">{toast.message}</span>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  return (
+    <div className="app-container">
+      {/* Dynamic Ambient Background Glows */}
+      <div className="bg-glow-1"></div>
+      <div className="bg-glow-2"></div>
+
+      {/* Sidebar Navigation */}
+      <Sidebar activeTab={activeTab} setActiveTab={handleTabChange} />
+
+      {/* Main Panel Content */}
+      <main className="main-content">
+        {renderContent()}
+      </main>
+
+      {/* Toast Notification Popups */}
+      {toast && (
+        <div className="toast-container">
+          <div className={`toast toast-${toast.type} glass`}>
+            <span className="toast-icon">
+              {toast.type === 'success' ? '✓' : toast.type === 'error' ? '⚠️' : 'ℹ️'}
+            </span>
+            <span className="toast-message">{toast.message}</span>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+export default App;

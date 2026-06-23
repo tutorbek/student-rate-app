@@ -1,0 +1,442 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap');
+
+:root {
+  /* Minimal Stark Light Theme (Strictly Black & White) */
+  --accent-neon: #E7FF56;
+  --bg-primary: #ffffff;
+  --bg-secondary: #ffffff;
+  --bg-tertiary: #ffffff;
+  --bg-card: #ffffff;
+  --bg-card-hover: #ffffff;
+  --border-color: #000000;
+  --border-color-glow: #000000;
+
+  --text-primary: #000000;
+  --text-secondary: #000000;
+  --text-tertiary: #000000;
+
+  /* Stark Theme Actions (No colors, strictly monochrome) */
+  --apple-blue: #000000;
+  --apple-blue-rgb: 0, 0, 0;
+  --apple-green: #000000;
+  --apple-orange: #000000;
+  --apple-red: #000000;
+  --apple-purple: #000000;
+  --apple-yellow: #000000;
+  
+  --sidebar-width: 260px;
+  --header-height: 70px;
+  --font-family: 'Outfit', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --glass-bg: #ffffff;
+  --glass-border: #000000;
+  
+  --shadow-sm: none;
+  --shadow-md: none;
+  --shadow-lg: none;
+  
+  --transition-fast: 0.12s ease;
+  --transition-normal: 0.2s ease;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  font-family: var(--font-family);
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  overflow-x: hidden;
+  min-height: 100vh;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #ffffff;
+  border-left: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+::-webkit-scrollbar-thumb {
+  background: #000000;
+  border: 1px solid #ffffff;
+  transition: background var(--transition-fast);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--accent-neon);
+}
+
+/* Glassmorphism overrides to minimal white cards */
+.glass {
+  background: #ffffff;
+  border: 1px solid #000000;
+}
+
+.glass-card {
+  background: #ffffff;
+  border: 1px solid #000000;
+  border-radius: 0; /* Stark geometric edges look premium in minimal themes */
+  transition: all var(--transition-normal);
+}
+
+.glass-card:hover {
+  transform: translate(-2px, -2px);
+  box-shadow: 4px 4px 0px #000000;
+  background-color: var(--accent-neon);
+}
+
+/* Main Layout */
+.app-container {
+  display: flex;
+  min-height: 100vh;
+  position: relative;
+  background: #ffffff;
+}
+
+/* Hide background glows */
+.bg-glow-1, .bg-glow-2 {
+  display: none;
+}
+
+/* App Main Content Area */
+.main-content {
+  flex: 1;
+  margin-left: var(--sidebar-width);
+  padding: 40px;
+  min-height: 100vh;
+  transition: margin-left var(--transition-normal);
+  background: #ffffff;
+  border-left: 1px solid #000000;
+}
+
+@media (max-width: 900px) {
+  .main-content {
+    margin-left: 0;
+    padding: 24px;
+    padding-bottom: 90px;
+    border-left: none;
+  }
+}
+
+/* Header Area */
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 36px;
+  border-bottom: 2px solid #000000;
+  padding-bottom: 16px;
+}
+
+.page-title {
+  font-size: 2.2rem;
+  font-weight: 800;
+  letter-spacing: -0.8px;
+  text-transform: uppercase;
+  color: #000000;
+}
+
+.page-subtitle {
+  font-size: 0.95rem;
+  color: #000000;
+  margin-top: 4px;
+  font-weight: 500;
+}
+
+/* Stark Buttons */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 18px;
+  border-radius: 0; /* Geometric */
+  font-family: var(--font-family);
+  font-size: 0.9rem;
+  font-weight: 700;
+  border: 1px solid #000000;
+  cursor: pointer;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  transition: all var(--transition-fast);
+}
+
+.btn-primary {
+  background: #000000;
+  color: #ffffff;
+}
+
+.btn-primary:hover {
+  background: var(--accent-neon);
+  color: #000000;
+  box-shadow: 3px 3px 0px #000000;
+}
+
+.btn-primary:active {
+  transform: translate(2px, 2px);
+  box-shadow: none;
+}
+
+.btn-secondary {
+  background: #ffffff;
+  color: #000000;
+}
+
+.btn-secondary:hover {
+  background: var(--accent-neon);
+  color: #000000;
+  box-shadow: 3px 3px 0px #000000;
+}
+
+.btn-danger {
+  background: #ffffff;
+  color: #000000;
+  border-style: dashed;
+}
+
+.btn-danger:hover {
+  background: var(--accent-neon);
+  color: #000000;
+  border-style: solid;
+}
+
+/* Form Controls */
+.form-group {
+  margin-bottom: 20px;
+}
+
+.form-label {
+  display: block;
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: #000000;
+  margin-bottom: 8px;
+}
+
+.form-input {
+  width: 100%;
+  padding: 12px 14px;
+  background: #ffffff;
+  border: 1px solid #000000;
+  border-radius: 0;
+  color: #000000;
+  font-family: var(--font-family);
+  font-size: 0.95rem;
+  transition: all var(--transition-fast);
+}
+
+.form-input:focus {
+  outline: none;
+  box-shadow: 3px 3px 0px var(--accent-neon);
+}
+
+/* Toast Notification */
+.toast-container {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  pointer-events: none;
+}
+
+.toast {
+  pointer-events: auto;
+  min-width: 300px;
+  padding: 14px 18px;
+  border-radius: 0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: #ffffff;
+  border: 2px solid #000000;
+  box-shadow: 4px 4px 0px #000000;
+  color: #000000;
+  font-weight: 700;
+}
+
+.toast-success {
+  border-color: #000000;
+}
+
+.toast-error {
+  border-color: #000000;
+  border-style: dashed;
+}
+
+.toast-info {
+  border-color: #000000;
+}
+
+/* Modals */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  width: 90%;
+  max-width: 500px;
+  border-radius: 0;
+  padding: 30px;
+  background: #ffffff;
+  border: 2px solid #000000;
+  box-shadow: 6px 6px 0px #000000;
+}
+
+/* Grid Layouts */
+.grid-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 24px;
+}
+
+/* Avatar circle strictly minimal */
+.avatar-circle {
+  width: 48px;
+  height: 48px;
+  border-radius: 0; /* Square for stark minimal look */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  font-weight: bold;
+  border: 2px solid #000000;
+  box-shadow: 2px 2px 0px #000000;
+}
+
+/* Apple Badge overrides */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: 0;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  background: #ffffff !important;
+  color: #000000 !important;
+  border: 1px solid #000000 !important;
+}
+
+.badge-blue, .badge-green, .badge-purple, .badge-orange {
+  background: #ffffff !important;
+  color: #000000 !important;
+  border: 1px solid #000000 !important;
+}
+
+/* Login Portal Styles */
+.login-wrapper {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100vw;
+  height: 100vh;
+  background-color: #ffffff;
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 10000;
+}
+
+.login-card {
+  width: 90%;
+  max-width: 400px;
+  padding: 40px;
+  background: #ffffff;
+  border: 2px solid #000000;
+  box-shadow: 6px 6px 0px #000000;
+  transition: box-shadow var(--transition-normal);
+}
+
+.login-card:hover {
+  box-shadow: 6px 6px 0px var(--accent-neon);
+}
+
+.login-title {
+  font-size: 2.2rem;
+  font-weight: 800;
+  letter-spacing: -1px;
+  text-transform: uppercase;
+  text-align: center;
+  margin-bottom: 8px;
+  color: #000000;
+}
+
+.login-subtitle {
+  font-size: 0.85rem;
+  color: #000000;
+  opacity: 0.6;
+  text-align: center;
+  margin-bottom: 32px;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.password-input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+.password-input {
+  padding-right: 48px;
+}
+
+.password-toggle-btn {
+  position: absolute;
+  right: 12px;
+  background: transparent;
+  border: none;
+  font-size: 1.15rem;
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform var(--transition-fast);
+}
+
+.password-toggle-btn:hover {
+  transform: scale(1.15);
+}
+
+.login-error-text {
+  color: #000000;
+  border-left: 3px solid #000000;
+  padding-left: 8px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  margin-top: 8px;
+  text-transform: uppercase;
+}
+
+.login-btn {
+  width: 100%;
+  margin-top: 16px;
+}
