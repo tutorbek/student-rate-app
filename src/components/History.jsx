@@ -530,6 +530,96 @@ const History = ({ groups, students, transactions, onDeleteTransaction, showToas
             min-width: unset;
           }
         }
+
+        @media (max-width: 768px) {
+          .history-header {
+            display: none;
+          }
+          
+          .history-table {
+            min-width: unset;
+          }
+
+          .history-card {
+            padding: 0;
+            border: none;
+            background: transparent;
+            box-shadow: none;
+          }
+
+          .history-row {
+            display: flex;
+            flex-direction: column;
+            align-items: stretch;
+            gap: 12px;
+            padding: 20px;
+            background: #ffffff;
+            border: 1px solid #000000;
+            margin-bottom: 16px;
+            box-shadow: 4px 4px 0px #000000;
+          }
+
+          .td-time {
+            flex-direction: row;
+            justify-content: space-between;
+            font-size: 0.8rem;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+            padding-bottom: 8px;
+            margin-bottom: 4px;
+          }
+
+          .date-text, .time-text {
+            color: var(--text-secondary);
+            font-weight: 500;
+          }
+
+          .td-student {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+          }
+
+          .student-table-name {
+            font-size: 1.1rem;
+            font-weight: 700;
+          }
+
+          .td-group {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: #000000;
+            opacity: 0.6;
+            padding-left: 42px;
+            margin-top: -8px;
+          }
+
+          .td-comment {
+            padding-left: 42px;
+            white-space: normal;
+            font-size: 0.9rem;
+            margin-top: 4px;
+          }
+
+          .td-amount {
+            text-align: left;
+            padding-left: 42px;
+            font-size: 1.2rem;
+            margin-top: 6px;
+          }
+
+          .td-action {
+            text-align: right;
+            margin-top: 8px;
+            border-top: 1px solid rgba(0, 0, 0, 0.08);
+            padding-top: 12px;
+          }
+
+          .btn-delete-tx {
+            width: 100%;
+            padding: 10px;
+            text-align: center;
+          }
+        }
       `}</style>
     </div>
   );
