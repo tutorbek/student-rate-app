@@ -77,6 +77,11 @@ body {
   padding-right: env(safe-area-inset-right);
 }
 
+/* When a modal is open — lock body scroll so background doesn't scroll */
+body:has(.modal-overlay) {
+  overflow: hidden;
+}
+
 /* Mobile: prevent body from scrolling so fixed navbar always stays put */
 @media (max-width: 900px) {
   html, body {
@@ -85,6 +90,12 @@ body {
     height: 100dvh;
     /* Remove body safe-area padding on mobile — handled by main-content & nav */
     padding: 0;
+  }
+
+  /* Modal overlay on mobile must still cover everything including notch/home area */
+  .modal-overlay {
+    /* Override body overflow:hidden — modal is fixed so it still shows */
+    overflow-y: auto;
   }
 }
 
@@ -348,29 +359,82 @@ body {
 
 /* Modals */
 .modal-overlay {
+  /* Cover the ENTIRE screen — bypass body's safe-area padding */
   position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-  background: rgba(255, 255, 255, 0.8);
-  backdrop-filter: blur(4px);
-  -webkit-backdrop-filter: blur(4px);
+  inset: 0;                     /* top:0 right:0 bottom:0 left:0 */
+  width: 100%;
+  height: 100%;
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  /* Center the modal */
   display: flex;
   justify-content: center;
   align-items: center;
-  z-index: 1000;
+  /* Padding so modal never touches screen edges, accounts for safe areas */
+  padding: env(safe-area-inset-top, 16px) env(safe-area-inset-right, 16px) env(safe-area-inset-bottom, 16px) env(safe-area-inset-left, 16px);
+  padding-top: max(16px, env(safe-area-inset-top));
+  padding-bottom: max(16px, env(safe-area-inset-bottom));
+  box-sizing: border-box;
+  z-index: 2000;
+  /* Allow scrolling the overlay itself on very short screens */
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .modal-content {
-  width: 90%;
-  max-width: 500px;
+  width: 100%;
+  max-width: 520px;
   border-radius: 0;
-  padding: 30px;
+  padding: 28px;
   background: #ffffff;
   border: 2px solid #000000;
   box-shadow: 6px 6px 0px #000000;
+  /* CRITICAL: limit height so modal never overflows screen */
+  max-height: calc(100dvh - max(32px, env(safe-area-inset-top)) - max(32px, env(safe-area-inset-bottom)));
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  /* Prevent layout jump when modal opens */
+  position: relative;
+  box-sizing: border-box;
 }
+
+/* Mobile: modal slides up from bottom for better UX */
+@media (max-width: 600px) {
+  .modal-overlay {
+    align-items: flex-end;
+    padding: 0;
+    padding-top: max(16px, env(safe-area-inset-top));
+  }
+
+  .modal-content {
+    width: 100%;
+    max-width: 100%;
+    max-height: 92dvh;
+    padding: 24px 20px;
+    padding-bottom: max(24px, env(safe-area-inset-bottom));
+    border-left: 2px solid #000000;
+    border-right: 2px solid #000000;
+    border-top: 2px solid #000000;
+    border-bottom: none;
+    box-shadow: 0 -4px 0px #000000;
+    /* Animate sliding up */
+    animation: modalSlideUp 0.22s cubic-bezier(0.32, 0.72, 0, 1) forwards;
+  }
+}
+
+@keyframes modalSlideUp {
+  from {
+    transform: translateY(40px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
 
 /* Grid Layouts */
 .grid-cards {
