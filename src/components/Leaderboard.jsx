@@ -524,6 +524,11 @@ const Leaderboard = ({ groups, students, transactions }) => {
         /* Standings Table */
         .standings-card {
           padding: 10px 24px;
+          overflow-x: auto;
+        }
+
+        .standings-table {
+          min-width: 500px;
         }
 
         .standings-header {
@@ -595,6 +600,29 @@ const Leaderboard = ({ groups, students, transactions }) => {
           flex-direction: column;
           align-items: center;
           gap: 20px;
+        }
+
+        @media (max-width: 480px) {
+          .podium-container {
+            height: 240px;
+            gap: 8px;
+          }
+          .bar-1 { height: 120px; }
+          .bar-2 { height: 85px; }
+          .bar-3 { height: 60px; }
+          .podium-avatar {
+            width: 48px;
+            height: 48px;
+            font-size: 1.5rem;
+          }
+          .first-place-avatar {
+            width: 60px;
+            height: 60px;
+            font-size: 1.8rem;
+          }
+          .podium-name {
+            font-size: 0.85rem;
+          }
         }
       `}</style>
     </div>

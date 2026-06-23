@@ -237,6 +237,13 @@ const Settings = ({ quickTags, setQuickTags, onReloadDatabase, showToast }) => {
           margin-bottom: 20px;
         }
 
+        @media (max-width: 480px) {
+          .add-tag-form {
+            flex-direction: column;
+            align-items: stretch;
+          }
+        }
+
         .tag-input {
           flex: 1;
         }

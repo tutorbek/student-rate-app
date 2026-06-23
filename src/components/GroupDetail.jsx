@@ -753,8 +753,8 @@ const GroupDetail = ({ group, students, transactions, quickTags, onBack, onAddSt
         /* Avatar Picker styles */
         .emoji-picker-grid {
           display: grid;
-          grid-template-columns: repeat(8, 1fr);
-          gap: 10px;
+          grid-template-columns: repeat(auto-fill, minmax(36px, 1fr));
+          gap: 8px;
           max-height: 120px;
           overflow-y: auto;
           padding: 6px;
@@ -785,8 +785,8 @@ const GroupDetail = ({ group, students, transactions, quickTags, onBack, onAddSt
 
         .color-picker-grid {
           display: grid;
-          grid-template-columns: repeat(8, 1fr);
-          gap: 10px;
+          grid-template-columns: repeat(auto-fill, minmax(36px, 1fr));
+          gap: 8px;
           padding: 6px;
           background: rgba(255, 255, 255, 0.03);
           border-radius: 12px;
