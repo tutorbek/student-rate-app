@@ -250,6 +250,18 @@ function App() {
     }
   };
 
+  // Logout handler
+  const handleLogout = () => {
+    sessionStorage.removeItem('rsa_authenticated');
+    sessionStorage.removeItem('rsa_role');
+    localStorage.removeItem('rsa_active_tab');
+    setIsAuthenticated(false);
+    setUserRole('student');
+    setActiveTab('dashboard');
+    setLoginPassword('');
+    setLoginError('');
+  };
+
   // Select Group Helper
   const handleSelectGroup = (groupId) => {
     setSelectedGroupId(groupId);
@@ -378,7 +390,7 @@ function App() {
       <div className="bg-glow-2"></div>
 
       {/* Sidebar Navigation */}
-      <Sidebar activeTab={activeTab} setActiveTab={handleTabChange} userRole={userRole} />
+      <Sidebar activeTab={activeTab} setActiveTab={handleTabChange} userRole={userRole} onLogout={handleLogout} />
 
       {/* Main Panel Content */}
       <main className="main-content">

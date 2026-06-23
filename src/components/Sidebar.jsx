@@ -1,6 +1,6 @@
 import React from 'react';
 
-const Sidebar = ({ activeTab, setActiveTab, userRole }) => {
+const Sidebar = ({ activeTab, setActiveTab, userRole, onLogout }) => {
   const menuItems = [
     {
       id: 'dashboard',
@@ -88,10 +88,20 @@ const Sidebar = ({ activeTab, setActiveTab, userRole }) => {
           ))}
         </nav>
         <div className="sidebar-footer">
-          <span className="badge badge-blue">
-            {userRole === 'student' ? 'Student Mode' : 'Teacher Mode'}
-          </span>
-          <span className="footer-version">v1.0.0</span>
+          <div className="sidebar-footer-top">
+            <span className="badge badge-blue">
+              {userRole === 'student' ? 'Student Mode' : 'Teacher Mode'}
+            </span>
+            <span className="footer-version">v1.0.0</span>
+          </div>
+          <button className="logout-btn scale-active" onClick={onLogout}>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+              <polyline points="16 17 21 12 16 7" />
+              <line x1="21" y1="12" x2="9" y2="12" />
+            </svg>
+            Chiqish
+          </button>
         </div>
       </aside>
 
@@ -108,6 +118,20 @@ const Sidebar = ({ activeTab, setActiveTab, userRole }) => {
             <span className="mobile-label">{item.label}</span>
           </button>
         ))}
+        <button
+          className="mobile-link scale-active mobile-logout"
+          onClick={onLogout}
+          title="Chiqish"
+        >
+          <span className="mobile-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+              <polyline points="16 17 21 12 16 7" />
+              <line x1="21" y1="12" x2="9" y2="12" />
+            </svg>
+          </span>
+          <span className="mobile-label">Chiqish</span>
+        </button>
       </nav>
 
       {/* Sidebar and Mobile Nav CSS */}
@@ -197,8 +221,39 @@ const Sidebar = ({ activeTab, setActiveTab, userRole }) => {
           padding: 16px 0;
           border-top: 1px solid #000000;
           display: flex;
+          flex-direction: column;
+          gap: 10px;
+        }
+
+        .sidebar-footer-top {
+          display: flex;
           justify-content: space-between;
           align-items: center;
+        }
+
+        .logout-btn {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          width: 100%;
+          padding: 10px 16px;
+          background: transparent;
+          border: 1.5px solid #000000;
+          color: #000000;
+          font-family: var(--font-family);
+          font-size: 0.85rem;
+          font-weight: 700;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+          cursor: pointer;
+          transition: all var(--transition-fast);
+          border-radius: 0;
+        }
+
+        .logout-btn:hover {
+          background: #ff3b30;
+          border-color: #ff3b30;
+          color: #ffffff;
         }
 
         .footer-version {
@@ -240,6 +295,11 @@ const Sidebar = ({ activeTab, setActiveTab, userRole }) => {
 
         .mobile-link.active {
           background: #000000;
+          color: #ffffff;
+        }
+
+        .mobile-logout:hover {
+          background: #ff3b30;
           color: #ffffff;
         }
 
