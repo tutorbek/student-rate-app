@@ -271,15 +271,22 @@ const Sidebar = ({ activeTab, setActiveTab, userRole, onLogout }) => {
           right: 0;
           /* Height = icon area + safe area for iPhone home indicator */
           height: calc(64px + env(safe-area-inset-bottom));
-          border-top: 1px solid #000000;
+          border-top: 1.5px solid #000000;
           justify-content: space-around;
           align-items: flex-start;
           padding-top: 0;
           padding-bottom: env(safe-area-inset-bottom);
           padding-left: env(safe-area-inset-left);
           padding-right: env(safe-area-inset-right);
-          z-index: 100;
+          /* Always on top — never scrolls away */
+          z-index: 999;
           background: #ffffff;
+          /* Force GPU compositing layer on iOS so fixed position never scrolls */
+          transform: translateZ(0);
+          -webkit-transform: translateZ(0);
+          will-change: transform;
+          /* Prevent tap highlight flash on the bar itself */
+          -webkit-tap-highlight-color: transparent;
         }
 
         .mobile-link {

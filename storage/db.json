@@ -1,5 +1,12 @@
 {
-  "groups": [],
+  "groups": [
+    {
+      "id": "g9f7ibd9o",
+      "name": "G1",
+      "icon": "🚀",
+      "createdAt": "2026-06-23T16:45:09.718Z"
+    }
+  ],
   "students": [],
   "transactions": [],
   "quickTags": [

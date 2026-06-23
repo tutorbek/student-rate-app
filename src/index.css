@@ -77,6 +77,17 @@ body {
   padding-right: env(safe-area-inset-right);
 }
 
+/* Mobile: prevent body from scrolling so fixed navbar always stays put */
+@media (max-width: 900px) {
+  html, body {
+    overflow: hidden;
+    height: 100%;
+    height: 100dvh;
+    /* Remove body safe-area padding on mobile — handled by main-content & nav */
+    padding: 0;
+  }
+}
+
 /* Custom Scrollbar */
 ::-webkit-scrollbar {
   width: 8px;
@@ -156,13 +167,17 @@ body {
     padding: 20px 16px;
     /* Safe area: top padding (notch) + bottom padding (home indicator + nav bar) */
     padding-top: max(20px, env(safe-area-inset-top));
-    padding-bottom: calc(80px + env(safe-area-inset-bottom));
+    /* Extra space so content doesn't hide behind the fixed bottom nav */
+    padding-bottom: calc(72px + env(safe-area-inset-bottom));
     padding-left: max(16px, env(safe-area-inset-left));
     padding-right: max(16px, env(safe-area-inset-right));
     border-left: none;
+    /* Fill viewport exactly — scroll lives here, NOT on body */
     height: 100dvh;
     overflow-y: auto;
+    overflow-x: hidden;
     -webkit-overflow-scrolling: touch;
+    overscroll-behavior-y: contain;
   }
 }
 
@@ -489,6 +504,41 @@ body {
 .login-btn {
   width: 100%;
   margin-top: 16px;
+}
+
+/* =========================================
+   FIRESTORE SYNC INDICATOR
+   ========================================= */
+.sync-indicator {
+  position: fixed;
+  top: max(16px, env(safe-area-inset-top));
+  right: 20px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #000000;
+  color: #ffffff;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 6px 12px;
+  z-index: 9998;
+  animation: pageFadeIn 0.2s ease forwards;
+}
+
+@keyframes pulseDot {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.4; transform: scale(0.7); }
+}
+
+.sync-dot {
+  width: 8px;
+  height: 8px;
+  background: #E7FF56;
+  border-radius: 50%;
+  animation: pulseDot 1s ease-in-out infinite;
+  flex-shrink: 0;
 }
 
 /* =========================================

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import Sidebar from './components/Sidebar';
 import Dashboard from './components/Dashboard';
 import GroupsList from './components/GroupsList';
@@ -6,6 +6,7 @@ import GroupDetail from './components/GroupDetail';
 import Leaderboard from './components/Leaderboard';
 import History from './components/History';
 import Settings from './components/Settings';
+import { loadFromFirestore, saveToFirestore } from './utils/firebase';
 
 import {
   getGroups,
@@ -112,6 +113,7 @@ function App() {
   const [transactions, setTransactions] = useState([]);
   const [quickTags, setQuickTags] = useState([]);
   const [isLoaded, setIsLoaded] = useState(false);
+  const [isSyncing, setIsSyncing] = useState(false);
 
   // Toast notifications state
   const [toast, setToast] = useState(null);
@@ -122,51 +124,49 @@ function App() {
     setToast({ id, message, type });
   };
 
-  // Load database from file server on mount
+  // Load database from Firestore on mount, fallback to localStorage
   useEffect(() => {
-    fetch('http://localhost:3001/api/db')
-      .then((res) => {
-        if (!res.ok) throw new Error("Server error");
-        return res.json();
-      })
-      .then((data) => {
-        if (data) {
-          setGroups(data.groups || []);
-          setStudents(data.students || []);
-          setTransactions(data.transactions || []);
-          setQuickTags(data.quickTags || []);
-        }
-        setIsLoaded(true);
-      })
-      .catch((err) => {
-        console.error("Fayldan yuklashda xatolik, LocalStorage ishlatilmoqda:", err);
+    const load = async () => {
+      setIsSyncing(true);
+      const data = await loadFromFirestore();
+      if (data) {
+        setGroups(data.groups || []);
+        setStudents(data.students || []);
+        setTransactions(data.transactions || []);
+        setQuickTags(data.quickTags || getQuickTags());
+        // Also update localStorage as local cache
+        localStorage.setItem('rsa_groups', JSON.stringify(data.groups || []));
+        localStorage.setItem('rsa_students', JSON.stringify(data.students || []));
+        localStorage.setItem('rsa_transactions', JSON.stringify(data.transactions || []));
+        localStorage.setItem('rsa_quick_tags', JSON.stringify(data.quickTags || []));
+      } else {
+        // Firestore failed — use localStorage cache
         setGroups(getGroups());
         setStudents(getStudents());
         setTransactions(getTransactions());
         setQuickTags(getQuickTags());
-        setIsLoaded(true);
-      });
+      }
+      setIsLoaded(true);
+      setIsSyncing(false);
+    };
+    load();
   }, []);
 
-  // Save database to file server whenever state changes
+  // Save to Firestore whenever state changes
   useEffect(() => {
     if (!isLoaded) return;
 
     const db = { groups, students, transactions, quickTags };
 
-    // Synchronize to LocalStorage as backup
+    // Always keep localStorage in sync as local cache
     localStorage.setItem('rsa_groups', JSON.stringify(groups));
     localStorage.setItem('rsa_students', JSON.stringify(students));
     localStorage.setItem('rsa_transactions', JSON.stringify(transactions));
     localStorage.setItem('rsa_quick_tags', JSON.stringify(quickTags));
 
-    // Send to local JSON storage server
-    fetch('http://localhost:3001/api/db', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(db),
-    }).catch((err) => {
-      console.error("Faylga yozishda xatolik:", err);
+    // Save to Firestore (cross-device sync)
+    saveToFirestore(db).catch((err) => {
+      console.error('[Firestore] Auto-save failed:', err);
     });
   }, [groups, students, transactions, quickTags, isLoaded]);
 
@@ -179,14 +179,24 @@ function App() {
     return () => clearTimeout(timer);
   }, [toast]);
 
-  // Reload data from LocalStorage (for Import/Reset)
-  const reloadDatabase = () => {
-    setGroups(getGroups());
-    setStudents(getStudents());
-    setTransactions(getTransactions());
-    setQuickTags(getQuickTags());
+  // Reload data from Firestore (for Import/Reset)
+  const reloadDatabase = useCallback(async () => {
+    setIsSyncing(true);
+    const data = await loadFromFirestore();
+    if (data) {
+      setGroups(data.groups || []);
+      setStudents(data.students || []);
+      setTransactions(data.transactions || []);
+      setQuickTags(data.quickTags || []);
+    } else {
+      setGroups(getGroups());
+      setStudents(getStudents());
+      setTransactions(getTransactions());
+      setQuickTags(getQuickTags());
+    }
     setSelectedGroupId(null);
-  };
+    setIsSyncing(false);
+  }, []);
 
   // Actions
   const handleAddGroup = (name, icon) => {
@@ -391,6 +401,12 @@ function App() {
 
       {/* Main Panel Content */}
       <main className="main-content">
+        {isSyncing && (
+          <div className="sync-indicator">
+            <span className="sync-dot"></span>
+            Yuklanmoqda...
+          </div>
+        )}
         <div key={activeTab} className="page-fade-in">
           {renderContent()}
         </div>
