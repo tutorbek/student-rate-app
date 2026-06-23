@@ -93,6 +93,7 @@ const Sidebar = ({ activeTab, setActiveTab }) => {
             key={item.id}
             className={`mobile-link scale-active ${activeTab === item.id ? 'active' : ''}`}
             onClick={() => setActiveTab(item.id)}
+            title={item.label}
           >
             <span className="mobile-icon">{item.icon}</span>
             <span className="mobile-label">{item.label}</span>
@@ -218,7 +219,7 @@ const Sidebar = ({ activeTab, setActiveTab }) => {
           flex-direction: column;
           align-items: center;
           justify-content: center;
-          gap: 4px;
+          gap: 0;
           background: transparent;
           border: none;
           color: #000000;
@@ -240,10 +241,7 @@ const Sidebar = ({ activeTab, setActiveTab }) => {
         }
 
         .mobile-label {
-          font-family: var(--font-family);
-          font-size: 0.7rem;
-          font-weight: 700;
-          text-transform: uppercase;
+          display: none;
         }
 
         @media (max-width: 900px) {
