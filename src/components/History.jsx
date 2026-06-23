@@ -11,6 +11,10 @@ const renderAvatar = (emoji) => {
 const History = ({ groups, students, transactions, onDeleteTransaction, showToast }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [confirmDeleteId, setConfirmDeleteId] = useState(null);
+  const [selectedGroupId, setSelectedGroupId] = useState('all');
+  const [selectedStudentId, setSelectedStudentId] = useState('all');
+  const [isGroupDropdownOpen, setIsGroupDropdownOpen] = useState(false);
+  const [isStudentDropdownOpen, setIsStudentDropdownOpen] = useState(false);
 
   useEffect(() => {
     const handleKeyDown = (e) => {
@@ -19,12 +23,44 @@ const History = ({ groups, students, transactions, onDeleteTransaction, showToas
       }
     };
     window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
+
+    const handleOutsideClick = (e) => {
+      if (!e.target.closest('.group-filter-dropdown')) {
+        setIsGroupDropdownOpen(false);
+      }
+      if (!e.target.closest('.student-filter-dropdown')) {
+        setIsStudentDropdownOpen(false);
+      }
+    };
+    document.addEventListener('click', handleOutsideClick);
+
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      document.removeEventListener('click', handleOutsideClick);
+    };
   }, []);
+
+  // Reset student filter if student does not belong to selected group
+  useEffect(() => {
+    if (selectedGroupId !== 'all') {
+      const student = students.find((s) => s.id === selectedStudentId);
+      if (student && student.groupId !== selectedGroupId) {
+        setSelectedStudentId('all');
+      }
+    }
+  }, [selectedGroupId, selectedStudentId, students]);
+
+  // Dropdown student options (filtered by selected group)
+  const filteredStudentsForDropdown = useMemo(() => {
+    if (selectedGroupId === 'all') {
+      return students;
+    }
+    return students.filter((s) => s.groupId === selectedGroupId);
+  }, [students, selectedGroupId]);
 
   // Map and filter transactions
   const processedTransactions = useMemo(() => {
-    const data = transactions.map((tx) => {
+    let data = transactions.map((tx) => {
       const student = students.find((s) => s.id === tx.studentId);
       const group = student ? groups.find((g) => g.id === student.groupId) : null;
       return {
@@ -32,9 +68,20 @@ const History = ({ groups, students, transactions, onDeleteTransaction, showToas
         studentName: student ? student.name : "O'chirilgan talaba",
         studentEmoji: student ? student.emoji : '❓',
         studentColor: student ? student.color : '#8e8e93',
+        groupId: student ? student.groupId : null,
         groupName: group ? group.name : "O'chirilgan guruh",
       };
     });
+
+    // Group Filter
+    if (selectedGroupId !== 'all') {
+      data = data.filter((tx) => tx.groupId === selectedGroupId);
+    }
+
+    // Student Filter
+    if (selectedStudentId !== 'all') {
+      data = data.filter((tx) => tx.studentId === selectedStudentId);
+    }
 
     if (!searchQuery.trim()) return data;
 
@@ -45,7 +92,7 @@ const History = ({ groups, students, transactions, onDeleteTransaction, showToas
         tx.groupName.toLowerCase().includes(query) ||
         tx.comment.toLowerCase().includes(query)
     );
-  }, [transactions, students, groups, searchQuery]);
+  }, [transactions, students, groups, searchQuery, selectedGroupId, selectedStudentId]);
 
   const handleDelete = (id) => {
     onDeleteTransaction(id);
@@ -61,20 +108,99 @@ const History = ({ groups, students, transactions, onDeleteTransaction, showToas
           <p className="page-subtitle">Barcha berilgan ballar (likelar) jurnali va ularni tahrirlash</p>
         </div>
 
-        {/* Search */}
-        <div className="search-wrapper">
-          <input
-            type="text"
-            className="form-input search-input"
-            placeholder="Ism, guruh yoki izoh bo'yicha qidirish..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
-          {searchQuery && (
-            <button className="clear-search-btn" onClick={() => setSearchQuery('')}>
-              ✕
-            </button>
-          )}
+        {/* Filters and Search wrapper */}
+        <div className="history-filters">
+          <div className="filter-group-row">
+            {/* Group Filter */}
+            <div className="custom-dropdown-container group-filter-dropdown">
+              <button 
+                type="button" 
+                className="filter-select-btn" 
+                onClick={() => setIsGroupDropdownOpen(!isGroupDropdownOpen)}
+              >
+                <span>{selectedGroupId === 'all' ? 'Barcha guruhlar' : (groups.find(g => g.id === selectedGroupId)?.name || 'Guruhsiz')}</span>
+                <span className="dropdown-arrow">▼</span>
+              </button>
+              {isGroupDropdownOpen && (
+                <div className="custom-dropdown-list glass">
+                  <div 
+                    className={`custom-dropdown-item ${selectedGroupId === 'all' ? 'active' : ''}`}
+                    onClick={() => {
+                      setSelectedGroupId('all');
+                      setIsGroupDropdownOpen(false);
+                    }}
+                  >
+                    Barcha guruhlar
+                  </div>
+                  {groups.map((group) => (
+                    <div 
+                      key={group.id}
+                      className={`custom-dropdown-item ${selectedGroupId === group.id ? 'active' : ''}`}
+                      onClick={() => {
+                        setSelectedGroupId(group.id);
+                        setIsGroupDropdownOpen(false);
+                      }}
+                    >
+                      {group.name}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Student Filter */}
+            <div className="custom-dropdown-container student-filter-dropdown">
+              <button 
+                type="button" 
+                className="filter-select-btn" 
+                onClick={() => setIsStudentDropdownOpen(!isStudentDropdownOpen)}
+              >
+                <span>{selectedStudentId === 'all' ? 'Barcha talabalar' : (students.find(s => s.id === selectedStudentId)?.name || 'Talabasiz')}</span>
+                <span className="dropdown-arrow">▼</span>
+              </button>
+              {isStudentDropdownOpen && (
+                <div className="custom-dropdown-list glass">
+                  <div 
+                    className={`custom-dropdown-item ${selectedStudentId === 'all' ? 'active' : ''}`}
+                    onClick={() => {
+                      setSelectedStudentId('all');
+                      setIsStudentDropdownOpen(false);
+                    }}
+                  >
+                    Barcha talabalar
+                  </div>
+                  {filteredStudentsForDropdown.map((student) => (
+                    <div 
+                      key={student.id}
+                      className={`custom-dropdown-item ${selectedStudentId === student.id ? 'active' : ''}`}
+                      onClick={() => {
+                        setSelectedStudentId(student.id);
+                        setIsStudentDropdownOpen(false);
+                      }}
+                    >
+                      {student.name}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Search */}
+          <div className="search-wrapper">
+            <input
+              type="text"
+              className="form-input search-input"
+              placeholder="Izoh bo'yicha qidirish..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+            {searchQuery && (
+              <button className="clear-search-btn" onClick={() => setSearchQuery('')}>
+                ✕
+              </button>
+            )}
+          </div>
         </div>
       </div>
 
@@ -167,15 +293,96 @@ const History = ({ groups, students, transactions, onDeleteTransaction, showToas
           animation: fade-in 0.4s ease-out;
         }
 
-        .search-wrapper {
-          position: relative;
-          min-width: 320px;
+        .history-filters {
+          display: flex;
+          gap: 12px;
+          align-items: center;
         }
 
-        @media (max-width: 768px) {
-          .search-wrapper {
-            width: 100%;
-          }
+        .filter-group-row {
+          display: flex;
+          gap: 12px;
+        }
+
+        .custom-dropdown-container {
+          position: relative;
+          width: 180px;
+        }
+
+        .filter-select-btn {
+          width: 100%;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          background: #ffffff;
+          border: 1px solid #000000;
+          padding: 10px 14px;
+          cursor: pointer;
+          font-family: var(--font-family);
+          font-size: 0.95rem;
+          font-weight: 700;
+          text-align: left;
+          transition: all var(--transition-fast);
+        }
+
+        .filter-select-btn:hover {
+          background: var(--accent-neon);
+          color: #000000;
+        }
+
+        .dropdown-arrow {
+          font-size: 0.65rem;
+          margin-left: 8px;
+          transition: transform var(--transition-fast);
+        }
+
+        .custom-dropdown-list {
+          position: absolute;
+          top: 100%;
+          left: 0;
+          width: 100%;
+          max-height: 180px;
+          overflow-y: auto;
+          background: #ffffff;
+          border: 2px solid #000000;
+          box-shadow: 4px 4px 0px #000000;
+          z-index: 100;
+          margin-top: 4px;
+          border-radius: 0;
+        }
+
+        .custom-dropdown-item {
+          padding: 10px 14px;
+          font-size: 0.9rem;
+          font-weight: 600;
+          cursor: pointer;
+          color: #000000;
+          transition: all var(--transition-fast);
+          border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+        }
+
+        .custom-dropdown-item:last-child {
+          border-bottom: none;
+        }
+
+        .custom-dropdown-item:hover {
+          background: var(--accent-neon);
+          color: #000000;
+        }
+
+        .custom-dropdown-item.active {
+          background: #000000;
+          color: #ffffff;
+        }
+
+        .custom-dropdown-item.active:hover {
+          background: var(--accent-neon);
+          color: #000000;
+        }
+
+        .search-wrapper {
+          position: relative;
+          min-width: 250px;
         }
 
         .search-input {
@@ -296,6 +503,25 @@ const History = ({ groups, students, transactions, onDeleteTransaction, showToas
           flex-direction: column;
           align-items: center;
           gap: 20px;
+        }
+
+        @media (max-width: 900px) {
+          .history-filters {
+            flex-direction: column;
+            align-items: stretch;
+            width: 100%;
+          }
+          .filter-group-row {
+            flex-direction: column;
+            width: 100%;
+          }
+          .custom-dropdown-container {
+            width: 100%;
+          }
+          .search-wrapper {
+            width: 100% !important;
+            min-width: unset;
+          }
         }
       `}</style>
     </div>
