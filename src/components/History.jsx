@@ -8,7 +8,7 @@ const renderAvatar = (emoji) => {
   return emoji;
 };
 
-const History = ({ groups, students, transactions, onDeleteTransaction, showToast }) => {
+const History = ({ groups, students, transactions, onDeleteTransaction, showToast, userRole }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [confirmDeleteId, setConfirmDeleteId] = useState(null);
   const [selectedGroupId, setSelectedGroupId] = useState('all');
@@ -98,6 +98,12 @@ const History = ({ groups, students, transactions, onDeleteTransaction, showToas
     onDeleteTransaction(id);
     setConfirmDeleteId(null);
     showToast("Baholash harakati muvaffaqiyatli bekor qilindi!", "success");
+  };
+
+  const gridStyle = {
+    gridTemplateColumns: userRole === 'student'
+      ? '140px 1.8fr 1.2fr 2fr 80px'
+      : '140px 1.8fr 1.2fr 2fr 80px 110px'
   };
 
   return (
@@ -207,13 +213,13 @@ const History = ({ groups, students, transactions, onDeleteTransaction, showToas
       <div className="glass-card history-card">
         {processedTransactions.length > 0 ? (
           <div className="history-table">
-            <div className="history-header">
+            <div className="history-header" style={gridStyle}>
               <span className="th-time">Vaqt</span>
               <span className="th-student">Talaba</span>
               <span className="th-group">Guruh</span>
               <span className="th-comment">Izoh</span>
               <span className="th-amount text-right">Ball</span>
-              <span className="th-action text-right">Amal</span>
+              {userRole !== 'student' && <span className="th-action text-right">Amal</span>}
             </div>
             <div className="history-body">
               {processedTransactions.map((tx) => {
@@ -222,7 +228,7 @@ const History = ({ groups, students, transactions, onDeleteTransaction, showToas
                 const formattedTime = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
                 return (
-                  <div key={tx.id} className="history-row">
+                  <div key={tx.id} className="history-row" style={gridStyle}>
                     <span className="td-time">
                       <span className="date-text">{formattedDate}</span>
                       <span className="time-text">{formattedTime}</span>
@@ -240,15 +246,17 @@ const History = ({ groups, students, transactions, onDeleteTransaction, showToas
                     <span className={`td-amount text-right font-bold ${tx.amount >= 0 ? 'text-positive' : 'text-negative'}`}>
                       {tx.amount >= 0 ? `+${tx.amount}` : tx.amount}
                     </span>
-                    <span className="td-action text-right">
-                      <button
-                        className="btn-delete-tx scale-active"
-                        onClick={() => setConfirmDeleteId(tx.id)}
-                        title="Bahoni bekor qilish"
-                      >
-                        Bekor qilish
-                      </button>
-                    </span>
+                    {userRole !== 'student' && (
+                      <span className="td-action text-right">
+                        <button
+                          className="btn-delete-tx scale-active"
+                          onClick={() => setConfirmDeleteId(tx.id)}
+                          title="Bahoni bekor qilish"
+                        >
+                          Bekor qilish
+                        </button>
+                      </span>
+                    )}
                   </div>
                 );
               })}

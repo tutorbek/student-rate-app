@@ -24,7 +24,14 @@ import {
 
 function App() {
   const [activeTab, setActiveTab] = useState(() => {
-    return localStorage.getItem('rsa_active_tab') || 'dashboard';
+    const savedRole = sessionStorage.getItem('rsa_role');
+    const isStudent = savedRole === 'student';
+    const savedTab = localStorage.getItem('rsa_active_tab') || 'dashboard';
+    // Students can only access leaderboard and history
+    if (isStudent && savedTab !== 'leaderboard' && savedTab !== 'history') {
+      return 'leaderboard';
+    }
+    return savedTab;
   });
   const [selectedGroupId, setSelectedGroupId] = useState(() => {
     const saved = localStorage.getItem('rsa_selected_group_id');
@@ -41,6 +48,9 @@ function App() {
 
   const [isAuthenticated, setIsAuthenticated] = useState(() => {
     return sessionStorage.getItem('rsa_authenticated') === 'true';
+  });
+  const [userRole, setUserRole] = useState(() => {
+    return sessionStorage.getItem('rsa_role') || 'student';
   });
   const [loginPassword, setLoginPassword] = useState('');
   const [loginError, setLoginError] = useState('');
@@ -70,7 +80,14 @@ function App() {
       .then((data) => {
         if (data.success) {
           sessionStorage.setItem('rsa_authenticated', 'true');
+          sessionStorage.setItem('rsa_role', data.role);
           setIsAuthenticated(true);
+          setUserRole(data.role);
+          if (data.role === 'student') {
+            setActiveTab('leaderboard');
+          } else {
+            setActiveTab('dashboard');
+          }
           showToast("Muvaffaqiyatli kirdingiz!", "success");
         }
       })
@@ -81,6 +98,16 @@ function App() {
         setLoginLoading(false);
       });
   };
+
+  // Enforce student role routing constraints — always block unauthorized tabs
+  useEffect(() => {
+    if (userRole === 'student') {
+      if (activeTab !== 'leaderboard' && activeTab !== 'history') {
+        setActiveTab('leaderboard');
+        localStorage.setItem('rsa_active_tab', 'leaderboard');
+      }
+    }
+  }, [userRole, activeTab]);
 
   // Sync state
   const [groups, setGroups] = useState([]);
@@ -213,6 +240,10 @@ function App() {
 
   // Handle Tab Switch (reset selected group if navigating away from groups page)
   const handleTabChange = (tabId) => {
+    // Students can only access leaderboard and history
+    if (userRole === 'student' && tabId !== 'leaderboard' && tabId !== 'history') {
+      return;
+    }
     setActiveTab(tabId);
     if (tabId !== 'groups') {
       setSelectedGroupId(null);
@@ -274,6 +305,7 @@ function App() {
             transactions={transactions}
             onDeleteTransaction={handleDeleteTransaction}
             showToast={showToast}
+            userRole={userRole}
           />
         );
       case 'settings':
@@ -346,7 +378,7 @@ function App() {
       <div className="bg-glow-2"></div>
 
       {/* Sidebar Navigation */}
-      <Sidebar activeTab={activeTab} setActiveTab={handleTabChange} />
+      <Sidebar activeTab={activeTab} setActiveTab={handleTabChange} userRole={userRole} />
 
       {/* Main Panel Content */}
       <main className="main-content">

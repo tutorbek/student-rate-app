@@ -41,12 +41,15 @@ const initDb = () => {
 };
 
 const ADMIN_PASSWORD = 'OzimSila';
+const STUDENT_PASSWORD = 'studentman';
 
 // API: Verify password
 app.post('/api/auth', (req, res) => {
   const { password } = req.body;
   if (password === ADMIN_PASSWORD) {
-    res.json({ success: true });
+    res.json({ success: true, role: 'teacher' });
+  } else if (password === STUDENT_PASSWORD) {
+    res.json({ success: true, role: 'student' });
   } else {
     res.status(401).json({ success: false, error: "Noto'g'ri parol!" });
   }

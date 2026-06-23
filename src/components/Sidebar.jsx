@@ -1,6 +1,6 @@
 import React from 'react';
 
-const Sidebar = ({ activeTab, setActiveTab }) => {
+const Sidebar = ({ activeTab, setActiveTab, userRole }) => {
   const menuItems = [
     {
       id: 'dashboard',
@@ -61,6 +61,13 @@ const Sidebar = ({ activeTab, setActiveTab }) => {
     },
   ];
 
+  const filteredMenuItems = menuItems.filter((item) => {
+    if (userRole === 'student') {
+      return item.id === 'leaderboard' || item.id === 'history';
+    }
+    return true;
+  });
+
   return (
     <>
       {/* Desktop Sidebar */}
@@ -69,7 +76,7 @@ const Sidebar = ({ activeTab, setActiveTab }) => {
           <h1 className="logo-text">InsightPlus</h1>
         </div>
         <nav className="sidebar-nav">
-          {menuItems.map((item) => (
+          {filteredMenuItems.map((item) => (
             <button
               key={item.id}
               className={`sidebar-link scale-active ${activeTab === item.id ? 'active' : ''}`}
@@ -81,14 +88,16 @@ const Sidebar = ({ activeTab, setActiveTab }) => {
           ))}
         </nav>
         <div className="sidebar-footer">
-          <span className="badge badge-blue">Teacher Mode</span>
+          <span className="badge badge-blue">
+            {userRole === 'student' ? 'Student Mode' : 'Teacher Mode'}
+          </span>
           <span className="footer-version">v1.0.0</span>
         </div>
       </aside>
 
       {/* Mobile Bottom Navigation Bar */}
       <nav className="mobile-nav glass">
-        {menuItems.map((item) => (
+        {filteredMenuItems.map((item) => (
           <button
             key={item.id}
             className={`mobile-link scale-active ${activeTab === item.id ? 'active' : ''}`}
