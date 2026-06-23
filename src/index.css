@@ -129,9 +129,6 @@ body {
   min-height: 100dvh;
   position: relative;
   background: #ffffff;
-  /* Prevent layout shifts during render */
-  will-change: auto;
-  contain: layout style;
 }
 
 /* Hide background glows */
@@ -148,14 +145,9 @@ body {
   min-height: 100dvh;
   background: #ffffff;
   border-left: 1px solid #000000;
-  /* Smooth content transitions */
   transition: margin-left var(--transition-normal);
-  /* Native scroll feel */
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
-  overscroll-behavior-y: contain;
-  /* Prevent content jump on load */
-  contain: layout;
+  /* Desktop: normal body scroll */
+  overflow: visible;
 }
 
 @media (max-width: 900px) {
