@@ -66,37 +66,34 @@ function App() {
     setLoginLoading(true);
     setLoginError('');
 
-    fetch('http://localhost:3001/api/auth', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ password: loginPassword }),
-    })
-      .then((res) => {
-        if (!res.ok) {
-          throw new Error("Noto'g'ri parol!");
+    // Parol to'g'ridan-to'g'ri frontendda tekshiriladi (server kerak emas)
+    const TEACHER_PASSWORD = 'OzimSila';
+    const STUDENT_PASSWORD = 'studentman';
+
+    setTimeout(() => {
+      let role = null;
+      if (loginPassword === TEACHER_PASSWORD) {
+        role = 'teacher';
+      } else if (loginPassword === STUDENT_PASSWORD) {
+        role = 'student';
+      }
+
+      if (role) {
+        sessionStorage.setItem('rsa_authenticated', 'true');
+        sessionStorage.setItem('rsa_role', role);
+        setIsAuthenticated(true);
+        setUserRole(role);
+        if (role === 'student') {
+          setActiveTab('leaderboard');
+        } else {
+          setActiveTab('dashboard');
         }
-        return res.json();
-      })
-      .then((data) => {
-        if (data.success) {
-          sessionStorage.setItem('rsa_authenticated', 'true');
-          sessionStorage.setItem('rsa_role', data.role);
-          setIsAuthenticated(true);
-          setUserRole(data.role);
-          if (data.role === 'student') {
-            setActiveTab('leaderboard');
-          } else {
-            setActiveTab('dashboard');
-          }
-          showToast("Muvaffaqiyatli kirdingiz!", "success");
-        }
-      })
-      .catch((err) => {
-        setLoginError(err.message || "Xatolik yuz berdi!");
-      })
-      .finally(() => {
-        setLoginLoading(false);
-      });
+        showToast("Muvaffaqiyatli kirdingiz!", "success");
+      } else {
+        setLoginError("Noto'g'ri parol!");
+      }
+      setLoginLoading(false);
+    }, 300);
   };
 
   // Enforce student role routing constraints — always block unauthorized tabs
