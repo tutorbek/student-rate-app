@@ -25,7 +25,7 @@ import {
 
 function App() {
   const [activeTab, setActiveTab] = useState(() => {
-    const savedRole = sessionStorage.getItem('rsa_role');
+    const savedRole = localStorage.getItem('rsa_role');
     const isStudent = savedRole === 'student';
     const savedTab = localStorage.getItem('rsa_active_tab') || 'dashboard';
     // Students can only access leaderboard and history
@@ -48,10 +48,10 @@ function App() {
   }, [selectedGroupId]);
 
   const [isAuthenticated, setIsAuthenticated] = useState(() => {
-    return sessionStorage.getItem('rsa_authenticated') === 'true';
+    return localStorage.getItem('rsa_authenticated') === 'true';
   });
   const [userRole, setUserRole] = useState(() => {
-    return sessionStorage.getItem('rsa_role') || 'student';
+    return localStorage.getItem('rsa_role') || 'student';
   });
   const [loginPassword, setLoginPassword] = useState('');
   const [loginError, setLoginError] = useState('');
@@ -80,8 +80,8 @@ function App() {
       }
 
       if (role) {
-        sessionStorage.setItem('rsa_authenticated', 'true');
-        sessionStorage.setItem('rsa_role', role);
+        localStorage.setItem('rsa_authenticated', 'true');
+        localStorage.setItem('rsa_role', role);
         setIsAuthenticated(true);
         setUserRole(role);
         if (role === 'student') {
@@ -305,8 +305,8 @@ function App() {
 
   // Logout handler
   const handleLogout = () => {
-    sessionStorage.removeItem('rsa_authenticated');
-    sessionStorage.removeItem('rsa_role');
+    localStorage.removeItem('rsa_authenticated');
+    localStorage.removeItem('rsa_role');
     localStorage.removeItem('rsa_active_tab');
     setIsAuthenticated(false);
     setUserRole('student');
