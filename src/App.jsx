@@ -107,6 +107,18 @@ function App() {
     }
   }, [userRole, activeTab]);
 
+  // Sync body class for mobile viewport lock
+  useEffect(() => {
+    if (isAuthenticated) {
+      document.body.classList.add('is-authenticated');
+    } else {
+      document.body.classList.remove('is-authenticated');
+    }
+    return () => {
+      document.body.classList.remove('is-authenticated');
+    };
+  }, [isAuthenticated]);
+
   // Sync state
   const [groups, setGroups] = useState([]);
   const [students, setStudents] = useState([]);
