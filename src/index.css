@@ -358,115 +358,103 @@ body:has(.modal-overlay) {
 }
 
 /* =========================================
-   MODALS — Desktop & Mobile
+   MODALS — Centered, Scrollable, All Devices
    ========================================= */
 
-/* ------ OVERLAY (backdrop) ------ */
+/* Backdrop */
 .modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(255, 255, 255, 0.88);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
+  background: rgba(0, 0, 0, 0.35);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
   display: flex;
   justify-content: center;
   align-items: center;
   z-index: 2000;
+  /* Padding keeps modal away from screen edges on all sides */
+  padding: max(20px, env(safe-area-inset-top))
+           max(16px, env(safe-area-inset-right))
+           max(20px, env(safe-area-inset-bottom))
+           max(16px, env(safe-area-inset-left));
   box-sizing: border-box;
-  /* Desktop: some padding so modal doesn't touch edges */
-  padding: 24px;
+  overflow-y: auto;
 }
 
-/* ------ CONTENT BOX ------ */
+/* Modal box */
 .modal-content {
   position: relative;
   width: 100%;
-  max-width: 520px;
+  max-width: 500px;
   box-sizing: border-box;
   background: #ffffff;
   border: 2px solid #000000;
-  box-shadow: 6px 6px 0px #000000;
-  padding: 28px;
-  /* KEY: limit height and enable scroll INSIDE the box */
-  max-height: calc(100dvh - 48px);
+  box-shadow: 8px 8px 0px #000000;
+  padding: 28px 28px 20px;
+  /* Never taller than viewport minus edges */
+  max-height: calc(100dvh - 40px);
   overflow-y: auto;
   overflow-x: hidden;
   -webkit-overflow-scrolling: touch;
-  overscroll-behavior-y: contain;
+  overscroll-behavior: contain;
+  /* Smooth fade in */
+  animation: modalFadeIn 0.18s ease forwards;
 }
 
-/* ------ MOBILE: slide up from bottom, above nav bar ------ */
+/* On mobile: account for bottom nav bar (64px) */
 @media (max-width: 900px) {
   .modal-overlay {
-    /* Align to bottom */
-    align-items: flex-end;
-    padding: 0;
-    /* Push overlay bottom edge UP above our nav bar + home indicator */
-    padding-bottom: calc(64px + env(safe-area-inset-bottom));
+    /* Extra bottom padding = nav bar + home indicator */
+    padding-bottom: calc(64px + env(safe-area-inset-bottom) + 12px);
   }
 
   .modal-content {
-    width: 100%;
-    max-width: 100%;
-    border-radius: 0;
-    border-left: 2px solid #000000;
-    border-right: 2px solid #000000;
-    border-top: 2px solid #000000;
-    border-bottom: none;
-    box-shadow: 0 -3px 0px #000000;
-    padding: 20px 16px 24px;
-    /* Height = screen - nav bar - home indicator - notch */
+    max-width: 94%;
+    padding: 20px 18px 16px;
     max-height: calc(
       100dvh
       - 64px
       - env(safe-area-inset-bottom)
-      - max(0px, env(safe-area-inset-top))
-      - 16px
+      - max(20px, env(safe-area-inset-top))
+      - 32px
     );
-    overflow-y: scroll; /* scroll not auto — forces scrollability on iOS */
-    -webkit-overflow-scrolling: touch;
-    /* Slide up animation */
-    animation: modalSlideUp 0.24s cubic-bezier(0.32, 0.72, 0, 1) forwards;
+    box-shadow: 6px 6px 0px #000000;
   }
 }
 
-@keyframes modalSlideUp {
-  from { transform: translateY(48px); opacity: 0; }
-  to   { transform: translateY(0);    opacity: 1; }
+@keyframes modalFadeIn {
+  from { opacity: 0; transform: scale(0.97) translateY(8px); }
+  to   { opacity: 1; transform: scale(1)    translateY(0);   }
 }
 
-/* ------ Modal inner elements ------ */
+/* Modal title */
 .modal-title {
-  font-size: 1.2rem;
+  font-size: 1.15rem;
   font-weight: 800;
   text-transform: uppercase;
   letter-spacing: -0.3px;
   margin-bottom: 20px;
+  padding-bottom: 12px;
+  border-bottom: 2px solid #000000;
   color: #000000;
 }
 
+/* Action buttons row — sticky at bottom while scrolling */
 .modal-actions {
   display: flex;
-  gap: 12px;
+  gap: 10px;
   margin-top: 20px;
-  /* Stick to bottom of modal on scroll */
   position: sticky;
   bottom: 0;
   background: #ffffff;
   padding-top: 12px;
-  border-top: 1px solid #000000;
+  border-top: 1.5px solid #000000;
+  z-index: 1;
 }
 
 .modal-actions .btn {
   flex: 1;
 }
-
-@media (max-width: 900px) {
-  .modal-actions {
-    padding-bottom: 4px;
-  }
-}
-
 
 
 
