@@ -224,7 +224,10 @@ const Leaderboard = ({ groups, students, transactions }) => {
                       <div className="avatar-circle table-avatar" style={{ background: student.color, width: 32, height: 32, fontSize: '1rem', overflow: 'hidden' }}>
                         {renderAvatar(student.emoji)}
                       </div>
-                      <span className="student-table-name">{student.name}</span>
+                      <div className="student-info-meta">
+                        <span className="student-table-name">{student.name}</span>
+                        <span className="student-mobile-group">{student.groupName}</span>
+                      </div>
                     </span>
                     <span className="td-group">{student.groupName}</span>
                     <span className={`td-score text-right font-bold ${student.score >= 0 ? 'text-positive' : 'text-negative'}`}>
@@ -527,10 +530,6 @@ const Leaderboard = ({ groups, students, transactions }) => {
           overflow-x: auto;
         }
 
-        .standings-table {
-          min-width: 500px;
-        }
-
         .standings-header {
           display: grid;
           grid-template-columns: 80px 2fr 1.5fr 1fr;
@@ -572,15 +571,39 @@ const Leaderboard = ({ groups, students, transactions }) => {
           display: flex;
           align-items: center;
           gap: 12px;
+          min-width: 0;
+        }
+
+        .student-info-meta {
+          display: flex;
+          flex-direction: column;
+          gap: 2px;
+          min-width: 0;
         }
 
         .student-table-name {
           font-weight: 700;
           color: #000000;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+        }
+
+        .student-mobile-group {
+          display: none;
+          font-size: 0.75rem;
+          color: rgba(0, 0, 0, 0.6);
+          font-weight: 500;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
         }
 
         .td-group {
           color: var(--text-secondary);
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
         }
 
         .text-right {
@@ -589,6 +612,51 @@ const Leaderboard = ({ groups, students, transactions }) => {
 
         .font-bold {
           font-weight: 700;
+        }
+
+        @media (max-width: 600px) {
+          .standings-card {
+            padding: 8px 12px;
+            overflow-x: visible;
+          }
+
+          .standings-header {
+            grid-template-columns: 48px 1fr 70px;
+            padding: 12px 0;
+          }
+
+          .standings-row {
+            grid-template-columns: 48px 1fr 70px;
+            padding: 12px 0;
+          }
+
+          .th-group, .td-group {
+            display: none;
+          }
+
+          .student-mobile-group {
+            display: block;
+          }
+
+          .td-rank {
+            font-size: 0.95rem;
+            padding-left: 4px;
+          }
+
+          .student-table-name {
+            font-size: 0.9rem;
+            white-space: normal;
+            word-break: break-word;
+          }
+
+          .student-mobile-group {
+            white-space: normal;
+            word-break: break-word;
+          }
+
+          .td-student {
+            gap: 8px;
+          }
         }
 
         .empty-leaderboard-placeholder {

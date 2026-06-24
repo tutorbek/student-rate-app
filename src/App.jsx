@@ -179,6 +179,40 @@ function App() {
     return () => clearTimeout(timer);
   }, [toast]);
 
+  // Handle mobile visual viewport changes (fixes virtual keyboard overlays / pans)
+  useEffect(() => {
+    if (typeof window === 'undefined' || !window.visualViewport) return;
+
+    const handleViewportChange = () => {
+      const vv = window.visualViewport;
+      // pageTop handles scrolled document position + offset
+      const top = vv.pageTop !== undefined ? vv.pageTop : (vv.offsetTop + window.scrollY);
+      const left = vv.pageLeft !== undefined ? vv.pageLeft : (vv.offsetLeft + window.scrollX);
+      const height = vv.height;
+      const width = vv.width;
+
+      document.documentElement.style.setProperty('--viewport-top', `${top}px`);
+      document.documentElement.style.setProperty('--viewport-left', `${left}px`);
+      document.documentElement.style.setProperty('--viewport-height', `${height}px`);
+      document.documentElement.style.setProperty('--viewport-width', `${width}px`);
+    };
+
+    // Initial call
+    handleViewportChange();
+
+    window.visualViewport.addEventListener('resize', handleViewportChange);
+    window.visualViewport.addEventListener('scroll', handleViewportChange);
+    window.addEventListener('scroll', handleViewportChange);
+
+    return () => {
+      if (window.visualViewport) {
+        window.visualViewport.removeEventListener('resize', handleViewportChange);
+        window.visualViewport.removeEventListener('scroll', handleViewportChange);
+      }
+      window.removeEventListener('scroll', handleViewportChange);
+    };
+  }, []);
+
   // Reload data from Firestore (for Import/Reset)
   const reloadDatabase = useCallback(async () => {
     setIsSyncing(true);

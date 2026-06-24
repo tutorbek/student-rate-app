@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 
 const renderAvatar = (emoji) => {
   if (!emoji) return '❓';
@@ -274,7 +275,7 @@ const History = ({ groups, students, transactions, onDeleteTransaction, showToas
       </div>
 
       {/* Undo/Delete Transaction Confirmation Modal */}
-      {confirmDeleteId && (
+      {confirmDeleteId && createPortal(
         <div className="modal-overlay" onClick={() => setConfirmDeleteId(null)}>
           <div className="modal-content glass" onClick={(e) => e.stopPropagation()}>
             <h3 className="modal-title">Baholashni bekor qilish</h3>
@@ -293,7 +294,8 @@ const History = ({ groups, students, transactions, onDeleteTransaction, showToas
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       <style>{`

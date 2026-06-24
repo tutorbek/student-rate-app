@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { getStudentScore } from '../utils/db';
 
 const renderAvatar = (emoji) => {
@@ -28,6 +29,8 @@ const GroupDetail = ({ group, students, transactions, quickTags, onBack, onAddSt
   const [editStudentName, setEditStudentName] = useState('');
   const [editStudentEmoji, setEditStudentEmoji] = useState('🚀');
   const [editStudentColor, setEditStudentColor] = useState(COLOR_OPTIONS[0].value);
+  const [avatarTab, setAvatarTab] = useState('emoji');
+  const [editAvatarTab, setEditAvatarTab] = useState('emoji');
 
   useEffect(() => {
     const handleKeyDown = (e) => {
@@ -164,6 +167,15 @@ const GroupDetail = ({ group, students, transactions, quickTags, onBack, onAddSt
                   setEditStudentName(student.name);
                   setEditStudentEmoji(student.emoji);
                   setEditStudentColor(student.color);
+                  if (!student.emoji) {
+                    setEditAvatarTab('emoji');
+                  } else if (student.emoji.startsWith('data:image')) {
+                    setEditAvatarTab('file');
+                  } else if (student.emoji.startsWith('http') || student.emoji.includes('/') || student.emoji.includes('.')) {
+                    setEditAvatarTab('url');
+                  } else {
+                    setEditAvatarTab('emoji');
+                  }
                 }}
                 title="Talabani tahrirlash"
               >
@@ -224,7 +236,7 @@ const GroupDetail = ({ group, students, transactions, quickTags, onBack, onAddSt
       )}
 
       {/* Add Student Modal */}
-      {showAddStudentModal && (
+      {showAddStudentModal && createPortal(
         <div className="modal-overlay" onClick={() => setShowAddStudentModal(false)}>
           <div className="modal-content glass student-modal" onClick={(e) => e.stopPropagation()}>
             <h3 className="modal-title">Yangi talaba qo'shish</h3>
@@ -241,49 +253,63 @@ const GroupDetail = ({ group, students, transactions, quickTags, onBack, onAddSt
                 />
               </div>
 
-              {/* Emoji Picker */}
+              {/* Emoji Picker Tabs */}
               <div className="form-group">
-                <label className="form-label">Avatar Emoji</label>
-                <div className="emoji-picker-grid">
-                  {EMOJI_OPTIONS.map((emoji) => (
-                    <button
-                      key={emoji}
-                      type="button"
-                      className={`emoji-btn ${selectedEmoji === emoji ? 'selected' : ''}`}
-                      onClick={() => setSelectedEmoji(emoji)}
-                    >
-                      {emoji}
-                    </button>
-                  ))}
+                <label className="form-label">Avatar Turi</label>
+                <div className="avatar-tabs-header">
+                  <button type="button" className={`avatar-tab-btn ${avatarTab === 'emoji' ? 'active' : ''}`} onClick={() => setAvatarTab('emoji')}>Emoji</button>
+                  <button type="button" className={`avatar-tab-btn ${avatarTab === 'url' ? 'active' : ''}`} onClick={() => setAvatarTab('url')}>Internet URL</button>
+                  <button type="button" className={`avatar-tab-btn ${avatarTab === 'file' ? 'active' : ''}`} onClick={() => setAvatarTab('file')}>Rasm yuklash</button>
                 </div>
-                <div style={{ marginTop: '12px' }}>
-                  <label className="form-label" style={{ fontSize: '0.75rem', opacity: 0.8 }}>Yoki Custom Emoji / Rasm URL (Internetdan)</label>
-                  <input
-                    type="text"
-                    className="form-input"
-                    placeholder="Masalan: 🤩 yoki https://example.com/rasm.png"
-                    value={EMOJI_OPTIONS.includes(selectedEmoji) ? '' : selectedEmoji}
-                    onChange={(e) => setSelectedEmoji(e.target.value || EMOJI_OPTIONS[0])}
-                  />
-                </div>
-                <div style={{ marginTop: '12px' }}>
-                  <label className="form-label" style={{ fontSize: '0.75rem', opacity: 0.8 }}>Yoki Rasm Faylini Yuklash (Kompyuterdan)</label>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    className="form-input"
-                    onChange={(e) => {
-                      const file = e.target.files[0];
-                      if (file) {
-                        const reader = new FileReader();
-                        reader.onloadend = () => {
-                          setSelectedEmoji(reader.result);
-                        };
-                        reader.readAsDataURL(file);
-                      }
-                    }}
-                  />
-                </div>
+
+                {avatarTab === 'emoji' && (
+                  <div className="emoji-picker-grid">
+                    {EMOJI_OPTIONS.map((emoji) => (
+                      <button
+                        key={emoji}
+                        type="button"
+                        className={`emoji-btn ${selectedEmoji === emoji ? 'selected' : ''}`}
+                        onClick={() => setSelectedEmoji(emoji)}
+                      >
+                        {emoji}
+                      </button>
+                    ))}
+                  </div>
+                )}
+
+                {avatarTab === 'url' && (
+                  <div>
+                    <label className="form-label" style={{ fontSize: '0.75rem', opacity: 0.8 }}>Rasm URL manzili yoki maxsus emoji</label>
+                    <input
+                      type="text"
+                      className="form-input"
+                      placeholder="Masalan: 🤩 yoki https://example.com/rasm.png"
+                      value={EMOJI_OPTIONS.includes(selectedEmoji) ? '' : selectedEmoji}
+                      onChange={(e) => setSelectedEmoji(e.target.value || EMOJI_OPTIONS[0])}
+                    />
+                  </div>
+                )}
+
+                {avatarTab === 'file' && (
+                  <div>
+                    <label className="form-label" style={{ fontSize: '0.75rem', opacity: 0.8 }}>Kompyuterdan rasm yuklash</label>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="form-input"
+                      onChange={(e) => {
+                        const file = e.target.files[0];
+                        if (file) {
+                          const reader = new FileReader();
+                          reader.onloadend = () => {
+                            setSelectedEmoji(reader.result);
+                          };
+                          reader.readAsDataURL(file);
+                        }
+                      }}
+                    />
+                  </div>
+                )}
               </div>
 
               {/* Color Picker */}
@@ -313,11 +339,12 @@ const GroupDetail = ({ group, students, transactions, quickTags, onBack, onAddSt
               </div>
             </form>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* Score and Comment Input Modal */}
-      {scoringStudent && (
+      {scoringStudent && createPortal(
         <div className="modal-overlay" onClick={() => setScoringStudent(null)}>
           <div className="modal-content glass score-modal" onClick={(e) => e.stopPropagation()}>
             <div className="score-modal-header">
@@ -385,11 +412,12 @@ const GroupDetail = ({ group, students, transactions, quickTags, onBack, onAddSt
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* Delete Student Confirmation Modal */}
-      {confirmDeleteId && (
+      {confirmDeleteId && createPortal(
         <div className="modal-overlay" onClick={() => setConfirmDeleteId(null)}>
           <div className="modal-content glass" onClick={(e) => e.stopPropagation()}>
             <h3 className="modal-title text-red">⚠️ Talabani o'chirish</h3>
@@ -408,11 +436,12 @@ const GroupDetail = ({ group, students, transactions, quickTags, onBack, onAddSt
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* Student Profile Modal */}
-      {profileStudent && (
+      {profileStudent && createPortal(
         <div className="modal-overlay" onClick={() => setProfileStudent(null)}>
           <div className="modal-content glass profile-modal" onClick={(e) => e.stopPropagation()}>
             {/* Profile Header */}
@@ -486,10 +515,11 @@ const GroupDetail = ({ group, students, transactions, quickTags, onBack, onAddSt
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
       {/* Edit Student Modal */}
-      {editingStudent && (
+      {editingStudent && createPortal(
         <div className="modal-overlay" onClick={() => setEditingStudent(null)}>
           <div className="modal-content glass student-modal" onClick={(e) => e.stopPropagation()}>
             <h3 className="modal-title">Talaba Ma'lumotlarini Tahrirlash</h3>
@@ -506,49 +536,63 @@ const GroupDetail = ({ group, students, transactions, quickTags, onBack, onAddSt
                 />
               </div>
 
-              {/* Emoji Picker */}
+              {/* Emoji Picker Tabs */}
               <div className="form-group">
-                <label className="form-label">Avatar Emoji</label>
-                <div className="emoji-picker-grid">
-                  {EMOJI_OPTIONS.map((emoji) => (
-                    <button
-                      key={emoji}
-                      type="button"
-                      className={`emoji-btn ${editStudentEmoji === emoji ? 'selected' : ''}`}
-                      onClick={() => setEditStudentEmoji(emoji)}
-                    >
-                      {emoji}
-                    </button>
-                  ))}
+                <label className="form-label">Avatar Turi</label>
+                <div className="avatar-tabs-header">
+                  <button type="button" className={`avatar-tab-btn ${editAvatarTab === 'emoji' ? 'active' : ''}`} onClick={() => setEditAvatarTab('emoji')}>Emoji</button>
+                  <button type="button" className={`avatar-tab-btn ${editAvatarTab === 'url' ? 'active' : ''}`} onClick={() => setEditAvatarTab('url')}>Internet URL</button>
+                  <button type="button" className={`avatar-tab-btn ${editAvatarTab === 'file' ? 'active' : ''}`} onClick={() => setEditAvatarTab('file')}>Rasm yuklash</button>
                 </div>
-                <div style={{ marginTop: '12px' }}>
-                  <label className="form-label" style={{ fontSize: '0.75rem', opacity: 0.8 }}>Yoki Custom Emoji / Rasm URL (Internetdan)</label>
-                  <input
-                    type="text"
-                    className="form-input"
-                    placeholder="Masalan: 🤩 yoki https://example.com/rasm.png"
-                    value={EMOJI_OPTIONS.includes(editStudentEmoji) ? '' : editStudentEmoji}
-                    onChange={(e) => setEditStudentEmoji(e.target.value || EMOJI_OPTIONS[0])}
-                  />
-                </div>
-                <div style={{ marginTop: '12px' }}>
-                  <label className="form-label" style={{ fontSize: '0.75rem', opacity: 0.8 }}>Yoki Rasm Faylini Yuklash (Kompyuterdan)</label>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    className="form-input"
-                    onChange={(e) => {
-                      const file = e.target.files[0];
-                      if (file) {
-                        const reader = new FileReader();
-                        reader.onloadend = () => {
-                          setEditStudentEmoji(reader.result);
-                        };
-                        reader.readAsDataURL(file);
-                      }
-                    }}
-                  />
-                </div>
+
+                {editAvatarTab === 'emoji' && (
+                  <div className="emoji-picker-grid">
+                    {EMOJI_OPTIONS.map((emoji) => (
+                      <button
+                        key={emoji}
+                        type="button"
+                        className={`emoji-btn ${editStudentEmoji === emoji ? 'selected' : ''}`}
+                        onClick={() => setEditStudentEmoji(emoji)}
+                      >
+                        {emoji}
+                      </button>
+                    ))}
+                  </div>
+                )}
+
+                {editAvatarTab === 'url' && (
+                  <div>
+                    <label className="form-label" style={{ fontSize: '0.75rem', opacity: 0.8 }}>Rasm URL manzili yoki maxsus emoji</label>
+                    <input
+                      type="text"
+                      className="form-input"
+                      placeholder="Masalan: 🤩 yoki https://example.com/rasm.png"
+                      value={EMOJI_OPTIONS.includes(editStudentEmoji) ? '' : editStudentEmoji}
+                      onChange={(e) => setEditStudentEmoji(e.target.value || EMOJI_OPTIONS[0])}
+                    />
+                  </div>
+                )}
+
+                {editAvatarTab === 'file' && (
+                  <div>
+                    <label className="form-label" style={{ fontSize: '0.75rem', opacity: 0.8 }}>Kompyuterdan rasm yuklash</label>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="form-input"
+                      onChange={(e) => {
+                        const file = e.target.files[0];
+                        if (file) {
+                          const reader = new FileReader();
+                          reader.onloadend = () => {
+                            setEditStudentEmoji(reader.result);
+                          };
+                          reader.readAsDataURL(file);
+                        }
+                      }}
+                    />
+                  </div>
+                )}
               </div>
 
               {/* Color Picker */}
@@ -578,7 +622,8 @@ const GroupDetail = ({ group, students, transactions, quickTags, onBack, onAddSt
               </div>
             </form>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
       <style>{`
         .group-detail-container {
@@ -750,68 +795,6 @@ const GroupDetail = ({ group, students, transactions, quickTags, onBack, onAddSt
           color: #000000;
         }
 
-        /* Avatar Picker styles */
-        .emoji-picker-grid {
-          display: grid;
-          grid-template-columns: repeat(auto-fill, minmax(36px, 1fr));
-          gap: 8px;
-          max-height: 120px;
-          overflow-y: auto;
-          padding: 6px;
-          background: rgba(255, 255, 255, 0.03);
-          border-radius: 12px;
-          border: 1px solid var(--glass-border);
-        }
-
-        .emoji-btn {
-          font-size: 1.5rem;
-          background: transparent;
-          border: none;
-          cursor: pointer;
-          border-radius: 8px;
-          padding: 6px;
-          transition: all var(--transition-fast);
-        }
-
-        .emoji-btn:hover {
-          background: #E7FF56;
-          transform: scale(1.15);
-        }
-
-        .emoji-btn.selected {
-          background: var(--apple-blue);
-          transform: scale(1.1);
-        }
-
-        .color-picker-grid {
-          display: grid;
-          grid-template-columns: repeat(auto-fill, minmax(36px, 1fr));
-          gap: 8px;
-          padding: 6px;
-          background: rgba(255, 255, 255, 0.03);
-          border-radius: 12px;
-          border: 1px solid var(--glass-border);
-        }
-
-        .color-btn {
-          aspect-ratio: 1;
-          border-radius: 50%;
-          border: 2px solid transparent;
-          cursor: pointer;
-          transition: all var(--transition-fast);
-        }
-
-        .color-btn:hover {
-          transform: scale(1.15);
-          box-shadow: 0 0 8px #E7FF56;
-        }
-
-        .color-btn.selected {
-          border-color: #fff;
-          transform: scale(1.1);
-          box-shadow: 0 0 10px rgba(255, 255, 255, 0.4);
-        }
-
         /* Score Modal Styles */
         .score-modal {
           max-width: 450px;
@@ -830,36 +813,6 @@ const GroupDetail = ({ group, students, transactions, quickTags, onBack, onAddSt
           font-size: 0.9rem;
           color: var(--text-secondary);
           margin-top: 4px;
-        }
-
-        .quick-tags-picker {
-          display: flex;
-          flex-wrap: wrap;
-          gap: 8px;
-          max-height: 150px;
-          overflow-y: auto;
-          background: rgba(255, 255, 255, 0.03);
-          padding: 10px;
-          border-radius: 12px;
-          border: 1px solid var(--glass-border);
-        }
-
-        .quick-tag-bubble {
-          background: var(--bg-tertiary);
-          color: var(--text-primary);
-          border: 1px solid var(--glass-border);
-          padding: 8px 12px;
-          border-radius: 20px;
-          font-size: 0.85rem;
-          font-weight: 500;
-          cursor: pointer;
-          transition: all var(--transition-fast);
-        }
-
-        .quick-tag-bubble:hover {
-          background: #E7FF56;
-          border-color: #000000;
-          color: #000000;
         }
 
         .empty-students-placeholder {

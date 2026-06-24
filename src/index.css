@@ -77,17 +77,25 @@ body {
   padding-right: env(safe-area-inset-right);
 }
 
-/* When a modal is open — lock body scroll so background doesn't scroll */
+/* When a modal is open — lock body and main-content scroll */
 body:has(.modal-overlay) {
   overflow: hidden;
+}
+
+body:has(.modal-overlay) .main-content {
+  overflow: hidden !important;
 }
 
 /* Mobile: prevent body from scrolling so fixed navbar always stays put */
 @media (max-width: 900px) {
   html, body {
-    overflow: hidden;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
     height: 100%;
     height: 100dvh;
+    overflow: hidden;
     /* Remove body safe-area padding on mobile — handled by main-content & nav */
     padding: 0;
   }
@@ -177,7 +185,7 @@ body:has(.modal-overlay) {
     margin-left: 0;
     padding: 20px 16px;
     /* Safe area: top padding (notch) + bottom padding (home indicator + nav bar) */
-    padding-top: max(20px, env(safe-area-inset-top));
+    padding-top: max(64px, calc(40px + env(safe-area-inset-top)));
     /* Extra space so content doesn't hide behind the fixed bottom nav */
     padding-bottom: calc(72px + env(safe-area-inset-bottom));
     padding-left: max(16px, env(safe-area-inset-left));
@@ -365,20 +373,17 @@ body:has(.modal-overlay) {
 .modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.35);
-  backdrop-filter: blur(4px);
-  -webkit-backdrop-filter: blur(4px);
-  display: flex;
-  justify-content: center;
-  align-items: center;
+  background: rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   z-index: 2000;
-  /* Padding keeps modal away from screen edges on all sides */
-  padding: max(20px, env(safe-area-inset-top))
-           max(16px, env(safe-area-inset-right))
-           max(20px, env(safe-area-inset-bottom))
-           max(16px, env(safe-area-inset-left));
+  padding: 0 max(16px, env(safe-area-inset-right)) 0 max(16px, env(safe-area-inset-left));
   box-sizing: border-box;
   overflow-y: auto;
+  scroll-behavior: smooth;
+  animation: modalBackdropFadeIn 0.2s ease forwards;
+  /* Use native block display to prevent WebKit flex scrollbar calculation bugs */
+  display: block;
 }
 
 /* Modal box */
@@ -386,44 +391,90 @@ body:has(.modal-overlay) {
   position: relative;
   width: 100%;
   max-width: 500px;
+  margin: 80px auto;
   box-sizing: border-box;
   background: #ffffff;
   border: 2px solid #000000;
-  box-shadow: 8px 8px 0px #000000;
-  padding: 28px 28px 20px;
-  /* Never taller than viewport minus edges */
-  max-height: calc(100dvh - 40px);
-  overflow-y: auto;
-  overflow-x: hidden;
-  -webkit-overflow-scrolling: touch;
-  overscroll-behavior: contain;
-  /* Smooth fade in */
-  animation: modalFadeIn 0.18s ease forwards;
+  box-shadow: 10px 10px 0px #000000;
+  padding: 32px 32px 24px;
+  max-height: none;
+  overflow: visible;
+  animation: modalScaleIn 0.25s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
 }
 
-/* On mobile: account for bottom nav bar (64px) */
+/* On mobile: account for navigation bar & virtual keyboard */
 @media (max-width: 900px) {
   .modal-overlay {
-    /* Extra bottom padding = nav bar + home indicator */
-    padding-bottom: calc(64px + env(safe-area-inset-bottom) + 12px);
+    position: absolute;
+    top: var(--viewport-top, 0px);
+    left: var(--viewport-left, 0px);
+    width: var(--viewport-width, 100%);
+    height: var(--viewport-height, 100dvh);
+    right: auto;
+    bottom: auto;
+    padding-top: max(16px, calc(8px + env(safe-area-inset-top)));
+    padding-bottom: calc(280px + env(safe-area-inset-bottom));
   }
 
   .modal-content {
-    max-width: 94%;
-    padding: 20px 18px 16px;
-    max-height: calc(
-      100dvh
-      - 64px
-      - env(safe-area-inset-bottom)
-      - max(20px, env(safe-area-inset-top))
-      - 32px
-    );
+    max-width: 100%;
+    margin: 0 auto 280px;
+    padding: 20px 16px 16px;
     box-shadow: 6px 6px 0px #000000;
   }
 }
 
-@keyframes modalFadeIn {
-  from { opacity: 0; transform: scale(0.97) translateY(8px); }
+/* Avatar Picker Tabs */
+.avatar-tabs-header {
+  display: flex;
+  border: 1px solid #000000;
+  margin-bottom: 12px;
+  background: rgba(0, 0, 0, 0.02);
+}
+
+.avatar-tab-btn {
+  flex: 1;
+  padding: 8px 12px;
+  background: transparent;
+  border: none;
+  font-family: var(--font-family);
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  color: #000000;
+  border-right: 1px solid #000000;
+}
+
+.avatar-tab-btn:last-child {
+  border-right: none;
+}
+
+.avatar-tab-btn:hover {
+  background: var(--accent-neon);
+}
+
+.avatar-tab-btn.active {
+  background: #000000;
+  color: #ffffff;
+}
+
+@keyframes modalBackdropFadeIn {
+  from {
+    background: rgba(0, 0, 0, 0);
+    backdrop-filter: blur(0px);
+    -webkit-backdrop-filter: blur(0px);
+  }
+  to {
+    background: rgba(0, 0, 0, 0.45);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+  }
+}
+
+@keyframes modalScaleIn {
+  from { opacity: 0; transform: scale(0.92) translateY(12px); }
   to   { opacity: 1; transform: scale(1)    translateY(0);   }
 }
 
@@ -439,13 +490,12 @@ body:has(.modal-overlay) {
   color: #000000;
 }
 
-/* Action buttons row — sticky at bottom while scrolling */
+/* Action buttons row */
 .modal-actions {
   display: flex;
   gap: 10px;
-  margin-top: 20px;
-  position: sticky;
-  bottom: 0;
+  margin-top: 24px;
+  position: static;
   background: #ffffff;
   padding-top: 12px;
   border-top: 1.5px solid #000000;
@@ -454,6 +504,118 @@ body:has(.modal-overlay) {
 
 .modal-actions .btn {
   flex: 1;
+}
+
+/* =========================================
+   PICKERS & BUTTONS (Inside Modals)
+   ========================================= */
+
+/* Emoji Picker Grid */
+.emoji-picker-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(42px, 1fr));
+  gap: 8px;
+  padding: 8px;
+  background: rgba(0, 0, 0, 0.02);
+  border: 1px solid #000000;
+  border-radius: 0;
+  max-height: none;
+  overflow: visible;
+}
+
+.emoji-btn {
+  font-size: 1.5rem;
+  background: transparent;
+  border: 1px solid transparent;
+  cursor: pointer;
+  border-radius: 0;
+  padding: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--transition-fast);
+}
+
+.emoji-btn:hover {
+  background: var(--accent-neon);
+  border-color: #000000;
+  transform: scale(1.1);
+}
+
+.emoji-btn.selected {
+  background: #000000;
+  border-color: #000000;
+  color: #ffffff;
+  transform: scale(1.05);
+}
+
+/* Color Picker Grid */
+.color-picker-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(42px, 1fr));
+  gap: 10px;
+  padding: 8px;
+  background: rgba(0, 0, 0, 0.02);
+  border: 1px solid #000000;
+  border-radius: 0;
+}
+
+.color-btn {
+  aspect-ratio: 1;
+  border-radius: 50%;
+  border: 2px solid #000000;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.color-btn:hover {
+  transform: scale(1.15);
+  box-shadow: 0 0 8px var(--accent-neon);
+}
+
+.color-btn.selected {
+  transform: scale(1.1);
+  outline: 2px solid #000000;
+  outline-offset: 3px;
+  box-shadow: 0 0 12px rgba(0, 0, 0, 0.15);
+}
+
+/* Quick Tags Picker */
+.quick-tags-picker {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  background: rgba(0, 0, 0, 0.02);
+  padding: 10px;
+  border: 1px solid #000000;
+  border-radius: 0;
+  max-height: none;
+  overflow: visible;
+}
+
+.quick-tag-bubble {
+  background: #ffffff;
+  color: #000000;
+  border: 1px solid #000000;
+  padding: 8px 14px;
+  border-radius: 0;
+  font-size: 0.85rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.quick-tag-bubble:hover {
+  background: var(--accent-neon);
+  color: #000000;
+  box-shadow: 2px 2px 0px #000000;
+  transform: translate(-1px, -1px);
+}
+
+.quick-tag-bubble:active {
+  transform: translate(1px, 1px);
+  box-shadow: none;
 }
 
 
@@ -648,13 +810,40 @@ body:has(.modal-overlay) {
 }
 
 /* =========================================
-   GLOBAL TOUCH OPTIMIZATIONS
+   GLOBAL TOUCH & FOCUS OPTIMIZATIONS
    ========================================= */
 
-/* Remove blue highlight on tap for all interactive elements */
-button, a, [role="button"] {
+/* Remove default blue highlight on tap for all elements on mobile */
+* {
   -webkit-tap-highlight-color: transparent;
+  -webkit-tap-highlight-color: rgba(0,0,0,0);
+}
+
+button, a, [role="button"] {
   touch-action: manipulation;
+}
+
+/* Remove default browser blue focus rings on mouse/touch clicks */
+button:focus,
+a:focus,
+input:focus,
+select:focus,
+textarea:focus,
+[role="button"]:focus,
+[tabindex]:focus {
+  outline: none;
+}
+
+/* Accessible focus ring for keyboard tab-navigation only */
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+[role="button"]:focus-visible,
+[tabindex]:focus-visible {
+  outline: 2px solid #000000;
+  outline-offset: 2px;
 }
 
 /* Smooth active/press state for all buttons */

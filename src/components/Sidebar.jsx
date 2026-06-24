@@ -287,6 +287,7 @@ const Sidebar = ({ activeTab, setActiveTab, userRole, onLogout }) => {
           will-change: transform;
           /* Prevent tap highlight flash on the bar itself */
           -webkit-tap-highlight-color: transparent;
+          touch-action: none;
         }
 
         .mobile-link {

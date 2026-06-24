@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 
 const GROUP_EMOJI_OPTIONS = ['📁', '💻', '🎨', '🚀', '📚', '🎯', '💡', '🧪', '🧬', '📊', '💼', '🏠'];
 
@@ -18,6 +19,8 @@ const GroupsList = ({ groups, students, onSelectGroup, onAddGroup, onUpdateGroup
   const [editGroupName, setEditGroupName] = useState('');
   const [newGroupIcon, setNewGroupIcon] = useState(GROUP_EMOJI_OPTIONS[0]);
   const [editGroupIcon, setEditGroupIcon] = useState(GROUP_EMOJI_OPTIONS[0]);
+  const [groupIconTab, setGroupIconTab] = useState('emoji');
+  const [editGroupIconTab, setEditGroupIconTab] = useState('emoji');
 
   useEffect(() => {
     const handleKeyDown = (e) => {
@@ -111,6 +114,16 @@ const GroupsList = ({ groups, students, onSelectGroup, onAddGroup, onUpdateGroup
                         setEditingGroup(group);
                         setEditGroupName(group.name);
                         setEditGroupIcon(group.icon || '📁');
+                        const icon = group.icon || '📁';
+                        if (!icon) {
+                          setEditGroupIconTab('emoji');
+                        } else if (icon.startsWith('data:image')) {
+                          setEditGroupIconTab('file');
+                        } else if (icon.startsWith('http') || icon.includes('/') || icon.includes('.')) {
+                          setEditGroupIconTab('url');
+                        } else {
+                          setEditGroupIconTab('emoji');
+                        }
                       }}
                       title="Guruh nomini o'zgartirish"
                     >
@@ -141,7 +154,7 @@ const GroupsList = ({ groups, students, onSelectGroup, onAddGroup, onUpdateGroup
       )}
 
       {/* Add Group Modal */}
-      {showAddModal && (
+      {showAddModal && createPortal(
         <div className="modal-overlay" onClick={() => setShowAddModal(false)}>
           <div className="modal-content glass" onClick={(e) => e.stopPropagation()}>
             <h3 className="modal-title">Yangi Guruh Qo'shish</h3>
@@ -158,51 +171,66 @@ const GroupsList = ({ groups, students, onSelectGroup, onAddGroup, onUpdateGroup
                 />
               </div>
 
-              {/* Icon Picker */}
+              {/* Icon Picker Tabs */}
               <div className="form-group">
-                <label className="form-label">Guruh Iconi</label>
-                <div className="emoji-picker-grid" style={{ gridTemplateColumns: 'repeat(6, 1fr)', gap: '8px', marginBottom: '10px' }}>
-                  {GROUP_EMOJI_OPTIONS.map((emoji) => (
-                    <button
-                      key={emoji}
-                      type="button"
-                      className={`emoji-btn ${newGroupIcon === emoji ? 'selected' : ''}`}
-                      onClick={() => setNewGroupIcon(emoji)}
-                      style={{ fontSize: '1.2rem', padding: '6px' }}
-                    >
-                      {emoji}
-                    </button>
-                  ))}
+                <label className="form-label">Guruh Iconi Turi</label>
+                <div className="avatar-tabs-header">
+                  <button type="button" className={`avatar-tab-btn ${groupIconTab === 'emoji' ? 'active' : ''}`} onClick={() => setGroupIconTab('emoji')}>Emoji</button>
+                  <button type="button" className={`avatar-tab-btn ${groupIconTab === 'url' ? 'active' : ''}`} onClick={() => setGroupIconTab('url')}>Internet URL</button>
+                  <button type="button" className={`avatar-tab-btn ${groupIconTab === 'file' ? 'active' : ''}`} onClick={() => setGroupIconTab('file')}>Rasm yuklash</button>
                 </div>
-                <div style={{ marginTop: '10px' }}>
-                  <label className="form-label" style={{ fontSize: '0.75rem', opacity: 0.8 }}>Yoki Custom Emoji / Rasm URL (Internetdan)</label>
-                  <input
-                    type="text"
-                    className="form-input"
-                    placeholder="Masalan: 🚀 yoki URL"
-                    value={GROUP_EMOJI_OPTIONS.includes(newGroupIcon) ? '' : newGroupIcon}
-                    onChange={(e) => setNewGroupIcon(e.target.value || GROUP_EMOJI_OPTIONS[0])}
-                  />
-                </div>
-                <div style={{ marginTop: '10px' }}>
-                  <label className="form-label" style={{ fontSize: '0.75rem', opacity: 0.8 }}>Yoki Rasm Faylini Yuklash (Kompyuterdan)</label>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    className="form-input"
-                    onChange={(e) => {
-                      const file = e.target.files[0];
-                      if (file) {
-                        const reader = new FileReader();
-                        reader.onloadend = () => {
-                          setNewGroupIcon(reader.result); // Base64
-                        };
-                        reader.readAsDataURL(file);
-                      }
-                    }}
-                  />
-                </div>
+
+                {groupIconTab === 'emoji' && (
+                  <div className="emoji-picker-grid" style={{ gridTemplateColumns: 'repeat(6, 1fr)', gap: '8px', marginBottom: '10px' }}>
+                    {GROUP_EMOJI_OPTIONS.map((emoji) => (
+                      <button
+                        key={emoji}
+                        type="button"
+                        className={`emoji-btn ${newGroupIcon === emoji ? 'selected' : ''}`}
+                        onClick={() => setNewGroupIcon(emoji)}
+                        style={{ fontSize: '1.2rem', padding: '6px' }}
+                      >
+                        {emoji}
+                      </button>
+                    ))}
+                  </div>
+                )}
+
+                {groupIconTab === 'url' && (
+                  <div>
+                    <label className="form-label" style={{ fontSize: '0.75rem', opacity: 0.8 }}>Rasm URL manzili yoki maxsus emoji</label>
+                    <input
+                      type="text"
+                      className="form-input"
+                      placeholder="Masalan: 🚀 yoki URL"
+                      value={GROUP_EMOJI_OPTIONS.includes(newGroupIcon) ? '' : newGroupIcon}
+                      onChange={(e) => setNewGroupIcon(e.target.value || GROUP_EMOJI_OPTIONS[0])}
+                    />
+                  </div>
+                )}
+
+                {groupIconTab === 'file' && (
+                  <div>
+                    <label className="form-label" style={{ fontSize: '0.75rem', opacity: 0.8 }}>Kompyuterdan rasm yuklash</label>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="form-input"
+                      onChange={(e) => {
+                        const file = e.target.files[0];
+                        if (file) {
+                          const reader = new FileReader();
+                          reader.onloadend = () => {
+                            setNewGroupIcon(reader.result); // Base64
+                          };
+                          reader.readAsDataURL(file);
+                        }
+                      }}
+                    />
+                  </div>
+                )}
               </div>
+
               <div className="modal-actions">
                 <button type="button" className="btn btn-secondary scale-active" onClick={() => setShowAddModal(false)}>
                   Bekor qilish
@@ -213,11 +241,12 @@ const GroupsList = ({ groups, students, onSelectGroup, onAddGroup, onUpdateGroup
               </div>
             </form>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* Delete Confirmation Modal */}
-      {confirmDeleteId && (
+      {confirmDeleteId && createPortal(
         <div className="modal-overlay" onClick={() => setConfirmDeleteId(null)}>
           <div className="modal-content glass" onClick={(e) => e.stopPropagation()}>
             <h3 className="modal-title text-red">⚠️ Diqqat! Guruhni o'chirish</h3>
@@ -236,10 +265,11 @@ const GroupsList = ({ groups, students, onSelectGroup, onAddGroup, onUpdateGroup
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
       {/* Edit Group Modal */}
-      {editingGroup && (
+      {editingGroup && createPortal(
         <div className="modal-overlay" onClick={() => setEditingGroup(null)}>
           <div className="modal-content glass" onClick={(e) => e.stopPropagation()}>
             <h3 className="modal-title">Guruh Nomini O'zgartirish</h3>
@@ -256,50 +286,64 @@ const GroupsList = ({ groups, students, onSelectGroup, onAddGroup, onUpdateGroup
                 />
               </div>
 
-              {/* Icon Picker */}
+              {/* Icon Picker Tabs */}
               <div className="form-group">
-                <label className="form-label">Guruh Iconi</label>
-                <div className="emoji-picker-grid" style={{ gridTemplateColumns: 'repeat(6, 1fr)', gap: '8px', marginBottom: '10px' }}>
-                  {GROUP_EMOJI_OPTIONS.map((emoji) => (
-                    <button
-                      key={emoji}
-                      type="button"
-                      className={`emoji-btn ${editGroupIcon === emoji ? 'selected' : ''}`}
-                      onClick={() => setEditGroupIcon(emoji)}
-                      style={{ fontSize: '1.2rem', padding: '6px' }}
-                    >
-                      {emoji}
-                    </button>
-                  ))}
+                <label className="form-label">Guruh Iconi Turi</label>
+                <div className="avatar-tabs-header">
+                  <button type="button" className={`avatar-tab-btn ${editGroupIconTab === 'emoji' ? 'active' : ''}`} onClick={() => setEditGroupIconTab('emoji')}>Emoji</button>
+                  <button type="button" className={`avatar-tab-btn ${editGroupIconTab === 'url' ? 'active' : ''}`} onClick={() => setEditGroupIconTab('url')}>Internet URL</button>
+                  <button type="button" className={`avatar-tab-btn ${editGroupIconTab === 'file' ? 'active' : ''}`} onClick={() => setEditGroupIconTab('file')}>Rasm yuklash</button>
                 </div>
-                <div style={{ marginTop: '10px' }}>
-                  <label className="form-label" style={{ fontSize: '0.75rem', opacity: 0.8 }}>Yoki Custom Emoji / Rasm URL (Internetdan)</label>
-                  <input
-                    type="text"
-                    className="form-input"
-                    placeholder="Masalan: 🚀 yoki URL"
-                    value={GROUP_EMOJI_OPTIONS.includes(editGroupIcon) ? '' : editGroupIcon}
-                    onChange={(e) => setEditGroupIcon(e.target.value || GROUP_EMOJI_OPTIONS[0])}
-                  />
-                </div>
-                <div style={{ marginTop: '10px' }}>
-                  <label className="form-label" style={{ fontSize: '0.75rem', opacity: 0.8 }}>Yoki Rasm Faylini Yuklash (Kompyuterdan)</label>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    className="form-input"
-                    onChange={(e) => {
-                      const file = e.target.files[0];
-                      if (file) {
-                        const reader = new FileReader();
-                        reader.onloadend = () => {
-                          setEditGroupIcon(reader.result); // Base64
-                        };
-                        reader.readAsDataURL(file);
-                      }
-                    }}
-                  />
-                </div>
+
+                {editGroupIconTab === 'emoji' && (
+                  <div className="emoji-picker-grid" style={{ gridTemplateColumns: 'repeat(6, 1fr)', gap: '8px', marginBottom: '10px' }}>
+                    {GROUP_EMOJI_OPTIONS.map((emoji) => (
+                      <button
+                        key={emoji}
+                        type="button"
+                        className={`emoji-btn ${editGroupIcon === emoji ? 'selected' : ''}`}
+                        onClick={() => setEditGroupIcon(emoji)}
+                        style={{ fontSize: '1.2rem', padding: '6px' }}
+                      >
+                        {emoji}
+                      </button>
+                    ))}
+                  </div>
+                )}
+
+                {editGroupIconTab === 'url' && (
+                  <div>
+                    <label className="form-label" style={{ fontSize: '0.75rem', opacity: 0.8 }}>Rasm URL manzili yoki maxsus emoji</label>
+                    <input
+                      type="text"
+                      className="form-input"
+                      placeholder="Masalan: 🚀 yoki URL"
+                      value={GROUP_EMOJI_OPTIONS.includes(editGroupIcon) ? '' : editGroupIcon}
+                      onChange={(e) => setEditGroupIcon(e.target.value || GROUP_EMOJI_OPTIONS[0])}
+                    />
+                  </div>
+                )}
+
+                {editGroupIconTab === 'file' && (
+                  <div>
+                    <label className="form-label" style={{ fontSize: '0.75rem', opacity: 0.8 }}>Kompyuterdan rasm yuklash</label>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="form-input"
+                      onChange={(e) => {
+                        const file = e.target.files[0];
+                        if (file) {
+                          const reader = new FileReader();
+                          reader.onloadend = () => {
+                            setEditGroupIcon(reader.result); // Base64
+                          };
+                          reader.readAsDataURL(file);
+                        }
+                      }}
+                    />
+                  </div>
+                )}
               </div>
               <div className="modal-actions">
                 <button type="button" className="btn btn-secondary scale-active" onClick={() => setEditingGroup(null)}>
@@ -311,7 +355,8 @@ const GroupsList = ({ groups, students, onSelectGroup, onAddGroup, onUpdateGroup
               </div>
             </form>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
       <style>{`
         .groups-list-container {

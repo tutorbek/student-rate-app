@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { exportDatabase, importDatabase, resetDatabase, saveQuickTags } from '../utils/db';
 
 const Settings = ({ quickTags, setQuickTags, onReloadDatabase, showToast }) => {
@@ -168,7 +169,7 @@ const Settings = ({ quickTags, setQuickTags, onReloadDatabase, showToast }) => {
       </div>
 
       {/* Reset Confirmation Modal */}
-      {showResetConfirm && (
+      {showResetConfirm && createPortal(
         <div className="modal-overlay" onClick={() => setShowResetConfirm(false)}>
           <div className="modal-content glass" onClick={(e) => e.stopPropagation()}>
             <h3 className="modal-title text-red">🚨 Butunlay o'chirishni tasdiqlaysizmi?</h3>
@@ -187,7 +188,8 @@ const Settings = ({ quickTags, setQuickTags, onReloadDatabase, showToast }) => {
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       <style>{`
