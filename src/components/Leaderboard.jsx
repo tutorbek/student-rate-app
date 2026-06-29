@@ -149,6 +149,11 @@ const Leaderboard = ({ groups, students, transactions }) => {
         <>
           {hasAnyPoints && (
             <div className="podium-wrapper">
+              <div className="fireworks-container">
+                <div className="firework fw-1"></div>
+                <div className="firework fw-2"></div>
+                <div className="firework fw-3"></div>
+              </div>
               <div className="podium-container-horizontal">
                 {firstPlaces.map((student) => (
                   <div key={student.id} className="premium-podium-card glass">
@@ -366,6 +371,7 @@ const Leaderboard = ({ groups, students, transactions }) => {
           justify-content: center;
           margin: 30px 0 40px 0;
           animation: slide-up 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+          position: relative;
         }
 
         .podium-container-horizontal {
@@ -373,30 +379,130 @@ const Leaderboard = ({ groups, students, transactions }) => {
           flex-wrap: wrap;
           justify-content: center;
           align-items: center;
-          gap: 24px;
+          gap: 20px;
           width: 100%;
           max-width: 1200px;
           padding: 10px;
+          z-index: 2;
+          position: relative;
         }
 
+        /* Continuous subtle fireworks background */
+        .fireworks-container {
+          position: absolute;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          overflow: hidden;
+          pointer-events: none;
+          z-index: 1;
+        }
+
+        .firework {
+          position: absolute;
+          width: 4px;
+          height: 4px;
+          border-radius: 50%;
+          opacity: 0;
+        }
+
+        @keyframes firework-burst-1 {
+          0% {
+            transform: translate(0, 50px) scale(0.5);
+            opacity: 1;
+            box-shadow: 0 0 0 #fff;
+          }
+          30% {
+            transform: translate(0, 0) scale(0.8);
+            opacity: 1;
+            box-shadow: 0 0 0 #fff;
+          }
+          60% {
+            opacity: 0.8;
+          }
+          100% {
+            transform: translate(0, -20px) scale(1);
+            opacity: 0;
+            box-shadow: 
+              -30px -30px 0 #E7FF56,
+              30px -30px 0 #007AFF,
+              -45px 15px 0 #FF2D55,
+              45px 15px 0 #34C759,
+              0 -45px 0 #FF9500,
+              -15px 35px 0 #AF52DE,
+              25px 30px 0 #5AC8FA;
+          }
+        }
+
+        @keyframes firework-burst-2 {
+          0% {
+            transform: translate(0, 40px) scale(0.5);
+            opacity: 1;
+            box-shadow: 0 0 0 #fff;
+          }
+          30% {
+            transform: translate(-30px, -20px) scale(0.8);
+            opacity: 1;
+            box-shadow: 0 0 0 #fff;
+          }
+          60% {
+            opacity: 0.8;
+          }
+          100% {
+            transform: translate(-30px, -30px) scale(1);
+            opacity: 0;
+            box-shadow: 
+              -25px -25px 0 #007AFF,
+              25px -25px 0 #E7FF56,
+              -35px 10px 0 #FF2D55,
+              35px 10px 0 #34C759,
+              0 -35px 0 #FF9500;
+          }
+        }
+
+        .fw-1 {
+          left: 20%;
+          top: 30%;
+          animation: firework-burst-1 4s infinite ease-out;
+          background: #E7FF56;
+        }
+
+        .fw-2 {
+          left: 80%;
+          top: 25%;
+          animation: firework-burst-2 4.5s infinite ease-out;
+          animation-delay: 1.2s;
+          background: #FF2D55;
+        }
+
+        .fw-3 {
+          left: 50%;
+          top: 15%;
+          animation: firework-burst-1 5s infinite ease-out;
+          animation-delay: 2.5s;
+          background: #007AFF;
+        }
+
+        /* Compact Premium Podium Card */
         .premium-podium-card {
           display: flex;
           align-items: center;
-          gap: 20px;
-          padding: 18px 28px;
+          gap: 12px;
+          padding: 10px 18px;
           background: #ffffff;
           border: 3px solid #000000;
-          box-shadow: 6px 6px 0px #000000;
+          box-shadow: 4px 4px 0px #000000;
           position: relative;
-          min-width: 290px;
-          max-width: 480px;
+          min-width: 260px;
+          max-width: 360px;
           width: 100%;
           transition: transform var(--transition-fast), box-shadow var(--transition-fast), background var(--transition-fast);
         }
 
         .premium-podium-card:hover {
-          transform: translate(-3px, -3px);
-          box-shadow: 9px 9px 0px #000000;
+          transform: translate(-2px, -2px);
+          box-shadow: 6px 6px 0px #000000;
           background: #E7FF56;
         }
 
@@ -409,10 +515,10 @@ const Leaderboard = ({ groups, students, transactions }) => {
 
         .premium-crown {
           position: absolute;
-          top: -24px;
-          font-size: 2.3rem;
+          top: -18px;
+          font-size: 1.8rem;
           z-index: 10;
-          filter: drop-shadow(0px 2px 2px rgba(0,0,0,0.25));
+          filter: drop-shadow(0px 2px 2px rgba(0,0,0,0.2));
           animation: crown-float 2s ease-in-out infinite alternate;
         }
 
@@ -423,16 +529,16 @@ const Leaderboard = ({ groups, students, transactions }) => {
 
         .podium-avatar {
           position: relative;
-          width: 56px;
-          height: 56px;
-          font-size: 1.8rem;
+          width: 44px;
+          height: 44px;
+          font-size: 1.5rem;
         }
 
         .first-place-avatar {
-          width: 64px;
-          height: 64px;
-          font-size: 2rem;
-          box-shadow: 0 0 15px rgba(255, 204, 0, 0.3);
+          width: 50px;
+          height: 50px;
+          font-size: 1.6rem;
+          box-shadow: 0 0 10px rgba(255, 204, 0, 0.2);
           border: 2px solid #000000;
         }
 
@@ -440,32 +546,32 @@ const Leaderboard = ({ groups, students, transactions }) => {
           flex: 1;
           display: flex;
           flex-direction: column;
-          gap: 3px;
+          gap: 2px;
           text-align: left;
         }
 
         .podium-details-horizontal .podium-name {
-          font-size: 1.2rem;
+          font-size: 1.05rem;
           font-weight: 800;
           color: #000000;
           margin: 0;
         }
 
         .podium-details-horizontal .podium-group {
-          font-size: 0.8rem;
+          font-size: 0.75rem;
           font-weight: 600;
-          color: rgba(0, 0, 0, 0.65);
+          color: rgba(0, 0, 0, 0.6);
           margin: 0;
         }
 
         .podium-score-badge {
           background: #000000;
           color: #E7FF56;
-          font-size: 1.15rem;
+          font-size: 0.95rem;
           font-weight: 900;
-          padding: 8px 16px;
+          padding: 6px 12px;
           border: 2px solid #000000;
-          box-shadow: 2px 2px 0px #000000;
+          box-shadow: 1px 1px 0px #000000;
           white-space: nowrap;
         }
 
