@@ -39,9 +39,23 @@ const Leaderboard = ({ groups, students, transactions }) => {
       });
 
     // Sort: 1. Score descending, 2. Name ascending
-    return data.sort((a, b) => {
+    const sorted = data.sort((a, b) => {
       if (b.score !== a.score) return b.score - a.score;
       return a.name.localeCompare(b.name);
+    });
+
+    // Assign dense rank
+    let currentRank = 0;
+    let lastScore = null;
+    return sorted.map((student) => {
+      if (student.score !== lastScore) {
+        currentRank += 1;
+        lastScore = student.score;
+      }
+      return {
+        ...student,
+        rank: currentRank,
+      };
     });
   }, [students, groups, timeframe, selectedGroupId, transactions]);
 
@@ -50,17 +64,10 @@ const Leaderboard = ({ groups, students, transactions }) => {
     const list = standings.slice(0, 3);
     // Arrange in order: 2nd place, 1st place, 3rd place for podium display
     const podium = [null, null, null]; // [2nd, 1st, 3rd]
-    if (list[0]) podium[1] = { ...list[0], rank: 1 };
-    if (list[1]) podium[0] = { ...list[1], rank: 2 };
-    if (list[2]) podium[2] = { ...list[2], rank: 3 };
+    if (list[0]) podium[1] = { ...list[0] };
+    if (list[1]) podium[0] = { ...list[1] };
+    if (list[2]) podium[2] = { ...list[2] };
     return podium;
-  }, [standings]);
-
-  const restOfList = useMemo(() => {
-    return standings.slice(3).map((item, index) => ({
-      ...item,
-      rank: index + 4,
-    }));
   }, [standings]);
 
   const hasAnyPoints = useMemo(() => {
@@ -155,7 +162,7 @@ const Leaderboard = ({ groups, students, transactions }) => {
                   <div className="podium-spot spot-2">
                     <div className="avatar-circle podium-avatar" style={{ background: topThree[0].color, overflow: 'hidden' }}>
                       {renderAvatar(topThree[0].emoji)}
-                      <span className="rank-badge rank-2">2</span>
+                      <span className={`rank-badge rank-${topThree[0].rank}`}>{topThree[0].rank}</span>
                     </div>
                     <div className="podium-details">
                       <h4 className="podium-name">{topThree[0].name}</h4>
@@ -173,7 +180,7 @@ const Leaderboard = ({ groups, students, transactions }) => {
                     <div className="podium-crown">👑</div>
                     <div className="avatar-circle podium-avatar first-place-avatar" style={{ background: topThree[1].color, overflow: 'hidden' }}>
                       {renderAvatar(topThree[1].emoji)}
-                      <span className="rank-badge rank-1">1</span>
+                      <span className={`rank-badge rank-${topThree[1].rank}`}>{topThree[1].rank}</span>
                     </div>
                     <div className="podium-details">
                       <h4 className="podium-name">{topThree[1].name}</h4>
@@ -190,7 +197,7 @@ const Leaderboard = ({ groups, students, transactions }) => {
                   <div className="podium-spot spot-3">
                     <div className="avatar-circle podium-avatar" style={{ background: topThree[2].color, overflow: 'hidden' }}>
                       {renderAvatar(topThree[2].emoji)}
-                      <span className="rank-badge rank-3">3</span>
+                      <span className={`rank-badge rank-${topThree[2].rank}`}>{topThree[2].rank}</span>
                     </div>
                     <div className="podium-details">
                       <h4 className="podium-name">{topThree[2].name}</h4>
@@ -214,8 +221,8 @@ const Leaderboard = ({ groups, students, transactions }) => {
               <span className="th-score text-right">Likelar</span>
             </div>
             <div className="standings-body">
-              {standings.map((student, idx) => {
-                const rank = idx + 1;
+              {standings.map((student) => {
+                const rank = student.rank;
                 const isTop3 = rank <= 3 && hasAnyPoints;
                 return (
                   <div key={student.id} className={`standings-row ${isTop3 ? 'row-top3' : ''}`}>
