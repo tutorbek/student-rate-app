@@ -127,7 +127,7 @@ const Leaderboard = ({ groups, students, transactions }) => {
               className={`toggle-btn ${timeframe === 'week' ? 'active' : ''}`}
               onClick={() => setTimeframe('week')}
             >
-              Haftalik
+              Yangi hafta
             </button>
             <button
               className={`toggle-btn ${timeframe === 'lastWeek' ? 'active' : ''}`}

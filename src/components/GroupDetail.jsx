@@ -457,7 +457,7 @@ const GroupDetail = ({ group, students, transactions, quickTags, onBack, onAddSt
             <div className="profile-stats-grid">
               <div className="profile-stat-box">
                 <span className="profile-stat-val">{getStudentScore(profileStudent.id, 'week')}</span>
-                <span className="profile-stat-lbl">Haftalik</span>
+                <span className="profile-stat-lbl">Yangi hafta</span>
               </div>
               <div className="profile-stat-box">
                 <span className="profile-stat-val">{getStudentScore(profileStudent.id, 'month')}</span>
