@@ -59,15 +59,9 @@ const Leaderboard = ({ groups, students, transactions }) => {
     });
   }, [students, groups, timeframe, selectedGroupId, transactions]);
 
-  // Separate Top 3 from the rest
-  const topThree = useMemo(() => {
-    const list = standings.slice(0, 3);
-    // Arrange in order: 2nd place, 1st place, 3rd place for podium display
-    const podium = [null, null, null]; // [2nd, 1st, 3rd]
-    if (list[0]) podium[1] = { ...list[0] };
-    if (list[1]) podium[0] = { ...list[1] };
-    if (list[2]) podium[2] = { ...list[2] };
-    return podium;
+  // Get only 1st place(s) for podium
+  const firstPlaces = useMemo(() => {
+    return standings.filter((s) => s.rank === 1);
   }, [standings]);
 
   const hasAnyPoints = useMemo(() => {
@@ -156,58 +150,23 @@ const Leaderboard = ({ groups, students, transactions }) => {
           {/* Podium for Top 3 */}
           {hasAnyPoints && (
             <div className="podium-wrapper">
-              <div className="podium-container">
-                {/* 2nd Place */}
-                {topThree[0] && (
-                  <div className="podium-spot spot-2">
-                    <div className="avatar-circle podium-avatar" style={{ background: topThree[0].color, overflow: 'hidden' }}>
-                      {renderAvatar(topThree[0].emoji)}
-                      <span className={`rank-badge rank-${topThree[0].rank}`}>{topThree[0].rank}</span>
-                    </div>
-                    <div className="podium-details">
-                      <h4 className="podium-name">{topThree[0].name}</h4>
-                      <p className="podium-group">{topThree[0].groupName}</p>
-                    </div>
-                    <div className="podium-bar bar-2">
-                      <span className="podium-score">+{topThree[0].score}</span>
-                    </div>
-                  </div>
-                )}
-
-                {/* 1st Place */}
-                {topThree[1] && (
-                  <div className="podium-spot spot-1">
+              <div className="podium-container" style={{ justifyContent: 'center' }}>
+                {firstPlaces.map((student) => (
+                  <div key={student.id} className="podium-spot spot-1" style={{ maxWidth: '180px' }}>
                     <div className="podium-crown">👑</div>
-                    <div className="avatar-circle podium-avatar first-place-avatar" style={{ background: topThree[1].color, overflow: 'hidden' }}>
-                      {renderAvatar(topThree[1].emoji)}
-                      <span className={`rank-badge rank-${topThree[1].rank}`}>{topThree[1].rank}</span>
+                    <div className="avatar-circle podium-avatar first-place-avatar" style={{ background: student.color, overflow: 'hidden' }}>
+                      {renderAvatar(student.emoji)}
+                      <span className="rank-badge rank-1">1</span>
                     </div>
                     <div className="podium-details">
-                      <h4 className="podium-name">{topThree[1].name}</h4>
-                      <p className="podium-group">{topThree[1].groupName}</p>
+                      <h4 className="podium-name">{student.name}</h4>
+                      <p className="podium-group">{student.groupName}</p>
                     </div>
                     <div className="podium-bar bar-1">
-                      <span className="podium-score">+{topThree[1].score}</span>
+                      <span className="podium-score">+{student.score}</span>
                     </div>
                   </div>
-                )}
-
-                {/* 3rd Place */}
-                {topThree[2] && (
-                  <div className="podium-spot spot-3">
-                    <div className="avatar-circle podium-avatar" style={{ background: topThree[2].color, overflow: 'hidden' }}>
-                      {renderAvatar(topThree[2].emoji)}
-                      <span className={`rank-badge rank-${topThree[2].rank}`}>{topThree[2].rank}</span>
-                    </div>
-                    <div className="podium-details">
-                      <h4 className="podium-name">{topThree[2].name}</h4>
-                      <p className="podium-group">{topThree[2].groupName}</p>
-                    </div>
-                    <div className="podium-bar bar-3">
-                      <span className="podium-score">+{topThree[2].score}</span>
-                    </div>
-                  </div>
-                )}
+                ))}
               </div>
             </div>
           )}
