@@ -28,6 +28,46 @@ const Dashboard = ({ setActiveTab, onSelectGroup }) => {
   }, [transactions]);
 
   // Find Spotlight Students
+  const lastWeekSpotlight = useMemo(() => {
+    if (students.length === 0) return null;
+    const scoredStudents = students.map(s => ({
+      ...s,
+      score: getStudentScore(s.id, 'lastWeek')
+    })).filter(s => s.score > 0);
+
+    if (scoredStudents.length === 0) return null;
+    scoredStudents.sort((a, b) => b.score - a.score);
+    const topScore = scoredStudents[0].score;
+    const winners = scoredStudents.filter(s => s.score === topScore);
+
+    if (winners.length === 1) {
+      const topStudent = winners[0];
+      const groupName = groups.find(g => g.id === topStudent.groupId)?.name || 'Guruhsiz';
+      return {
+        isTie: false,
+        name: topStudent.name,
+        emoji: topStudent.emoji,
+        color: topStudent.color,
+        score: topScore,
+        groupName,
+        groupId: topStudent.groupId
+      };
+    } else {
+      const names = winners.map(w => w.name).join(' & ');
+      const groupNames = winners.map(w => groups.find(g => g.id === w.groupId)?.name || 'Guruhsiz');
+      const uniqueGroupNames = [...new Set(groupNames)].join(' & ');
+      return {
+        isTie: true,
+        name: names,
+        emoji: '🏆',
+        color: '#E7FF56',
+        score: topScore,
+        groupName: uniqueGroupNames,
+        groupId: null
+      };
+    }
+  }, [students, groups]);
+
   const weeklySpotlight = useMemo(() => {
     if (students.length === 0) return null;
     const scoredStudents = students.map(s => ({
@@ -127,6 +167,31 @@ const Dashboard = ({ setActiveTab, onSelectGroup }) => {
         <section className="spotlight-section">
           <h3 className="section-title">🏆 Hafta va Oy Qahramonlari</h3>
           <div className="spotlight-grid">
+            {/* Last Week's Winner */}
+            <div 
+              className={`glass-card spotlight-card last-week ${lastWeekSpotlight && lastWeekSpotlight.groupId ? 'clickable-card' : ''}`}
+              onClick={() => lastWeekSpotlight && lastWeekSpotlight.groupId && onSelectGroup(lastWeekSpotlight.groupId)}
+              title={lastWeekSpotlight && lastWeekSpotlight.groupId ? "Talaba guruhiga o'tish" : ""}
+            >
+              <div className="spotlight-glow last-week-glow"></div>
+              <div className="spotlight-badge badge-last-week">🏆 O'TGAN HAFTALIK G'OLIB</div>
+              {lastWeekSpotlight ? (
+                <div className="spotlight-user">
+                  <div className="avatar-circle spotlight-avatar" style={{ background: lastWeekSpotlight.color, overflow: 'hidden' }}>
+                    {renderAvatar(lastWeekSpotlight.emoji)}
+                  </div>
+                  <h4 className="spotlight-name" style={{ fontSize: lastWeekSpotlight.isTie ? '1rem' : '1.25rem' }}>{lastWeekSpotlight.name}</h4>
+                  <p className="spotlight-group">{lastWeekSpotlight.groupName}</p>
+                  <div className="spotlight-score">+{lastWeekSpotlight.score} Likelar</div>
+                </div>
+              ) : (
+                <div className="spotlight-empty">
+                  <div className="empty-icon">🏆</div>
+                  <p className="empty-text">O'tgan haftada hech kim ball olmagan.</p>
+                </div>
+              )}
+            </div>
+
             {/* Weekly Spotlight */}
             <div 
               className={`glass-card spotlight-card weekly ${weeklySpotlight ? 'clickable-card' : ''}`}
@@ -312,8 +377,14 @@ const Dashboard = ({ setActiveTab, onSelectGroup }) => {
 
         .spotlight-grid {
           display: grid;
-          grid-template-columns: 1fr 1fr;
+          grid-template-columns: repeat(3, 1fr);
           gap: 20px;
+        }
+
+        @media (max-width: 1000px) {
+          .spotlight-grid {
+            grid-template-columns: 1fr 1fr;
+          }
         }
 
         @media (max-width: 600px) {
@@ -363,6 +434,13 @@ const Dashboard = ({ setActiveTab, onSelectGroup }) => {
           background: #ffffff;
           border: 1px solid #000000;
           color: #000000;
+        }
+
+        .badge-last-week {
+          background: #000000;
+          border: 1px solid #000000;
+          color: #E7FF56;
+          font-weight: 800;
         }
 
         .spotlight-user {

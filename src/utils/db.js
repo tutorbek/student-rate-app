@@ -35,6 +35,22 @@ export const getStartOfMonth = () => {
   return new Date(now.getFullYear(), now.getMonth(), 1);
 };
 
+// Helper: Get Start of Last Week (Monday 00:00 of previous week)
+export const getStartOfLastWeek = () => {
+  const currentMonday = getStartOfWeek();
+  const lastMonday = new Date(currentMonday);
+  lastMonday.setDate(lastMonday.getDate() - 7);
+  return lastMonday;
+};
+
+// Helper: Get End of Last Week (Sunday 23:59:59.999 of previous week)
+export const getEndOfLastWeek = () => {
+  const currentMonday = getStartOfWeek();
+  const lastSunday = new Date(currentMonday);
+  lastSunday.setMilliseconds(lastSunday.getMilliseconds() - 1);
+  return lastSunday;
+};
+
 // --- Groups API ---
 export const getGroups = () => {
   const data = localStorage.getItem(KEYS.GROUPS);
@@ -213,6 +229,17 @@ export const getStudentScore = (studentId, timeframe = 'all') => {
   
   if (timeframe === 'all') {
     return txs.reduce((sum, t) => sum + t.amount, 0);
+  }
+
+  if (timeframe === 'lastWeek') {
+    const startOfLastWeek = getStartOfLastWeek();
+    const endOfLastWeek = getEndOfLastWeek();
+    return txs
+      .filter((t) => {
+        const txDate = new Date(t.timestamp);
+        return txDate >= startOfLastWeek && txDate <= endOfLastWeek;
+      })
+      .reduce((sum, t) => sum + t.amount, 0);
   }
 
   const limitDate = timeframe === 'week' ? getStartOfWeek() : getStartOfMonth();

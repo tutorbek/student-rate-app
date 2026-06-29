@@ -383,7 +383,7 @@ function App() {
           />
         );
       default:
-        return <Dashboard setActiveTab={handleSelectGroup} />;
+        return <Dashboard setActiveTab={handleTabChange} onSelectGroup={handleSelectGroup} />;
     }
   };
 
@@ -421,7 +421,7 @@ function App() {
             </button>
           </form>
         </div>
-        
+
         {toast && (
           <div className="toast-container">
             <div className={`toast toast-${toast.type} glass`}>
