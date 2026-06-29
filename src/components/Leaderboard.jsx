@@ -1,5 +1,118 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { getStudentScore } from '../utils/db';
+
+const Confetti = ({ trigger }) => {
+  const canvasRef = useRef(null);
+
+  useEffect(() => {
+    if (trigger === 0) return;
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    let animationFrameId;
+    let particles = [];
+
+    const colors = [
+      '#FF2D55', '#FF9500', '#FFCC00', '#4CD964', 
+      '#5AC8FA', '#007AFF', '#5856D6', '#E7FF56'
+    ];
+
+    const resizeCanvas = () => {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    };
+    resizeCanvas();
+    window.addEventListener('resize', resizeCanvas);
+
+    const createParticle = () => {
+      const fromLeft = Math.random() > 0.5;
+      return {
+        x: fromLeft ? -10 : canvas.width + 10,
+        y: canvas.height * (0.6 + Math.random() * 0.25),
+        size: Math.random() * 8 + 6,
+        color: colors[Math.floor(Math.random() * colors.length)],
+        speedX: (fromLeft ? 1 : -1) * (Math.random() * 12 + 10),
+        speedY: -(Math.random() * 18 + 12),
+        gravity: 0.35,
+        friction: 0.985,
+        rotation: Math.random() * 360,
+        rotationSpeed: Math.random() * 10 - 5,
+        opacity: 1
+      };
+    };
+
+    // Shoot particles!
+    for (let i = 0; i < 120; i++) {
+      particles.push(createParticle());
+    }
+
+    const animate = () => {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      
+      let alive = false;
+      particles.forEach((p) => {
+        if (p.opacity <= 0) return;
+
+        p.speedX *= p.friction;
+        p.speedY += p.gravity;
+        p.speedY *= p.friction;
+        p.x += p.speedX;
+        p.y += p.speedY;
+        p.rotation += p.rotationSpeed;
+        
+        if (p.y > canvas.height * 0.4) {
+          p.opacity -= 0.012;
+        }
+
+        if (p.opacity > 0 && p.x >= -100 && p.x <= canvas.width + 100 && p.y <= canvas.height + 100) {
+          alive = true;
+          ctx.save();
+          ctx.translate(p.x, p.y);
+          ctx.rotate((p.rotation * Math.PI) / 180);
+          ctx.globalAlpha = p.opacity;
+          ctx.fillStyle = p.color;
+          
+          if (Math.random() > 0.5) {
+            ctx.fillRect(-p.size / 2, -p.size / 4, p.size, p.size / 2);
+          } else {
+            ctx.beginPath();
+            ctx.arc(0, 0, p.size / 2, 0, 2 * Math.PI);
+            ctx.fill();
+          }
+          ctx.restore();
+        }
+      });
+
+      if (alive) {
+        animationFrameId = requestAnimationFrame(animate);
+      } else {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+      }
+    };
+
+    animate();
+
+    return () => {
+      window.removeEventListener('resize', resizeCanvas);
+      cancelAnimationFrame(animationFrameId);
+    };
+  }, [trigger]);
+
+  return (
+    <canvas
+      ref={canvasRef}
+      style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        width: '100vw',
+        height: '100vh',
+        pointerEvents: 'none',
+        zIndex: 9999,
+      }}
+    />
+  );
+};
 
 const renderAvatar = (emoji) => {
   if (!emoji) return '❓';
@@ -13,6 +126,7 @@ const Leaderboard = ({ groups, students, transactions }) => {
   const [timeframe, setTimeframe] = useState('week'); // 'week', 'month', 'all'
   const [selectedGroupId, setSelectedGroupId] = useState('all');
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [confettiTrigger, setConfettiTrigger] = useState(0);
 
   useEffect(() => {
     const handleOutsideClick = (e) => {
@@ -68,8 +182,15 @@ const Leaderboard = ({ groups, students, transactions }) => {
     return standings.some((s) => s.score !== 0);
   }, [standings]);
 
+  useEffect(() => {
+    if (hasAnyPoints) {
+      setConfettiTrigger((prev) => prev + 1);
+    }
+  }, [timeframe, selectedGroupId, hasAnyPoints]);
+
   return (
     <div className="leaderboard-container">
+      <Confetti trigger={confettiTrigger} />
       <div className="page-header flex-col-mobile">
         <div>
           <h2 className="page-title">Leaderboard</h2>
@@ -149,14 +270,14 @@ const Leaderboard = ({ groups, students, transactions }) => {
         <>
           {hasAnyPoints && (
             <div className="podium-wrapper">
-              <div className="fireworks-container">
-                <div className="firework fw-1"></div>
-                <div className="firework fw-2"></div>
-                <div className="firework fw-3"></div>
-              </div>
               <div className="podium-container-horizontal">
                 {firstPlaces.map((student) => (
-                  <div key={student.id} className="premium-podium-card glass">
+                  <div 
+                    key={student.id} 
+                    className="premium-podium-card glass"
+                    onClick={() => setConfettiTrigger(prev => prev + 1)}
+                    title="Tabriklash uchun bosing! 🎉"
+                  >
                     <div className="podium-crown-container">
                       <span className="premium-crown">👑</span>
                       <div className="avatar-circle podium-avatar first-place-avatar" style={{ background: student.color, overflow: 'hidden' }}>
@@ -387,116 +508,20 @@ const Leaderboard = ({ groups, students, transactions }) => {
           position: relative;
         }
 
-        /* Continuous subtle fireworks background */
-        .fireworks-container {
-          position: absolute;
-          top: 0;
-          left: 0;
-          width: 100%;
-          height: 100%;
-          overflow: hidden;
-          pointer-events: none;
-          z-index: 1;
-        }
-
-        .firework {
-          position: absolute;
-          width: 4px;
-          height: 4px;
-          border-radius: 50%;
-          opacity: 0;
-        }
-
-        @keyframes firework-burst-1 {
-          0% {
-            transform: translate(0, 50px) scale(0.5);
-            opacity: 1;
-            box-shadow: 0 0 0 #fff;
-          }
-          30% {
-            transform: translate(0, 0) scale(0.8);
-            opacity: 1;
-            box-shadow: 0 0 0 #fff;
-          }
-          60% {
-            opacity: 0.8;
-          }
-          100% {
-            transform: translate(0, -20px) scale(1);
-            opacity: 0;
-            box-shadow: 
-              -30px -30px 0 #E7FF56,
-              30px -30px 0 #007AFF,
-              -45px 15px 0 #FF2D55,
-              45px 15px 0 #34C759,
-              0 -45px 0 #FF9500,
-              -15px 35px 0 #AF52DE,
-              25px 30px 0 #5AC8FA;
-          }
-        }
-
-        @keyframes firework-burst-2 {
-          0% {
-            transform: translate(0, 40px) scale(0.5);
-            opacity: 1;
-            box-shadow: 0 0 0 #fff;
-          }
-          30% {
-            transform: translate(-30px, -20px) scale(0.8);
-            opacity: 1;
-            box-shadow: 0 0 0 #fff;
-          }
-          60% {
-            opacity: 0.8;
-          }
-          100% {
-            transform: translate(-30px, -30px) scale(1);
-            opacity: 0;
-            box-shadow: 
-              -25px -25px 0 #007AFF,
-              25px -25px 0 #E7FF56,
-              -35px 10px 0 #FF2D55,
-              35px 10px 0 #34C759,
-              0 -35px 0 #FF9500;
-          }
-        }
-
-        .fw-1 {
-          left: 20%;
-          top: 30%;
-          animation: firework-burst-1 4s infinite ease-out;
-          background: #E7FF56;
-        }
-
-        .fw-2 {
-          left: 80%;
-          top: 25%;
-          animation: firework-burst-2 4.5s infinite ease-out;
-          animation-delay: 1.2s;
-          background: #FF2D55;
-        }
-
-        .fw-3 {
-          left: 50%;
-          top: 15%;
-          animation: firework-burst-1 5s infinite ease-out;
-          animation-delay: 2.5s;
-          background: #007AFF;
-        }
-
-        /* Compact Premium Podium Card */
+        /* Extra Compact Premium Podium Card */
         .premium-podium-card {
           display: flex;
           align-items: center;
-          gap: 12px;
-          padding: 10px 18px;
+          gap: 10px;
+          padding: 8px 14px;
           background: #ffffff;
           border: 3px solid #000000;
           box-shadow: 4px 4px 0px #000000;
           position: relative;
-          min-width: 260px;
-          max-width: 360px;
+          min-width: 240px;
+          max-width: 320px;
           width: 100%;
+          cursor: pointer;
           transition: transform var(--transition-fast), box-shadow var(--transition-fast), background var(--transition-fast);
         }
 
@@ -515,8 +540,8 @@ const Leaderboard = ({ groups, students, transactions }) => {
 
         .premium-crown {
           position: absolute;
-          top: -18px;
-          font-size: 1.8rem;
+          top: -15px;
+          font-size: 1.6rem;
           z-index: 10;
           filter: drop-shadow(0px 2px 2px rgba(0,0,0,0.2));
           animation: crown-float 2s ease-in-out infinite alternate;
@@ -529,15 +554,15 @@ const Leaderboard = ({ groups, students, transactions }) => {
 
         .podium-avatar {
           position: relative;
-          width: 44px;
-          height: 44px;
-          font-size: 1.5rem;
+          width: 36px;
+          height: 36px;
+          font-size: 1.2rem;
         }
 
         .first-place-avatar {
-          width: 50px;
-          height: 50px;
-          font-size: 1.6rem;
+          width: 42px;
+          height: 42px;
+          font-size: 1.3rem;
           box-shadow: 0 0 10px rgba(255, 204, 0, 0.2);
           border: 2px solid #000000;
         }
@@ -551,14 +576,14 @@ const Leaderboard = ({ groups, students, transactions }) => {
         }
 
         .podium-details-horizontal .podium-name {
-          font-size: 1.05rem;
+          font-size: 0.95rem;
           font-weight: 800;
           color: #000000;
           margin: 0;
         }
 
         .podium-details-horizontal .podium-group {
-          font-size: 0.75rem;
+          font-size: 0.7rem;
           font-weight: 600;
           color: rgba(0, 0, 0, 0.6);
           margin: 0;
@@ -567,9 +592,9 @@ const Leaderboard = ({ groups, students, transactions }) => {
         .podium-score-badge {
           background: #000000;
           color: #E7FF56;
-          font-size: 0.95rem;
+          font-size: 0.9rem;
           font-weight: 900;
-          padding: 6px 12px;
+          padding: 4px 10px;
           border: 2px solid #000000;
           box-shadow: 1px 1px 0px #000000;
           white-space: nowrap;
