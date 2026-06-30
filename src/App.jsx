@@ -473,6 +473,18 @@ function App() {
     );
   }
 
+  // Show full screen loading animation if authenticated but database load is in progress and cache is empty
+  const isInitialLoading = isAuthenticated && !isLoaded && groups.length === 0;
+
+  if (isInitialLoading) {
+    return (
+      <div className="full-screen-loader">
+        <div className="loader-spinner"></div>
+        <p className="loader-text">Hozir, Шесть секунд</p>
+      </div>
+    );
+  }
+
   return (
     <div className="app-container">
       {/* Dynamic Ambient Background Glows */}
