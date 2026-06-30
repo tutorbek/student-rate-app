@@ -40,16 +40,35 @@ const initDb = () => {
   }
 };
 
-const ADMIN_PASSWORD = 'OzimSila';
-const STUDENT_PASSWORD = 'studentman';
+const CREDENTIALS = {
+  // Teacher 1 (User)
+  'insight': { role: 'teacher' },
+  'ozimsila': { role: 'teacher' },
+  'studentman': { role: 'student' },
+
+  // Teacher 2
+  'quyosh': { role: 'teacher' },
+  'salombro': { role: 'student' },
+
+  // Teacher 3
+  'hehehe': { role: 'teacher' },
+  'menman': { role: 'student' },
+
+  // Teacher 4
+  'simsim': { role: 'teacher' },
+  'nimagap': { role: 'student' },
+};
 
 // API: Verify password
 app.post('/api/auth', (req, res) => {
   const { password } = req.body;
-  if (password === ADMIN_PASSWORD) {
-    res.json({ success: true, role: 'teacher' });
-  } else if (password === STUDENT_PASSWORD) {
-    res.json({ success: true, role: 'student' });
+  if (!password) {
+    return res.status(400).json({ success: false, error: "Parol kiritilmagan!" });
+  }
+  const cleanPassword = password.trim().toLowerCase();
+  const match = CREDENTIALS[cleanPassword];
+  if (match) {
+    res.json({ success: true, role: match.role });
   } else {
     res.status(401).json({ success: false, error: "Noto'g'ri parol!" });
   }

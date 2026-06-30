@@ -53,6 +53,9 @@ function App() {
   const [userRole, setUserRole] = useState(() => {
     return localStorage.getItem('rsa_role') || 'student';
   });
+  const [teacherId, setTeacherId] = useState(() => {
+    return localStorage.getItem('rsa_teacher_id') || null;
+  });
   const [loginPassword, setLoginPassword] = useState('');
   const [loginError, setLoginError] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -67,24 +70,39 @@ function App() {
     setLoginLoading(true);
     setLoginError('');
 
-    // Parol to'g'ridan-to'g'ri frontendda tekshiriladi (server kerak emas)
-    const TEACHER_PASSWORD = 'OzimSila';
-    const STUDENT_PASSWORD = 'studentman';
+    const CREDENTIALS = {
+      // Teacher 1 (User)
+      'insight': { role: 'teacher', teacherId: 'teacher1' },
+      'ozimsila': { role: 'teacher', teacherId: 'teacher1' }, // backward compatibility
+      'studentman': { role: 'student', teacherId: 'teacher1' },
+
+      // Teacher 2
+      'quyosh': { role: 'teacher', teacherId: 'teacher2' },
+      'salombro': { role: 'student', teacherId: 'teacher2' },
+
+      // Teacher 3
+      'hehehe': { role: 'teacher', teacherId: 'teacher3' },
+      'menman': { role: 'student', teacherId: 'teacher3' },
+
+      // Teacher 4
+      'simsim': { role: 'teacher', teacherId: 'teacher4' },
+      'nimagap': { role: 'student', teacherId: 'teacher4' },
+    };
+
+    const passwordClean = loginPassword.trim().toLowerCase();
+    const match = CREDENTIALS[passwordClean];
 
     setTimeout(() => {
-      let role = null;
-      if (loginPassword === TEACHER_PASSWORD) {
-        role = 'teacher';
-      } else if (loginPassword === STUDENT_PASSWORD) {
-        role = 'student';
-      }
-
-      if (role) {
+      if (match) {
         localStorage.setItem('rsa_authenticated', 'true');
-        localStorage.setItem('rsa_role', role);
+        localStorage.setItem('rsa_role', match.role);
+        localStorage.setItem('rsa_teacher_id', match.teacherId);
+        
         setIsAuthenticated(true);
-        setUserRole(role);
-        if (role === 'student') {
+        setUserRole(match.role);
+        setTeacherId(match.teacherId);
+        
+        if (match.role === 'student') {
           setActiveTab('leaderboard');
         } else {
           setActiveTab('dashboard');
@@ -136,11 +154,15 @@ function App() {
     setToast({ id, message, type });
   };
 
-  // Load database from Firestore on mount, fallback to localStorage
+  // Load database from Firestore when authenticated and teacherId is ready
   useEffect(() => {
+    if (!isAuthenticated || !teacherId) {
+      setIsLoaded(false);
+      return;
+    }
     const load = async () => {
       setIsSyncing(true);
-      const data = await loadFromFirestore();
+      const data = await loadFromFirestore(teacherId);
       if (data) {
         setGroups(data.groups || []);
         setStudents(data.students || []);
@@ -162,11 +184,11 @@ function App() {
       setIsSyncing(false);
     };
     load();
-  }, []);
+  }, [isAuthenticated, teacherId]);
 
   // Save to Firestore whenever state changes
   useEffect(() => {
-    if (!isLoaded) return;
+    if (!isLoaded || !isAuthenticated || !teacherId) return;
 
     const db = { groups, students, transactions, quickTags };
 
@@ -177,10 +199,10 @@ function App() {
     localStorage.setItem('rsa_quick_tags', JSON.stringify(quickTags));
 
     // Save to Firestore (cross-device sync)
-    saveToFirestore(db).catch((err) => {
+    saveToFirestore(teacherId, db).catch((err) => {
       console.error('[Firestore] Auto-save failed:', err);
     });
-  }, [groups, students, transactions, quickTags, isLoaded]);
+  }, [groups, students, transactions, quickTags, isLoaded, isAuthenticated, teacherId]);
 
   // Clear toast after timeout
   useEffect(() => {
@@ -227,8 +249,9 @@ function App() {
 
   // Reload data from Firestore (for Import/Reset)
   const reloadDatabase = useCallback(async () => {
+    if (!teacherId) return;
     setIsSyncing(true);
-    const data = await loadFromFirestore();
+    const data = await loadFromFirestore(teacherId);
     if (data) {
       setGroups(data.groups || []);
       setStudents(data.students || []);
@@ -242,7 +265,7 @@ function App() {
     }
     setSelectedGroupId(null);
     setIsSyncing(false);
-  }, []);
+  }, [teacherId]);
 
   // Actions
   const handleAddGroup = (name, icon) => {
@@ -307,8 +330,22 @@ function App() {
   const handleLogout = () => {
     localStorage.removeItem('rsa_authenticated');
     localStorage.removeItem('rsa_role');
+    localStorage.removeItem('rsa_teacher_id');
     localStorage.removeItem('rsa_active_tab');
+    
+    // Clear localized caches to prevent cross-teacher leakage
+    localStorage.removeItem('rsa_groups');
+    localStorage.removeItem('rsa_students');
+    localStorage.removeItem('rsa_transactions');
+    localStorage.removeItem('rsa_quick_tags');
+
+    setGroups([]);
+    setStudents([]);
+    setTransactions([]);
+    setQuickTags([]);
+    
     setIsAuthenticated(false);
+    setTeacherId(null);
     setUserRole('student');
     setActiveTab('dashboard');
     setLoginPassword('');
@@ -391,7 +428,7 @@ function App() {
     return (
       <div className="login-wrapper">
         <div className="login-card glass">
-          <h2 className="login-title">INSIGHTPLUS</h2>
+          <h2 className="login-title">epchil  robot</h2>
           <p className="login-subtitle">Tizimga kirish uchun parolni kiriting</p>
           <form onSubmit={handleLoginSubmit}>
             <div className="form-group">

@@ -73,7 +73,7 @@ const Sidebar = ({ activeTab, setActiveTab, userRole, onLogout }) => {
       {/* Desktop Sidebar */}
       <aside className="sidebar glass">
         <div className="sidebar-logo">
-          <h1 className="logo-text">InsightPlus</h1>
+          <h1 className="logo-text">epchil  robot</h1>
         </div>
         <nav className="sidebar-nav">
           {filteredMenuItems.map((item) => (

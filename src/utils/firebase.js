@@ -14,7 +14,7 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 export const firestore = getFirestore(app);
 
-const DB_DOC = () => doc(firestore, 'appdata', 'main');
+const DB_DOC = (teacherId) => doc(firestore, 'appdata', teacherId || 'main');
 
 const DEFAULT_DATA = {
   groups: [],
@@ -31,17 +31,30 @@ const DEFAULT_DATA = {
 };
 
 /**
- * Load all app data from Firestore.
+ * Load all app data from Firestore for a specific teacher.
  * Returns the data object or null on error.
  */
-export const loadFromFirestore = async () => {
+export const loadFromFirestore = async (teacherId) => {
   try {
-    const snap = await getDoc(DB_DOC());
+    const activeDoc = DB_DOC(teacherId);
+    const snap = await getDoc(activeDoc);
     if (snap.exists()) {
       return snap.data();
     }
+    
+    // First time initializing this teacher — if it's teacher1, check if we can migrate from 'main'
+    if (teacherId === 'teacher1') {
+      const mainSnap = await getDoc(DB_DOC('main'));
+      if (mainSnap.exists()) {
+        const mainData = mainSnap.data();
+        await setDoc(activeDoc, mainData);
+        console.log('[Firestore] Migrated old global data to teacher1 successfully.');
+        return mainData;
+      }
+    }
+
     // First time — initialize with defaults
-    await setDoc(DB_DOC(), DEFAULT_DATA);
+    await setDoc(activeDoc, DEFAULT_DATA);
     return DEFAULT_DATA;
   } catch (err) {
     console.error('[Firestore] Load failed:', err);
@@ -50,12 +63,13 @@ export const loadFromFirestore = async () => {
 };
 
 /**
- * Save all app data to Firestore.
+ * Save all app data to Firestore for a specific teacher.
  * Returns true on success, false on error.
  */
-export const saveToFirestore = async (data) => {
+export const saveToFirestore = async (teacherId, data) => {
   try {
-    await setDoc(DB_DOC(), data);
+    if (!teacherId) return false;
+    await setDoc(DB_DOC(teacherId), data);
     return true;
   } catch (err) {
     console.error('[Firestore] Save failed:', err);
