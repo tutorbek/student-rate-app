@@ -138,10 +138,10 @@ function App() {
   }, [isAuthenticated]);
 
   // Sync state
-  const [groups, setGroups] = useState([]);
-  const [students, setStudents] = useState([]);
-  const [transactions, setTransactions] = useState([]);
-  const [quickTags, setQuickTags] = useState([]);
+  const [groups, setGroups] = useState(() => getGroups());
+  const [students, setStudents] = useState(() => getStudents());
+  const [transactions, setTransactions] = useState(() => getTransactions());
+  const [quickTags, setQuickTags] = useState(() => getQuickTags());
   const [isLoaded, setIsLoaded] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
 
