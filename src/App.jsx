@@ -78,6 +78,15 @@ function App() {
   const [loginError, setLoginError] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loginLoading, setLoginLoading] = useState(false);
+  const [isLoginStyleReady, setIsLoginStyleReady] = useState(false);
+
+  useEffect(() => {
+    if (isAuthenticated) return;
+    const timer = setTimeout(() => {
+      setIsLoginStyleReady(true);
+    }, 120);
+    return () => clearTimeout(timer);
+  }, [isAuthenticated]);
 
   const handleLoginSubmit = async (e) => {
     e.preventDefault();
@@ -845,8 +854,28 @@ function App() {
   };
 
   if (!isAuthenticated) {
+    if (!isLoginStyleReady) {
+      return (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: '#FFFFFF',
+          zIndex: 99999
+        }} />
+      );
+    }
+
     return (
-      <div className="bg-stark-white text-deep-void font-sans antialiased min-h-screen flex flex-col justify-between w-full">
+      <div 
+        className="bg-stark-white text-deep-void font-sans antialiased min-h-screen flex flex-col justify-between w-full"
+        style={{
+          opacity: isLoginStyleReady ? 1 : 0,
+          transition: 'opacity 0.15s ease-in'
+        }}
+      >
         {/* Top Floating Header */}
         <header className="w-full bg-stark-white border-b-2 border-deep-void px-6 py-4 flex justify-between items-center sticky top-0 z-50">
           <div className="flex items-center gap-2">
