@@ -63,7 +63,17 @@ const Sidebar = ({ activeTab, setActiveTab, userRole, onLogout }) => {
 
   const filteredMenuItems = menuItems.filter((item) => {
     if (userRole === 'student') {
-      return item.id === 'leaderboard' || item.id === 'history' || item.id === 'settings';
+      // Student: leaderboard, history only (no settings - they use nav logout)
+      return item.id === 'leaderboard' || item.id === 'history';
+    }
+    return true;
+  });
+
+  // Mobile nav items: teacher has all menu items but NO logout button
+  // student has leaderboard + history + logout button
+  const mobileMenuItems = menuItems.filter((item) => {
+    if (userRole === 'student') {
+      return item.id === 'leaderboard' || item.id === 'history';
     }
     return true;
   });
@@ -107,7 +117,7 @@ const Sidebar = ({ activeTab, setActiveTab, userRole, onLogout }) => {
 
       {/* Mobile Bottom Navigation Bar */}
       <nav className="mobile-nav glass">
-        {filteredMenuItems.map((item) => (
+        {mobileMenuItems.map((item) => (
           <button
             key={item.id}
             className={`mobile-link scale-active ${activeTab === item.id ? 'active' : ''}`}
@@ -118,20 +128,23 @@ const Sidebar = ({ activeTab, setActiveTab, userRole, onLogout }) => {
             <span className="mobile-label">{item.label}</span>
           </button>
         ))}
-        <button
-          className="mobile-link scale-active mobile-logout"
-          onClick={onLogout}
-          title="Chiqish"
-        >
-          <span className="mobile-icon">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-              <polyline points="16 17 21 12 16 7" />
-              <line x1="21" y1="12" x2="9" y2="12" />
-            </svg>
-          </span>
-          <span className="mobile-label">Chiqish</span>
-        </button>
+        {/* Student: show logout button in nav bar */}
+        {userRole === 'student' && (
+          <button
+            className="mobile-link scale-active mobile-logout"
+            onClick={onLogout}
+            title="Chiqish"
+          >
+            <span className="mobile-icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                <polyline points="16 17 21 12 16 7" />
+                <line x1="21" y1="12" x2="9" y2="12" />
+              </svg>
+            </span>
+            <span className="mobile-label">Chiqish</span>
+          </button>
+        )}
       </nav>
 
       {/* Sidebar and Mobile Nav CSS */}

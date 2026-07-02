@@ -17,7 +17,9 @@ const Settings = ({
   onPermanentlyDeleteStudent,
   snapshots = [],
   onRollback,
-  triggerSilentBackupDownload
+  triggerSilentBackupDownload,
+  userRole,
+  onLogout
 }) => {
   const [newTag, setNewTag] = useState('');
   const [showResetConfirm, setShowResetConfirm] = useState(false);
@@ -104,6 +106,33 @@ const Settings = ({
     setShowResetConfirm(false);
   };
 
+  // Student mode: only show logout
+  if (userRole === 'student') {
+    return (
+      <div className="settings-container">
+        <div className="page-header">
+          <div>
+            <h2 className="page-title">Sozlamalar</h2>
+          </div>
+        </div>
+        <div className="settings-grid">
+          <section className="glass-card settings-section">
+            <h3 className="section-subtitle">🚪 Akkauntdan chiqish</h3>
+            <p className="section-desc">Tizimdan chiqish va boshqa akkaunt bilan kirish.</p>
+            <button className="btn btn-danger scale-active settings-logout-btn" onClick={onLogout}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                <polyline points="16 17 21 12 16 7" />
+                <line x1="21" y1="12" x2="9" y2="12" />
+              </svg>
+              Tizimdan chiqish
+            </button>
+          </section>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="settings-container">
       <div className="page-header">
@@ -111,6 +140,14 @@ const Settings = ({
           <h2 className="page-title">Sozlamalar</h2>
           <p className="page-subtitle">Zaxiralash, izoh shablonlari va tizimni boshqarish</p>
         </div>
+        <button className="btn btn-danger scale-active settings-logout-btn" onClick={onLogout}>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+            <polyline points="16 17 21 12 16 7" />
+            <line x1="21" y1="12" x2="9" y2="12" />
+          </svg>
+          Chiqish
+        </button>
       </div>
 
       <div className="settings-grid">
@@ -376,6 +413,20 @@ const Settings = ({
           display: flex;
           gap: 12px;
           margin-bottom: 20px;
+        }
+
+        /* Teacher logout: hide on desktop (sidebar has it), show on mobile */
+        .settings-logout-btn {
+          display: none;
+          align-items: center;
+          gap: 10px;
+          white-space: nowrap;
+        }
+
+        @media (max-width: 900px) {
+          .settings-logout-btn {
+            display: flex;
+          }
         }
 
         @media (max-width: 480px) {
