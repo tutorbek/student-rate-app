@@ -877,7 +877,7 @@ function App() {
         }}
       >
         {/* Top Floating Header */}
-        <header className="w-full bg-stark-white border-b-2 border-deep-void px-6 py-4 flex justify-between items-center sticky top-0 z-50">
+        <header className="login-header-brutal w-full bg-stark-white border-b-2 border-deep-void px-6 py-4 flex justify-between items-center sticky top-0 z-50">
           <div className="flex items-center gap-2">
             <h1 className="text-xl md:text-2xl font-black tracking-tighter uppercase select-none">
               EPCHIL <span className="text-deep-void bg-cyber-yellow px-2 py-0.5 border border-deep-void">ROBOT</span>
@@ -889,10 +889,10 @@ function App() {
         </header>
 
         {/* Main Layout Container */}
-        <main className="flex-grow flex flex-col lg:flex-row relative">
+        <main className="login-main-brutal flex-grow flex flex-col lg:flex-row relative">
           
           {/* Left Section: Educational Story */}
-          <section className="w-full lg:w-1/2 bg-cyber-yellow border-b-2 lg:border-b-0 lg:border-r-2 border-deep-void flex flex-col justify-center p-6 sm:p-12 md:p-16 relative overflow-hidden min-h-[450px] lg:min-h-0">
+          <section className="login-left-brutal w-full lg:w-1/2 bg-cyber-yellow border-b-2 lg:border-b-0 lg:border-r-2 border-deep-void flex flex-col justify-center p-6 sm:p-12 md:p-16 relative overflow-hidden min-h-[450px] lg:min-h-0">
             {/* Atmospheric Pattern */}
             <div className="absolute inset-0 opacity-10 pointer-events-none custom-pattern"></div>
             
@@ -950,14 +950,14 @@ function App() {
           </section>
           
           {/* Right Section: Login Form Box with Interactive Particles Background */}
-          <section className="w-full lg:w-1/2 bg-muted-gray flex items-center justify-center p-4 sm:p-8 md:p-12 lg:p-16 relative">
+          <section className="login-right-brutal w-full lg:w-1/2 bg-muted-gray flex items-center justify-center p-4 sm:p-8 md:p-12 lg:p-16 relative">
             
             {/* Dynamic Like Particles Engine Cover Layer */}
             <div id="like-particles-container"></div>
             
             <div className="w-full max-w-md my-auto relative z-10">
               {/* Brutalist Login Box Card */}
-              <div className="bg-stark-white border-2 border-deep-void p-6 sm:p-10 relative overflow-hidden hard-shadow-lg rounded-none">
+              <div className="login-card-brutal bg-stark-white border-2 border-deep-void p-6 sm:p-10 relative overflow-hidden hard-shadow-lg rounded-none">
                 
                 {/* Form Header */}
                 <div className="text-center mb-8">
@@ -978,7 +978,7 @@ function App() {
                       required
                       value={loginPassword}
                       onChange={(e) => setLoginPassword(e.target.value)}
-                      className="w-full h-14 bg-stark-white border-2 border-deep-void px-4 pr-12 rounded-none focus:ring-0 focus:outline-none input-focus-effect font-mono tracking-widest text-lg transition-all"
+                      className="login-input-brutal w-full h-14 bg-stark-white border-2 border-deep-void px-4 pr-12 rounded-none focus:ring-0 focus:outline-none input-focus-effect font-mono tracking-widest text-lg transition-all"
                       autoFocus
                     />
                     <label 
@@ -1004,7 +1004,7 @@ function App() {
                   <button 
                     type="submit" 
                     disabled={loginLoading}
-                    className="w-full h-14 bg-deep-void text-stark-white font-bold text-sm md:text-base border-2 border-cyber-yellow uppercase tracking-widest transition-all hard-shadow-btn flex items-center justify-center gap-2 rounded-none group"
+                    className="login-btn-brutal w-full h-14 bg-deep-void text-stark-white font-bold text-sm md:text-base border-2 border-cyber-yellow uppercase tracking-widest transition-all hard-shadow-btn flex items-center justify-center gap-2 rounded-none group"
                   >
                     <span>{loginLoading ? "TEKSHIRILMOQDA..." : "KIRISH"}</span>
                     <span className="material-symbols-outlined text-cyber-yellow group-hover:translate-x-1 transition-transform">arrow_forward</span>
