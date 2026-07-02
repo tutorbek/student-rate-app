@@ -1,10 +1,29 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { exportDatabase, importDatabase, resetDatabase, saveQuickTags } from '../utils/db';
+import { exportDatabase } from '../utils/db';
 
-const Settings = ({ quickTags, setQuickTags, onReloadDatabase, showToast }) => {
+const Settings = ({
+  quickTags,
+  setQuickTags,
+  onImportDatabase,
+  onResetDatabase,
+  showToast,
+  groups = [],
+  students = [],
+  transactions = [],
+  onRestoreGroup,
+  onRestoreStudent,
+  onPermanentlyDeleteGroup,
+  onPermanentlyDeleteStudent,
+  snapshots = [],
+  onRollback,
+  triggerSilentBackupDownload
+}) => {
   const [newTag, setNewTag] = useState('');
   const [showResetConfirm, setShowResetConfirm] = useState(false);
+
+  const deletedGroups = groups.filter((g) => g.deleted);
+  const deletedStudents = students.filter((s) => s.deleted);
 
   useEffect(() => {
     const handleKeyDown = (e) => {
@@ -19,7 +38,7 @@ const Settings = ({ quickTags, setQuickTags, onReloadDatabase, showToast }) => {
   // Backup Export
   const handleExport = () => {
     try {
-      const dataStr = exportDatabase();
+      const dataStr = exportDatabase(groups, students, transactions, quickTags);
       const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
       
       const timestamp = new Date().toISOString().slice(0, 10);
@@ -42,14 +61,14 @@ const Settings = ({ quickTags, setQuickTags, onReloadDatabase, showToast }) => {
     const file = e.target.files[0];
     if (!file) return;
 
-    fileReader.onload = (event) => {
+    fileReader.onload = async (event) => {
       try {
         const jsonContent = event.target.result;
-        importDatabase(jsonContent);
-        onReloadDatabase();
-        showToast("Ma'lumotlar muvaffaqiyatli tiklandi!", "success");
-        // Clear input
-        e.target.value = '';
+        const success = await onImportDatabase(jsonContent);
+        if (success) {
+          // Clear input
+          e.target.value = '';
+        }
       } catch (error) {
         showToast(error.message, "error");
       }
@@ -69,7 +88,6 @@ const Settings = ({ quickTags, setQuickTags, onReloadDatabase, showToast }) => {
 
     const updatedTags = [...quickTags, newTag.trim()];
     setQuickTags(updatedTags);
-    saveQuickTags(updatedTags);
     setNewTag('');
     showToast("Yangi izoh shabloni qo'shildi!", "success");
   };
@@ -77,16 +95,13 @@ const Settings = ({ quickTags, setQuickTags, onReloadDatabase, showToast }) => {
   const handleDeleteTag = (tagToDelete) => {
     const updatedTags = quickTags.filter(tag => tag !== tagToDelete);
     setQuickTags(updatedTags);
-    saveQuickTags(updatedTags);
     showToast("Izoh shabloni o'chirildi!", "success");
   };
 
   // Reset database
   const handleReset = () => {
-    resetDatabase();
-    onReloadDatabase();
+    onResetDatabase();
     setShowResetConfirm(false);
-    showToast("Barcha ma'lumotlar o'chirildi va tizim tozalandi!", "info");
   };
 
   return (
@@ -156,13 +171,129 @@ const Settings = ({ quickTags, setQuickTags, onReloadDatabase, showToast }) => {
           </div>
         </section>
 
+        {/* Recycle Bin (Savat) Card */}
+        <section className="glass-card settings-section">
+          <h3 className="section-subtitle">🗑️ Savat (Recycle Bin)</h3>
+          <p className="section-desc">
+            O'chirilgan guruhlar va o'quvchilarni shu yerdan qayta tiklashingiz mumkin.
+          </p>
+          
+          {deletedGroups.length === 0 && deletedStudents.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: '20px', background: 'rgba(0,0,0,0.03)', border: '1px dashed #000', fontWeight: 'bold', color: '#000' }}>
+              Savat bo'sh 🗑️
+            </div>
+          ) : (
+            <div className="trash-list" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              {deletedGroups.map(group => (
+                <div key={group.id} className="trash-item" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px', background: '#fff', border: '1px solid #000' }}>
+                  <div>
+                    <span style={{ fontSize: '1.2rem', marginRight: '8px' }}>📂</span>
+                    <strong style={{ color: '#000' }}>{group.name}</strong> (Guruh)
+                    <div style={{ fontSize: '0.75rem', color: '#666', marginTop: '4px' }}>
+                      O'chirilgan sana: {group.deletedAt ? new Date(group.deletedAt).toLocaleString() : 'Noma\'lum'}
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', gap: '8px' }}>
+                    <button className="btn btn-secondary scale-active btn-sm" onClick={() => onRestoreGroup(group.id)} style={{ padding: '6px 12px', background: '#E7FF56', color: '#000', border: '1px solid #000', fontWeight: 'bold' }}>
+                      Tiklash
+                    </button>
+                    <button className="btn btn-danger scale-active btn-sm" onClick={() => {
+                      if (confirm(`"${group.name}" guruhini va uning barcha o'quvchilarini BUTUNLAY o'chirib yubormoqchimisiz? Ushbu amalni qaytarib bo'lmaydi!`)) {
+                        onPermanentlyDeleteGroup(group.id);
+                      }
+                    }} style={{ padding: '6px 12px', fontSize: '0.8rem', background: '#ff3b30', color: '#fff', border: '1px solid #ff3b30' }}>
+                      Butunlay o'chirish
+                    </button>
+                  </div>
+                </div>
+              ))}
+              
+              {deletedStudents.map(student => {
+                const group = groups.find(g => g.id === student.groupId);
+                const groupName = group ? group.name : 'Noma\'lum guruh';
+                return (
+                  <div key={student.id} className="trash-item" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px', background: '#fff', border: '1px solid #000' }}>
+                    <div>
+                      <span style={{ fontSize: '1.2rem', marginRight: '8px' }}>{student.emoji || '👤'}</span>
+                      <strong style={{ color: '#000' }}>{student.name}</strong> (O'quvchi - {groupName})
+                      <div style={{ fontSize: '0.75rem', color: '#666', marginTop: '4px' }}>
+                        O'chirilgan sana: {student.deletedAt ? new Date(student.deletedAt).toLocaleString() : 'Noma\'lum'}
+                      </div>
+                    </div>
+                    <div style={{ display: 'flex', gap: '8px' }}>
+                      <button className="btn btn-secondary scale-active btn-sm" onClick={() => onRestoreStudent(student.id)} style={{ padding: '6px 12px', background: '#E7FF56', color: '#000', border: '1px solid #000', fontWeight: 'bold' }}>
+                        Tiklash
+                      </button>
+                      <button className="btn btn-danger scale-active btn-sm" onClick={() => {
+                        if (confirm(`"${student.name}" o'quvchisini BUTUNLAY o'chirib yubormoqchimisiz? Ushbu amalni qaytarib bo'lmaydi!`)) {
+                          onPermanentlyDeleteStudent(student.id);
+                        }
+                      }} style={{ padding: '6px 12px', fontSize: '0.8rem', background: '#ff3b30', color: '#fff', border: '1px solid #ff3b30' }}>
+                        Butunlay o'chirish
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </section>
+
+        {/* Firestore Snapshots Rollback Card */}
+        <section className="glass-card settings-section">
+          <h3 className="section-subtitle">🕒 Avtomatik zaxira nuqtalari (Snapshots)</h3>
+          <p className="section-desc">
+            Har safar ma'lumotlar saqlanganda bulutda zaxira nuqtalari saqlanadi. Istalgan vaqtda tizimni oldingi holatga qaytarishingiz mumkin (so'nggi 5 ta holat).
+          </p>
+
+          {snapshots.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: '20px', background: 'rgba(0,0,0,0.03)', border: '1px dashed #000', fontWeight: 'bold', color: '#000' }}>
+              Zaxira nuqtalari yuklanmoqda yoki mavjud emas.
+            </div>
+          ) : (
+            <div className="snapshots-list" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              {snapshots.map((snap, idx) => {
+                const snapGroupsCount = snap.data && snap.data.groups ? snap.data.groups.filter(g => !g.deleted).length : 0;
+                const snapStudentsCount = snap.data && snap.data.students ? snap.data.students.filter(s => !s.deleted).length : 0;
+                return (
+                  <div key={idx} className="snapshot-item" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px', background: '#fff', border: '1px solid #000' }}>
+                    <div>
+                      <strong style={{ color: '#000' }}>Zaxira #{idx + 1}</strong>
+                      <span style={{ fontSize: '0.8rem', color: '#666', marginLeft: '12px' }}>
+                        {snap.timestamp ? new Date(snap.timestamp).toLocaleString() : 'Noma\'lum'}
+                      </span>
+                      <div style={{ fontSize: '0.8rem', color: '#000', marginTop: '4px' }}>
+                        📊 Guruhlar: <strong>{snapGroupsCount} ta</strong> | O'quvchilar: <strong>{snapStudentsCount} ta</strong>
+                      </div>
+                    </div>
+                    <button 
+                      className="btn btn-secondary scale-active btn-sm" 
+                      onClick={() => {
+                        if (confirm("Haqiqatan ham tizimni ushbu zaxira nuqtasiga qaytarmoqchimisiz? Amaldagi ma'lumotlaringiz o'chib ketadi (avval joriy holatingiz avtomatik JSON ko'rinishida zaxiralanadi).")) {
+                          onRollback(snap.data);
+                        }
+                      }} 
+                      style={{ padding: '6px 12px', background: '#000000', color: '#ffffff', border: '1px solid #000', fontWeight: 'bold' }}
+                    >
+                      Tiklash ➔
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </section>
+
         {/* Danger Zone */}
         <section className="glass-card settings-section border-red">
           <h3 className="section-subtitle text-red">⚠️ Danger Zone (Xavfli hudud)</h3>
           <p className="section-desc">
             LocalStorage'dagi barcha guruhlar, o'quvchilar va baholar tarixini butunlay tozalab tashlaydi. Ushbu amalni ortga qaytarib bo'lmaydi!
           </p>
-          <button className="btn btn-danger scale-active" onClick={() => setShowResetConfirm(true)}>
+          <button className="btn btn-danger scale-active" onClick={() => {
+            triggerSilentBackupDownload(); // download backup before reset
+            setShowResetConfirm(true);
+          }}>
             Ma'lumotlarni butunlay o'chirish
           </button>
         </section>

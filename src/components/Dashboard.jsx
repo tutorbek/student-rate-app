@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { getGroups, getStudents, getTransactions, getStudentScore } from '../utils/db';
+import { getStudentScore } from '../utils/db';
 
 const renderAvatar = (emoji) => {
   if (!emoji) return '❓';
@@ -9,10 +9,7 @@ const renderAvatar = (emoji) => {
   return emoji;
 };
 
-const Dashboard = ({ setActiveTab, onSelectGroup }) => {
-  const groups = useMemo(() => getGroups(), []);
-  const students = useMemo(() => getStudents(), []);
-  const transactions = useMemo(() => getTransactions(), []);
+const Dashboard = ({ setActiveTab, onSelectGroup, groups = [], students = [], transactions = [] }) => {
 
   // Stats
   const totalGroups = groups.length;
@@ -32,7 +29,7 @@ const Dashboard = ({ setActiveTab, onSelectGroup }) => {
     if (students.length === 0) return null;
     const scoredStudents = students.map(s => ({
       ...s,
-      score: getStudentScore(s.id, 'lastWeek')
+      score: getStudentScore(transactions, s.id, 'lastWeek')
     })).filter(s => s.score > 0);
 
     if (scoredStudents.length === 0) return null;
@@ -66,13 +63,13 @@ const Dashboard = ({ setActiveTab, onSelectGroup }) => {
         groupId: null
       };
     }
-  }, [students, groups]);
+  }, [students, groups, transactions]);
 
   const weeklySpotlight = useMemo(() => {
     if (students.length === 0) return null;
     const scoredStudents = students.map(s => ({
       ...s,
-      score: getStudentScore(s.id, 'week')
+      score: getStudentScore(transactions, s.id, 'week')
     })).filter(s => s.score > 0);
 
     if (scoredStudents.length === 0) return null;
@@ -81,13 +78,13 @@ const Dashboard = ({ setActiveTab, onSelectGroup }) => {
     const topStudent = scoredStudents[0];
     const groupName = groups.find(g => g.id === topStudent.groupId)?.name || 'Guruhsiz';
     return { ...topStudent, score: topScore, groupName };
-  }, [students, groups]);
+  }, [students, groups, transactions]);
 
   const monthlySpotlight = useMemo(() => {
     if (students.length === 0) return null;
     const scoredStudents = students.map(s => ({
       ...s,
-      score: getStudentScore(s.id, 'month')
+      score: getStudentScore(transactions, s.id, 'month')
     })).filter(s => s.score > 0);
 
     if (scoredStudents.length === 0) return null;
@@ -96,7 +93,7 @@ const Dashboard = ({ setActiveTab, onSelectGroup }) => {
     const topStudent = scoredStudents[0];
     const groupName = groups.find(g => g.id === topStudent.groupId)?.name || 'Guruhsiz';
     return { ...topStudent, score: topScore, groupName };
-  }, [students, groups]);
+  }, [students, groups, transactions]);
 
   // Recent 10 transactions
   const recentActivities = useMemo(() => {

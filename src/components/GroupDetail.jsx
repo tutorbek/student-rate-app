@@ -63,7 +63,7 @@ const GroupDetail = ({ group, students, transactions, quickTags, onBack, onAddSt
       .filter((s) => s.groupId === group.id)
       .map((s) => ({
         ...s,
-        totalScore: getStudentScore(s.id, 'all'),
+        totalScore: getStudentScore(transactions, s.id, 'all'),
       }));
   }, [students, group.id, transactions]);
 
@@ -456,15 +456,15 @@ const GroupDetail = ({ group, students, transactions, quickTags, onBack, onAddSt
             {/* Profile Stats Grid */}
             <div className="profile-stats-grid">
               <div className="profile-stat-box">
-                <span className="profile-stat-val">{getStudentScore(profileStudent.id, 'week')}</span>
+                <span className="profile-stat-val">{getStudentScore(transactions, profileStudent.id, 'week')}</span>
                 <span className="profile-stat-lbl">Yangi hafta</span>
               </div>
               <div className="profile-stat-box">
-                <span className="profile-stat-val">{getStudentScore(profileStudent.id, 'month')}</span>
+                <span className="profile-stat-val">{getStudentScore(transactions, profileStudent.id, 'month')}</span>
                 <span className="profile-stat-lbl">Oylik</span>
               </div>
               <div className="profile-stat-box">
-                <span className="profile-stat-val">{getStudentScore(profileStudent.id, 'all')}</span>
+                <span className="profile-stat-val">{getStudentScore(transactions, profileStudent.id, 'all')}</span>
                 <span className="profile-stat-lbl">Kurs Yakuni</span>
               </div>
             </div>

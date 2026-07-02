@@ -1,13 +1,42 @@
-// LocalStorage keys
-const KEYS = {
-  GROUPS: 'rsa_groups',
-  STUDENTS: 'rsa_students',
-  TRANSACTIONS: 'rsa_transactions',
-  QUICK_TAGS: 'rsa_quick_tags',
+import { getGroupPasswordsRegistry } from './supabase';
+
+const UZBEK_WORDS = [
+  'olma', 'anor', 'uzum', 'anjir', 'orik', 'shaftoli', 'behi', 'tarvuz', 'qovun', 'bodring',
+  'pomidor', 'sabzi', 'piyoz', 'kartoshka', 'karam', 'sarimsak', 'qalampir', 'osh', 'palov', 'somsa',
+  'manti', 'shurva', 'kabob', 'non', 'choy', 'asal', 'sut', 'qatiq', 'qaymoq', 'pishloq',
+  'kitob', 'daftar', 'qalam', 'ruchka', 'sinf', 'maktab', 'ustoz', 'talaba', 'dars', 'bilim',
+  'doska', 'parta', 'xona', 'bino', 'shahar', 'qishloq', 'daryo', 'tog', 'gul', 'lola',
+  'daraxt', 'barg', 'maysa', 'quyosh', 'yulduz', 'bulut', 'shamol', 'yomgir', 'qor', 'bahor',
+  'yoz', 'kuz', 'qish', 'olov', 'suv', 'tuproq', 'tosh', 'temir', 'oltin', 'kumush',
+  'soat', 'oyna', 'stol', 'stul', 'gilam', 'uy', 'bog', 'ot', 'sher', 'burgut',
+  'lola', 'bugdoy', 'arpa', 'guruch', 'faol', 'epchil', 'robot', 'ajoyib', 'kuchli'
+];
+
+/**
+ * Generate a unique group password using simple Uzbek words.
+ * Queries the global registry to guarantee uniqueness.
+ */
+export const generateUniqueGroupPassword = async () => {
+  try {
+    const registry = await getGroupPasswordsRegistry();
+    let attempts = 0;
+    while (attempts < 100) {
+      const randomWord = UZBEK_WORDS[Math.floor(Math.random() * UZBEK_WORDS.length)];
+      // First 40 attempts, try plain words. Then start appending numbers.
+      const candidate = attempts < 40 ? randomWord : `${randomWord}${Math.floor(Math.random() * 10)}`;
+      if (!registry[candidate]) {
+        return candidate;
+      }
+      attempts++;
+    }
+  } catch (err) {
+    console.error('Failed to generate unique password, fallback to random string:', err);
+  }
+  return `guruh_${Math.random().toString(36).substring(2, 7)}`;
 };
 
 // Default Quick Tags
-const DEFAULT_QUICK_TAGS = [
+export const DEFAULT_QUICK_TAGS = [
   'Faol ishtirok 🌟',
   'Uy vazifasi bajardi 📚',
   'Ajoyib javob 💡',
@@ -52,69 +81,65 @@ export const getEndOfLastWeek = () => {
 };
 
 // --- Groups API ---
-export const getGroups = () => {
-  const data = localStorage.getItem(KEYS.GROUPS);
-  return data ? JSON.parse(data) : [];
-};
-
-export const saveGroups = (groups) => {
-  localStorage.setItem(KEYS.GROUPS, JSON.stringify(groups));
-};
-
-export const addGroup = (name, icon) => {
-  const groups = getGroups();
+export const addGroup = (groups, name, icon, password) => {
   const newGroup = {
     id: generateId(),
     name: name.trim(),
     icon: icon || '📁',
+    password: password ? password.trim().toLowerCase() : '',
     createdAt: new Date().toISOString(),
   };
-  groups.push(newGroup);
-  saveGroups(groups);
-  return newGroup;
+  const updatedGroups = [...groups, newGroup];
+  return { newGroup, updatedGroups };
 };
 
-export const updateGroup = (groupId, newName, newIcon) => {
-  const groups = getGroups();
-  const index = groups.findIndex((g) => g.id === groupId);
-  if (index !== -1) {
-    groups[index].name = newName.trim();
-    groups[index].icon = newIcon || groups[index].icon || '📁';
-    saveGroups(groups);
-    return groups[index];
-  }
-  return null;
+export const updateGroup = (groups, groupId, newName, newIcon, newPassword) => {
+  let updatedGroup = null;
+  const updatedGroups = groups.map((g) => {
+    if (g.id === groupId) {
+      updatedGroup = {
+        ...g,
+        name: newName.trim(),
+        icon: newIcon || g.icon || '📁',
+        password: newPassword !== undefined ? newPassword.trim().toLowerCase() : g.password,
+      };
+      return updatedGroup;
+    }
+    return g;
+  });
+  return { updatedGroup, updatedGroups };
 };
 
-export const deleteGroup = (groupId) => {
-  // 1. Delete group
-  const groups = getGroups().filter((g) => g.id !== groupId);
-  saveGroups(groups);
+export const deleteGroup = (groups, students, transactions, groupId) => {
+  const deletedTime = new Date().toISOString();
+  const updatedGroups = groups.map((g) => {
+    if (g.id === groupId) {
+      return { ...g, deleted: true, deletedAt: deletedTime };
+    }
+    return g;
+  });
 
-  // 2. Find and delete students in group
-  const students = getStudents();
-  const studentsInGroup = students.filter((s) => s.groupId === groupId);
-  const studentIds = studentsInGroup.map((s) => s.id);
-  const remainingStudents = students.filter((s) => s.groupId !== groupId);
-  saveStudents(remainingStudents);
+  const studentIds = [];
+  const updatedStudents = students.map((s) => {
+    if (s.groupId === groupId) {
+      studentIds.push(s.id);
+      return { ...s, deleted: true, deletedAt: deletedTime };
+    }
+    return s;
+  });
 
-  // 3. Delete transactions for those students
-  const transactions = getTransactions().filter((t) => !studentIds.includes(t.studentId));
-  saveTransactions(transactions);
+  const updatedTransactions = transactions.map((t) => {
+    if (studentIds.includes(t.studentId)) {
+      return { ...t, deleted: true, deletedAt: deletedTime };
+    }
+    return t;
+  });
+
+  return { updatedGroups, updatedStudents, updatedTransactions };
 };
 
 // --- Students API ---
-export const getStudents = () => {
-  const data = localStorage.getItem(KEYS.STUDENTS);
-  return data ? JSON.parse(data) : [];
-};
-
-export const saveStudents = (students) => {
-  localStorage.setItem(KEYS.STUDENTS, JSON.stringify(students));
-};
-
-export const addStudent = (name, groupId, emoji, color) => {
-  const students = getStudents();
+export const addStudent = (students, name, groupId, emoji, color) => {
   const newStudent = {
     id: generateId(),
     name: name.trim(),
@@ -123,45 +148,48 @@ export const addStudent = (name, groupId, emoji, color) => {
     color: color || '#007AFF', // Default Apple blue
     createdAt: new Date().toISOString(),
   };
-  students.push(newStudent);
-  saveStudents(students);
-  return newStudent;
+  const updatedStudents = [...students, newStudent];
+  return { newStudent, updatedStudents };
 };
 
-export const updateStudent = (studentId, newName, newEmoji, newColor) => {
-  const students = getStudents();
-  const index = students.findIndex((s) => s.id === studentId);
-  if (index !== -1) {
-    students[index].name = newName.trim();
-    students[index].emoji = newEmoji || students[index].emoji;
-    students[index].color = newColor || students[index].color;
-    saveStudents(students);
-    return students[index];
-  }
-  return null;
+export const updateStudent = (students, studentId, newName, newEmoji, newColor) => {
+  let updatedStudent = null;
+  const updatedStudents = students.map((s) => {
+    if (s.id === studentId) {
+      updatedStudent = {
+        ...s,
+        name: newName.trim(),
+        emoji: newEmoji || s.emoji,
+        color: newColor || s.color,
+      };
+      return updatedStudent;
+    }
+    return s;
+  });
+  return { updatedStudent, updatedStudents };
 };
 
-export const deleteStudent = (studentId) => {
-  const students = getStudents().filter((s) => s.id !== studentId);
-  saveStudents(students);
+export const deleteStudent = (students, transactions, studentId) => {
+  const deletedTime = new Date().toISOString();
+  const updatedStudents = students.map((s) => {
+    if (s.id === studentId) {
+      return { ...s, deleted: true, deletedAt: deletedTime };
+    }
+    return s;
+  });
 
-  // Delete student transactions
-  const transactions = getTransactions().filter((t) => t.studentId !== studentId);
-  saveTransactions(transactions);
+  const updatedTransactions = transactions.map((t) => {
+    if (t.studentId === studentId) {
+      return { ...t, deleted: true, deletedAt: deletedTime };
+    }
+    return t;
+  });
+
+  return { updatedStudents, updatedTransactions };
 };
 
 // --- Transactions API ---
-export const getTransactions = () => {
-  const data = localStorage.getItem(KEYS.TRANSACTIONS);
-  return data ? JSON.parse(data) : [];
-};
-
-export const saveTransactions = (txs) => {
-  localStorage.setItem(KEYS.TRANSACTIONS, JSON.stringify(txs));
-};
-
-export const addTransaction = (studentId, amount, comment) => {
-  const transactions = getTransactions();
+export const addTransaction = (transactions, studentId, amount, comment) => {
   const newTx = {
     id: generateId(),
     studentId,
@@ -169,63 +197,47 @@ export const addTransaction = (studentId, amount, comment) => {
     comment: comment.trim(),
     timestamp: new Date().toISOString(),
   };
-  transactions.unshift(newTx); // Newest transactions first
-  saveTransactions(transactions);
-  return newTx;
+  const updatedTransactions = [newTx, ...transactions]; // Newest transactions first
+  return { newTx, updatedTransactions };
 };
 
-export const deleteTransaction = (txId) => {
-  const transactions = getTransactions().filter((t) => t.id !== txId);
-  saveTransactions(transactions);
-};
-
-// --- Quick Tags API ---
-export const getQuickTags = () => {
-  const data = localStorage.getItem(KEYS.QUICK_TAGS);
-  return data ? JSON.parse(data) : DEFAULT_QUICK_TAGS;
-};
-
-export const saveQuickTags = (tags) => {
-  localStorage.setItem(KEYS.QUICK_TAGS, JSON.stringify(tags));
+export const deleteTransaction = (transactions, txId) => {
+  const updatedTransactions = transactions.map((t) => {
+    if (t.id === txId) {
+      return { ...t, deleted: true, deletedAt: new Date().toISOString() };
+    }
+    return t;
+  });
+  return updatedTransactions;
 };
 
 // --- Export / Import ---
-export const exportDatabase = () => {
+export const exportDatabase = (groups, students, transactions, quickTags) => {
   const db = {
-    groups: getGroups(),
-    students: getStudents(),
-    transactions: getTransactions(),
-    quickTags: getQuickTags(),
+    groups,
+    students,
+    transactions,
+    quickTags,
     exportedAt: new Date().toISOString(),
   };
   return JSON.stringify(db, null, 2);
 };
 
 export const importDatabase = (jsonString) => {
-  try {
-    const db = JSON.parse(jsonString);
-    if (!db || typeof db !== 'object') throw new Error("Yaroqsiz ma'lumot formati");
-    
-    // Basic validation
-    const groups = Array.isArray(db.groups) ? db.groups : [];
-    const students = Array.isArray(db.students) ? db.students : [];
-    const transactions = Array.isArray(db.transactions) ? db.transactions : [];
-    const quickTags = Array.isArray(db.quickTags) ? db.quickTags : DEFAULT_QUICK_TAGS;
+  const db = JSON.parse(jsonString);
+  if (!db || typeof db !== 'object') throw new Error("Yaroqsiz ma'lumot formati");
+  
+  const groups = Array.isArray(db.groups) ? db.groups : [];
+  const students = Array.isArray(db.students) ? db.students : [];
+  const transactions = Array.isArray(db.transactions) ? db.transactions : [];
+  const quickTags = Array.isArray(db.quickTags) ? db.quickTags : DEFAULT_QUICK_TAGS;
 
-    localStorage.setItem(KEYS.GROUPS, JSON.stringify(groups));
-    localStorage.setItem(KEYS.STUDENTS, JSON.stringify(students));
-    localStorage.setItem(KEYS.TRANSACTIONS, JSON.stringify(transactions));
-    localStorage.setItem(KEYS.QUICK_TAGS, JSON.stringify(quickTags));
-    return true;
-  } catch (error) {
-    console.error("Import error:", error);
-    throw new Error("JSON fayl yuklashda xatolik yuz berdi: " + error.message);
-  }
+  return { groups, students, transactions, quickTags };
 };
 
 // --- Statistics and Calculations API ---
-export const getStudentScore = (studentId, timeframe = 'all') => {
-  const txs = getTransactions().filter((t) => t.studentId === studentId);
+export const getStudentScore = (transactions, studentId, timeframe = 'all') => {
+  const txs = transactions.filter((t) => t.studentId === studentId && !t.deleted);
   
   if (timeframe === 'all') {
     return txs.reduce((sum, t) => sum + t.amount, 0);
@@ -250,8 +262,85 @@ export const getStudentScore = (studentId, timeframe = 'all') => {
 };
 
 export const resetDatabase = () => {
-  localStorage.removeItem(KEYS.GROUPS);
-  localStorage.removeItem(KEYS.STUDENTS);
-  localStorage.removeItem(KEYS.TRANSACTIONS);
-  localStorage.removeItem(KEYS.QUICK_TAGS);
+  return {
+    groups: [],
+    students: [],
+    transactions: [],
+    quickTags: DEFAULT_QUICK_TAGS,
+  };
+};
+
+export const restoreGroup = (groups, students, transactions, groupId) => {
+  const updatedGroups = groups.map((g) => {
+    if (g.id === groupId) {
+      const { deleted, deletedAt, ...rest } = g;
+      return rest;
+    }
+    return g;
+  });
+
+  const studentIds = [];
+  const updatedStudents = students.map((s) => {
+    if (s.groupId === groupId && s.deleted) {
+      studentIds.push(s.id);
+      const { deleted, deletedAt, ...rest } = s;
+      return rest;
+    }
+    return s;
+  });
+
+  const updatedTransactions = transactions.map((t) => {
+    if (studentIds.includes(t.studentId) && t.deleted) {
+      const { deleted, deletedAt, ...rest } = t;
+      return rest;
+    }
+    return t;
+  });
+
+  return { updatedGroups, updatedStudents, updatedTransactions };
+};
+
+export const restoreStudent = (groups, students, transactions, studentId) => {
+  let studentGroupId = null;
+  const updatedStudents = students.map((s) => {
+    if (s.id === studentId) {
+      studentGroupId = s.groupId;
+      const { deleted, deletedAt, ...rest } = s;
+      return rest;
+    }
+    return s;
+  });
+
+  // If the group this student belongs to is also deleted, restore it as well!
+  const updatedGroups = groups.map((g) => {
+    if (g.id === studentGroupId && g.deleted) {
+      const { deleted, deletedAt, ...rest } = g;
+      return rest;
+    }
+    return g;
+  });
+
+  const updatedTransactions = transactions.map((t) => {
+    if (t.studentId === studentId && t.deleted) {
+      const { deleted, deletedAt, ...rest } = t;
+      return rest;
+    }
+    return t;
+  });
+
+  return { updatedGroups, updatedStudents, updatedTransactions };
+};
+
+export const permanentlyDeleteGroup = (groups, students, transactions, groupId) => {
+  const updatedGroups = groups.filter((g) => g.id !== groupId);
+  const updatedStudents = students.filter((s) => s.groupId !== groupId);
+  const remainingStudentIds = updatedStudents.map((s) => s.id);
+  const updatedTransactions = transactions.filter((t) => remainingStudentIds.includes(t.studentId));
+  return { updatedGroups, updatedStudents, updatedTransactions };
+};
+
+export const permanentlyDeleteStudent = (students, transactions, studentId) => {
+  const updatedStudents = students.filter((s) => s.id !== studentId);
+  const updatedTransactions = transactions.filter((t) => t.studentId !== studentId);
+  return { updatedStudents, updatedTransactions };
 };

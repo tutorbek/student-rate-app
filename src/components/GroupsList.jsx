@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
+import { generateUniqueGroupPassword } from '../utils/db';
 
 const GROUP_EMOJI_OPTIONS = ['📁', '💻', '🎨', '🚀', '📚', '🎯', '💡', '🧪', '🧬', '📊', '💼', '🏠'];
 
@@ -11,7 +12,7 @@ const renderAvatar = (emoji) => {
   return emoji;
 };
 
-const GroupsList = ({ groups, students, onSelectGroup, onAddGroup, onUpdateGroup, onDeleteGroup, showToast }) => {
+const GroupsList = ({ groups, students, onSelectGroup, onAddGroup, onUpdateGroup, onDeleteGroup, showToast, teacherId }) => {
   const [newGroupName, setNewGroupName] = useState('');
   const [showAddModal, setShowAddModal] = useState(false);
   const [confirmDeleteId, setConfirmDeleteId] = useState(null);
@@ -21,6 +22,27 @@ const GroupsList = ({ groups, students, onSelectGroup, onAddGroup, onUpdateGroup
   const [editGroupIcon, setEditGroupIcon] = useState(GROUP_EMOJI_OPTIONS[0]);
   const [groupIconTab, setGroupIconTab] = useState('emoji');
   const [editGroupIconTab, setEditGroupIconTab] = useState('emoji');
+  
+  const [newGroupPassword, setNewGroupPassword] = useState('');
+  const [editGroupPassword, setEditGroupPassword] = useState('');
+  const [isGeneratingPassword, setIsGeneratingPassword] = useState(false);
+
+  useEffect(() => {
+    if (showAddModal) {
+      setNewGroupPassword('Yuklanmoqda...');
+      setIsGeneratingPassword(true);
+      generateUniqueGroupPassword().then((pwd) => {
+        setNewGroupPassword(pwd);
+        setIsGeneratingPassword(false);
+      });
+    }
+  }, [showAddModal]);
+
+  useEffect(() => {
+    if (editingGroup) {
+      setEditGroupPassword(editingGroup.password || '');
+    }
+  }, [editingGroup]);
 
   useEffect(() => {
     const handleKeyDown = (e) => {
@@ -34,36 +56,50 @@ const GroupsList = ({ groups, students, onSelectGroup, onAddGroup, onUpdateGroup
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!newGroupName.trim()) {
       showToast("Guruh nomini kiriting!", "error");
       return;
     }
-    onAddGroup(newGroupName, newGroupIcon);
-    setNewGroupName('');
-    setNewGroupIcon(GROUP_EMOJI_OPTIONS[0]);
-    setShowAddModal(false);
-    showToast("Yangi guruh muvaffaqiyatli qo'shildi!", "success");
+    if (!newGroupPassword.trim() || newGroupPassword === 'Yuklanmoqda...') {
+      showToast("Guruh parolini kiriting!", "error");
+      return;
+    }
+    const success = await onAddGroup(newGroupName, newGroupIcon, newGroupPassword);
+    if (success) {
+      setNewGroupName('');
+      setNewGroupIcon(GROUP_EMOJI_OPTIONS[0]);
+      setNewGroupPassword('');
+      setShowAddModal(false);
+      showToast("Yangi guruh muvaffaqiyatli qo'shildi!", "success");
+    }
   };
 
-  const handleDelete = (id) => {
-    onDeleteGroup(id);
+  const handleDelete = async (id) => {
+    await onDeleteGroup(id);
     setConfirmDeleteId(null);
     showToast("Guruh muvaffaqiyatli o'chirildi!", "success");
   };
 
-  const handleEditSubmit = (e) => {
+  const handleEditSubmit = async (e) => {
     e.preventDefault();
     if (!editGroupName.trim()) {
       showToast("Guruh nomini kiriting!", "error");
       return;
     }
-    onUpdateGroup(editingGroup.id, editGroupName, editGroupIcon);
-    setEditingGroup(null);
-    setEditGroupName('');
-    setEditGroupIcon(GROUP_EMOJI_OPTIONS[0]);
-    showToast("Guruh nomi yangilandi!", "success");
+    if (!editGroupPassword.trim()) {
+      showToast("Guruh parolini kiriting!", "error");
+      return;
+    }
+    const success = await onUpdateGroup(editingGroup.id, editGroupName, editGroupIcon, editGroupPassword);
+    if (success) {
+      setEditingGroup(null);
+      setEditGroupName('');
+      setEditGroupIcon(GROUP_EMOJI_OPTIONS[0]);
+      setEditGroupPassword('');
+      showToast("Guruh nomi va paroli yangilandi!", "success");
+    }
   };
 
   // Helper: Count students in group
@@ -98,6 +134,10 @@ const GroupsList = ({ groups, students, onSelectGroup, onAddGroup, onUpdateGroup
                 
                 <div className="group-card-body" onClick={() => onSelectGroup(group.id)}>
                   <h3 className="group-card-title">{group.name}</h3>
+                  <p className="group-card-password" style={{ fontSize: '0.85rem', color: '#000000', margin: '4px 0 12px 0', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <span>🔑 Parol:</span>
+                    <strong style={{ background: '#E7FF56', padding: '2px 6px', border: '1px solid #000000', textTransform: 'lowercase' }}>{group.password || 'yo\'q'}</strong>
+                  </p>
                   <p className="group-card-date">
                     Tashkil etilgan: {new Date(group.createdAt).toLocaleDateString()}
                   </p>
@@ -169,6 +209,34 @@ const GroupsList = ({ groups, students, onSelectGroup, onAddGroup, onUpdateGroup
                   onChange={(e) => setNewGroupName(e.target.value)}
                   autoFocus
                 />
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">Guruh paroli (o'quvchilar uchun)</label>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <input
+                    type="text"
+                    className="form-input"
+                    placeholder="Generatsiya qilinmoqda..."
+                    value={newGroupPassword}
+                    onChange={(e) => setNewGroupPassword(e.target.value)}
+                    disabled={isGeneratingPassword}
+                    style={{ textTransform: 'lowercase' }}
+                  />
+                  <button
+                    type="button"
+                    className="btn btn-secondary scale-active"
+                    onClick={async () => {
+                      setIsGeneratingPassword(true);
+                      const pwd = await generateUniqueGroupPassword();
+                      setNewGroupPassword(pwd);
+                      setIsGeneratingPassword(false);
+                    }}
+                    disabled={isGeneratingPassword}
+                  >
+                    🔄
+                  </button>
+                </div>
               </div>
 
               {/* Icon Picker Tabs */}
@@ -284,6 +352,30 @@ const GroupsList = ({ groups, students, onSelectGroup, onAddGroup, onUpdateGroup
                   onChange={(e) => setEditGroupName(e.target.value)}
                   autoFocus
                 />
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">Guruh paroli (o'quvchilar uchun)</label>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <input
+                    type="text"
+                    className="form-input"
+                    placeholder="Parol..."
+                    value={editGroupPassword}
+                    onChange={(e) => setEditGroupPassword(e.target.value)}
+                    style={{ textTransform: 'lowercase' }}
+                  />
+                  <button
+                    type="button"
+                    className="btn btn-secondary scale-active"
+                    onClick={async () => {
+                      const pwd = await generateUniqueGroupPassword();
+                      setEditGroupPassword(pwd);
+                    }}
+                  >
+                    🔄
+                  </button>
+                </div>
               </div>
 
               {/* Icon Picker Tabs */}

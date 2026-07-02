@@ -143,7 +143,7 @@ const Leaderboard = ({ groups, students, transactions }) => {
     const data = students
       .filter((s) => selectedGroupId === 'all' || s.groupId === selectedGroupId)
       .map((s) => {
-        const score = getStudentScore(s.id, timeframe);
+        const score = getStudentScore(transactions, s.id, timeframe);
         const groupName = groups.find((g) => g.id === s.groupId)?.name || 'Guruhsiz';
         return {
           ...s,
