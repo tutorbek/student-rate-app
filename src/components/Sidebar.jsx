@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useMemo } from 'react';
+import { getStartOfWeek } from '../utils/db';
 
-const Sidebar = ({ activeTab, setActiveTab, userRole, onLogout }) => {
+const Sidebar = ({ activeTab, setActiveTab, userRole, onLogout, groups = [], students = [], transactions = [] }) => {
   const menuItems = [
     {
       id: 'dashboard',
@@ -78,6 +79,24 @@ const Sidebar = ({ activeTab, setActiveTab, userRole, onLogout }) => {
     return true;
   });
 
+  // Compute Top 3 groups by likes this week
+  const top3Groups = useMemo(() => {
+    const startOfWeek = getStartOfWeek();
+    const weekTxs = transactions.filter(t => !t.deleted && new Date(t.timestamp) >= startOfWeek);
+    const scored = groups.map(group => {
+      const groupStudentIds = students
+        .filter(s => s.groupId === group.id && !s.deleted)
+        .map(s => s.id);
+      const score = weekTxs
+        .filter(t => groupStudentIds.includes(t.studentId))
+        .reduce((sum, t) => sum + t.amount, 0);
+      return { id: group.id, name: group.name, icon: group.icon, score };
+    });
+    return scored.sort((a, b) => b.score - a.score).slice(0, 3);
+  }, [groups, students, transactions]);
+
+  const rankMedals = ['🥇', '🥈', '🥉'];
+
   return (
     <>
       {/* Desktop Sidebar */}
@@ -97,6 +116,21 @@ const Sidebar = ({ activeTab, setActiveTab, userRole, onLogout }) => {
             </button>
           ))}
         </nav>
+
+        {/* Top 3 Groups Widget — Desktop Only */}
+        {top3Groups.length > 0 && (
+          <div className="sidebar-top3">
+            <div className="sidebar-top3-title">🏆 Bu hafta top guruhlar</div>
+            {top3Groups.map((group, i) => (
+              <div key={group.id} className="sidebar-top3-item">
+                <span className="sidebar-top3-medal">{rankMedals[i]}</span>
+                <span className="sidebar-top3-name">{group.name}</span>
+                <span className="sidebar-top3-score">{group.score >= 0 ? `+${group.score}` : group.score}</span>
+              </div>
+            ))}
+          </div>
+        )}
+
         <div className="sidebar-footer">
           <div className="sidebar-footer-top">
             <span className="badge badge-blue">
@@ -228,6 +262,65 @@ const Sidebar = ({ activeTab, setActiveTab, userRole, onLogout }) => {
           display: flex;
           align-items: center;
           justify-content: center;
+        }
+
+        /* Top 3 Groups Widget */
+        .sidebar-top3 {
+          margin: 8px 0;
+          border: 1px solid #000000;
+          background: #ffffff;
+          padding: 10px 12px;
+          display: flex;
+          flex-direction: column;
+          gap: 6px;
+        }
+
+        .sidebar-top3-title {
+          font-size: 0.68rem;
+          font-weight: 800;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+          color: #000000;
+          margin-bottom: 4px;
+          opacity: 0.7;
+        }
+
+        .sidebar-top3-item {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          padding: 4px 0;
+          border-bottom: 1px dashed #e0e0e0;
+        }
+
+        .sidebar-top3-item:last-child {
+          border-bottom: none;
+        }
+
+        .sidebar-top3-medal {
+          font-size: 1rem;
+          line-height: 1;
+          flex-shrink: 0;
+        }
+
+        .sidebar-top3-name {
+          font-size: 0.78rem;
+          font-weight: 700;
+          color: #000000;
+          flex: 1;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+
+        .sidebar-top3-score {
+          font-size: 0.78rem;
+          font-weight: 800;
+          color: #000000;
+          background: #E7FF56;
+          padding: 1px 6px;
+          border: 1px solid #000000;
+          flex-shrink: 0;
         }
 
         .sidebar-footer {

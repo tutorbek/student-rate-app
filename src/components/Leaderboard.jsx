@@ -245,6 +245,21 @@ const Leaderboard = ({ groups, students, transactions, userRole, onDeleteTransac
     return standings.some((s) => s.score !== 0);
   }, [standings]);
 
+  // Top 3 groups by score (current timeframe) — for mobile banner
+  const top3Groups = useMemo(() => {
+    const scored = groups.map(group => {
+      const groupStudents = students.filter(s => s.groupId === group.id && !s.deleted);
+      const score = groupStudents.reduce(
+        (sum, s) => sum + getStudentScore(transactions, s.id, timeframe),
+        0
+      );
+      return { id: group.id, name: group.name, icon: group.icon, score };
+    });
+    return scored.sort((a, b) => b.score - a.score).slice(0, 3);
+  }, [groups, students, transactions, timeframe]);
+
+  const rankMedals = ['🥇', '🥈', '🥉'];
+
   useEffect(() => {
     if (hasAnyPoints) {
       setConfettiTrigger((prev) => prev + 1);
@@ -254,6 +269,23 @@ const Leaderboard = ({ groups, students, transactions, userRole, onDeleteTransac
   return (
     <div className="leaderboard-container">
       <Confetti trigger={confettiTrigger} />
+
+      {/* Top 3 Groups Banner — Mobile Only (hidden on desktop where sidebar shows it) */}
+      {top3Groups.length > 0 && (
+        <div className="lb-top3-mobile">
+          <div className="lb-top3-label">🏆 Top guruhlar</div>
+          <div className="lb-top3-cards">
+            {top3Groups.map((group, i) => (
+              <div key={group.id} className={`lb-top3-card lb-top3-rank-${i + 1}`}>
+                <span className="lb-top3-card-medal">{rankMedals[i]}</span>
+                <span className="lb-top3-card-name">{group.name}</span>
+                <span className="lb-top3-card-score">{group.score >= 0 ? `+${group.score}` : group.score}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       <div className="page-header flex-col-mobile">
         <div>
           <h2 className="page-title">Leaderboard</h2>
@@ -599,6 +631,78 @@ const Leaderboard = ({ groups, students, transactions, userRole, onDeleteTransac
       <style>{`
         .leaderboard-container {
           animation: fade-in 0.4s ease-out;
+        }
+
+        /* Top 3 groups mobile banner — hidden on desktop (sidebar has it) */
+        .lb-top3-mobile {
+          display: none;
+          margin-bottom: 16px;
+        }
+
+        @media (max-width: 900px) {
+          .lb-top3-mobile {
+            display: block;
+          }
+        }
+
+        .lb-top3-label {
+          font-size: 0.72rem;
+          font-weight: 800;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+          color: #000000;
+          margin-bottom: 8px;
+          opacity: 0.7;
+        }
+
+        .lb-top3-cards {
+          display: flex;
+          gap: 8px;
+        }
+
+        .lb-top3-card {
+          flex: 1;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 4px;
+          padding: 10px 6px;
+          border: 2px solid #000000;
+          background: #ffffff;
+          min-width: 0;
+        }
+
+        .lb-top3-rank-1 {
+          background: #E7FF56;
+          border-color: #000000;
+        }
+
+        .lb-top3-rank-2 {
+          background: #f0f0f0;
+        }
+
+        .lb-top3-rank-3 {
+          background: #fff8e1;
+        }
+
+        .lb-top3-card-medal {
+          font-size: 1.3rem;
+          line-height: 1;
+        }
+
+        .lb-top3-card-name {
+          font-size: 0.72rem;
+          font-weight: 800;
+          color: #000000;
+          text-align: center;
+          word-break: break-word;
+          line-height: 1.2;
+        }
+
+        .lb-top3-card-score {
+          font-size: 0.85rem;
+          font-weight: 900;
+          color: #000000;
         }
 
         .clickable-row {

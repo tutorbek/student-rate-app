@@ -866,7 +866,7 @@ function App() {
       <div className="bg-glow-2"></div>
 
       {/* Sidebar Navigation */}
-      <Sidebar activeTab={activeTab} setActiveTab={handleTabChange} userRole={userRole} onLogout={handleLogout} />
+      <Sidebar activeTab={activeTab} setActiveTab={handleTabChange} userRole={userRole} onLogout={handleLogout} groups={filteredGroups} students={filteredStudents} transactions={filteredTransactions} />
 
       {/* Main Panel Content */}
       <main className="main-content">
