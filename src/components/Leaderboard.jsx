@@ -406,6 +406,14 @@ const Leaderboard = ({ groups, students, transactions, userRole, onDeleteTransac
       {profileStudent && createPortal(
         <div className="modal-overlay" onClick={() => setSelectedProfileStudent(null)}>
           <div className="modal-content glass profile-modal" onClick={(e) => e.stopPropagation()}>
+            <button 
+              type="button" 
+              className="modal-close-btn" 
+              onClick={() => setSelectedProfileStudent(null)}
+              title="Yopish"
+            >
+              ✕
+            </button>
             {/* Profile Header */}
             <div className="profile-modal-header">
               <div className="avatar-circle profile-avatar" style={{ background: profileStudent.color, overflow: 'hidden' }}>

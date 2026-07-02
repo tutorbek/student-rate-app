@@ -402,6 +402,39 @@ body:has(.modal-overlay) .main-content {
   animation: modalScaleIn 0.25s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
 }
 
+/* Close button in top right of modals */
+.modal-close-btn {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  background: transparent;
+  border: none;
+  color: #000000;
+  font-size: 1.25rem;
+  font-weight: 700;
+  cursor: pointer;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--transition-fast);
+  z-index: 10;
+}
+
+.modal-close-btn:hover {
+  background: #E7FF56;
+  color: #000000;
+  border: 1px solid #000000;
+}
+
+@media (max-width: 900px) {
+  .modal-close-btn {
+    top: 10px;
+    right: 10px;
+  }
+}
+
 /* On mobile: account for navigation bar & virtual keyboard */
 @media (max-width: 900px) {
   .modal-overlay {

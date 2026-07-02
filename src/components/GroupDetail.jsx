@@ -239,6 +239,14 @@ const GroupDetail = ({ group, students, transactions, quickTags, onBack, onAddSt
       {showAddStudentModal && createPortal(
         <div className="modal-overlay" onClick={() => setShowAddStudentModal(false)}>
           <div className="modal-content glass student-modal" onClick={(e) => e.stopPropagation()}>
+            <button 
+              type="button" 
+              className="modal-close-btn" 
+              onClick={() => setShowAddStudentModal(false)}
+              title="Yopish"
+            >
+              ✕
+            </button>
             <h3 className="modal-title">Yangi talaba qo'shish</h3>
             <form onSubmit={handleAddStudentSubmit}>
               <div className="form-group">
@@ -347,6 +355,14 @@ const GroupDetail = ({ group, students, transactions, quickTags, onBack, onAddSt
       {scoringStudent && createPortal(
         <div className="modal-overlay" onClick={() => setScoringStudent(null)}>
           <div className="modal-content glass score-modal" onClick={(e) => e.stopPropagation()}>
+            <button 
+              type="button" 
+              className="modal-close-btn" 
+              onClick={() => setScoringStudent(null)}
+              title="Yopish"
+            >
+              ✕
+            </button>
             <div className="score-modal-header">
               <div className="avatar-circle" style={{ background: scoringStudent.color, width: 40, height: 40, fontSize: '1.2rem', overflow: 'hidden' }}>
                 {renderAvatar(scoringStudent.emoji)}
@@ -420,6 +436,14 @@ const GroupDetail = ({ group, students, transactions, quickTags, onBack, onAddSt
       {confirmDeleteId && createPortal(
         <div className="modal-overlay" onClick={() => setConfirmDeleteId(null)}>
           <div className="modal-content glass" onClick={(e) => e.stopPropagation()}>
+            <button 
+              type="button" 
+              className="modal-close-btn" 
+              onClick={() => setConfirmDeleteId(null)}
+              title="Yopish"
+            >
+              ✕
+            </button>
             <h3 className="modal-title text-red">⚠️ Talabani o'chirish</h3>
             <p className="modal-warning-text">
               Ushbu talabani o'chirsangiz, uning barcha ballari va ball berish tarixi butunlay o'chib ketadi!
@@ -444,6 +468,14 @@ const GroupDetail = ({ group, students, transactions, quickTags, onBack, onAddSt
       {profileStudent && createPortal(
         <div className="modal-overlay" onClick={() => setProfileStudent(null)}>
           <div className="modal-content glass profile-modal" onClick={(e) => e.stopPropagation()}>
+            <button 
+              type="button" 
+              className="modal-close-btn" 
+              onClick={() => setProfileStudent(null)}
+              title="Yopish"
+            >
+              ✕
+            </button>
             {/* Profile Header */}
             <div className="profile-modal-header">
               <div className="avatar-circle profile-avatar" style={{ background: profileStudent.color, overflow: 'hidden' }}>
@@ -530,6 +562,14 @@ const GroupDetail = ({ group, students, transactions, quickTags, onBack, onAddSt
       {editingStudent && createPortal(
         <div className="modal-overlay" onClick={() => setEditingStudent(null)}>
           <div className="modal-content glass student-modal" onClick={(e) => e.stopPropagation()}>
+            <button 
+              type="button" 
+              className="modal-close-btn" 
+              onClick={() => setEditingStudent(null)}
+              title="Yopish"
+            >
+              ✕
+            </button>
             <h3 className="modal-title">Talaba Ma'lumotlarini Tahrirlash</h3>
             <form onSubmit={handleEditStudentSubmit}>
               <div className="form-group">

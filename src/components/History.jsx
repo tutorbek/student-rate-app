@@ -278,6 +278,14 @@ const History = ({ groups, students, transactions, onDeleteTransaction, showToas
       {confirmDeleteId && createPortal(
         <div className="modal-overlay" onClick={() => setConfirmDeleteId(null)}>
           <div className="modal-content glass" onClick={(e) => e.stopPropagation()}>
+            <button 
+              type="button" 
+              className="modal-close-btn" 
+              onClick={() => setConfirmDeleteId(null)}
+              title="Yopish"
+            >
+              ✕
+            </button>
             <h3 className="modal-title">Baholashni bekor qilish</h3>
             <p className="modal-warning-text">
               Ushbu baholash harakatini bekor qilmoqchimisiz? Talabaning umumiy ballari mos ravishda qayta hisoblanadi.

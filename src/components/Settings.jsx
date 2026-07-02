@@ -303,6 +303,14 @@ const Settings = ({
       {showResetConfirm && createPortal(
         <div className="modal-overlay" onClick={() => setShowResetConfirm(false)}>
           <div className="modal-content glass" onClick={(e) => e.stopPropagation()}>
+            <button 
+              type="button" 
+              className="modal-close-btn" 
+              onClick={() => setShowResetConfirm(false)}
+              title="Yopish"
+            >
+              ✕
+            </button>
             <h3 className="modal-title text-red">🚨 Butunlay o'chirishni tasdiqlaysizmi?</h3>
             <p className="modal-warning-text">
               Haqiqatan ham barcha ma'lumotlarni (guruhlar, talabalar, baholash tarixi) o'chirib yubormoqchimisiz? Tizim boshlang'ich holatga qaytadi. Faylni avvalroq yuklab olmagan bo'lsangiz, tiklash iloji bo'lmaydi.

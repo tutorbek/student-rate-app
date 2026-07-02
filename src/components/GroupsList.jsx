@@ -197,6 +197,14 @@ const GroupsList = ({ groups, students, onSelectGroup, onAddGroup, onUpdateGroup
       {showAddModal && createPortal(
         <div className="modal-overlay" onClick={() => setShowAddModal(false)}>
           <div className="modal-content glass" onClick={(e) => e.stopPropagation()}>
+            <button 
+              type="button" 
+              className="modal-close-btn" 
+              onClick={() => setShowAddModal(false)}
+              title="Yopish"
+            >
+              ✕
+            </button>
             <h3 className="modal-title">Yangi Guruh Qo'shish</h3>
             <form onSubmit={handleSubmit}>
               <div className="form-group">
@@ -317,6 +325,14 @@ const GroupsList = ({ groups, students, onSelectGroup, onAddGroup, onUpdateGroup
       {confirmDeleteId && createPortal(
         <div className="modal-overlay" onClick={() => setConfirmDeleteId(null)}>
           <div className="modal-content glass" onClick={(e) => e.stopPropagation()}>
+            <button 
+              type="button" 
+              className="modal-close-btn" 
+              onClick={() => setConfirmDeleteId(null)}
+              title="Yopish"
+            >
+              ✕
+            </button>
             <h3 className="modal-title text-red">⚠️ Diqqat! Guruhni o'chirish</h3>
             <p className="modal-warning-text">
               Ushbu guruhni o'chirsangiz, uning ichidagi barcha talabalar va ularga tegishli baholar (likelar) ham butunlay o'chib ketadi!
@@ -340,6 +356,14 @@ const GroupsList = ({ groups, students, onSelectGroup, onAddGroup, onUpdateGroup
       {editingGroup && createPortal(
         <div className="modal-overlay" onClick={() => setEditingGroup(null)}>
           <div className="modal-content glass" onClick={(e) => e.stopPropagation()}>
+            <button 
+              type="button" 
+              className="modal-close-btn" 
+              onClick={() => setEditingGroup(null)}
+              title="Yopish"
+            >
+              ✕
+            </button>
             <h3 className="modal-title">Guruh Nomini O'zgartirish</h3>
             <form onSubmit={handleEditSubmit}>
               <div className="form-group">
