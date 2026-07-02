@@ -89,22 +89,18 @@ function App() {
     setLoginError('');
 
     const CREDENTIALS = {
-      // Teacher 1 (User)
+      // Teacher 1
       'insight': { role: 'teacher', teacherId: 'teacher1' },
       'ozimsila': { role: 'teacher', teacherId: 'teacher1' }, // backward compatibility
-      'studentman': { role: 'student', teacherId: 'teacher1' },
 
       // Teacher 2
       'quyosh': { role: 'teacher', teacherId: 'teacher2' },
-      'salombro': { role: 'student', teacherId: 'teacher2' },
 
       // Teacher 3
       'hehehe': { role: 'teacher', teacherId: 'teacher3' },
-      'menman': { role: 'student', teacherId: 'teacher3' },
 
       // Teacher 4
       'simsim': { role: 'teacher', teacherId: 'teacher4' },
-      'nimagap': { role: 'student', teacherId: 'teacher4' },
     };
 
     const passwordClean = loginPassword.trim().toLowerCase();
@@ -156,6 +152,32 @@ function App() {
       setLoginLoading(false);
     }
   };
+
+  // Auto-logout legacy hardcoded student sessions (no group ID = old password-based login)
+  useEffect(() => {
+    if (
+      isAuthenticated &&
+      userRole === 'student' &&
+      !localStorage.getItem('rsa_student_group_id')
+    ) {
+      // This user logged in with an old hardcoded student password — force logout
+      localStorage.removeItem('rsa_authenticated');
+      localStorage.removeItem('rsa_role');
+      localStorage.removeItem('rsa_teacher_id');
+      localStorage.removeItem('rsa_active_tab');
+      localStorage.removeItem('rsa_student_group_id');
+      localStorage.removeItem('rsa_groups');
+      localStorage.removeItem('rsa_students');
+      localStorage.removeItem('rsa_transactions');
+      localStorage.removeItem('rsa_quick_tags');
+      setIsAuthenticated(false);
+      setTeacherId(null);
+      setStudentGroupId(null);
+      setUserRole('student');
+      setActiveTab('dashboard');
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Enforce student role routing constraints — always block unauthorized tabs
   useEffect(() => {
