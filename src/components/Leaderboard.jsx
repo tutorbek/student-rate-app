@@ -125,7 +125,22 @@ const renderAvatar = (emoji) => {
 
 const Leaderboard = ({ groups, students, transactions, userRole, onDeleteTransaction, showToast }) => {
   const [timeframe, setTimeframe] = useState('week'); // 'week', 'lastWeek', 'month', 'lastMonth', 'all'
-  const [selectedGroupId, setSelectedGroupId] = useState('all');
+  
+  // If student, select their first group automatically, otherwise default to 'all'
+  const initialGroupId = useMemo(() => {
+    if (userRole === 'student' && groups.length > 0) {
+      return groups[0].id;
+    }
+    return 'all';
+  }, [userRole, groups]);
+
+  const [selectedGroupId, setSelectedGroupId] = useState(initialGroupId);
+
+  // Keep selectedGroupId in sync if initialGroupId changes (e.g. when groups load dynamically)
+  useEffect(() => {
+    setSelectedGroupId(initialGroupId);
+  }, [initialGroupId]);
+
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [confettiTrigger, setConfettiTrigger] = useState(0);
   const [profileStudent, setSelectedProfileStudent] = useState(null);
@@ -217,43 +232,54 @@ const Leaderboard = ({ groups, students, transactions, userRole, onDeleteTransac
 
         {/* Filters */}
         <div className="leaderboard-filters">
-          <div className="filter-group">
-            <div className="custom-dropdown-container">
-              <button 
-                type="button" 
-                className="filter-select-btn" 
-                onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-              >
-                <span>{selectedGroupId === 'all' ? 'Barcha guruhlar' : (groups.find(g => g.id === selectedGroupId)?.name || 'Guruhsiz')}</span>
-                <span className="dropdown-arrow">▼</span>
-              </button>
-              {isDropdownOpen && (
-                <div className="custom-dropdown-list glass">
-                  <div 
-                    className={`custom-dropdown-item ${selectedGroupId === 'all' ? 'active' : ''}`}
-                    onClick={() => {
-                      setSelectedGroupId('all');
-                      setIsDropdownOpen(false);
-                    }}
-                  >
-                    Barcha guruhlar
+          {!(userRole === 'student' && groups.length === 1) && (
+            <div className="filter-group">
+              <div className="custom-dropdown-container">
+                <button 
+                  type="button" 
+                  className="filter-select-btn" 
+                  onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                >
+                  <span>{selectedGroupId === 'all' ? 'Barcha guruhlar' : (groups.find(g => g.id === selectedGroupId)?.name || 'Guruhsiz')}</span>
+                  <span className="dropdown-arrow">▼</span>
+                </button>
+                {isDropdownOpen && (
+                  <div className="custom-dropdown-list glass">
+                    {userRole !== 'student' && (
+                      <div 
+                        className={`custom-dropdown-item ${selectedGroupId === 'all' ? 'active' : ''}`}
+                        onClick={() => {
+                          setSelectedGroupId('all');
+                          setIsDropdownOpen(false);
+                        }}
+                      >
+                        Barcha guruhlar
+                      </div>
+                    )}
+                    {groups.map((g) => (
+                      <div 
+                        key={g.id} 
+                        className={`custom-dropdown-item ${selectedGroupId === g.id ? 'active' : ''}`}
+                        onClick={() => {
+                          setSelectedGroupId(g.id);
+                          setIsDropdownOpen(false);
+                        }}
+                      >
+                        {g.name}
+                      </div>
+                    ))}
                   </div>
-                  {groups.map((g) => (
-                    <div 
-                      key={g.id} 
-                      className={`custom-dropdown-item ${selectedGroupId === g.id ? 'active' : ''}`}
-                      onClick={() => {
-                        setSelectedGroupId(g.id);
-                        setIsDropdownOpen(false);
-                      }}
-                    >
-                      {g.name}
-                    </div>
-                  ))}
-                </div>
-              )}
+                )}
+              </div>
             </div>
-          </div>
+          )}
+          {userRole === 'student' && groups.length === 1 && (
+            <div className="filter-group">
+              <div className="student-group-static-label">
+                👥 {groups[0].name}
+              </div>
+            </div>
+          )}
 
           <div className="timeframe-toggle glass">
             <button
@@ -738,6 +764,15 @@ const Leaderboard = ({ groups, students, transactions, userRole, onDeleteTransac
           padding: 4px;
           border-radius: 12px;
           background: rgba(255, 255, 255, 0.04);
+          overflow-x: auto;
+          white-space: nowrap;
+          -webkit-overflow-scrolling: touch;
+          scrollbar-width: none; /* Firefox */
+          -ms-overflow-style: none;  /* IE/Edge */
+        }
+
+        .timeframe-toggle::-webkit-scrollbar {
+          display: none; /* Chrome/Safari */
         }
 
         .toggle-btn {
@@ -751,6 +786,22 @@ const Leaderboard = ({ groups, students, transactions, userRole, onDeleteTransac
           font-weight: 600;
           cursor: pointer;
           transition: all var(--transition-fast);
+          flex-shrink: 0;
+        }
+
+        .student-group-static-label {
+          background: #000000;
+          color: #E7FF56;
+          border: 2px solid #000000;
+          padding: 10px 18px;
+          font-family: var(--font-family);
+          font-size: 0.95rem;
+          font-weight: 800;
+          text-transform: uppercase;
+          box-shadow: 4px 4px 0px #000000;
+          display: inline-flex;
+          align-items: center;
+          gap: 8px;
         }
 
         .toggle-btn:hover {
@@ -1012,6 +1063,11 @@ const Leaderboard = ({ groups, students, transactions, userRole, onDeleteTransac
 
           .td-student {
             gap: 8px;
+          }
+
+          .toggle-btn {
+            padding: 6px 12px;
+            font-size: 0.8rem;
           }
         }
 
