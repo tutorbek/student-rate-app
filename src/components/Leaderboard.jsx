@@ -189,7 +189,7 @@ const Leaderboard = ({ groups, students, transactions, userRole, onDeleteTransac
         clearTimeout(timer);
       };
     }
-  }, [groups, standings]);
+  }, [groups, timeframe]);
 
   // Filter transactions for profile student
   const studentTxs = useMemo(() => {
