@@ -165,6 +165,32 @@ const Leaderboard = ({ groups, students, transactions, userRole, onDeleteTransac
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
+  const [scrollState, setScrollState] = useState({ showLeft: false, showRight: false });
+  const toggleRef = useRef(null);
+
+  const checkScroll = () => {
+    const el = toggleRef.current;
+    if (!el) return;
+    const showLeft = el.scrollLeft > 5;
+    const showRight = el.scrollWidth - el.clientWidth - el.scrollLeft > 5;
+    setScrollState({ showLeft, showRight });
+  };
+
+  useEffect(() => {
+    const el = toggleRef.current;
+    if (el) {
+      checkScroll();
+      el.addEventListener('scroll', checkScroll);
+      window.addEventListener('resize', checkScroll);
+      const timer = setTimeout(checkScroll, 200);
+      return () => {
+        el.removeEventListener('scroll', checkScroll);
+        window.removeEventListener('resize', checkScroll);
+        clearTimeout(timer);
+      };
+    }
+  }, [groups, standings]);
+
   // Filter transactions for profile student
   const studentTxs = useMemo(() => {
     if (!profileStudent) return [];
@@ -281,37 +307,47 @@ const Leaderboard = ({ groups, students, transactions, userRole, onDeleteTransac
             </div>
           )}
 
-          <div className="timeframe-toggle glass">
-            <button
-              className={`toggle-btn ${timeframe === 'week' ? 'active' : ''}`}
-              onClick={() => setTimeframe('week')}
+          <div className={`timeframe-toggle-wrapper ${scrollState.showLeft ? 'has-left-shadow' : ''} ${scrollState.showRight ? 'has-right-shadow' : ''}`}>
+            <div 
+              ref={toggleRef}
+              className="timeframe-toggle glass"
             >
-              Yangi hafta
-            </button>
-            <button
-              className={`toggle-btn ${timeframe === 'lastWeek' ? 'active' : ''}`}
-              onClick={() => setTimeframe('lastWeek')}
-            >
-              O'tgan hafta
-            </button>
-            <button
-              className={`toggle-btn ${timeframe === 'month' ? 'active' : ''}`}
-              onClick={() => setTimeframe('month')}
-            >
-              Oylik
-            </button>
-            <button
-              className={`toggle-btn ${timeframe === 'lastMonth' ? 'active' : ''}`}
-              onClick={() => setTimeframe('lastMonth')}
-            >
-              O'tgan oy
-            </button>
-            <button
-              className={`toggle-btn ${timeframe === 'all' ? 'active' : ''}`}
-              onClick={() => setTimeframe('all')}
-            >
-              Kurs
-            </button>
+              <button
+                className={`toggle-btn ${timeframe === 'week' ? 'active' : ''}`}
+                onClick={() => setTimeframe('week')}
+              >
+                Yangi hafta
+              </button>
+              <button
+                className={`toggle-btn ${timeframe === 'lastWeek' ? 'active' : ''}`}
+                onClick={() => setTimeframe('lastWeek')}
+              >
+                O'tgan hafta
+              </button>
+              <button
+                className={`toggle-btn ${timeframe === 'month' ? 'active' : ''}`}
+                onClick={() => setTimeframe('month')}
+              >
+                Bu oy
+              </button>
+              <button
+                className={`toggle-btn ${timeframe === 'lastMonth' ? 'active' : ''}`}
+                onClick={() => setTimeframe('lastMonth')}
+              >
+                O'tgan oy
+              </button>
+              <button
+                className={`toggle-btn ${timeframe === 'all' ? 'active' : ''}`}
+                onClick={() => setTimeframe('all')}
+              >
+                Kurs
+              </button>
+            </div>
+            {scrollState.showRight && (
+              <div className="scroll-indicator-arrow">
+                <span>→</span>
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -767,6 +803,74 @@ const Leaderboard = ({ groups, students, transactions, userRole, onDeleteTransac
           color: #000000;
         }
 
+        .timeframe-toggle-wrapper {
+          position: relative;
+          display: flex;
+          align-items: center;
+          width: 100%;
+          overflow: hidden;
+        }
+
+        .timeframe-toggle-wrapper::before,
+        .timeframe-toggle-wrapper::after {
+          content: '';
+          position: absolute;
+          top: 0;
+          bottom: 0;
+          width: 32px;
+          pointer-events: none;
+          z-index: 2;
+          transition: opacity 0.3s ease;
+          opacity: 0;
+        }
+
+        .timeframe-toggle-wrapper::before {
+          left: 0;
+          background: linear-gradient(to right, var(--bg-primary, #ffffff), transparent);
+        }
+
+        .timeframe-toggle-wrapper::after {
+          right: 0;
+          background: linear-gradient(to left, var(--bg-primary, #ffffff), transparent);
+        }
+
+        .timeframe-toggle-wrapper.has-left-shadow::before {
+          opacity: 1;
+        }
+
+        .timeframe-toggle-wrapper.has-right-shadow::after {
+          opacity: 1;
+        }
+
+        .scroll-indicator-arrow {
+          position: absolute;
+          right: 4px;
+          background: #E7FF56;
+          color: #000000;
+          border: 2px solid #000000;
+          border-radius: 50%;
+          width: 24px;
+          height: 24px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-weight: 900;
+          font-size: 0.8rem;
+          pointer-events: none;
+          z-index: 3;
+          box-shadow: 2px 2px 0px #000000;
+          animation: arrow-bounce-glow 1.2s infinite alternate ease-in-out;
+        }
+
+        @keyframes arrow-bounce-glow {
+          0% {
+            transform: translateX(0);
+          }
+          100% {
+            transform: translateX(4px);
+          }
+        }
+
         .timeframe-toggle {
           display: flex;
           padding: 4px;
@@ -777,6 +881,7 @@ const Leaderboard = ({ groups, students, transactions, userRole, onDeleteTransac
           -webkit-overflow-scrolling: touch;
           scrollbar-width: none; /* Firefox */
           -ms-overflow-style: none;  /* IE/Edge */
+          width: 100%;
         }
 
         .timeframe-toggle::-webkit-scrollbar {
