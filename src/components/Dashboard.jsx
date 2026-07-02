@@ -24,47 +24,6 @@ const Dashboard = ({ setActiveTab, onSelectGroup, groups = [], students = [], tr
     return transactions.filter(tx => new Date(tx.timestamp) >= sevenDaysAgo).length;
   }, [transactions]);
 
-  // Find Spotlight Students
-  const lastWeekSpotlight = useMemo(() => {
-    if (students.length === 0) return null;
-    const scoredStudents = students.map(s => ({
-      ...s,
-      score: getStudentScore(transactions, s.id, 'lastWeek')
-    })).filter(s => s.score > 0);
-
-    if (scoredStudents.length === 0) return null;
-    scoredStudents.sort((a, b) => b.score - a.score);
-    const topScore = scoredStudents[0].score;
-    const winners = scoredStudents.filter(s => s.score === topScore);
-
-    if (winners.length === 1) {
-      const topStudent = winners[0];
-      const groupName = groups.find(g => g.id === topStudent.groupId)?.name || 'Guruhsiz';
-      return {
-        isTie: false,
-        name: topStudent.name,
-        emoji: topStudent.emoji,
-        color: topStudent.color,
-        score: topScore,
-        groupName,
-        groupId: topStudent.groupId
-      };
-    } else {
-      const names = winners.map(w => w.name).join(' & ');
-      const groupNames = winners.map(w => groups.find(g => g.id === w.groupId)?.name || 'Guruhsiz');
-      const uniqueGroupNames = [...new Set(groupNames)].join(' & ');
-      return {
-        isTie: true,
-        name: names,
-        emoji: '🏆',
-        color: '#E7FF56',
-        score: topScore,
-        groupName: uniqueGroupNames,
-        groupId: null
-      };
-    }
-  }, [students, groups, transactions]);
-
   // Find Spotlight: Last Week's Winner (Student)
   const lastWeekSpotlight = useMemo(() => {
     if (students.length === 0) return null;
