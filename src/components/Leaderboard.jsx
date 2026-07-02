@@ -142,6 +142,7 @@ const Leaderboard = ({ groups, students, transactions, userRole, onDeleteTransac
   }, [initialGroupId]);
 
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [isTimeframeDropdownOpen, setIsTimeframeDropdownOpen] = useState(false);
   const [confettiTrigger, setConfettiTrigger] = useState(0);
   const [profileStudent, setSelectedProfileStudent] = useState(null);
 
@@ -149,6 +150,9 @@ const Leaderboard = ({ groups, students, transactions, userRole, onDeleteTransac
     const handleOutsideClick = (e) => {
       if (!e.target.closest('.custom-dropdown-container')) {
         setIsDropdownOpen(false);
+      }
+      if (!e.target.closest('.timeframe-dropdown-container')) {
+        setIsTimeframeDropdownOpen(false);
       }
     };
     document.addEventListener('click', handleOutsideClick);
@@ -307,45 +311,100 @@ const Leaderboard = ({ groups, students, transactions, userRole, onDeleteTransac
             </div>
           )}
 
-          <div className={`timeframe-toggle-wrapper ${scrollState.showLeft ? 'has-left-shadow' : ''} ${scrollState.showRight ? 'has-right-shadow' : ''}`}>
-            <div 
-              ref={toggleRef}
-              className="timeframe-toggle glass"
-            >
-              <button
-                className={`toggle-btn ${timeframe === 'week' ? 'active' : ''}`}
-                onClick={() => setTimeframe('week')}
+          {/* Timeframe Toggle for Desktop */}
+          <div className="timeframe-toggle-desktop-wrapper">
+            <div className={`timeframe-toggle-wrapper ${scrollState.showLeft ? 'has-left-shadow' : ''} ${scrollState.showRight ? 'has-right-shadow' : ''}`}>
+              <div 
+                ref={toggleRef}
+                className="timeframe-toggle glass"
               >
-                Yangi hafta
-              </button>
-              <button
-                className={`toggle-btn ${timeframe === 'lastWeek' ? 'active' : ''}`}
-                onClick={() => setTimeframe('lastWeek')}
-              >
-                O'tgan hafta
-              </button>
-              <button
-                className={`toggle-btn ${timeframe === 'month' ? 'active' : ''}`}
-                onClick={() => setTimeframe('month')}
-              >
-                Bu oy
-              </button>
-              <button
-                className={`toggle-btn ${timeframe === 'lastMonth' ? 'active' : ''}`}
-                onClick={() => setTimeframe('lastMonth')}
-              >
-                O'tgan oy
-              </button>
-              <button
-                className={`toggle-btn ${timeframe === 'all' ? 'active' : ''}`}
-                onClick={() => setTimeframe('all')}
-              >
-                Kurs
-              </button>
+                <button
+                  className={`toggle-btn ${timeframe === 'week' ? 'active' : ''}`}
+                  onClick={() => setTimeframe('week')}
+                >
+                  Yangi hafta
+                </button>
+                <button
+                  className={`toggle-btn ${timeframe === 'lastWeek' ? 'active' : ''}`}
+                  onClick={() => setTimeframe('lastWeek')}
+                >
+                  O'tgan hafta
+                </button>
+                <button
+                  className={`toggle-btn ${timeframe === 'month' ? 'active' : ''}`}
+                  onClick={() => setTimeframe('month')}
+                >
+                  Bu oy
+                </button>
+                <button
+                  className={`toggle-btn ${timeframe === 'lastMonth' ? 'active' : ''}`}
+                  onClick={() => setTimeframe('lastMonth')}
+                >
+                  O'tgan oy
+                </button>
+                <button
+                  className={`toggle-btn ${timeframe === 'all' ? 'active' : ''}`}
+                  onClick={() => setTimeframe('all')}
+                >
+                  Kurs
+                </button>
+              </div>
+              {scrollState.showRight && (
+                <div className="scroll-indicator-arrow">
+                  <span>→</span>
+                </div>
+              )}
             </div>
-            {scrollState.showRight && (
-              <div className="scroll-indicator-arrow">
-                <span>→</span>
+          </div>
+
+          {/* Timeframe Dropdown Selector for Mobile */}
+          <div className="timeframe-dropdown-container">
+            <button 
+              type="button" 
+              className="filter-select-btn" 
+              onClick={() => setIsTimeframeDropdownOpen(!isTimeframeDropdownOpen)}
+            >
+              <span>{
+                timeframe === 'week' ? 'Yangi hafta' :
+                timeframe === 'lastWeek' ? "O'tgan hafta" :
+                timeframe === 'month' ? 'Bu oy' :
+                timeframe === 'lastMonth' ? "O'tgan oy" :
+                'Kurs'
+              }</span>
+              <span className="dropdown-arrow">▼</span>
+            </button>
+            {isTimeframeDropdownOpen && (
+              <div className="custom-dropdown-list glass">
+                <div 
+                  className={`custom-dropdown-item ${timeframe === 'week' ? 'active' : ''}`}
+                  onClick={() => { setTimeframe('week'); setIsTimeframeDropdownOpen(false); }}
+                >
+                  Yangi hafta
+                </div>
+                <div 
+                  className={`custom-dropdown-item ${timeframe === 'lastWeek' ? 'active' : ''}`}
+                  onClick={() => { setTimeframe('lastWeek'); setIsTimeframeDropdownOpen(false); }}
+                >
+                  O'tgan hafta
+                </div>
+                <div 
+                  className={`custom-dropdown-item ${timeframe === 'month' ? 'active' : ''}`}
+                  onClick={() => { setTimeframe('month'); setIsTimeframeDropdownOpen(false); }}
+                >
+                  Bu oy
+                </div>
+                <div 
+                  className={`custom-dropdown-item ${timeframe === 'lastMonth' ? 'active' : ''}`}
+                  onClick={() => { setTimeframe('lastMonth'); setIsTimeframeDropdownOpen(false); }}
+                >
+                  O'tgan oy
+                </div>
+                <div 
+                  className={`custom-dropdown-item ${timeframe === 'all' ? 'active' : ''}`}
+                  onClick={() => { setTimeframe('all'); setIsTimeframeDropdownOpen(false); }}
+                >
+                  Kurs
+                </div>
               </div>
             )}
           </div>
@@ -803,6 +862,17 @@ const Leaderboard = ({ groups, students, transactions, userRole, onDeleteTransac
           color: #000000;
         }
 
+        .timeframe-toggle-desktop-wrapper {
+          display: block;
+          width: auto;
+        }
+
+        .timeframe-dropdown-container {
+          display: none;
+          position: relative;
+          width: 200px;
+        }
+
         .timeframe-toggle-wrapper {
           position: relative;
           display: flex;
@@ -1181,6 +1251,15 @@ const Leaderboard = ({ groups, students, transactions, userRole, onDeleteTransac
           .toggle-btn {
             padding: 6px 12px;
             font-size: 0.8rem;
+          }
+
+          .timeframe-toggle-desktop-wrapper {
+            display: none;
+          }
+
+          .timeframe-dropdown-container {
+            display: block;
+            width: 100%;
           }
         }
 
