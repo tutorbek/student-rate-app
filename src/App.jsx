@@ -407,6 +407,89 @@ function App() {
     };
   }, []);
 
+  // Like particles generator for Login screen
+  useEffect(() => {
+    if (isAuthenticated) return;
+
+    const container = document.getElementById("like-particles-container");
+    if (!container) return;
+
+    const particleCount = window.innerWidth < 768 ? 5 : 10;
+    const textOptions = ["+1 Like", "👍", "Epchil", "🔥", "ZO'R"];
+    const colors = ["#DFFF00", "#FFFFFF"];
+    const particles = [];
+    let animationFrameId;
+
+    function createParticle(isInitial = false) {
+      const el = document.createElement("div");
+      el.className = "floating-brutal-like select-none opacity-0 transition-opacity duration-500";
+      
+      el.innerText = textOptions[Math.floor(Math.random() * textOptions.length)];
+      const randomBg = colors[Math.floor(Math.random() * colors.length)];
+      el.style.backgroundColor = randomBg;
+      if (randomBg === "#DFFF00") {
+        el.style.color = "#000000";
+      }
+
+      const x = Math.random() * 100;
+      const y = isInitial ? (Math.random() * 85 + 5) : 105;
+      
+      el.style.left = `${x}%`;
+      el.style.top = `${y}%`;
+      
+      container.appendChild(el);
+
+      setTimeout(() => { el.style.opacity = "1"; }, 50);
+
+      const pData = {
+        element: el,
+        x: x,
+        y: y,
+        speed: 0.08 + Math.random() * 0.12,
+        angle: (Math.random() - 0.5) * 0.15,
+        rot: Math.random() * 360,
+        rotSpeed: (Math.random() - 0.5) * 0.5,
+        scale: 0.85 + Math.random() * 0.3
+      };
+
+      particles.push(pData);
+    }
+
+    for (let i = 0; i < particleCount; i++) {
+      createParticle(true);
+    }
+
+    function updateParticles() {
+      for (let i = particles.length - 1; i >= 0; i--) {
+        const p = particles[i];
+        p.y -= p.speed;
+        p.x += p.angle;
+        p.rot += p.rotSpeed;
+
+        if (p.x < -15 || p.x > 115 || p.y < -15) {
+          p.element.remove();
+          particles.splice(i, 1);
+          createParticle(false);
+          continue;
+        }
+
+        p.element.style.top = `${p.y}%`;
+        p.element.style.left = `${p.x}%`;
+        p.element.style.transform = `translate3d(0,0,0) translate(-50%, -50%) rotate(${p.rot}deg) scale(${p.scale})`;
+      }
+      animationFrameId = requestAnimationFrame(updateParticles);
+    }
+
+    animationFrameId = requestAnimationFrame(updateParticles);
+
+    return () => {
+      cancelAnimationFrame(animationFrameId);
+      if (container) {
+        container.innerHTML = '';
+      }
+    };
+  }, [isAuthenticated]);
+
   // Trigger a background download of the JSON database
   const triggerSilentBackupDownload = () => {
     try {
@@ -763,38 +846,186 @@ function App() {
 
   if (!isAuthenticated) {
     return (
-      <div className="login-wrapper">
-        <div className="login-card glass">
-          <h2 className="login-title">epchil  robot</h2>
-          <p className="login-subtitle">Tizimga kirish uchun parolni kiriting</p>
-          <form onSubmit={handleLoginSubmit}>
-            <div className="form-group">
-              <label className="form-label">Parol</label>
-              <div className="password-input-wrapper">
-                <input
-                  type={showPassword ? 'text' : 'password'}
-                  className="form-input password-input"
-                  placeholder="••••••••"
-                  value={loginPassword}
-                  onChange={(e) => setLoginPassword(e.target.value)}
-                  autoFocus
-                />
-                <button
-                  type="button"
-                  className="password-toggle-btn"
-                  onClick={() => setShowPassword(!showPassword)}
-                  title={showPassword ? "Yashirish" : "Ko'rsatish"}
-                >
-                  {showPassword ? '👁️' : '🙈'}
-                </button>
+      <div className="bg-stark-white text-deep-void font-sans antialiased min-h-screen flex flex-col justify-between w-full">
+        {/* Top Floating Header */}
+        <header className="w-full bg-stark-white border-b-2 border-deep-void px-6 py-4 flex justify-between items-center sticky top-0 z-50">
+          <div className="flex items-center gap-2">
+            <h1 className="text-xl md:text-2xl font-black tracking-tighter uppercase select-none">
+              EPCHIL <span className="text-deep-void bg-cyber-yellow px-2 py-0.5 border border-deep-void">ROBOT</span>
+            </h1>
+          </div>
+          <div className="flex items-center gap-4">
+            <span className="font-bold text-xs bg-muted-gray border-2 border-deep-void px-2.5 py-1 uppercase tracking-wider rounded-none">V1.0.0</span>
+          </div>
+        </header>
+
+        {/* Main Layout Container */}
+        <main className="flex-grow flex flex-col lg:flex-row relative">
+          
+          {/* Left Section: Educational Story */}
+          <section className="w-full lg:w-1/2 bg-cyber-yellow border-b-2 lg:border-b-0 lg:border-r-2 border-deep-void flex flex-col justify-center p-6 sm:p-12 md:p-16 relative overflow-hidden min-h-[450px] lg:min-h-0">
+            {/* Atmospheric Pattern */}
+            <div className="absolute inset-0 opacity-10 pointer-events-none custom-pattern"></div>
+            
+            <div className="relative z-10 max-w-xl mx-auto lg:mx-0">
+              <span className="inline-block bg-deep-void text-stark-white px-3 py-1 text-xs font-bold uppercase tracking-widest mb-4 rounded-none">
+                LIKE TIZIMI MAQSADI
+              </span>
+              <h2 className="text-3xl sm:text-4xl md:text-5xl font-black uppercase leading-none tracking-tight mb-6">
+                BILIM OLISHLARINI <br className="hidden sm:inline"/>
+                <span className="bg-stark-white text-deep-void px-2 border-2 border-deep-void inline-block my-1">"LIKE"</span> BILAN <br className="hidden sm:inline"/>
+                TAQDIRLANG!
+              </h2>
+              
+              <div className="w-16 h-1 bg-deep-void mb-8"></div>
+              
+              {/* Features List */}
+              <div className="space-y-6 md:space-y-8">
+                <div className="flex items-start gap-4 group">
+                  <div className="w-12 h-12 flex-shrink-0 bg-stark-white border-2 border-deep-void hard-shadow flex items-center justify-center transition-transform group-hover:scale-105 rounded-none">
+                    <span className="material-symbols-outlined text-2xl font-bold" style={{ fontVariationSettings: "'FILL' 1" }}>thumb_up</span>
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-bold uppercase tracking-tight mb-1">FAOL TA'LIM TIZIMI</h3>
+                    <p className="text-sm md:text-base opacity-90 font-medium">Har bir darsda faol qatnashing va ustozingizdan qimmatli dars "Like"larini qo'lga kiriting.</p>
+                  </div>
+                </div>
+                
+                <div className="flex items-start gap-4 group">
+                  <div className="w-12 h-12 flex-shrink-0 bg-stark-white border-2 border-deep-void hard-shadow flex items-center justify-center transition-transform group-hover:scale-105 rounded-none">
+                    <span className="material-symbols-outlined text-2xl font-bold" style={{ fontVariationSettings: "'FILL' 1" }}>emoji_events</span>
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-bold uppercase tracking-tight mb-1">HAFTALIK VA OYLIK REYTING</h3>
+                    <p className="text-sm md:text-base opacity-90 font-medium">Eng ko'p Like to'plagan g'oliblar qatoridan joy oling va maxsus sovg'alarga ega bo'ling.</p>
+                  </div>
+                </div>
+                
+                <div className="flex items-start gap-4 group">
+                  <div className="w-12 h-12 flex-shrink-0 bg-stark-white border-2 border-deep-void hard-shadow flex items-center justify-center transition-transform group-hover:scale-105 rounded-none">
+                    <span className="material-symbols-outlined text-2xl font-bold" style={{ fontVariationSettings: "'FILL' 1" }}>groups</span>
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-bold uppercase tracking-tight mb-1">HAMJIHAT GURUH RAQOBATI</h3>
+                    <p className="text-sm md:text-base opacity-90 font-medium">O'z guruhingiz a'zolari bilan birlashing va boshqa guruhlar orasida peshqadam bo'ling!</p>
+                  </div>
+                </div>
               </div>
-              {loginError && <p className="login-error-text">{loginError}</p>}
+
+              <div className="mt-12 flex items-center gap-4 opacity-30">
+                <span className="material-symbols-outlined text-3xl">precision_manufacturing</span>
+                <span className="material-symbols-outlined text-3xl">smart_toy</span>
+                <span className="material-symbols-outlined text-3xl">settings_input_component</span>
+              </div>
             </div>
-            <button type="submit" className="btn btn-primary login-btn scale-active" disabled={loginLoading}>
-              {loginLoading ? "Tekshirilmoqda..." : "KIRISH"}
-            </button>
-          </form>
-        </div>
+          </section>
+          
+          {/* Right Section: Login Form Box with Interactive Particles Background */}
+          <section className="w-full lg:w-1/2 bg-muted-gray flex items-center justify-center p-4 sm:p-8 md:p-12 lg:p-16 relative">
+            
+            {/* Dynamic Like Particles Engine Cover Layer */}
+            <div id="like-particles-container"></div>
+            
+            <div className="w-full max-w-md my-auto relative z-10">
+              {/* Brutalist Login Box Card */}
+              <div className="bg-stark-white border-2 border-deep-void p-6 sm:p-10 relative overflow-hidden hard-shadow-lg rounded-none">
+                
+                {/* Form Header */}
+                <div className="text-center mb-8">
+                  <div className="inline-flex items-center justify-center w-16 h-16 border-2 border-deep-void bg-cyber-yellow mb-4 rounded-none">
+                    <span className="material-symbols-outlined text-3xl font-bold">lock</span>
+                  </div>
+                  <h2 className="text-2xl font-extrabold uppercase tracking-tight">TIZIMGA KIRISH</h2>
+                  <p className="text-xs font-bold tracking-wider opacity-60 mt-1 uppercase">Davom etish uchun parolni kiriting</p>
+                </div>
+                
+                {/* Form Action */}
+                <form className="space-y-6" onSubmit={handleLoginSubmit}>
+                  <div className="relative input-group">
+                    <input 
+                      type={showPassword ? 'text' : 'password'}
+                      id="passwordField" 
+                      placeholder=" " 
+                      required
+                      value={loginPassword}
+                      onChange={(e) => setLoginPassword(e.target.value)}
+                      className="w-full h-14 bg-stark-white border-2 border-deep-void px-4 pr-12 rounded-none focus:ring-0 focus:outline-none input-focus-effect font-mono tracking-widest text-lg transition-all"
+                      autoFocus
+                    />
+                    <label 
+                      htmlFor="passwordField" 
+                      className="absolute left-4 top-4 text-xs font-bold uppercase tracking-wider text-deep-void opacity-70 transition-all pointer-events-none origin-left"
+                    >
+                      PAROL
+                    </label>
+                    <button 
+                      type="button" 
+                      onClick={() => setShowPassword(!showPassword)} 
+                      className="absolute right-4 top-4 text-deep-void opacity-75 hover:opacity-100 transition-opacity focus:outline-none"
+                      title="Parolni ko'rsatish/yashirish"
+                    >
+                      <span className="material-symbols-outlined" id="eyeIcon">
+                        {showPassword ? 'visibility_off' : 'visibility'}
+                      </span>
+                    </button>
+                  </div>
+                  
+                  {loginError && <p className="text-red-600 text-xs font-bold uppercase tracking-wider" style={{ marginTop: '8px' }}>{loginError}</p>}
+
+                  <button 
+                    type="submit" 
+                    disabled={loginLoading}
+                    className="w-full h-14 bg-deep-void text-stark-white font-bold text-sm md:text-base border-2 border-cyber-yellow uppercase tracking-widest transition-all hard-shadow-btn flex items-center justify-center gap-2 rounded-none group"
+                  >
+                    <span>{loginLoading ? "TEKSHIRILMOQDA..." : "KIRISH"}</span>
+                    <span className="material-symbols-outlined text-cyber-yellow group-hover:translate-x-1 transition-transform">arrow_forward</span>
+                  </button>
+                  
+                  <div className="flex items-center justify-between pt-2 border-t border-dashed border-gray-300">
+                    <div className="flex gap-1.5" aria-hidden="true">
+                      <div className="w-2 h-2 bg-cyber-yellow border border-deep-void"></div>
+                      <div className="w-2 h-2 bg-deep-void"></div>
+                      <div className="w-2 h-2 bg-cyber-yellow border border-deep-void"></div>
+                    </div>
+                  </div>
+                </form>
+                
+                <div className="absolute -bottom-8 -right-8 opacity-5 pointer-events-none rotate-12 select-none">
+                  <span className="material-symbols-outlined text-[140px]" style={{ fontVariationSettings: "'wght' 200" }}>settings</span>
+                </div>
+              </div>
+              
+              {/* Support Center Information */}
+              <div className="mt-6 flex flex-col items-center gap-3">
+                <p className="text-xs font-medium text-center text-gray-600 max-w-xs leading-relaxed">
+                  Tizimga kirishda muammo bormi? <br/> Admin bilan bog'laning.
+                </p>
+                <div className="flex gap-3">
+                  <a href="https://t.me/bkzd19" target="_blank" rel="noopener noreferrer" className="w-10 h-10 border-2 border-deep-void bg-stark-white hard-shadow-btn transition-all rounded-none flex items-center justify-center" title="Telegram">
+                    <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg>
+                  </a>
+                  <a href="https://instagram.com/1bkzd" target="_blank" rel="noopener noreferrer" className="w-10 h-10 border-2 border-deep-void bg-stark-white hard-shadow-btn transition-all rounded-none flex items-center justify-center" title="Instagram">
+                    <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="20" x="2" y="2" rx="0"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" x2="17.51" y1="6.5" y2="6.5"/></svg>
+                  </a>
+                </div>
+              </div>
+              
+            </div>
+          </section>
+        </main>
+
+        {/* Bottom System Technical Footer */}
+        <footer className="bg-deep-void text-stark-white px-6 py-4 flex flex-col sm:flex-row justify-between items-center text-[11px] font-bold uppercase tracking-widest gap-2 sm:gap-0 border-t-2 border-deep-void">
+          <div className="flex flex-wrap items-center justify-center gap-4 md:gap-6">
+            <span>© 2026 EPCHIL ROBOT</span>
+            <span className="hidden sm:block opacity-30">|</span>
+            <a href="https://t.me/bkzd19" target="_blank" rel="noopener noreferrer" className="text-cyber-yellow hover:text-stark-white lowercase transition-colors">Made with 🥷🏻 by bkzd19</a>
+          </div>
+          <div className="flex items-center gap-2 text-cyber-yellow bg-zinc-900 px-2.5 py-1 border border-zinc-800 text-[10px]">
+            <span className="w-1.5 h-1.5 rounded-full bg-cyber-yellow animate-ping"></span>
+            TIZIM FAOLLIGI: A'LO
+          </div>
+        </footer>
 
         {toast && (
           <div className="toast-container">

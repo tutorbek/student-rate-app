@@ -1,15 +1,120 @@
 <!doctype html>
-<html lang="en">
+<html lang="uz" class="h-full">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <!-- Favicons -->
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+    <link rel="manifest" href="/site.webmanifest">
+    <link rel="shortcut icon" href="/favicon.ico">
+
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-    <title>epchilrobot.uz</title>
+    
+    <!-- SEO Meta Teglar -->
+    <title>Epchil Robot - Bilimni Like bilan taqdirlash va faol ta'lim platformasi</title>
+    <meta name="description" content="Epchil Robot platformasi orqali darslarda faol qatnashing, haftalik va oylik reytinglarda peshqadam bo'ling hamda bilimingizni qimmatli Like-lar bilan taqdirlang."/>
+    <meta name="keywords" content="Epchil Robot, Epchil, Robot, login, tizimga kirish, faol ta'lim, reyting tizimi, guruh raqobati, maktab platformasi, ta'lim, tutorbek"/>
+    <meta name="author" content="TUTORBEK"/>
+    <meta name="robots" content="index, follow"/>
+    
+    <!-- Open Graph / Facebook SEO -->
+    <meta property="og:type" content="website"/>
+    <meta property="og:title" content="Epchil Robot - Faol ta'lim va reyting platformasi."/>
+    <meta property="og:description" content="Bilim olishingizni Like bilan taqdirlang! Haftalik va oylik musobaqalarda g'olib bo'ling."/>
+    <meta property="og:site_name" content="Epchil Robot"/>
+
+    <!-- Google Fonts & Icons -->
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com?plugins=forms"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'cyber-yellow': '#DFFF00',
+                        'deep-void': '#000000',
+                        'stark-white': '#FFFFFF',
+                        'muted-gray': '#F3F4F6',
+                    },
+                    fontFamily: {
+                        sans: ['Outfit', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <style>
+        /* Neo-Brutalism maxsus stillari */
+        .hard-shadow {
+            box-shadow: 4px 4px 0px 0px #000000;
+        }
+        .hard-shadow-lg {
+            box-shadow: 8px 8px 0px 0px #000000;
+        }
+        .hard-shadow-btn:hover {
+            box-shadow: 6px 6px 0px 0px #000000;
+            transform: translate(-2px, -2px);
+        }
+        .hard-shadow-btn:active {
+            box-shadow: 0px 0px 0px 0px #000000;
+            transform: translate(4px, 4px);
+        }
+        .custom-pattern {
+            background-image: radial-gradient(#000000 2px, transparent 2px);
+            background-size: 20px 20px;
+        }
+        /* Input validatsiya va label o'zgarishi */
+        .input-group input:focus ~ label,
+        .input-group input:not(:placeholder-shown) ~ label {
+            transform: translateY(-1.5rem) scale(0.85);
+            background-color: #FFFFFF;
+            padding-left: 4px;
+            padding-right: 4px;
+        }
+        .input-focus-effect:focus {
+            border-color: #000000 !important;
+            box-shadow: 0 0 0 3px #DFFF00 !important;
+        }
+
+        /* Yuqori unumdorlikka ega, qotmaydigan Like oqimi uchun qatlam */
+        #like-particles-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        /* Tartibsiz suzuvchi ob'ektlar stili */
+        .floating-brutal-like {
+            position: absolute;
+            background: #FFFFFF;
+            border: 2px solid #000000;
+            padding: 6px 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+            box-shadow: 3px 3px 0px 0px #000000;
+            font-weight: 900;
+            font-size: 14px;
+            will-change: transform;
+            transform-origin: center;
+        }
+    </style>
   </head>
-  <body>
-    <div id="root"></div>
+  <body class="h-full">
+    <div id="root" class="h-full"></div>
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>
