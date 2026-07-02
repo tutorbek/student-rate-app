@@ -23,8 +23,9 @@ const COLOR_OPTIONS = [
   { name: 'Sienna', value: '#A0522D' },
 ];
 
-const GroupDetail = ({ group, students, transactions, quickTags, onBack, onAddStudent, onUpdateStudent, onDeleteStudent, onAwardPoints, onDeleteTransaction, showToast }) => {
+const GroupDetail = ({ group, students, transactions, quickTags, onBack, onAddStudent, onUpdateStudent, onDeleteStudent, onAwardPoints, onDeleteTransaction, showToast, userRole }) => {
   const [profileStudent, setProfileStudent] = useState(null);
+  const [showPassword, setShowPassword] = useState(false);
   const [editingStudent, setEditingStudent] = useState(null);
   const [editStudentName, setEditStudentName] = useState('');
   const [editStudentEmoji, setEditStudentEmoji] = useState('🚀');
@@ -140,7 +141,44 @@ const GroupDetail = ({ group, students, transactions, quickTags, onBack, onAddSt
               </div>
               <span>{group.name}</span>
             </h2>
-            <p className="page-subtitle">Talabalar ro'yxati va ularni baholash</p>
+            <div className="page-subtitle-container" style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+              <p className="page-subtitle" style={{ margin: 0 }}>Talabalar ro'yxati va ularni baholash</p>
+              {userRole === 'teacher' && (
+                <div 
+                  className="group-password-badge" 
+                  style={{ 
+                    display: 'inline-flex', 
+                    alignItems: 'center', 
+                    gap: '8px', 
+                    fontSize: '0.85rem', 
+                    color: 'var(--text-secondary)',
+                    marginTop: '4px',
+                    cursor: 'pointer',
+                    userSelect: 'none',
+                    alignSelf: 'flex-start'
+                  }}
+                  onClick={() => setShowPassword(!showPassword)}
+                  title={showPassword ? "Yashirish" : "Ko'rsatish"}
+                >
+                  <span>🔑 Guruh paroli:</span>
+                  <strong 
+                    style={{ 
+                      background: '#E7FF56', 
+                      color: '#000000', 
+                      padding: '2px 8px', 
+                      border: '1px solid #000000', 
+                      fontFamily: 'monospace', 
+                      fontSize: '0.85rem',
+                      letterSpacing: showPassword ? 'normal' : '2px',
+                      textTransform: 'lowercase'
+                    }}
+                  >
+                    {showPassword ? (group.password || "yo'q") : '••••••'}
+                  </strong>
+                  <span style={{ fontSize: '1rem' }}>{showPassword ? '👁️' : '👁️‍🗨️'}</span>
+                </div>
+              )}
+            </div>
           </div>
           <button className="btn btn-primary scale-active" onClick={() => setShowAddStudentModal(true)}>
             <span>+ Yangi talaba</span>

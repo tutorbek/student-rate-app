@@ -668,6 +668,7 @@ function App() {
               onAwardPoints={handleAwardPoints}
               onDeleteTransaction={handleDeleteTransaction}
               showToast={showToast}
+              userRole={userRole}
             />
           );
         }

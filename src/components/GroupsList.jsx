@@ -134,10 +134,6 @@ const GroupsList = ({ groups, students, onSelectGroup, onAddGroup, onUpdateGroup
                 
                 <div className="group-card-body" onClick={() => onSelectGroup(group.id)}>
                   <h3 className="group-card-title">{group.name}</h3>
-                  <p className="group-card-password" style={{ fontSize: '0.85rem', color: '#000000', margin: '4px 0 12px 0', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    <span>🔑 Parol:</span>
-                    <strong style={{ background: '#E7FF56', padding: '2px 6px', border: '1px solid #000000', textTransform: 'lowercase' }}>{group.password || 'yo\'q'}</strong>
-                  </p>
                   <p className="group-card-date">
                     Tashkil etilgan: {new Date(group.createdAt).toLocaleDateString()}
                   </p>
