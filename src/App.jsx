@@ -319,6 +319,12 @@ function App() {
     return activeTxs;
   }, [transactions, studentIds, userRole, studentGroupId]);
 
+  // All active data for the current teacher (no student-group isolation)
+  // Used for Top 3 groups widget in Sidebar — students should see ALL teacher groups
+  const allActiveGroups = useMemo(() => groups.filter(g => !g.deleted), [groups]);
+  const allActiveStudents = useMemo(() => students.filter(s => !s.deleted), [students]);
+  const allActiveTransactions = useMemo(() => transactions.filter(t => !t.deleted), [transactions]);
+
   // Debounced Save to Firestore whenever state changes (Teachers only!)
   useEffect(() => {
     if (!isLoaded || !isAuthenticated || !teacherId) return;
@@ -866,7 +872,7 @@ function App() {
       <div className="bg-glow-2"></div>
 
       {/* Sidebar Navigation */}
-      <Sidebar activeTab={activeTab} setActiveTab={handleTabChange} userRole={userRole} onLogout={handleLogout} groups={filteredGroups} students={filteredStudents} transactions={filteredTransactions} />
+      <Sidebar activeTab={activeTab} setActiveTab={handleTabChange} userRole={userRole} onLogout={handleLogout} groups={allActiveGroups} students={allActiveStudents} transactions={allActiveTransactions} />
 
       {/* Main Panel Content */}
       <main className="main-content">
