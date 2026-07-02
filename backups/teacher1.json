@@ -1,0 +1,668 @@
+{
+  "groups": [
+    {
+      "id": "l8vh182f5",
+      "icon": "🎯",
+      "name": "G1 11:30 Dushanba",
+      "password": "salomustoz",
+      "createdAt": "2026-06-24T01:03:53.069Z"
+    },
+    {
+      "id": "yq8gbnuau",
+      "icon": "💡",
+      "name": "G2 9:30 Seshanba",
+      "password": "kichkinalar",
+      "createdAt": "2026-06-24T02:08:25.574Z"
+    },
+    {
+      "id": "fzonx5xbe",
+      "icon": "🚀",
+      "name": "G4 Seshanba 12:30",
+      "password": "gamers",
+      "createdAt": "2026-06-24T02:10:10.858Z"
+    },
+    {
+      "id": "3j0ousi0w",
+      "icon": "📚",
+      "name": "G5 Seshanba 11:00",
+      "password": "rostan",
+      "createdAt": "2026-06-30T06:12:57.676Z"
+    }
+  ],
+  "students": [
+    {
+      "id": "0ob2moe65",
+      "name": "Azizaxon",
+      "color": "#F5F5DC",
+      "emoji": "🦋",
+      "groupId": "l8vh182f5",
+      "createdAt": "2026-06-24T01:04:41.446Z"
+    },
+    {
+      "id": "ybkxhi332",
+      "name": "Nigina",
+      "color": "#E35336",
+      "emoji": "🎨",
+      "groupId": "l8vh182f5",
+      "createdAt": "2026-06-24T02:07:24.640Z"
+    },
+    {
+      "id": "b7gogaueb",
+      "name": "Ruxshona",
+      "color": "#F4A460",
+      "emoji": "🎈",
+      "groupId": "l8vh182f5",
+      "createdAt": "2026-06-24T02:07:36.940Z"
+    },
+    {
+      "id": "x8tk7y27r",
+      "name": "Umarbek",
+      "color": "#F5F5DC",
+      "emoji": "🦅",
+      "groupId": "l8vh182f5",
+      "createdAt": "2026-06-24T02:07:49.990Z"
+    },
+    {
+      "id": "e6a5tx03r",
+      "name": "Xurshid",
+      "color": "#A0522D",
+      "emoji": "🦁",
+      "groupId": "l8vh182f5",
+      "createdAt": "2026-06-24T02:08:04.024Z"
+    },
+    {
+      "id": "k28sxkkia",
+      "name": "Sanjarbek",
+      "color": "#F5F5DC",
+      "emoji": "🦁",
+      "groupId": "yq8gbnuau",
+      "createdAt": "2026-06-24T02:08:40.641Z"
+    },
+    {
+      "id": "snvjmfc1l",
+      "name": "Atxam",
+      "color": "#A0522D",
+      "emoji": "🦅",
+      "groupId": "yq8gbnuau",
+      "createdAt": "2026-06-24T02:08:53.891Z"
+    },
+    {
+      "id": "ew2q7ti0p",
+      "name": "Bekjon",
+      "color": "#F4A460",
+      "emoji": "🐼",
+      "groupId": "yq8gbnuau",
+      "createdAt": "2026-06-24T02:09:05.424Z"
+    },
+    {
+      "id": "jh3t0huhl",
+      "name": "Saidaxmatxo'ja",
+      "color": "#F5F5DC",
+      "emoji": "🎮",
+      "groupId": "yq8gbnuau",
+      "createdAt": "2026-06-24T02:09:20.625Z"
+    },
+    {
+      "id": "eirryuqt3",
+      "name": "Benyamin",
+      "color": "#F5F5DC",
+      "emoji": "🧸",
+      "groupId": "yq8gbnuau",
+      "createdAt": "2026-06-24T02:09:35.276Z"
+    },
+    {
+      "id": "gw3cushvc",
+      "name": "Xurshid",
+      "color": "#F4A460",
+      "emoji": "🦅",
+      "groupId": "fzonx5xbe",
+      "createdAt": "2026-06-24T02:11:05.625Z"
+    },
+    {
+      "id": "j339u5g6n",
+      "name": "Islombek T",
+      "color": "#E35336",
+      "emoji": "🚀",
+      "groupId": "fzonx5xbe",
+      "createdAt": "2026-06-24T02:11:27.459Z"
+    },
+    {
+      "id": "4awhxpady",
+      "name": "Davlatbek",
+      "color": "#F5F5DC",
+      "emoji": "🦁",
+      "groupId": "3j0ousi0w",
+      "createdAt": "2026-06-30T06:13:11.009Z"
+    },
+    {
+      "id": "vtcmuolkm",
+      "name": "Imron",
+      "color": "#E35336",
+      "emoji": "🦅",
+      "groupId": "3j0ousi0w",
+      "createdAt": "2026-06-30T06:13:19.109Z"
+    },
+    {
+      "id": "1dv4n6k4l",
+      "name": "Muhammadali",
+      "color": "#F5F5DC",
+      "emoji": "🚀",
+      "groupId": "3j0ousi0w",
+      "createdAt": "2026-06-30T06:13:29.109Z"
+    }
+  ],
+  "quickTags": [
+    "Faol ishtirok 🌟",
+    "Uy vazifasi bajardi 📚",
+    "Ajoyib javob 💡",
+    "Darsga kechikdi ⏰",
+    "Guruh ishida faollik 👥",
+    "Intizom buzilishi ⚠️"
+  ],
+  "transactions": [
+    {
+      "id": "x72usl66i",
+      "amount": 31,
+      "comment": "Hot keylarni yaxshi yodlagan. Va yana harakat qilish kerak",
+      "studentId": "j339u5g6n",
+      "timestamp": "2026-07-02T07:51:09.207Z"
+    },
+    {
+      "id": "3g8rwfdk0",
+      "amount": 15,
+      "comment": "Hot keylarni yaxshi yodlash kerak",
+      "studentId": "gw3cushvc",
+      "timestamp": "2026-07-02T07:50:46.623Z"
+    },
+    {
+      "id": "nsho9ifxq",
+      "amount": 5,
+      "comment": "Faol ishtirok 🌟",
+      "studentId": "k28sxkkia",
+      "timestamp": "2026-07-02T05:27:09.316Z"
+    },
+    {
+      "id": "gib54w7md",
+      "amount": 5,
+      "comment": "Faol ishtirok 🌟",
+      "studentId": "ew2q7ti0p",
+      "timestamp": "2026-07-02T05:26:34.899Z"
+    },
+    {
+      "id": "i3k4n5xc7",
+      "amount": 14,
+      "comment": "Faol ishtirok 🌟",
+      "studentId": "snvjmfc1l",
+      "timestamp": "2026-07-02T05:25:35.565Z"
+    },
+    {
+      "id": "sdjr58w8p",
+      "amount": 2,
+      "comment": "Faol ishtirok 🌟",
+      "studentId": "ew2q7ti0p",
+      "timestamp": "2026-07-02T05:24:16.064Z"
+    },
+    {
+      "id": "wjlfl3t8i",
+      "amount": 2,
+      "comment": "Faol ishtirok 🌟",
+      "studentId": "ew2q7ti0p",
+      "timestamp": "2026-07-02T05:23:44.447Z"
+    },
+    {
+      "id": "x5fbb78u1",
+      "amount": 13,
+      "comment": "Faol ishtirok 🌟",
+      "studentId": "snvjmfc1l",
+      "timestamp": "2026-07-02T05:23:19.296Z"
+    },
+    {
+      "id": "kr4xmmlrs",
+      "amount": 4,
+      "comment": "Faol ishtirok 🌟",
+      "studentId": "eirryuqt3",
+      "timestamp": "2026-07-02T05:22:54.062Z"
+    },
+    {
+      "id": "wjyse9mvg",
+      "amount": 4,
+      "comment": "Faol ishtirok 🌟",
+      "studentId": "jh3t0huhl",
+      "timestamp": "2026-07-02T05:22:39.862Z"
+    },
+    {
+      "id": "k5vg7rxze",
+      "amount": 4,
+      "comment": "Faol ishtirok 🌟",
+      "studentId": "ew2q7ti0p",
+      "timestamp": "2026-07-02T05:22:34.929Z"
+    },
+    {
+      "id": "k5k7s3x26",
+      "amount": 4,
+      "comment": "Faol ishtirok 🌟",
+      "studentId": "snvjmfc1l",
+      "timestamp": "2026-07-02T05:22:27.129Z"
+    },
+    {
+      "id": "us0f88i01",
+      "amount": 4,
+      "comment": "Faol ishtirok 🌟",
+      "studentId": "k28sxkkia",
+      "timestamp": "2026-07-02T05:22:21.978Z"
+    },
+    {
+      "id": "3s5sco8v5",
+      "amount": 2,
+      "comment": "Faol ishtirok 🌟",
+      "studentId": "snvjmfc1l",
+      "timestamp": "2026-07-02T05:03:00.188Z"
+    },
+    {
+      "id": "s4mduzctw",
+      "amount": 2,
+      "comment": "Faol ishtirok 🌟",
+      "studentId": "snvjmfc1l",
+      "timestamp": "2026-07-02T05:02:24.157Z"
+    },
+    {
+      "id": "o50kehp6z",
+      "amount": 2,
+      "comment": "Faol ishtirok 🌟",
+      "studentId": "ew2q7ti0p",
+      "timestamp": "2026-07-02T05:02:00.506Z"
+    },
+    {
+      "id": "2vvq4h5dg",
+      "amount": 2,
+      "comment": "Faol ishtirok 🌟",
+      "studentId": "snvjmfc1l",
+      "timestamp": "2026-07-02T05:01:49.469Z"
+    },
+    {
+      "id": "4i9ow7zb3",
+      "amount": 2,
+      "comment": "Faol ishtirok 🌟",
+      "studentId": "k28sxkkia",
+      "timestamp": "2026-07-02T05:01:37.209Z"
+    },
+    {
+      "id": "jtiwlqv59",
+      "amount": 5,
+      "comment": "Harakati uchun",
+      "studentId": "jh3t0huhl",
+      "timestamp": "2026-07-02T04:26:15.515Z"
+    },
+    {
+      "id": "0y2hym4ee",
+      "amount": 5,
+      "comment": "Faol ishtirok 🌟",
+      "studentId": "j339u5g6n",
+      "timestamp": "2026-06-30T09:13:59.427Z"
+    },
+    {
+      "id": "m0k95cnl8",
+      "amount": 5,
+      "comment": "Faol ishtirok 🌟",
+      "studentId": "gw3cushvc",
+      "timestamp": "2026-06-30T09:13:57.777Z"
+    },
+    {
+      "id": "qu0t0mjl7",
+      "amount": 5,
+      "comment": "Faol ishtirok 🌟",
+      "studentId": "j339u5g6n",
+      "timestamp": "2026-06-30T08:26:37.980Z"
+    },
+    {
+      "id": "gxbmchuc6",
+      "amount": 5,
+      "comment": "Faol ishtirok 🌟",
+      "studentId": "gw3cushvc",
+      "timestamp": "2026-06-30T08:26:33.663Z"
+    },
+    {
+      "id": "cqpckn5d2",
+      "amount": 10,
+      "comment": "Uy vazifa qilgan",
+      "studentId": "gw3cushvc",
+      "timestamp": "2026-06-30T08:26:29.862Z"
+    },
+    {
+      "id": "s0c5ktmjs",
+      "amount": 5,
+      "comment": "Ball berildi",
+      "studentId": "1dv4n6k4l",
+      "timestamp": "2026-06-30T06:15:14.860Z"
+    },
+    {
+      "id": "8h11qyydj",
+      "amount": 5,
+      "comment": "Ball berildi",
+      "studentId": "vtcmuolkm",
+      "timestamp": "2026-06-30T06:15:09.160Z"
+    },
+    {
+      "id": "t0s1cy6kj",
+      "amount": 5,
+      "comment": "Faol ishtirok 🌟",
+      "studentId": "4awhxpady",
+      "timestamp": "2026-06-30T06:15:06.160Z"
+    },
+    {
+      "id": "ezkr54hf5",
+      "amount": 1,
+      "comment": "Ona haqidaligi uchun +1",
+      "studentId": "k28sxkkia",
+      "timestamp": "2026-06-30T06:05:56.736Z"
+    },
+    {
+      "id": "x6duxsi3s",
+      "amount": 1,
+      "comment": "Musiqasi yaxshi chiqdi",
+      "studentId": "jh3t0huhl",
+      "timestamp": "2026-06-30T06:02:53.767Z"
+    },
+    {
+      "id": "r1r96kxwv",
+      "amount": 1,
+      "comment": "Musiqasi zo'r",
+      "studentId": "ew2q7ti0p",
+      "timestamp": "2026-06-30T06:02:34.767Z"
+    },
+    {
+      "id": "2vmbo3piy",
+      "amount": 2,
+      "comment": "Musiqa zo'r",
+      "studentId": "snvjmfc1l",
+      "timestamp": "2026-06-30T06:02:09.366Z"
+    },
+    {
+      "id": "a8ohvdqtt",
+      "amount": 1,
+      "comment": "Musiqasi yaxshi",
+      "studentId": "eirryuqt3",
+      "timestamp": "2026-06-30T06:01:39.933Z"
+    },
+    {
+      "id": "6ygshovu1",
+      "amount": 10,
+      "comment": "Uy vazifasi bajardi 📚",
+      "studentId": "snvjmfc1l",
+      "timestamp": "2026-06-30T06:01:06.532Z"
+    },
+    {
+      "id": "caq60yoj2",
+      "amount": 4,
+      "comment": "Guruh ishida faollik 👥",
+      "studentId": "eirryuqt3",
+      "timestamp": "2026-06-30T06:00:37.448Z"
+    },
+    {
+      "id": "94w8dd9jt",
+      "amount": 5,
+      "comment": "Faol ishtirok 🌟",
+      "studentId": "jh3t0huhl",
+      "timestamp": "2026-06-30T06:00:22.998Z"
+    },
+    {
+      "id": "7njrf4hde",
+      "amount": 5,
+      "comment": "Faol ishtirok 🌟",
+      "studentId": "ew2q7ti0p",
+      "timestamp": "2026-06-30T06:00:19.781Z"
+    },
+    {
+      "id": "7xzgsdlkk",
+      "amount": 5,
+      "comment": "Faol ishtirok 🌟",
+      "studentId": "snvjmfc1l",
+      "timestamp": "2026-06-30T06:00:17.248Z"
+    },
+    {
+      "id": "qnlbrjti1",
+      "amount": 5,
+      "comment": "Faol ishtirok 🌟",
+      "studentId": "k28sxkkia",
+      "timestamp": "2026-06-30T06:00:14.832Z"
+    },
+    {
+      "id": "rjz3kn455",
+      "amount": 1,
+      "comment": "Guruh ishida faollik 👥",
+      "studentId": "0ob2moe65",
+      "timestamp": "2026-06-29T08:57:30.375Z"
+    },
+    {
+      "id": "gb3xrnqo6",
+      "amount": -1,
+      "comment": "Ajoyib javob 💡",
+      "studentId": "0ob2moe65",
+      "timestamp": "2026-06-29T08:25:36.352Z"
+    },
+    {
+      "id": "7wpqw0taz",
+      "amount": 1,
+      "comment": "Guruh ishida faollik 👥",
+      "studentId": "0ob2moe65",
+      "timestamp": "2026-06-29T08:25:24.435Z"
+    },
+    {
+      "id": "mo7lki338",
+      "amount": 1,
+      "comment": "Guruh ishida faollik 👥",
+      "studentId": "e6a5tx03r",
+      "timestamp": "2026-06-29T08:20:13.881Z"
+    },
+    {
+      "id": "tqzmlvqmh",
+      "amount": 1,
+      "comment": "Guruh ishida faollik 👥",
+      "studentId": "x8tk7y27r",
+      "timestamp": "2026-06-29T08:20:10.448Z"
+    },
+    {
+      "id": "e7rrdughv",
+      "amount": 1,
+      "comment": "Guruh ishida faollik 👥",
+      "studentId": "b7gogaueb",
+      "timestamp": "2026-06-29T08:20:07.749Z"
+    },
+    {
+      "id": "84g6d6vmz",
+      "amount": 1,
+      "comment": "Guruh ishida faollik 👥",
+      "studentId": "0ob2moe65",
+      "timestamp": "2026-06-29T08:20:01.064Z"
+    },
+    {
+      "id": "8jsp6h7vb",
+      "amount": 5,
+      "comment": "Faol ishtirok 🌟",
+      "studentId": "e6a5tx03r",
+      "timestamp": "2026-06-29T08:01:47.819Z"
+    },
+    {
+      "id": "8h3g0nazv",
+      "amount": 5,
+      "comment": "Faol ishtirok 🌟",
+      "studentId": "x8tk7y27r",
+      "timestamp": "2026-06-29T08:01:45.085Z"
+    },
+    {
+      "id": "7vx1h2otn",
+      "amount": 6,
+      "comment": "Faol ishtirok 🌟",
+      "studentId": "b7gogaueb",
+      "timestamp": "2026-06-29T08:01:41.469Z"
+    },
+    {
+      "id": "ztx6wnrr6",
+      "amount": 5,
+      "comment": "Faol ishtirok 🌟",
+      "studentId": "0ob2moe65",
+      "timestamp": "2026-06-29T08:01:21.236Z"
+    },
+    {
+      "id": "v6ewbusio",
+      "amount": -1,
+      "comment": "Uy vazifa qilmagan",
+      "studentId": "eirryuqt3",
+      "timestamp": "2026-06-27T06:18:07.999Z"
+    },
+    {
+      "id": "9omf56ey2",
+      "amount": 5,
+      "comment": "Faol ishtirok 🌟",
+      "studentId": "jh3t0huhl",
+      "timestamp": "2026-06-27T06:17:56.599Z"
+    },
+    {
+      "id": "yaa63st24",
+      "amount": -1,
+      "comment": "Uy vazifa qilmagan",
+      "studentId": "jh3t0huhl",
+      "timestamp": "2026-06-27T06:17:47.582Z"
+    },
+    {
+      "id": "kujxt2md2",
+      "amount": -1,
+      "comment": "Darsga kelmadi",
+      "studentId": "ew2q7ti0p",
+      "timestamp": "2026-06-27T06:17:35.415Z"
+    },
+    {
+      "id": "d5fbywxym",
+      "amount": 5,
+      "comment": "Uy vazifa qilgan",
+      "studentId": "snvjmfc1l",
+      "timestamp": "2026-06-27T06:17:16.465Z"
+    },
+    {
+      "id": "pn0t840u9",
+      "amount": 5,
+      "comment": "AI ni yaxshi ishlatib yaxshi rasmlar yarat aoldi",
+      "studentId": "k28sxkkia",
+      "timestamp": "2026-06-27T06:17:05.965Z"
+    },
+    {
+      "id": "6m4nv8vd2",
+      "amount": -1,
+      "comment": "Uy vazifa qilmagan",
+      "studentId": "k28sxkkia",
+      "timestamp": "2026-06-27T06:16:42.748Z"
+    },
+    {
+      "id": "317eo6l18",
+      "amount": 5,
+      "comment": "Faol ishtirok 🌟",
+      "studentId": "e6a5tx03r",
+      "timestamp": "2026-06-26T08:10:03.216Z"
+    },
+    {
+      "id": "7js9ocfmk",
+      "amount": 10,
+      "comment": "Juda foal",
+      "studentId": "x8tk7y27r",
+      "timestamp": "2026-06-26T08:09:22.499Z"
+    },
+    {
+      "id": "6b096zfix",
+      "amount": 8,
+      "comment": "Faol ishtirok 🌟",
+      "studentId": "b7gogaueb",
+      "timestamp": "2026-06-26T08:09:07.249Z"
+    },
+    {
+      "id": "y417j0kgw",
+      "amount": 8,
+      "comment": "Faol ishtirok 🌟",
+      "studentId": "ybkxhi332",
+      "timestamp": "2026-06-26T08:08:59.183Z"
+    },
+    {
+      "id": "zc4lzmwy8",
+      "amount": 8,
+      "comment": "Ajoyib videolar yaşadı",
+      "studentId": "0ob2moe65",
+      "timestamp": "2026-06-26T08:08:24.548Z"
+    },
+    {
+      "id": "mub8ilog7",
+      "amount": 1,
+      "comment": "Guruh ishida faollik 👥",
+      "studentId": "jh3t0huhl",
+      "timestamp": "2026-06-25T07:04:57.946Z"
+    },
+    {
+      "id": "628r54oge",
+      "amount": 1,
+      "comment": "Guruh ishida faollik 👥",
+      "studentId": "ew2q7ti0p",
+      "timestamp": "2026-06-25T07:04:53.945Z"
+    },
+    {
+      "id": "ivpxzkfwt",
+      "amount": 5,
+      "comment": "Faol ishtirok 🌟",
+      "studentId": "snvjmfc1l",
+      "timestamp": "2026-06-25T07:04:49.679Z"
+    },
+    {
+      "id": "ayfnf7djq",
+      "amount": 1,
+      "comment": "Guruh ishida faollik 👥",
+      "studentId": "k28sxkkia",
+      "timestamp": "2026-06-25T07:04:44.712Z"
+    },
+    {
+      "id": "vdhuvv7pv",
+      "amount": 2,
+      "comment": "Qobilyati bor.",
+      "studentId": "x8tk7y27r",
+      "timestamp": "2026-06-24T09:43:45.502Z"
+    },
+    {
+      "id": "e3ev32r9p",
+      "amount": 1,
+      "comment": "Guruh ishida faollik 👥",
+      "studentId": "0ob2moe65",
+      "timestamp": "2026-06-24T09:42:58.842Z"
+    },
+    {
+      "id": "wioopzxc7",
+      "amount": 5,
+      "comment": "Faol ishtirok 🌟",
+      "studentId": "e6a5tx03r",
+      "timestamp": "2026-06-24T09:35:03.338Z"
+    },
+    {
+      "id": "upa9bmfub",
+      "amount": 5,
+      "comment": "Eng zòri😎",
+      "studentId": "x8tk7y27r",
+      "timestamp": "2026-06-24T09:34:57.452Z"
+    },
+    {
+      "id": "g9fzs4gvd",
+      "amount": 5,
+      "comment": "Faol ishtirok 🌟",
+      "studentId": "b7gogaueb",
+      "timestamp": "2026-06-24T09:34:37.971Z"
+    },
+    {
+      "id": "rjaekhoa3",
+      "amount": 5,
+      "comment": "Faol ishtirok 🌟",
+      "studentId": "ybkxhi332",
+      "timestamp": "2026-06-24T09:34:27.434Z"
+    },
+    {
+      "id": "dfioj5lw0",
+      "amount": 5,
+      "comment": "Faol ishtirok 🌟",
+      "studentId": "0ob2moe65",
+      "timestamp": "2026-06-24T09:34:11.562Z"
+    }
+  ]
+}
