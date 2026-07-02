@@ -460,12 +460,20 @@ const GroupDetail = ({ group, students, transactions, quickTags, onBack, onAddSt
                 <span className="profile-stat-lbl">Yangi hafta</span>
               </div>
               <div className="profile-stat-box">
+                <span className="profile-stat-val">{getStudentScore(transactions, profileStudent.id, 'lastWeek')}</span>
+                <span className="profile-stat-lbl">O'tgan hafta</span>
+              </div>
+              <div className="profile-stat-box">
                 <span className="profile-stat-val">{getStudentScore(transactions, profileStudent.id, 'month')}</span>
                 <span className="profile-stat-lbl">Oylik</span>
               </div>
               <div className="profile-stat-box">
+                <span className="profile-stat-val">{getStudentScore(transactions, profileStudent.id, 'lastMonth')}</span>
+                <span className="profile-stat-lbl">O'tgan Oy</span>
+              </div>
+              <div className="profile-stat-box">
                 <span className="profile-stat-val">{getStudentScore(transactions, profileStudent.id, 'all')}</span>
-                <span className="profile-stat-lbl">Kurs Yakuni</span>
+                <span className="profile-stat-lbl">Kurs</span>
               </div>
             </div>
 
@@ -869,9 +877,15 @@ const GroupDetail = ({ group, students, transactions, quickTags, onBack, onAddSt
 
         .profile-stats-grid {
           display: grid;
-          grid-template-columns: repeat(3, 1fr);
-          gap: 12px;
+          grid-template-columns: repeat(5, 1fr);
+          gap: 8px;
           margin-bottom: 24px;
+        }
+
+        @media (max-width: 600px) {
+          .profile-stats-grid {
+            grid-template-columns: repeat(2, 1fr);
+          }
         }
 
         .profile-stat-box {

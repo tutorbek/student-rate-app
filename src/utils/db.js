@@ -53,7 +53,8 @@ export const getStartOfWeek = () => {
   const now = new Date();
   const day = now.getDay(); // 0: Sunday, 1: Monday, etc.
   const diff = now.getDate() - day + (day === 0 ? -6 : 1);
-  const monday = new Date(now.setDate(diff));
+  const monday = new Date(now);
+  monday.setDate(diff);
   monday.setHours(0, 0, 0, 0);
   return monday;
 };
@@ -78,6 +79,18 @@ export const getEndOfLastWeek = () => {
   const lastSunday = new Date(currentMonday);
   lastSunday.setMilliseconds(lastSunday.getMilliseconds() - 1);
   return lastSunday;
+};
+
+// Helper: Get Start of Last Month (1st of previous month 00:00)
+export const getStartOfLastMonth = () => {
+  const now = new Date();
+  return new Date(now.getFullYear(), now.getMonth() - 1, 1);
+};
+
+// Helper: Get End of Last Month (Last day of previous month 23:59:59.999)
+export const getEndOfLastMonth = () => {
+  const now = new Date();
+  return new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59, 999);
 };
 
 // --- Groups API ---
@@ -250,6 +263,17 @@ export const getStudentScore = (transactions, studentId, timeframe = 'all') => {
       .filter((t) => {
         const txDate = new Date(t.timestamp);
         return txDate >= startOfLastWeek && txDate <= endOfLastWeek;
+      })
+      .reduce((sum, t) => sum + t.amount, 0);
+  }
+
+  if (timeframe === 'lastMonth') {
+    const startOfLastMonth = getStartOfLastMonth();
+    const endOfLastMonth = getEndOfLastMonth();
+    return txs
+      .filter((t) => {
+        const txDate = new Date(t.timestamp);
+        return txDate >= startOfLastMonth && txDate <= endOfLastMonth;
       })
       .reduce((sum, t) => sum + t.amount, 0);
   }

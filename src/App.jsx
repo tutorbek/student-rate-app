@@ -684,7 +684,16 @@ function App() {
           />
         );
       case 'leaderboard':
-        return <Leaderboard groups={filteredGroups} students={filteredStudents} transactions={filteredTransactions} />;
+        return (
+          <Leaderboard
+            groups={filteredGroups}
+            students={filteredStudents}
+            transactions={filteredTransactions}
+            userRole={userRole}
+            onDeleteTransaction={handleDeleteTransaction}
+            showToast={showToast}
+          />
+        );
       case 'history':
         return (
           <History

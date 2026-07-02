@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { getStudentScore } from '../utils/db';
 
 const Confetti = ({ trigger }) => {
@@ -122,11 +123,12 @@ const renderAvatar = (emoji) => {
   return emoji;
 };
 
-const Leaderboard = ({ groups, students, transactions }) => {
-  const [timeframe, setTimeframe] = useState('week'); // 'week', 'month', 'all'
+const Leaderboard = ({ groups, students, transactions, userRole, onDeleteTransaction, showToast }) => {
+  const [timeframe, setTimeframe] = useState('week'); // 'week', 'lastWeek', 'month', 'lastMonth', 'all'
   const [selectedGroupId, setSelectedGroupId] = useState('all');
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [confettiTrigger, setConfettiTrigger] = useState(0);
+  const [profileStudent, setSelectedProfileStudent] = useState(null);
 
   useEffect(() => {
     const handleOutsideClick = (e) => {
@@ -137,6 +139,22 @@ const Leaderboard = ({ groups, students, transactions }) => {
     document.addEventListener('click', handleOutsideClick);
     return () => document.removeEventListener('click', handleOutsideClick);
   }, []);
+
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        setSelectedProfileStudent(null);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
+  // Filter transactions for profile student
+  const studentTxs = useMemo(() => {
+    if (!profileStudent) return [];
+    return transactions.filter(t => t.studentId === profileStudent.id);
+  }, [transactions, profileStudent]);
 
   // Compute standings
   const standings = useMemo(() => {
@@ -257,6 +275,12 @@ const Leaderboard = ({ groups, students, transactions }) => {
               Oylik
             </button>
             <button
+              className={`toggle-btn ${timeframe === 'lastMonth' ? 'active' : ''}`}
+              onClick={() => setTimeframe('lastMonth')}
+            >
+              O'tgan oy
+            </button>
+            <button
               className={`toggle-btn ${timeframe === 'all' ? 'active' : ''}`}
               onClick={() => setTimeframe('all')}
             >
@@ -275,8 +299,11 @@ const Leaderboard = ({ groups, students, transactions }) => {
                   <div 
                     key={student.id} 
                     className="premium-podium-card glass"
-                    onClick={() => setConfettiTrigger(prev => prev + 1)}
-                    title="Tabriklash uchun bosing! 🎉"
+                    onClick={() => {
+                      setConfettiTrigger(prev => prev + 1);
+                      setSelectedProfileStudent(student);
+                    }}
+                    title="Batafsil profilni ko'rish / Tabriklash 🎉"
                   >
                     <div className="podium-crown-container">
                       <span className="premium-crown">👑</span>
@@ -310,7 +337,12 @@ const Leaderboard = ({ groups, students, transactions }) => {
                 const rank = student.rank;
                 const isTop3 = rank <= 3 && hasAnyPoints;
                 return (
-                  <div key={student.id} className={`standings-row ${isTop3 ? 'row-top3' : ''}`}>
+                  <div 
+                    key={student.id} 
+                    className={`standings-row ${isTop3 ? 'row-top3' : ''} clickable-row`}
+                    onClick={() => setSelectedProfileStudent(student)}
+                    title="Batafsil profilni ko'rish"
+                  >
                     <span className="td-rank">
                       {isTop3 ? (
                         rank === 1 ? '🥇' : rank === 2 ? '🥈' : '🥉'
@@ -345,9 +377,257 @@ const Leaderboard = ({ groups, students, transactions }) => {
         </div>
       )}
 
+      {profileStudent && createPortal(
+        <div className="modal-overlay" onClick={() => setSelectedProfileStudent(null)}>
+          <div className="modal-content glass profile-modal" onClick={(e) => e.stopPropagation()}>
+            {/* Profile Header */}
+            <div className="profile-modal-header">
+              <div className="avatar-circle profile-avatar" style={{ background: profileStudent.color, overflow: 'hidden' }}>
+                {renderAvatar(profileStudent.emoji)}
+              </div>
+              <h3 className="profile-modal-name">{profileStudent.name}</h3>
+              <p className="profile-modal-group">{(groups.find(g => g.id === profileStudent.groupId)?.name || 'Guruhsiz')} Guruhi</p>
+            </div>
+
+            {/* Profile Stats Grid */}
+            <div className="profile-stats-grid">
+              <div className="profile-stat-box">
+                <span className="profile-stat-val">{getStudentScore(transactions, profileStudent.id, 'week')}</span>
+                <span className="profile-stat-lbl">Yangi hafta</span>
+              </div>
+              <div className="profile-stat-box">
+                <span className="profile-stat-val">{getStudentScore(transactions, profileStudent.id, 'lastWeek')}</span>
+                <span className="profile-stat-lbl">O'tgan hafta</span>
+              </div>
+              <div className="profile-stat-box">
+                <span className="profile-stat-val">{getStudentScore(transactions, profileStudent.id, 'month')}</span>
+                <span className="profile-stat-lbl">Oylik</span>
+              </div>
+              <div className="profile-stat-box">
+                <span className="profile-stat-val">{getStudentScore(transactions, profileStudent.id, 'lastMonth')}</span>
+                <span className="profile-stat-lbl">O'tgan Oy</span>
+              </div>
+              <div className="profile-stat-box">
+                <span className="profile-stat-val">{getStudentScore(transactions, profileStudent.id, 'all')}</span>
+                <span className="profile-stat-lbl">Kurs</span>
+              </div>
+            </div>
+
+            {/* Timeline / History */}
+            <div className="profile-timeline-section">
+              <h4 className="profile-timeline-title">📜 Baholash Tarixi</h4>
+              <div className="profile-timeline-list">
+                {studentTxs.length > 0 ? (
+                  studentTxs.map((tx) => {
+                    const date = new Date(tx.timestamp);
+                    const formattedDate = date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                    return (
+                      <div key={tx.id} className="profile-timeline-item">
+                        <div className="profile-timeline-item-meta">
+                          <span className="profile-timeline-time">{formattedDate}</span>
+                          <span className="profile-timeline-amount font-bold">
+                            {tx.amount >= 0 ? `+${tx.amount}` : tx.amount}
+                          </span>
+                        </div>
+                        <div className="profile-timeline-item-body">
+                          <span className="profile-timeline-comment">
+                            {tx.comment ? `"${tx.comment}"` : '—'}
+                          </span>
+                          {userRole === 'teacher' && (
+                            <button
+                              className="profile-timeline-item-delete scale-active"
+                              onClick={() => {
+                                onDeleteTransaction(tx.id);
+                                if (showToast) {
+                                  showToast("Baholash harakati bekor qilindi!", "success");
+                                }
+                              }}
+                              title="Bahoni o'chirish"
+                            >
+                              🗑️
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })
+                ) : (
+                  <p className="profile-timeline-empty">Hozircha baholash tarixi mavjud emas.</p>
+                )}
+              </div>
+            </div>
+
+            <div className="modal-actions">
+              <button className="btn btn-secondary scale-active" onClick={() => setSelectedProfileStudent(null)}>
+                Yopish
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+
       <style>{`
         .leaderboard-container {
           animation: fade-in 0.4s ease-out;
+        }
+
+        .clickable-row {
+          cursor: pointer;
+          transition: background var(--transition-fast);
+        }
+        .clickable-row:hover {
+          background: rgba(0, 0, 0, 0.05);
+        }
+
+        /* Profile Modal styles */
+        .profile-modal {
+          max-width: 500px;
+        }
+
+        .profile-modal-header {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 10px;
+          margin-bottom: 24px;
+          border-bottom: 2px solid #000000;
+          padding-bottom: 20px;
+        }
+
+        .profile-avatar {
+          width: 80px;
+          height: 80px;
+          font-size: 2.5rem;
+          margin-bottom: 8px;
+        }
+
+        .profile-modal-name {
+          font-size: 1.4rem;
+          font-weight: 800;
+          color: #000000;
+          text-transform: uppercase;
+        }
+
+        .profile-modal-group {
+          font-size: 0.85rem;
+          font-weight: 700;
+          color: #000000;
+          opacity: 0.6;
+          text-transform: uppercase;
+        }
+
+        .profile-stats-grid {
+          display: grid;
+          grid-template-columns: repeat(5, 1fr);
+          gap: 8px;
+          margin-bottom: 24px;
+        }
+
+        .profile-stat-box {
+          border: 1px solid #000000;
+          padding: 14px 10px;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          background: #ffffff;
+        }
+
+        .profile-stat-val {
+          font-size: 1.5rem;
+          font-weight: 800;
+          color: #000000;
+        }
+
+        .profile-stat-lbl {
+          font-size: 0.75rem;
+          font-weight: 700;
+          text-transform: uppercase;
+          color: #000000;
+          opacity: 0.6;
+          margin-top: 4px;
+        }
+
+        .profile-timeline-section {
+          margin-bottom: 24px;
+        }
+
+        .profile-timeline-title {
+          font-size: 0.9rem;
+          font-weight: 800;
+          text-transform: uppercase;
+          margin-bottom: 12px;
+          color: #000000;
+        }
+
+        .profile-timeline-list {
+          max-height: 200px;
+          overflow-y: auto;
+          border: 1px solid #000000;
+          background: #ffffff;
+        }
+
+        .profile-timeline-item {
+          display: flex;
+          flex-direction: column;
+          padding: 12px;
+          border-bottom: 1px solid #000000;
+        }
+
+        .profile-timeline-item:last-child {
+          border-bottom: none;
+        }
+
+        .profile-timeline-item-meta {
+          display: flex;
+          justify-content: space-between;
+          font-size: 0.75rem;
+          font-weight: 700;
+          margin-bottom: 6px;
+          color: #000000;
+          opacity: 0.6;
+        }
+
+        .profile-timeline-item-body {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          gap: 12px;
+        }
+
+        .profile-timeline-comment {
+          font-size: 0.9rem;
+          font-style: italic;
+          color: #000000;
+          font-weight: 600;
+        }
+
+        .profile-timeline-item-delete {
+          background: transparent;
+          border: none;
+          cursor: pointer;
+          font-size: 1rem;
+          transition: transform var(--transition-fast);
+          padding: 2px 6px;
+        }
+
+        .profile-timeline-item-delete:hover {
+          transform: scale(1.2);
+          background: #E7FF56;
+        }
+
+        .profile-timeline-empty {
+          padding: 30px;
+          text-align: center;
+          font-size: 0.9rem;
+          color: #000000;
+          opacity: 0.5;
+        }
+
+        @media (max-width: 600px) {
+          .profile-stats-grid {
+            grid-template-columns: repeat(2, 1fr);
+          }
         }
 
         .flex-col-mobile {
@@ -463,7 +743,7 @@ const Leaderboard = ({ groups, students, transactions }) => {
         .toggle-btn {
           padding: 8px 16px;
           border-radius: 8px;
-          border: none;
+          border: 1px solid transparent;
           background: transparent;
           color: var(--text-secondary);
           font-family: var(--font-family);
