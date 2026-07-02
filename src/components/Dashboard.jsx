@@ -65,35 +65,121 @@ const Dashboard = ({ setActiveTab, onSelectGroup, groups = [], students = [], tr
     }
   }, [students, groups, transactions]);
 
-  const weeklySpotlight = useMemo(() => {
+  // Find Spotlight: Last Week's Winner (Student)
+  const lastWeekSpotlight = useMemo(() => {
     if (students.length === 0) return null;
     const scoredStudents = students.map(s => ({
       ...s,
-      score: getStudentScore(transactions, s.id, 'week')
+      score: getStudentScore(transactions, s.id, 'lastWeek')
     })).filter(s => s.score > 0);
 
     if (scoredStudents.length === 0) return null;
     scoredStudents.sort((a, b) => b.score - a.score);
     const topScore = scoredStudents[0].score;
-    const topStudent = scoredStudents[0];
-    const groupName = groups.find(g => g.id === topStudent.groupId)?.name || 'Guruhsiz';
-    return { ...topStudent, score: topScore, groupName };
+    const winners = scoredStudents.filter(s => s.score === topScore);
+
+    if (winners.length === 1) {
+      const topStudent = winners[0];
+      const groupName = groups.find(g => g.id === topStudent.groupId)?.name || 'Guruhsiz';
+      return {
+        isTie: false,
+        name: topStudent.name,
+        emoji: topStudent.emoji,
+        color: topStudent.color,
+        score: topScore,
+        groupName
+      };
+    } else {
+      const names = winners.map(w => w.name).join(' & ');
+      const groupNames = winners.map(w => groups.find(g => g.id === w.groupId)?.name || 'Guruhsiz');
+      const uniqueGroupNames = [...new Set(groupNames)].join(' & ');
+      return {
+        isTie: true,
+        name: names,
+        emoji: '🏆',
+        color: '#E7FF56',
+        score: topScore,
+        groupName: uniqueGroupNames
+      };
+    }
   }, [students, groups, transactions]);
 
-  const monthlySpotlight = useMemo(() => {
+  // Find Spotlight: Last Month's Winner (Student)
+  const lastMonthSpotlight = useMemo(() => {
     if (students.length === 0) return null;
     const scoredStudents = students.map(s => ({
       ...s,
-      score: getStudentScore(transactions, s.id, 'month')
+      score: getStudentScore(transactions, s.id, 'lastMonth')
     })).filter(s => s.score > 0);
 
     if (scoredStudents.length === 0) return null;
     scoredStudents.sort((a, b) => b.score - a.score);
     const topScore = scoredStudents[0].score;
-    const topStudent = scoredStudents[0];
-    const groupName = groups.find(g => g.id === topStudent.groupId)?.name || 'Guruhsiz';
-    return { ...topStudent, score: topScore, groupName };
+    const winners = scoredStudents.filter(s => s.score === topScore);
+
+    if (winners.length === 1) {
+      const topStudent = winners[0];
+      const groupName = groups.find(g => g.id === topStudent.groupId)?.name || 'Guruhsiz';
+      return {
+        isTie: false,
+        name: topStudent.name,
+        emoji: topStudent.emoji,
+        color: topStudent.color,
+        score: topScore,
+        groupName
+      };
+    } else {
+      const names = winners.map(w => w.name).join(' & ');
+      const groupNames = winners.map(w => groups.find(g => g.id === w.groupId)?.name || 'Guruhsiz');
+      const uniqueGroupNames = [...new Set(groupNames)].join(' & ');
+      return {
+        isTie: true,
+        name: names,
+        emoji: '🏆',
+        color: '#E7FF56',
+        score: topScore,
+        groupName: uniqueGroupNames
+      };
+    }
   }, [students, groups, transactions]);
+
+  // Find Spotlight: Last Month's Winner Group
+  const lastMonthGroupSpotlight = useMemo(() => {
+    if (groups.length === 0) return null;
+    const scoredGroups = groups.map(g => {
+      const groupStudents = students.filter(s => s.groupId === g.id && !s.deleted);
+      const score = groupStudents.reduce((sum, s) => {
+        return sum + getStudentScore(transactions, s.id, 'lastMonth');
+      }, 0);
+      return {
+        ...g,
+        score
+      };
+    }).filter(g => g.score > 0);
+
+    if (scoredGroups.length === 0) return null;
+    scoredGroups.sort((a, b) => b.score - a.score);
+    const topScore = scoredGroups[0].score;
+    const winners = scoredGroups.filter(g => g.score === topScore);
+
+    if (winners.length === 1) {
+      const topGroup = winners[0];
+      return {
+        isTie: false,
+        name: topGroup.name,
+        emoji: topGroup.icon || '📁',
+        score: topScore
+      };
+    } else {
+      const names = winners.map(w => w.name).join(' & ');
+      return {
+        isTie: true,
+        name: names,
+        emoji: '📁',
+        score: topScore
+      };
+    }
+  }, [groups, students, transactions]);
 
   // Recent 10 transactions
   const recentActivities = useMemo(() => {
@@ -116,16 +202,13 @@ const Dashboard = ({ setActiveTab, onSelectGroup, groups = [], students = [], tr
       <div className="page-header">
         <div>
           <h2 className="page-title">Dashboard</h2>
-          <p className="page-subtitle">Umumiy ko'rsatkichlar va haftalik/oylik peshqadamlar</p>
+          <p className="page-subtitle">Umumiy ko'rsatkichlar va o'tgan davr peshqadamlari</p>
         </div>
-        <button className="btn btn-primary scale-active" onClick={() => setActiveTab('groups')}>
-          <span>+ Like berish</span>
-        </button>
       </div>
 
       {/* Stats Grid */}
       <section className="stats-grid">
-        <div className="glass-card stat-card clickable-card" onClick={() => setActiveTab('groups')}>
+        <div className="glass-card stat-card">
           <div className="stat-icon">👥</div>
           <div className="stat-info">
             <h4 className="stat-label">Guruhlar</h4>
@@ -133,7 +216,7 @@ const Dashboard = ({ setActiveTab, onSelectGroup, groups = [], students = [], tr
           </div>
         </div>
 
-        <div className="glass-card stat-card clickable-card" onClick={() => setActiveTab('groups')}>
+        <div className="glass-card stat-card">
           <div className="stat-icon">🎓</div>
           <div className="stat-info">
             <h4 className="stat-label">Talabalar</h4>
@@ -141,7 +224,7 @@ const Dashboard = ({ setActiveTab, onSelectGroup, groups = [], students = [], tr
           </div>
         </div>
 
-        <div className="glass-card stat-card clickable-card" onClick={() => setActiveTab('leaderboard')}>
+        <div className="glass-card stat-card">
           <div className="stat-icon">⭐</div>
           <div className="stat-info">
             <h4 className="stat-label">Jami Likelar</h4>
@@ -149,7 +232,7 @@ const Dashboard = ({ setActiveTab, onSelectGroup, groups = [], students = [], tr
           </div>
         </div>
 
-        <div className="glass-card stat-card clickable-card" onClick={() => setActiveTab('history')}>
+        <div className="glass-card stat-card">
           <div className="stat-icon">🔥</div>
           <div className="stat-info">
             <h4 className="stat-label">Haftalik Faollik</h4>
@@ -162,14 +245,10 @@ const Dashboard = ({ setActiveTab, onSelectGroup, groups = [], students = [], tr
       <div className="dashboard-content-layout">
         {/* Spotlight Section */}
         <section className="spotlight-section">
-          <h3 className="section-title">🏆 Hafta va Oy Qahramonlari</h3>
+          <h3 className="section-title">🏆 O'tgan Davr Qahramonlari</h3>
           <div className="spotlight-grid">
             {/* Last Week's Winner */}
-            <div 
-              className={`glass-card spotlight-card last-week ${lastWeekSpotlight && lastWeekSpotlight.groupId ? 'clickable-card' : ''}`}
-              onClick={() => lastWeekSpotlight && lastWeekSpotlight.groupId && onSelectGroup(lastWeekSpotlight.groupId)}
-              title={lastWeekSpotlight && lastWeekSpotlight.groupId ? "Talaba guruhiga o'tish" : ""}
-            >
+            <div className="glass-card spotlight-card last-week">
               <div className="spotlight-glow last-week-glow"></div>
               <div className="spotlight-badge badge-last-week">🏆 O'TGAN HAFTALIK G'OLIB</div>
               {lastWeekSpotlight ? (
@@ -189,52 +268,44 @@ const Dashboard = ({ setActiveTab, onSelectGroup, groups = [], students = [], tr
               )}
             </div>
 
-            {/* Weekly Spotlight */}
-            <div 
-              className={`glass-card spotlight-card weekly ${weeklySpotlight ? 'clickable-card' : ''}`}
-              onClick={() => weeklySpotlight && onSelectGroup(weeklySpotlight.groupId)}
-              title={weeklySpotlight ? "Talaba guruhiga o'tish" : ""}
-            >
+            {/* Last Month's Winner */}
+            <div className="glass-card spotlight-card weekly">
               <div className="spotlight-glow weekly-glow"></div>
-              <div className="spotlight-badge badge-week">HAFTALIK ENG ZO'R</div>
-              {weeklySpotlight ? (
+              <div className="spotlight-badge badge-week">🥇 O'TGAN OY G'OLIBI</div>
+              {lastMonthSpotlight ? (
                 <div className="spotlight-user">
-                  <div className="avatar-circle spotlight-avatar" style={{ background: weeklySpotlight.color, overflow: 'hidden' }}>
-                    {renderAvatar(weeklySpotlight.emoji)}
+                  <div className="avatar-circle spotlight-avatar" style={{ background: lastMonthSpotlight.color, overflow: 'hidden' }}>
+                    {renderAvatar(lastMonthSpotlight.emoji)}
                   </div>
-                  <h4 className="spotlight-name">{weeklySpotlight.name}</h4>
-                  <p className="spotlight-group">{weeklySpotlight.groupName}</p>
-                  <div className="spotlight-score">+{weeklySpotlight.score} Likelar</div>
+                  <h4 className="spotlight-name" style={{ fontSize: lastMonthSpotlight.isTie ? '1rem' : '1.25rem' }}>{lastMonthSpotlight.name}</h4>
+                  <p className="spotlight-group">{lastMonthSpotlight.groupName}</p>
+                  <div className="spotlight-score">+{lastMonthSpotlight.score} Likelar</div>
                 </div>
               ) : (
                 <div className="spotlight-empty">
                   <div className="empty-icon">🎖️</div>
-                  <p className="empty-text">Ushbu haftada hali hech kim like olmadi.</p>
+                  <p className="empty-text">O'tgan oyda hech kim like olmagan.</p>
                 </div>
               )}
             </div>
 
-            {/* Monthly Spotlight */}
-            <div 
-              className={`glass-card spotlight-card monthly ${monthlySpotlight ? 'clickable-card' : ''}`}
-              onClick={() => monthlySpotlight && onSelectGroup(monthlySpotlight.groupId)}
-              title={monthlySpotlight ? "Talaba guruhiga o'tish" : ""}
-            >
+            {/* Last Month's Winner Group */}
+            <div className="glass-card spotlight-card monthly">
               <div className="spotlight-glow monthly-glow"></div>
-              <div className="spotlight-badge badge-month">OYLIK ENG ZO'R</div>
-              {monthlySpotlight ? (
+              <div className="spotlight-badge badge-month">🏢 O'TGAN OY G'OLIB GURUHI</div>
+              {lastMonthGroupSpotlight ? (
                 <div className="spotlight-user">
-                  <div className="avatar-circle spotlight-avatar" style={{ background: monthlySpotlight.color, overflow: 'hidden' }}>
-                    {renderAvatar(monthlySpotlight.emoji)}
+                  <div className="avatar-circle spotlight-avatar" style={{ background: '#ffffff', border: '1px solid #000000', overflow: 'hidden' }}>
+                    {renderAvatar(lastMonthGroupSpotlight.emoji)}
                   </div>
-                  <h4 className="spotlight-name">{monthlySpotlight.name}</h4>
-                  <p className="spotlight-group">{monthlySpotlight.groupName}</p>
-                  <div className="spotlight-score">+{monthlySpotlight.score} Likelar</div>
+                  <h4 className="spotlight-name">{lastMonthGroupSpotlight.name}</h4>
+                  <p className="spotlight-group">Guruh umumiy natijasi</p>
+                  <div className="spotlight-score">+{lastMonthGroupSpotlight.score} Likelar</div>
                 </div>
               ) : (
                 <div className="spotlight-empty">
                   <div className="empty-icon">👑</div>
-                  <p className="empty-text">Ushbu oyda hali hech kim like olmadi.</p>
+                  <p className="empty-text">O'tgan oyda hech bir guruh like olmagan.</p>
                 </div>
               )}
             </div>
@@ -250,9 +321,7 @@ const Dashboard = ({ setActiveTab, onSelectGroup, groups = [], students = [], tr
                 {recentActivities.map((tx) => (
                   <div 
                     key={tx.id} 
-                    className={`activity-item ${tx.groupId ? 'clickable-activity' : ''}`}
-                    onClick={() => tx.groupId && onSelectGroup(tx.groupId)}
-                    title={tx.groupId ? "Talaba guruhiga o'tish" : ""}
+                    className="activity-item"
                   >
                     <div className="avatar-circle activity-avatar" style={{ background: tx.studentColor, width: 36, height: 36, fontSize: '1.1rem', overflow: 'hidden' }}>
                       {renderAvatar(tx.studentEmoji)}
@@ -276,9 +345,6 @@ const Dashboard = ({ setActiveTab, onSelectGroup, groups = [], students = [], tr
             ) : (
               <div className="empty-log">
                 <p>Hozircha harakatlar tarixi bo'sh.</p>
-                <button className="btn btn-secondary scale-active btn-sm" onClick={() => setActiveTab('groups')}>
-                  Guruhlarga o'tish
-                </button>
               </div>
             )}
           </div>
@@ -306,17 +372,6 @@ const Dashboard = ({ setActiveTab, onSelectGroup, groups = [], students = [], tr
           border-left: none;
           border-bottom: none;
           border-right: 2px solid #000000;
-        }
-
-        .clickable-card {
-          cursor: pointer;
-          transition: all var(--transition-fast);
-        }
-
-        .clickable-card:hover {
-          transform: translate(-3px, -3px);
-          box-shadow: 4px 4px 0px #000000;
-          background: #E7FF56;
         }
 
         .stat-icon {
@@ -523,14 +578,6 @@ const Dashboard = ({ setActiveTab, onSelectGroup, groups = [], students = [], tr
           border-bottom: 1px solid #000000;
         }
 
-        .clickable-activity {
-          cursor: pointer;
-          transition: background var(--transition-fast);
-        }
-
-        .clickable-activity:hover {
-          background: #E7FF56;
-        }
 
         .activity-item:last-child {
           padding-bottom: 0;
