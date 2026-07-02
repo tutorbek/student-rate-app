@@ -63,7 +63,7 @@ const Sidebar = ({ activeTab, setActiveTab, userRole, onLogout }) => {
 
   const filteredMenuItems = menuItems.filter((item) => {
     if (userRole === 'student') {
-      return item.id === 'leaderboard' || item.id === 'history';
+      return item.id === 'leaderboard' || item.id === 'history' || item.id === 'settings';
     }
     return true;
   });

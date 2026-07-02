@@ -119,7 +119,7 @@ const Dashboard = ({ setActiveTab, onSelectGroup, groups = [], students = [], tr
           <p className="page-subtitle">Umumiy ko'rsatkichlar va haftalik/oylik peshqadamlar</p>
         </div>
         <button className="btn btn-primary scale-active" onClick={() => setActiveTab('groups')}>
-          <span>+ Ball berish</span>
+          <span>+ Like berish</span>
         </button>
       </div>
 
@@ -144,7 +144,7 @@ const Dashboard = ({ setActiveTab, onSelectGroup, groups = [], students = [], tr
         <div className="glass-card stat-card clickable-card" onClick={() => setActiveTab('leaderboard')}>
           <div className="stat-icon">⭐</div>
           <div className="stat-info">
-            <h4 className="stat-label">Jami Ballar</h4>
+            <h4 className="stat-label">Jami Likelar</h4>
             <p className="stat-value">{totalPoints >= 0 ? `+${totalPoints}` : totalPoints}</p>
           </div>
         </div>
@@ -184,7 +184,7 @@ const Dashboard = ({ setActiveTab, onSelectGroup, groups = [], students = [], tr
               ) : (
                 <div className="spotlight-empty">
                   <div className="empty-icon">🏆</div>
-                  <p className="empty-text">O'tgan haftada hech kim ball olmagan.</p>
+                  <p className="empty-text">O'tgan haftada hech kim like olmagan.</p>
                 </div>
               )}
             </div>
@@ -209,7 +209,7 @@ const Dashboard = ({ setActiveTab, onSelectGroup, groups = [], students = [], tr
               ) : (
                 <div className="spotlight-empty">
                   <div className="empty-icon">🎖️</div>
-                  <p className="empty-text">Ushbu haftada hali hech kim ball olmadi.</p>
+                  <p className="empty-text">Ushbu haftada hali hech kim like olmadi.</p>
                 </div>
               )}
             </div>
@@ -234,7 +234,7 @@ const Dashboard = ({ setActiveTab, onSelectGroup, groups = [], students = [], tr
               ) : (
                 <div className="spotlight-empty">
                   <div className="empty-icon">👑</div>
-                  <p className="empty-text">Ushbu oyda hali hech kim ball olmadi.</p>
+                  <p className="empty-text">Ushbu oyda hali hech kim like olmadi.</p>
                 </div>
               )}
             </div>

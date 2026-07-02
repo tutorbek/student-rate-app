@@ -53,9 +53,9 @@ const GroupDetail = ({ group, students, transactions, quickTags, onBack, onAddSt
   const [selectedColor, setSelectedColor] = useState(COLOR_OPTIONS[0].value);
   const [confirmDeleteId, setConfirmDeleteId] = useState(null);
 
-  // Score modal states
+  // Like modal states
   const [scoringStudent, setScoringStudent] = useState(null);
-  const [scoreAmount, setScoreAmount] = useState(1);
+  const [scoreAmount, setScoreAmount] = useState(''); // string for free editing
   const [customComment, setCustomComment] = useState('');
 
   // Filter students in this group
@@ -103,20 +103,25 @@ const GroupDetail = ({ group, students, transactions, quickTags, onBack, onAddSt
     showToast("Talaba ma'lumotlari yangilandi!", "success");
   };
 
-  // Open points/score modal
+  // Open like modal
   const openScoreModal = (student, amount) => {
     setScoringStudent(student);
-    setScoreAmount(amount);
+    setScoreAmount(String(amount));
     setCustomComment('');
   };
 
-  // Handle points submission
+  // Handle like submission
   const handleAwardPoints = (commentText) => {
-    const comment = commentText || customComment || (scoreAmount >= 0 ? "Ball berildi" : "Ball ayrildi");
-    onAwardPoints(scoringStudent.id, scoreAmount, comment);
+    const numAmount = Number(scoreAmount);
+    if (scoreAmount === '' || scoreAmount === null || scoreAmount === undefined || isNaN(numAmount)) {
+      showToast("Like miqdorini kiriting!", "error");
+      return;
+    }
+    const comment = commentText || customComment || (numAmount >= 0 ? "Like berildi" : "Like ayrildi");
+    onAwardPoints(scoringStudent.id, numAmount, comment);
     setScoringStudent(null);
     setCustomComment('');
-    showToast(`${scoringStudent.name}ga ${scoreAmount >= 0 ? `+${scoreAmount}` : scoreAmount} ball berildi!`, "success");
+    showToast(`${scoringStudent.name}ga ${numAmount >= 0 ? `+${numAmount}` : numAmount} like berildi!`, "success");
   };
 
   // Handle delete student
@@ -235,9 +240,9 @@ const GroupDetail = ({ group, students, transactions, quickTags, onBack, onAddSt
               <div className="student-actions">
                 <button 
                   className="btn btn-action btn-green scale-active"
-                  onClick={() => openScoreModal(student, 1)}
+                  onClick={() => openScoreModal(student, 2)}
                 >
-                  +1
+                  +2
                 </button>
                 <button 
                   className="btn btn-action btn-green scale-active"
@@ -247,14 +252,14 @@ const GroupDetail = ({ group, students, transactions, quickTags, onBack, onAddSt
                 </button>
                 <button 
                   className="btn btn-action btn-red scale-active"
-                  onClick={() => openScoreModal(student, -1)}
+                  onClick={() => openScoreModal(student, -2)}
                 >
-                  -1
+                  -2
                 </button>
                 <button 
                   className="btn btn-action btn-custom scale-active"
-                  onClick={() => openScoreModal(student, 0)}
-                  title="Boshqa ball"
+                  onClick={() => openScoreModal(student, '')}
+                  title="Boshqa like"
                 >
                   →
                 </button>
@@ -408,22 +413,39 @@ const GroupDetail = ({ group, students, transactions, quickTags, onBack, onAddSt
               <div>
                 <h3 className="modal-title" style={{ margin: 0 }}>{scoringStudent.name}</h3>
                 <p className="score-modal-subtitle">
-                  Ball berish: <span className={scoreAmount >= 0 ? 'text-positive' : 'text-negative'}>
-                    {scoreAmount >= 0 ? `+${scoreAmount}` : scoreAmount} ball
+                  Like berish: <span className={Number(scoreAmount) >= 0 ? 'text-positive' : 'text-negative'}>
+                    {scoreAmount !== '' ? (Number(scoreAmount) >= 0 ? `+${scoreAmount}` : scoreAmount) : '—'}
                   </span>
                 </p>
               </div>
             </div>
 
-            {/* Score Amount Input */}
+            {/* Like preset buttons */}
             <div className="form-group">
-              <label className="form-label">Ball miqdori</label>
+              <label className="form-label">Tezkor like miqdori</label>
+              <div className="like-presets">
+                {[2, -2, 5, -2].map((preset, i) => (
+                  <button
+                    key={i}
+                    type="button"
+                    className={`like-preset-btn scale-active ${String(scoreAmount) === String(preset) ? 'active' : ''} ${preset > 0 ? 'positive' : 'negative'}`}
+                    onClick={() => setScoreAmount(String(preset))}
+                  >
+                    {preset > 0 ? `+${preset}` : preset}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Like Amount Input */}
+            <div className="form-group">
+              <label className="form-label">Like miqdori (erkin kiritish)</label>
               <input
                 type="number"
                 className="form-input"
                 value={scoreAmount}
-                onChange={(e) => setScoreAmount(Number(e.target.value))}
-                placeholder="Masalan: 3, 10, -2"
+                onChange={(e) => setScoreAmount(e.target.value)}
+                placeholder="Masalan: 3, 10, -5"
               />
             </div>
 
@@ -453,7 +475,6 @@ const GroupDetail = ({ group, students, transactions, quickTags, onBack, onAddSt
                 placeholder="Izoh yozing..."
                 value={customComment}
                 onChange={(e) => setCustomComment(e.target.value)}
-                autoFocus
               />
             </div>
 
@@ -461,8 +482,12 @@ const GroupDetail = ({ group, students, transactions, quickTags, onBack, onAddSt
               <button className="btn btn-secondary scale-active" onClick={() => setScoringStudent(null)}>
                 Bekor qilish
               </button>
-              <button className="btn btn-primary scale-active" onClick={() => handleAwardPoints()}>
-                Ballni tasdiqlash
+              <button 
+                className="btn btn-primary scale-active" 
+                onClick={() => handleAwardPoints()}
+                disabled={scoreAmount === '' || isNaN(Number(scoreAmount))}
+              >
+                Likeni tasdiqlash
               </button>
             </div>
           </div>
@@ -484,7 +509,7 @@ const GroupDetail = ({ group, students, transactions, quickTags, onBack, onAddSt
             </button>
             <h3 className="modal-title text-red">⚠️ Talabani o'chirish</h3>
             <p className="modal-warning-text">
-              Ushbu talabani o'chirsangiz, uning barcha ballari va ball berish tarixi butunlay o'chib ketadi!
+              Ushbu talabani o'chirsangiz, uning barcha likelari va like berish tarixi butunlay o'chib ketadi!
             </p>
             <div className="modal-actions">
               <button className="btn btn-secondary scale-active" onClick={() => setConfirmDeleteId(null)}>
@@ -884,6 +909,47 @@ const GroupDetail = ({ group, students, transactions, quickTags, onBack, onAddSt
         /* Score Modal Styles */
         .score-modal {
           max-width: 450px;
+        }
+
+        .like-presets {
+          display: grid;
+          grid-template-columns: repeat(4, 1fr);
+          gap: 8px;
+        }
+
+        .like-preset-btn {
+          padding: 10px 6px;
+          font-size: 1rem;
+          font-weight: 800;
+          border: 2px solid #000000;
+          border-radius: 0;
+          cursor: pointer;
+          transition: all 0.15s;
+          background: #ffffff;
+          color: #000000;
+        }
+
+        .like-preset-btn.positive {
+          background: #000000;
+          color: #E7FF56;
+        }
+
+        .like-preset-btn.negative {
+          background: #ffffff;
+          color: #000000;
+          border-style: dashed;
+        }
+
+        .like-preset-btn.active {
+          background: #E7FF56;
+          color: #000000;
+          border-style: solid;
+        }
+
+        .like-preset-btn:hover {
+          background: #E7FF56;
+          color: #000000;
+          border-style: solid;
         }
 
         .score-modal-header {

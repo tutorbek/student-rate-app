@@ -112,7 +112,7 @@ const History = ({ groups, students, transactions, onDeleteTransaction, showToas
       <div className="page-header">
         <div>
           <h2 className="page-title">Baholash Tarixi</h2>
-          <p className="page-subtitle">Barcha berilgan ballar (likelar) jurnali va ularni tahrirlash</p>
+          <p className="page-subtitle">Barcha berilgan likelar jurnali va ularni tahrirlash</p>
         </div>
       </div>
 
@@ -219,7 +219,7 @@ const History = ({ groups, students, transactions, onDeleteTransaction, showToas
               <span className="th-student">Talaba</span>
               <span className="th-group">Guruh</span>
               <span className="th-comment">Izoh</span>
-              <span className="th-amount text-right">Ball</span>
+              <span className="th-amount text-right">Like</span>
               {userRole !== 'student' && <span className="th-action text-right">Amal</span>}
             </div>
             <div className="history-body">
@@ -288,7 +288,7 @@ const History = ({ groups, students, transactions, onDeleteTransaction, showToas
             </button>
             <h3 className="modal-title">Baholashni bekor qilish</h3>
             <p className="modal-warning-text">
-              Ushbu baholash harakatini bekor qilmoqchimisiz? Talabaning umumiy ballari mos ravishda qayta hisoblanadi.
+              Ushbu baholash harakatini bekor qilmoqchimisiz? Talabaning umumiy likelari mos ravishda qayta hisoblanadi.
             </p>
             <div className="modal-actions">
               <button className="btn btn-secondary scale-active" onClick={() => setConfirmDeleteId(null)}>

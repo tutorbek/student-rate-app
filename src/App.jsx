@@ -724,6 +724,8 @@ function App() {
             snapshots={snapshots}
             onRollback={handleRollback}
             triggerSilentBackupDownload={triggerSilentBackupDownload}
+            userRole={userRole}
+            onLogout={handleLogout}
           />
         );
       default:
