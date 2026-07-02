@@ -497,7 +497,7 @@ function App() {
         container.innerHTML = '';
       }
     };
-  }, [isAuthenticated]);
+  }, [isAuthenticated, isLoginStyleReady]);
 
   // Trigger a background download of the JSON database
   const triggerSilentBackupDownload = () => {
