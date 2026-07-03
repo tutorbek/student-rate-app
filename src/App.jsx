@@ -810,6 +810,9 @@ function App() {
             groups={filteredGroups}
             students={filteredStudents}
             transactions={filteredTransactions}
+            allActiveGroups={allActiveGroups}
+            allActiveStudents={allActiveStudents}
+            allActiveTransactions={allActiveTransactions}
             userRole={userRole}
             onDeleteTransaction={handleDeleteTransaction}
             showToast={showToast}
@@ -962,7 +965,10 @@ function App() {
                 {/* Form Header */}
                 <div className="text-center mb-8">
                   <div className="inline-flex items-center justify-center w-16 h-16 border-2 border-deep-void bg-cyber-yellow mb-4 rounded-none">
-                    <span className="material-symbols-outlined text-3xl font-bold">lock</span>
+                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-deep-void">
+                      <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                      <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                    </svg>
                   </div>
                   <h2 className="text-2xl font-extrabold uppercase tracking-tight">TIZIMGA KIRISH</h2>
                   <p className="text-xs font-bold tracking-wider opacity-60 mt-1 uppercase">Davom etish uchun parolni kiriting</p>
@@ -990,12 +996,23 @@ function App() {
                     <button 
                       type="button" 
                       onClick={() => setShowPassword(!showPassword)} 
-                      className="absolute right-4 top-4 text-deep-void opacity-75 hover:opacity-100 transition-opacity focus:outline-none"
+                      className="absolute right-4 top-4 text-deep-void opacity-75 hover:opacity-100 transition-opacity focus:outline-none flex items-center justify-center"
                       title="Parolni ko'rsatish/yashirish"
+                      style={{ height: '24px', width: '24px' }}
                     >
-                      <span className="material-symbols-outlined" id="eyeIcon">
-                        {showPassword ? 'visibility_off' : 'visibility'}
-                      </span>
+                      {showPassword ? (
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M9.88 9.88a3 3 0 1 0 4.24 4.24" />
+                          <path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68" />
+                          <path d="M6.61 6.61A13.52 13.52 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61" />
+                          <line x1="2" y1="2" x2="22" y2="22" />
+                        </svg>
+                      ) : (
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z" />
+                          <circle cx="12" cy="12" r="3" />
+                        </svg>
+                      )}
                     </button>
                   </div>
                   
@@ -1007,7 +1024,10 @@ function App() {
                     className="login-btn-brutal w-full h-14 bg-deep-void text-stark-white font-bold text-sm md:text-base border-2 border-cyber-yellow uppercase tracking-widest transition-all hard-shadow-btn flex items-center justify-center gap-2 rounded-none group"
                   >
                     <span>{loginLoading ? "TEKSHIRILMOQDA..." : "KIRISH"}</span>
-                    <span className="material-symbols-outlined text-cyber-yellow group-hover:translate-x-1 transition-transform">arrow_forward</span>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-cyber-yellow group-hover:translate-x-1 transition-transform">
+                      <line x1="5" y1="12" x2="19" y2="12" />
+                      <polyline points="12 5 19 12 12 19" />
+                    </svg>
                   </button>
                   
                   <div className="flex items-center justify-between pt-2 border-t border-dashed border-gray-300">

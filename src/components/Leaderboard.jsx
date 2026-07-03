@@ -123,7 +123,17 @@ const renderAvatar = (emoji) => {
   return emoji;
 };
 
-const Leaderboard = ({ groups, students, transactions, userRole, onDeleteTransaction, showToast }) => {
+const Leaderboard = ({
+  groups,
+  students,
+  transactions,
+  allActiveGroups,
+  allActiveStudents,
+  allActiveTransactions,
+  userRole,
+  onDeleteTransaction,
+  showToast
+}) => {
   const [timeframe, setTimeframe] = useState('week'); // 'week', 'lastWeek', 'month', 'lastMonth', 'all'
   
   // If student, select their first group automatically, otherwise default to 'all'
@@ -247,16 +257,20 @@ const Leaderboard = ({ groups, students, transactions, userRole, onDeleteTransac
 
   // Top 3 groups by score (current timeframe) — for mobile banner
   const top3Groups = useMemo(() => {
-    const scored = groups.map(group => {
-      const groupStudents = students.filter(s => s.groupId === group.id && !s.deleted);
+    const targetGroups = allActiveGroups || groups;
+    const targetStudents = allActiveStudents || students;
+    const targetTransactions = allActiveTransactions || transactions;
+
+    const scored = targetGroups.map(group => {
+      const groupStudents = targetStudents.filter(s => s.groupId === group.id && !s.deleted);
       const score = groupStudents.reduce(
-        (sum, s) => sum + getStudentScore(transactions, s.id, timeframe),
+        (sum, s) => sum + getStudentScore(targetTransactions, s.id, timeframe),
         0
       );
       return { id: group.id, name: group.name, icon: group.icon, score };
     });
     return scored.sort((a, b) => b.score - a.score).slice(0, 3);
-  }, [groups, students, transactions, timeframe]);
+  }, [allActiveGroups, groups, allActiveStudents, students, allActiveTransactions, transactions, timeframe]);
 
   const rankMedals = ['🥇', '🥈', '🥉'];
 

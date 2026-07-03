@@ -52,6 +52,44 @@
     
     <style>
         /* Neo-Brutalism maxsus stillari */
+        .relative {
+            position: relative !important;
+        }
+        .absolute {
+            position: absolute !important;
+        }
+        .left-4 {
+            left: 16px !important;
+        }
+        .right-4 {
+            right: 16px !important;
+        }
+        .top-4 {
+            top: 16px !important;
+        }
+        .input-group {
+            position: relative !important;
+            width: 100%;
+        }
+        .input-group label {
+            position: absolute !important;
+            left: 16px !important;
+            top: 16px !important;
+            pointer-events: none;
+            transition: all 0.2s ease;
+        }
+        .input-group button {
+            position: absolute !important;
+            right: 16px !important;
+            top: 16px !important;
+            background: none;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0;
+        }
         .hard-shadow {
             box-shadow: 4px 4px 0px 0px #000000;
         }

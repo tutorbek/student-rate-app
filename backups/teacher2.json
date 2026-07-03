@@ -1,16 +1,856 @@
 {
   "groups": [
     {
-      "id": "hetmiwquv",
+      "id": "n6ep8j6aw",
       "icon": "💻",
-      "name": "Ertalab",
-      "deleted": true,
-      "password": "maktab",
-      "createdAt": "2026-07-02T13:11:16.582Z",
-      "deletedAt": "2026-07-02T13:38:45.130Z"
+      "name": "Group 1",
+      "password": "genious",
+      "createdAt": "2026-07-03T05:26:35.224Z"
+    },
+    {
+      "id": "tb0k56x23",
+      "icon": "📚",
+      "name": "Group 2",
+      "password": "parol",
+      "createdAt": "2026-07-03T06:47:34.538Z"
     }
   ],
-  "students": [],
+  "students": [
+    {
+      "id": "3gnfcdv60",
+      "name": "Kamronbek",
+      "color": "#E35336",
+      "emoji": "🎸",
+      "groupId": "n6ep8j6aw",
+      "createdAt": "2026-07-03T06:20:56.289Z"
+    },
+    {
+      "id": "ho117fkm8",
+      "name": "Ismoiljon",
+      "color": "#F5F5DC",
+      "emoji": "🐯",
+      "groupId": "n6ep8j6aw",
+      "createdAt": "2026-07-03T06:22:07.892Z"
+    },
+    {
+      "id": "0dg5ljb2i",
+      "name": "Mustafo",
+      "color": "#E35336",
+      "emoji": "🐼",
+      "groupId": "n6ep8j6aw",
+      "createdAt": "2026-07-03T06:22:17.030Z"
+    },
+    {
+      "id": "99gthhchw",
+      "name": "Zaxroxon",
+      "color": "#E35336",
+      "emoji": "🦋",
+      "groupId": "n6ep8j6aw",
+      "createdAt": "2026-07-03T06:23:12.728Z"
+    },
+    {
+      "id": "o4lt6pnkb",
+      "name": "Samira",
+      "color": "#F4A460",
+      "emoji": "🛹",
+      "groupId": "n6ep8j6aw",
+      "createdAt": "2026-07-03T06:23:32.995Z"
+    },
+    {
+      "id": "nzyxxt4xx",
+      "name": "Ramuza",
+      "color": "#E35336",
+      "emoji": "🦄",
+      "groupId": "n6ep8j6aw",
+      "createdAt": "2026-07-03T06:23:43.555Z"
+    },
+    {
+      "id": "et559ibqb",
+      "name": "Yasmin",
+      "color": "#E35336",
+      "emoji": "🌸",
+      "groupId": "n6ep8j6aw",
+      "createdAt": "2026-07-03T06:24:17.614Z"
+    },
+    {
+      "id": "weryu4qf1",
+      "name": "Abdulaziz N",
+      "color": "#E35336",
+      "emoji": "🦅",
+      "groupId": "n6ep8j6aw",
+      "createdAt": "2026-07-03T06:24:45.266Z"
+    },
+    {
+      "id": "nqs5kppya",
+      "name": "Shaxruza",
+      "color": "#E35336",
+      "emoji": "🦉",
+      "groupId": "n6ep8j6aw",
+      "createdAt": "2026-07-03T06:25:03.448Z"
+    },
+    {
+      "id": "nenxbx8ef",
+      "name": "Salohiddin",
+      "color": "#E35336",
+      "emoji": "🎮",
+      "groupId": "n6ep8j6aw",
+      "createdAt": "2026-07-03T06:25:24.367Z"
+    },
+    {
+      "id": "t6o46a9m1",
+      "name": "Iroda F.",
+      "color": "#E35336",
+      "emoji": "🦋",
+      "groupId": "tb0k56x23",
+      "createdAt": "2026-07-03T06:48:23.105Z"
+    },
+    {
+      "id": "o9ppi8peh",
+      "name": "Hulkaroy",
+      "color": "#E35336",
+      "emoji": "🍦",
+      "groupId": "tb0k56x23",
+      "createdAt": "2026-07-03T06:48:37.739Z"
+    },
+    {
+      "id": "c1haga3wl",
+      "name": "Guljaxon Z",
+      "color": "#E35336",
+      "emoji": "🦄",
+      "groupId": "tb0k56x23",
+      "createdAt": "2026-07-03T06:48:59.173Z"
+    },
+    {
+      "id": "skmx9hxin",
+      "name": "Go'zal",
+      "color": "#E35336",
+      "emoji": "🐞",
+      "groupId": "tb0k56x23",
+      "createdAt": "2026-07-03T06:49:10.355Z"
+    },
+    {
+      "id": "gmadc38my",
+      "name": "Durdona",
+      "color": "#E35336",
+      "emoji": "🐱",
+      "groupId": "tb0k56x23",
+      "createdAt": "2026-07-03T06:49:18.832Z"
+    },
+    {
+      "id": "m2k5o44d1",
+      "name": "Madina",
+      "color": "#E35336",
+      "emoji": "🌸",
+      "groupId": "tb0k56x23",
+      "createdAt": "2026-07-03T06:49:42.302Z"
+    },
+    {
+      "id": "u1ug85f8z",
+      "name": "Yulduz",
+      "color": "#E35336",
+      "emoji": "🧸",
+      "groupId": "tb0k56x23",
+      "createdAt": "2026-07-03T06:49:57.009Z"
+    },
+    {
+      "id": "i1zn5yry6",
+      "name": "Ziyoda",
+      "color": "#E35336",
+      "emoji": "🐉",
+      "groupId": "tb0k56x23",
+      "createdAt": "2026-07-03T06:50:06.943Z"
+    },
+    {
+      "id": "2vqx62dfk",
+      "name": "Umida",
+      "color": "#E35336",
+      "emoji": "🐨",
+      "groupId": "tb0k56x23",
+      "createdAt": "2026-07-03T06:50:16.869Z"
+    },
+    {
+      "id": "er9meb84c",
+      "name": "Marjona",
+      "color": "#E35336",
+      "emoji": "🍕",
+      "groupId": "tb0k56x23",
+      "createdAt": "2026-07-03T06:50:31.218Z"
+    },
+    {
+      "id": "rsu61i5z5",
+      "name": "Nigina",
+      "color": "#E35336",
+      "emoji": "🧙‍♂️",
+      "groupId": "tb0k56x23",
+      "createdAt": "2026-07-03T06:50:40.078Z"
+    },
+    {
+      "id": "m2d7lk5kb",
+      "name": "Guljaxon B",
+      "color": "#E35336",
+      "emoji": "🍀",
+      "groupId": "tb0k56x23",
+      "createdAt": "2026-07-03T06:50:50.911Z"
+    },
+    {
+      "id": "vdurc0tbh",
+      "name": "Abdulhamid",
+      "color": "#E35336",
+      "emoji": "👑",
+      "groupId": "tb0k56x23",
+      "createdAt": "2026-07-03T06:51:06.619Z"
+    },
+    {
+      "id": "3bspwaah9",
+      "name": "Asilbek",
+      "color": "#E35336",
+      "emoji": "🦜",
+      "groupId": "tb0k56x23",
+      "createdAt": "2026-07-03T06:51:14.453Z"
+    },
+    {
+      "id": "9vezd13ya",
+      "name": "Abdulloh S",
+      "color": "#E35336",
+      "emoji": "🐼",
+      "groupId": "tb0k56x23",
+      "createdAt": "2026-07-03T06:51:21.829Z"
+    },
+    {
+      "id": "runl112nq",
+      "name": "Abdulaziz",
+      "color": "#E35336",
+      "emoji": "🦖",
+      "groupId": "tb0k56x23",
+      "createdAt": "2026-07-03T06:51:30.339Z"
+    },
+    {
+      "id": "f54gtbq2c",
+      "name": "Otabek",
+      "color": "#E35336",
+      "emoji": "🦊",
+      "groupId": "tb0k56x23",
+      "createdAt": "2026-07-03T06:51:38.515Z"
+    },
+    {
+      "id": "44zjoob6e",
+      "name": "Islomjon",
+      "color": "#E35336",
+      "emoji": "🚀",
+      "groupId": "tb0k56x23",
+      "createdAt": "2026-07-03T06:51:46.930Z"
+    }
+  ],
   "quickTags": [],
-  "transactions": []
+  "transactions": [
+    {
+      "id": "qj91s5mpl",
+      "amount": 15,
+      "comment": "Like berildi",
+      "studentId": "44zjoob6e",
+      "timestamp": "2026-07-03T07:58:46.272Z"
+    },
+    {
+      "id": "3ws3h2gn9",
+      "amount": -2,
+      "comment": "Like ayrildi",
+      "studentId": "f54gtbq2c",
+      "timestamp": "2026-07-03T07:58:30.043Z"
+    },
+    {
+      "id": "1ueomk1vw",
+      "amount": 19,
+      "comment": "Not prepared",
+      "studentId": "runl112nq",
+      "timestamp": "2026-07-03T07:58:18.473Z"
+    },
+    {
+      "id": "vt01rvb63",
+      "amount": 14,
+      "comment": "Hesitate",
+      "studentId": "9vezd13ya",
+      "timestamp": "2026-07-03T07:58:00.746Z"
+    },
+    {
+      "id": "juibr15ww",
+      "amount": 17,
+      "comment": "Hesitate",
+      "studentId": "3bspwaah9",
+      "timestamp": "2026-07-03T07:57:49.388Z"
+    },
+    {
+      "id": "2k0jqabtm",
+      "amount": 19,
+      "comment": "Spoke slowly",
+      "studentId": "vdurc0tbh",
+      "timestamp": "2026-07-03T07:57:38.547Z"
+    },
+    {
+      "id": "6lmdk5hmo",
+      "amount": 20,
+      "comment": "Good speech",
+      "studentId": "m2d7lk5kb",
+      "timestamp": "2026-07-03T07:57:26.664Z"
+    },
+    {
+      "id": "xzsk6fawz",
+      "amount": 19,
+      "comment": "Hesitation",
+      "studentId": "rsu61i5z5",
+      "timestamp": "2026-07-03T07:57:14.763Z"
+    },
+    {
+      "id": "mdqxysoxs",
+      "amount": 20,
+      "comment": "Awesome",
+      "studentId": "er9meb84c",
+      "timestamp": "2026-07-03T07:56:53.428Z"
+    },
+    {
+      "id": "avwih4o4t",
+      "amount": 19,
+      "comment": "Looked at the copybook",
+      "studentId": "2vqx62dfk",
+      "timestamp": "2026-07-03T07:56:43.820Z"
+    },
+    {
+      "id": "9v4n6i1z6",
+      "amount": 10,
+      "comment": "Not prepared well",
+      "studentId": "i1zn5yry6",
+      "timestamp": "2026-07-03T07:56:24.909Z"
+    },
+    {
+      "id": "2p044b6ev",
+      "amount": 15,
+      "comment": "Forget some information",
+      "studentId": "u1ug85f8z",
+      "timestamp": "2026-07-03T07:56:08.901Z"
+    },
+    {
+      "id": "eyu6p8kht",
+      "amount": 18,
+      "comment": "People is...",
+      "studentId": "m2k5o44d1",
+      "timestamp": "2026-07-03T07:55:51.358Z"
+    },
+    {
+      "id": "yc247rrht",
+      "amount": 10,
+      "comment": "Not good",
+      "studentId": "gmadc38my",
+      "timestamp": "2026-07-03T07:55:31.681Z"
+    },
+    {
+      "id": "dg1mq479c",
+      "amount": 16,
+      "comment": "Hesitation",
+      "studentId": "skmx9hxin",
+      "timestamp": "2026-07-03T07:55:18.073Z"
+    },
+    {
+      "id": "hs9xshib7",
+      "amount": 20,
+      "comment": "Perfect",
+      "studentId": "c1haga3wl",
+      "timestamp": "2026-07-03T07:55:04.883Z"
+    },
+    {
+      "id": "6umy7g51x",
+      "amount": 20,
+      "comment": "Awesome",
+      "studentId": "o9ppi8peh",
+      "timestamp": "2026-07-03T07:54:55.056Z"
+    },
+    {
+      "id": "utgjb1crn",
+      "amount": 18,
+      "comment": "Hesitation",
+      "studentId": "t6o46a9m1",
+      "timestamp": "2026-07-03T07:54:41.740Z"
+    },
+    {
+      "id": "6dx1vhj5q",
+      "amount": 5,
+      "comment": "Like berildi",
+      "studentId": "t6o46a9m1",
+      "timestamp": "2026-07-03T07:47:15.770Z"
+    },
+    {
+      "id": "uwtnwj1sv",
+      "amount": 10,
+      "comment": "Like berildi",
+      "studentId": "m2d7lk5kb",
+      "timestamp": "2026-07-03T07:40:25.046Z"
+    },
+    {
+      "id": "texg2nu9p",
+      "amount": 39,
+      "comment": "Like berildi",
+      "studentId": "44zjoob6e",
+      "timestamp": "2026-07-03T07:32:44.961Z"
+    },
+    {
+      "id": "vvqqqm7gj",
+      "amount": 36,
+      "comment": "Like berildi",
+      "studentId": "f54gtbq2c",
+      "timestamp": "2026-07-03T07:32:38.887Z"
+    },
+    {
+      "id": "3s0dw4jwc",
+      "amount": 38,
+      "comment": "Like berildi",
+      "studentId": "runl112nq",
+      "timestamp": "2026-07-03T07:32:34.804Z"
+    },
+    {
+      "id": "yob5ktsc3",
+      "amount": 35,
+      "comment": "Like berildi",
+      "studentId": "9vezd13ya",
+      "timestamp": "2026-07-03T07:32:29.803Z"
+    },
+    {
+      "id": "96kz1iosw",
+      "amount": 40,
+      "comment": "Like berildi",
+      "studentId": "3bspwaah9",
+      "timestamp": "2026-07-03T07:32:23.879Z"
+    },
+    {
+      "id": "uwty54aqg",
+      "amount": 37,
+      "comment": "Like berildi",
+      "studentId": "vdurc0tbh",
+      "timestamp": "2026-07-03T07:32:17.636Z"
+    },
+    {
+      "id": "t9ugqd2wy",
+      "amount": 37,
+      "comment": "Like berildi",
+      "studentId": "m2d7lk5kb",
+      "timestamp": "2026-07-03T07:32:12.120Z"
+    },
+    {
+      "id": "en6zgsw2c",
+      "amount": 35,
+      "comment": "Like berildi",
+      "studentId": "rsu61i5z5",
+      "timestamp": "2026-07-03T07:32:07.419Z"
+    },
+    {
+      "id": "47kowe834",
+      "amount": 31,
+      "comment": "Like berildi",
+      "studentId": "er9meb84c",
+      "timestamp": "2026-07-03T07:32:03.069Z"
+    },
+    {
+      "id": "gq1ueh06j",
+      "amount": -2,
+      "comment": "Like ayrildi",
+      "studentId": "2vqx62dfk",
+      "timestamp": "2026-07-03T07:31:58.461Z"
+    },
+    {
+      "id": "jb2nfnpjl",
+      "amount": -2,
+      "comment": "Like ayrildi",
+      "studentId": "2vqx62dfk",
+      "timestamp": "2026-07-03T07:31:52.382Z"
+    },
+    {
+      "id": "wcv6zja8p",
+      "amount": -2,
+      "comment": "Like ayrildi",
+      "studentId": "2vqx62dfk",
+      "timestamp": "2026-07-03T07:31:47.899Z"
+    },
+    {
+      "id": "8bfmncdlo",
+      "amount": -2,
+      "comment": "Like ayrildi",
+      "studentId": "2vqx62dfk",
+      "timestamp": "2026-07-03T07:31:46.132Z"
+    },
+    {
+      "id": "fbdsmsvqx",
+      "amount": -2,
+      "comment": "Like ayrildi",
+      "studentId": "2vqx62dfk",
+      "timestamp": "2026-07-03T07:31:41.399Z"
+    },
+    {
+      "id": "h9d5gmgzf",
+      "amount": -2,
+      "comment": "Like ayrildi",
+      "studentId": "2vqx62dfk",
+      "timestamp": "2026-07-03T07:31:39.090Z"
+    },
+    {
+      "id": "9bn0exvx7",
+      "amount": 48,
+      "comment": "Like berildi",
+      "studentId": "2vqx62dfk",
+      "timestamp": "2026-07-03T07:31:12.769Z"
+    },
+    {
+      "id": "aksfzp2th",
+      "amount": 40,
+      "comment": "Like berildi",
+      "studentId": "i1zn5yry6",
+      "timestamp": "2026-07-03T07:31:05.437Z"
+    },
+    {
+      "id": "3trmq00rh",
+      "amount": 38,
+      "comment": "Like berildi",
+      "studentId": "u1ug85f8z",
+      "timestamp": "2026-07-03T07:30:59.236Z"
+    },
+    {
+      "id": "5djcex5uk",
+      "amount": 36,
+      "comment": "Like berildi",
+      "studentId": "m2k5o44d1",
+      "timestamp": "2026-07-03T07:30:47.726Z"
+    },
+    {
+      "id": "9ixz7vr90",
+      "amount": 36,
+      "comment": "Like berildi",
+      "studentId": "gmadc38my",
+      "timestamp": "2026-07-03T07:30:41.559Z"
+    },
+    {
+      "id": "06bpihujm",
+      "amount": 32,
+      "comment": "Like berildi",
+      "studentId": "skmx9hxin",
+      "timestamp": "2026-07-03T07:30:35.400Z"
+    },
+    {
+      "id": "3ko2fui6r",
+      "amount": 33,
+      "comment": "Like berildi",
+      "studentId": "c1haga3wl",
+      "timestamp": "2026-07-03T07:30:29.151Z"
+    },
+    {
+      "id": "gh1dc7yhg",
+      "amount": 34,
+      "comment": "Like berildi",
+      "studentId": "o9ppi8peh",
+      "timestamp": "2026-07-03T07:30:23.009Z"
+    },
+    {
+      "id": "eq9tpvlp3",
+      "amount": 20,
+      "comment": "Like berildi",
+      "studentId": "t6o46a9m1",
+      "timestamp": "2026-07-03T07:30:17.325Z"
+    },
+    {
+      "id": "ml5pi3ytk",
+      "amount": 15,
+      "comment": "Like berildi",
+      "studentId": "t6o46a9m1",
+      "timestamp": "2026-07-03T07:30:12.006Z"
+    },
+    {
+      "id": "bw2ksp4jp",
+      "amount": 14,
+      "comment": "Like berildi",
+      "studentId": "44zjoob6e",
+      "timestamp": "2026-07-03T07:21:18.262Z"
+    },
+    {
+      "id": "1ap8pgth3",
+      "amount": 21,
+      "comment": "Like berildi",
+      "studentId": "f54gtbq2c",
+      "timestamp": "2026-07-03T07:21:12.106Z"
+    },
+    {
+      "id": "c8dti3k8z",
+      "amount": 20,
+      "comment": "Like berildi",
+      "studentId": "runl112nq",
+      "timestamp": "2026-07-03T07:21:07.772Z"
+    },
+    {
+      "id": "2x1h1r2aq",
+      "amount": 14,
+      "comment": "Like berildi",
+      "studentId": "9vezd13ya",
+      "timestamp": "2026-07-03T07:21:03.113Z"
+    },
+    {
+      "id": "pxlnpdy5f",
+      "amount": 7,
+      "comment": "Like berildi",
+      "studentId": "3bspwaah9",
+      "timestamp": "2026-07-03T07:20:58.706Z"
+    },
+    {
+      "id": "xctr2k8o9",
+      "amount": 14,
+      "comment": "Like berildi",
+      "studentId": "vdurc0tbh",
+      "timestamp": "2026-07-03T07:20:53.554Z"
+    },
+    {
+      "id": "wy2je3pxd",
+      "amount": 14,
+      "comment": "Like berildi",
+      "studentId": "m2d7lk5kb",
+      "timestamp": "2026-07-03T07:20:48.556Z"
+    },
+    {
+      "id": "xmdcmh760",
+      "amount": 15,
+      "comment": "Like berildi",
+      "studentId": "rsu61i5z5",
+      "timestamp": "2026-07-03T07:20:42.896Z"
+    },
+    {
+      "id": "mqlblgw9e",
+      "amount": 18,
+      "comment": "Like berildi",
+      "studentId": "er9meb84c",
+      "timestamp": "2026-07-03T07:20:38.995Z"
+    },
+    {
+      "id": "hqtfwf8md",
+      "amount": 15,
+      "comment": "Like berildi",
+      "studentId": "2vqx62dfk",
+      "timestamp": "2026-07-03T07:20:34.545Z"
+    },
+    {
+      "id": "o5kqym8u9",
+      "amount": 12,
+      "comment": "Like berildi",
+      "studentId": "i1zn5yry6",
+      "timestamp": "2026-07-03T07:20:29.945Z"
+    },
+    {
+      "id": "kawboohlg",
+      "amount": 10,
+      "comment": "Like berildi",
+      "studentId": "u1ug85f8z",
+      "timestamp": "2026-07-03T07:20:25.370Z"
+    },
+    {
+      "id": "96uce4lmn",
+      "amount": 19,
+      "comment": "Like berildi",
+      "studentId": "m2k5o44d1",
+      "timestamp": "2026-07-03T07:20:20.979Z"
+    },
+    {
+      "id": "4gp02kgqr",
+      "amount": 13,
+      "comment": "Like berildi",
+      "studentId": "gmadc38my",
+      "timestamp": "2026-07-03T07:20:16.221Z"
+    },
+    {
+      "id": "o04zb0you",
+      "amount": 12,
+      "comment": "Like berildi",
+      "studentId": "skmx9hxin",
+      "timestamp": "2026-07-03T07:20:11.027Z"
+    },
+    {
+      "id": "obuin7y6u",
+      "amount": 18,
+      "comment": "Like berildi",
+      "studentId": "c1haga3wl",
+      "timestamp": "2026-07-03T07:20:06.201Z"
+    },
+    {
+      "id": "1mood1vsn",
+      "amount": 18,
+      "comment": "Like berildi",
+      "studentId": "o9ppi8peh",
+      "timestamp": "2026-07-03T07:19:59.560Z"
+    },
+    {
+      "id": "b7wtdh164",
+      "amount": 17,
+      "comment": "Like berildi",
+      "studentId": "t6o46a9m1",
+      "timestamp": "2026-07-03T07:19:53.327Z"
+    },
+    {
+      "id": "50sanmii6",
+      "amount": 4,
+      "comment": "Like berildi",
+      "studentId": "3bspwaah9",
+      "timestamp": "2026-07-03T07:01:51.392Z"
+    },
+    {
+      "id": "9c2xewvaa",
+      "amount": 5,
+      "comment": "Like berildi",
+      "studentId": "m2k5o44d1",
+      "timestamp": "2026-07-03T07:01:37.991Z"
+    },
+    {
+      "id": "4r14t2mks",
+      "amount": 2,
+      "comment": "Like berildi",
+      "studentId": "o9ppi8peh",
+      "timestamp": "2026-07-03T06:58:45.211Z"
+    },
+    {
+      "id": "44zr1kjbb",
+      "amount": 2,
+      "comment": "Like berildi",
+      "studentId": "t6o46a9m1",
+      "timestamp": "2026-07-03T06:58:39.894Z"
+    },
+    {
+      "id": "txmn2ns3i",
+      "amount": 42,
+      "comment": "Like berildi",
+      "studentId": "nenxbx8ef",
+      "timestamp": "2026-07-03T06:42:11.037Z"
+    },
+    {
+      "id": "swml1xv62",
+      "amount": 41,
+      "comment": "Like berildi",
+      "studentId": "nqs5kppya",
+      "timestamp": "2026-07-03T06:41:40.314Z"
+    },
+    {
+      "id": "ahi2rwqvg",
+      "amount": 34,
+      "comment": "Like berildi",
+      "studentId": "weryu4qf1",
+      "timestamp": "2026-07-03T06:41:32.140Z"
+    },
+    {
+      "id": "6itsouz9t",
+      "amount": 37,
+      "comment": "Like berildi",
+      "studentId": "et559ibqb",
+      "timestamp": "2026-07-03T06:41:26.763Z"
+    },
+    {
+      "id": "x8rs7jrwi",
+      "amount": 43,
+      "comment": "Like berildi",
+      "studentId": "nzyxxt4xx",
+      "timestamp": "2026-07-03T06:41:14.189Z"
+    },
+    {
+      "id": "fsle2gzux",
+      "amount": 40,
+      "comment": "Like berildi",
+      "studentId": "o4lt6pnkb",
+      "timestamp": "2026-07-03T06:41:09.205Z"
+    },
+    {
+      "id": "48gvqqyq9",
+      "amount": 37,
+      "comment": "Like berildi",
+      "studentId": "99gthhchw",
+      "timestamp": "2026-07-03T06:41:03.479Z"
+    },
+    {
+      "id": "dhl4bey6r",
+      "amount": 40,
+      "comment": "Like berildi",
+      "studentId": "0dg5ljb2i",
+      "timestamp": "2026-07-03T06:40:55.871Z"
+    },
+    {
+      "id": "mq62oknrw",
+      "amount": 44,
+      "comment": "Like berildi",
+      "studentId": "ho117fkm8",
+      "timestamp": "2026-07-03T06:40:49.553Z"
+    },
+    {
+      "id": "usb1h7uvb",
+      "amount": 37,
+      "comment": "Like berildi",
+      "studentId": "3gnfcdv60",
+      "timestamp": "2026-07-03T06:40:42.930Z"
+    },
+    {
+      "id": "5zorzpqjc",
+      "amount": 14,
+      "comment": "Like berildi",
+      "studentId": "nenxbx8ef",
+      "timestamp": "2026-07-03T06:37:12.387Z"
+    },
+    {
+      "id": "m73bcuxqx",
+      "amount": 25,
+      "comment": "Like berildi",
+      "studentId": "nqs5kppya",
+      "timestamp": "2026-07-03T06:37:06.003Z"
+    },
+    {
+      "id": "4qpkckr50",
+      "amount": 12,
+      "comment": "Like berildi",
+      "studentId": "weryu4qf1",
+      "timestamp": "2026-07-03T06:36:58.846Z"
+    },
+    {
+      "id": "0bta0zuu2",
+      "amount": -2,
+      "comment": "Like ayrildi",
+      "studentId": "et559ibqb",
+      "timestamp": "2026-07-03T06:36:51.483Z"
+    },
+    {
+      "id": "vah4yuynm",
+      "amount": 13,
+      "comment": "Like berildi",
+      "studentId": "nzyxxt4xx",
+      "timestamp": "2026-07-03T06:36:43.110Z"
+    },
+    {
+      "id": "ukru6dcte",
+      "amount": 20,
+      "comment": "Like berildi",
+      "studentId": "o4lt6pnkb",
+      "timestamp": "2026-07-03T06:36:35.884Z"
+    },
+    {
+      "id": "wm6p7s019",
+      "amount": 23,
+      "comment": "Like berildi",
+      "studentId": "99gthhchw",
+      "timestamp": "2026-07-03T06:36:30.458Z"
+    },
+    {
+      "id": "rm6q6jiwp",
+      "amount": 14,
+      "comment": "Like berildi",
+      "studentId": "0dg5ljb2i",
+      "timestamp": "2026-07-03T06:36:23.941Z"
+    },
+    {
+      "id": "hgeqpj2zj",
+      "amount": 21,
+      "comment": "Like berildi",
+      "studentId": "ho117fkm8",
+      "timestamp": "2026-07-03T06:36:16.891Z"
+    },
+    {
+      "id": "xgnjs7e39",
+      "amount": 23,
+      "comment": "Like berildi",
+      "studentId": "3gnfcdv60",
+      "timestamp": "2026-07-03T06:36:06.175Z"
+    }
+  ]
 }

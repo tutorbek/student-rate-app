@@ -104,32 +104,34 @@ const Sidebar = ({ activeTab, setActiveTab, userRole, onLogout, groups = [], stu
         <div className="sidebar-logo">
           <h1 className="logo-text">epchil  robot</h1>
         </div>
-        <nav className="sidebar-nav">
-          {filteredMenuItems.map((item) => (
-            <button
-              key={item.id}
-              className={`sidebar-link scale-active ${activeTab === item.id ? 'active' : ''}`}
-              onClick={() => setActiveTab(item.id)}
-            >
-              <span className="sidebar-icon">{item.icon}</span>
-              <span className="sidebar-label">{item.label}</span>
-            </button>
-          ))}
-        </nav>
-
-        {/* Top 3 Groups Widget — Desktop Only */}
-        {top3Groups.length > 0 && (
-          <div className="sidebar-top3">
-            <div className="sidebar-top3-title">🏆 Bu hafta top guruhlar</div>
-            {top3Groups.map((group, i) => (
-              <div key={group.id} className="sidebar-top3-item">
-                <span className="sidebar-top3-medal">{rankMedals[i]}</span>
-                <span className="sidebar-top3-name">{group.name}</span>
-                <span className="sidebar-top3-score">{group.score >= 0 ? `+${group.score}` : group.score}</span>
-              </div>
+        <div className="sidebar-content">
+          <nav className="sidebar-nav">
+            {filteredMenuItems.map((item) => (
+              <button
+                key={item.id}
+                className={`sidebar-link scale-active ${activeTab === item.id ? 'active' : ''}`}
+                onClick={() => setActiveTab(item.id)}
+              >
+                <span className="sidebar-icon">{item.icon}</span>
+                <span className="sidebar-label">{item.label}</span>
+              </button>
             ))}
-          </div>
-        )}
+          </nav>
+
+          {/* Top 3 Groups Widget — Desktop Only */}
+          {top3Groups.length > 0 && (
+            <div className="sidebar-top3">
+              <div className="sidebar-top3-title">🏆 Bu hafta top guruhlar</div>
+              {top3Groups.map((group, i) => (
+                <div key={group.id} className="sidebar-top3-item">
+                  <span className="sidebar-top3-medal">{rankMedals[i]}</span>
+                  <span className="sidebar-top3-name">{group.name}</span>
+                  <span className="sidebar-top3-score">{group.score >= 0 ? `+${group.score}` : group.score}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
 
         <div className="sidebar-footer">
           <div className="sidebar-footer-top">
@@ -219,11 +221,25 @@ const Sidebar = ({ activeTab, setActiveTab, userRole, onLogout, groups = [], stu
           letter-spacing: -0.5px;
         }
 
+        .sidebar-content {
+          display: flex;
+          flex-direction: column;
+          gap: 16px;
+          flex: 1;
+          overflow-y: auto;
+          margin-bottom: 16px;
+          -ms-overflow-style: none;  /* IE and Edge */
+          scrollbar-width: none;  /* Firefox */
+        }
+
+        .sidebar-content::-webkit-scrollbar {
+          display: none;  /* Chrome, Safari, Opera */
+        }
+
         .sidebar-nav {
           display: flex;
           flex-direction: column;
           gap: 6px;
-          flex: 1;
         }
 
         .sidebar-link {

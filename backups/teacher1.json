@@ -25,7 +25,7 @@
       "id": "3j0ousi0w",
       "icon": "📚",
       "name": "G5 Seshanba 11:00",
-      "password": "rostan",
+      "password": "raketa",
       "createdAt": "2026-06-30T06:12:57.676Z"
     }
   ],
@@ -149,6 +149,16 @@
       "emoji": "🚀",
       "groupId": "3j0ousi0w",
       "createdAt": "2026-06-30T06:13:29.109Z"
+    },
+    {
+      "id": "ej9s2ywlv",
+      "name": "Muhammadali",
+      "color": "#F5F5DC",
+      "emoji": "🐼",
+      "deleted": true,
+      "groupId": "l8vh182f5",
+      "createdAt": "2026-07-03T06:29:54.062Z",
+      "deletedAt": "2026-07-03T10:22:10.808Z"
     }
   ],
   "quickTags": [
@@ -160,6 +170,155 @@
     "Intizom buzilishi ⚠️"
   ],
   "transactions": [
+    {
+      "id": "rjb1osa46",
+      "amount": 5,
+      "comment": "Zo'r video yasab kelibdi",
+      "studentId": "x8tk7y27r",
+      "timestamp": "2026-07-03T07:54:00.956Z"
+    },
+    {
+      "id": "kehfxgphv",
+      "amount": 2,
+      "comment": "Faol ishtirok 🌟",
+      "studentId": "e6a5tx03r",
+      "timestamp": "2026-07-03T06:29:46.594Z"
+    },
+    {
+      "id": "kvk8tx0k1",
+      "amount": 2,
+      "comment": "Faol ishtirok 🌟",
+      "studentId": "x8tk7y27r",
+      "timestamp": "2026-07-03T06:29:41.994Z"
+    },
+    {
+      "id": "koow3us22",
+      "amount": -2,
+      "comment": "Faol ishtirok 🌟",
+      "studentId": "b7gogaueb",
+      "timestamp": "2026-07-03T06:29:37.960Z"
+    },
+    {
+      "id": "kbq3r5557",
+      "amount": 2,
+      "comment": "Faol ishtirok 🌟",
+      "studentId": "b7gogaueb",
+      "timestamp": "2026-07-03T06:29:28.477Z"
+    },
+    {
+      "id": "0wra5uwt0",
+      "amount": 2,
+      "comment": "Faol ishtirok 🌟",
+      "studentId": "ybkxhi332",
+      "timestamp": "2026-07-03T06:29:26.060Z"
+    },
+    {
+      "id": "kcvmvbeh6",
+      "amount": 2,
+      "comment": "Faol ishtirok 🌟",
+      "studentId": "0ob2moe65",
+      "timestamp": "2026-07-03T06:29:24.210Z"
+    },
+    {
+      "id": "0mb31xeei",
+      "amount": 2,
+      "comment": "Faol ishtirok 🌟",
+      "studentId": "e6a5tx03r",
+      "timestamp": "2026-07-03T06:29:13.693Z"
+    },
+    {
+      "id": "gaurnzr4c",
+      "amount": 2,
+      "comment": "Faol ishtirok 🌟",
+      "studentId": "x8tk7y27r",
+      "timestamp": "2026-07-03T06:29:04.126Z"
+    },
+    {
+      "id": "46yenxmhp",
+      "amount": 2,
+      "comment": "Faol ishtirok 🌟",
+      "studentId": "ybkxhi332",
+      "timestamp": "2026-07-03T06:29:00.526Z"
+    },
+    {
+      "id": "0dddf05i6",
+      "amount": 2,
+      "comment": "Faol ishtirok 🌟",
+      "studentId": "0ob2moe65",
+      "timestamp": "2026-07-03T06:28:58.843Z"
+    },
+    {
+      "id": "vgo6bmze2",
+      "amount": 5,
+      "comment": "Faol ishtirok 🌟",
+      "studentId": "e6a5tx03r",
+      "timestamp": "2026-07-03T06:28:41.460Z"
+    },
+    {
+      "id": "15zh8r688",
+      "amount": 5,
+      "comment": "Faol ishtirok 🌟",
+      "studentId": "x8tk7y27r",
+      "timestamp": "2026-07-03T06:28:36.476Z"
+    },
+    {
+      "id": "yjj75sfh8",
+      "amount": 5,
+      "comment": "Faol ishtirok 🌟",
+      "studentId": "0ob2moe65",
+      "timestamp": "2026-07-03T06:28:31.477Z"
+    },
+    {
+      "id": "iggkshc6d",
+      "amount": 2,
+      "comment": "Faol ishtirok 🌟",
+      "studentId": "e6a5tx03r",
+      "timestamp": "2026-07-03T06:28:20.810Z"
+    },
+    {
+      "id": "bb4g3zl0y",
+      "amount": 2,
+      "comment": "Faol ishtirok 🌟",
+      "studentId": "x8tk7y27r",
+      "timestamp": "2026-07-03T06:28:16.126Z"
+    },
+    {
+      "id": "5c42az24w",
+      "amount": 2,
+      "comment": "Faol ishtirok 🌟",
+      "studentId": "ybkxhi332",
+      "timestamp": "2026-07-03T06:28:05.159Z"
+    },
+    {
+      "id": "04mtjryyw",
+      "amount": 2,
+      "comment": "Faol ishtirok 🌟",
+      "studentId": "0ob2moe65",
+      "timestamp": "2026-07-03T06:28:02.092Z"
+    },
+    {
+      "id": "eo2eb2sxu",
+      "amount": 2,
+      "comment": "Faol ishtirok 🌟",
+      "studentId": "x8tk7y27r",
+      "timestamp": "2026-07-03T06:27:50.225Z"
+    },
+    {
+      "id": "hfy2agca3",
+      "amount": 2,
+      "comment": "Faol ishtirok 🌟",
+      "studentId": "ybkxhi332",
+      "timestamp": "2026-07-03T06:27:45.875Z"
+    },
+    {
+      "id": "hdf4qshdn",
+      "amount": 5,
+      "comment": "Intizom buzilishi ⚠️",
+      "deleted": true,
+      "deletedAt": "2026-07-02T14:50:27.045Z",
+      "studentId": "0ob2moe65",
+      "timestamp": "2026-07-02T14:50:18.780Z"
+    },
     {
       "id": "x72usl66i",
       "amount": 31,

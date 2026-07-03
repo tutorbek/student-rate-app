@@ -173,68 +173,10 @@ const sendTelegramBackupDocument = async (teacherId, data) => {
   }
 };
 
-// Git commit & push automated pipeline
-const pushBackupsToGithub = () => {
-  try {
-    // 1. Check if the working tree is dirty
-    const status = execSync('git status --porcelain', { cwd: __dirname }).toString().trim();
-    const isDirty = status.length > 0;
-    
-    let stashed = false;
-    if (isDirty) {
-      console.log('[Git Backup] Working tree is dirty. Stashing changes...');
-      execSync('git stash', { cwd: __dirname });
-      stashed = true;
-    }
-    
-    // 2. Pull remote changes
-    try {
-      console.log('[Git Backup] Pulling latest changes from remote...');
-      execSync('git pull --rebase', { cwd: __dirname });
-    } catch (pullErr) {
-      console.error('[Git Backup] Git pull failed:', pullErr.message);
-    }
-    
-    // 3. Add backups
-    console.log('[Git Backup] Adding backups directory...');
-    execSync('git add backups/', { cwd: __dirname });
-    
-    // 4. Commit (only if there are staged changes)
-    const stagedStatus = execSync('git status --porcelain backups/', { cwd: __dirname }).toString().trim();
-    if (stagedStatus.length > 0) {
-      // YYYY-MM-DD Tashkent Time
-      const dateStr = new Date().toLocaleDateString('uz-UZ', { timeZone: 'Asia/Tashkent' }).split('.').reverse().join('-');
-      console.log(`[Git Backup] Committing changes for ${dateStr}...`);
-      execSync(`git commit -m "auto: db backup ${dateStr}"`, { cwd: __dirname });
-      
-      // 5. Push changes
-      console.log('[Git Backup] Pushing changes to GitHub...');
-      execSync('git push', { cwd: __dirname });
-      console.log('[Git Backup] Backups pushed successfully!');
-    } else {
-      console.log('[Git Backup] No database changes detected. Skipping commit/push.');
-    }
-    
-    // 6. Restore stashed changes if we stashed them
-    if (stashed) {
-      console.log('[Git Backup] Restoring stashed changes...');
-      execSync('git stash pop', { cwd: __dirname });
-    }
-  } catch (err) {
-    console.error('[Git Backup] Backup process encountered an error:', err.message);
-  }
-};
-
-// Run all backups for the 4 teachers
 const runAllBackups = async () => {
   const teachers = ['teacher1', 'teacher2', 'teacher3', 'teacher4'];
   let successCount = 0;
   
-  // Ensure backups directory exists
-  if (!fs.existsSync(BACKUPS_DIR)) {
-    fs.mkdirSync(BACKUPS_DIR, { recursive: true });
-  }
-
   for (const teacherId of teachers) {
     try {
       const { data: row, error } = await supabase
@@ -245,13 +187,7 @@ const runAllBackups = async () => {
 
       if (error) throw error;
       if (row && row.data) {
-        // Send to Telegram
         await sendTelegramBackupDocument(teacherId, row.data);
-        
-        // Save file locally in backups/
-        const filePath = path.join(BACKUPS_DIR, `${teacherId}.json`);
-        fs.writeFileSync(filePath, JSON.stringify(row.data, null, 2));
-
         successCount++;
       } else {
         console.warn(`[Backup] No data found in Supabase for ${teacherId}`);
@@ -262,21 +198,82 @@ const runAllBackups = async () => {
   }
   
   await sendTelegramMessage(ADMIN_CHAT_ID, `✅ *Tizim zaxirasi yakunlandi!*\n📈 Muvaffaqiyatli: *${successCount}/${teachers.length}* ta profil.`);
-
-  // Trigger Git Commit and Push to GitHub repository
-  pushBackupsToGithub();
 };
 
-// Schedule backup cron job (Every morning at 06:00 AM Tashkent time)
-cron.schedule('0 6 * * *', () => {
-  console.log('[Backup Cron] Starting daily 6:00 AM Tashkent time backup...');
-  runAllBackups();
-}, {
-  scheduled: true,
-  timezone: "Asia/Tashkent"
+app.post('/api/webhook', async (req, res) => {
+  try {
+    const update = req.body;
+    if (update && update.message && update.message.text) {
+      const text = update.message.text.trim();
+      const chatId = String(update.message.chat.id);
+      
+      if (chatId === ADMIN_CHAT_ID) {
+        if (text === '/backup') {
+          await sendTelegramMessage(chatId, "⏳ *Zaxiralash jarayoni boshlandi...* Iltimos kutib turing.");
+          await runAllBackups();
+        } else if (text === '/start') {
+          await sendTelegramMessage(chatId, "👋 *Salom Admin!*\n\nMen epchil robot zaxiralash botiman.\n\nHar kuni tunda barcha o'qituvchilar bazalarini `.json` qilib yuborib turaman.\n\nZaxiralashni hoziroq ishga tushirish uchun /backup buyrug'ini yuboring.");
+        }
+      } else {
+        if (text === '/start' || text === '/backup') {
+          await sendTelegramMessage(chatId, "⚠️ *Kechirasiz, siz ushbu bot administratori emassiz!*");
+        }
+      }
+    }
+    res.status(200).send('OK');
+  } catch (err) {
+    console.error('[Telegram Webhook Error]:', err);
+    res.status(500).send('Error');
+  }
 });
 
-// Polling Loop for Telegram Bot Interactive Commands
+app.get('/api/set-webhook', async (req, res) => {
+  try {
+    const protocol = req.headers['x-forwarded-proto'] || 'https';
+    const host = req.headers['host'];
+    const webhookUrl = `${protocol}://${host}/api/webhook`;
+    
+    console.log(`[Webhook Register] Registering webhook endpoint: ${webhookUrl}`);
+    const response = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/setWebhook?url=${webhookUrl}`);
+    const result = await response.json();
+    
+    if (result.ok) {
+      res.json({
+        success: true,
+        message: "Webhook registered successfully!",
+        webhook_url: webhookUrl
+      });
+    } else {
+      res.status(400).json({
+        success: false,
+        message: "Failed to register webhook.",
+        error: result.description
+      });
+    }
+  } catch (err) {
+    console.error('[Set Webhook Error]:', err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+app.all('/api/run-backup', async (req, res) => {
+  const isVercelCron = req.headers['x-vercel-cron'] === 'true';
+  const isLocal = !process.env.VERCEL;
+  
+  if (!isVercelCron && !isLocal) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+  
+  try {
+    console.log('[Vercel Cron] Starting daily Tashkent time backup...');
+    await runAllBackups();
+    res.json({ success: true, message: 'Backup triggered and sent to Telegram.' });
+  } catch (err) {
+    console.error('[Vercel Cron Error]:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 let lastUpdateId = 0;
 const pollTelegramUpdates = async () => {
   console.log('[Telegram Poll] Starting update polling loop...');
@@ -292,7 +289,6 @@ const pollTelegramUpdates = async () => {
             const text = message.text.trim();
             const chatId = String(message.chat.id);
             
-            // Only allow authorized admin to run commands
             if (chatId === ADMIN_CHAT_ID) {
               if (text === '/backup') {
                 await sendTelegramMessage(chatId, "⏳ *Zaxiralash jarayoni boshlandi...* Iltimos kutib turing.");
@@ -301,7 +297,6 @@ const pollTelegramUpdates = async () => {
                 await sendTelegramMessage(chatId, "👋 *Salom Admin!*\n\nMen epchil robot zaxiralash botiman.\n\nHar kuni tunda barcha o'qituvchilar bazalarini `.json` qilib yuborib turaman.\n\nZaxiralashni hoziroq ishga tushirish uchun /backup buyrug'ini yuboring.");
               }
             } else {
-              // Unauthorized user
               if (text === '/start' || text === '/backup') {
                 await sendTelegramMessage(chatId, "⚠️ *Kechirasiz, siz ushbu bot administratori emassiz!*");
               }
@@ -311,18 +306,16 @@ const pollTelegramUpdates = async () => {
       }
     } catch (err) {
       console.error('[Telegram Poll] Error in getUpdates polling:', err);
-      await new Promise(r => setTimeout(r, 5000)); // wait before retry
+      await new Promise(r => setTimeout(r, 5000));
     }
   }
 };
 
-// Initialize Supabase Postgres schema tables
 const initSupabaseSchema = async () => {
   const pgClient = new pg.Client(pgConfig);
   try {
     console.log('[Supabase Init] Connecting to Postgres for schema checks...');
     await pgClient.connect();
-    
     await pgClient.query(`
       CREATE TABLE IF NOT EXISTS appdata (
         teacher_id TEXT PRIMARY KEY,
@@ -330,7 +323,6 @@ const initSupabaseSchema = async () => {
         updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
       );
     `);
-    
     await pgClient.query(`
       CREATE TABLE IF NOT EXISTS group_passwords (
         password TEXT PRIMARY KEY,
@@ -338,7 +330,6 @@ const initSupabaseSchema = async () => {
         group_id TEXT NOT NULL
       );
     `);
-
     await pgClient.query(`
       CREATE TABLE IF NOT EXISTS snapshots (
         id SERIAL PRIMARY KEY,
@@ -347,7 +338,6 @@ const initSupabaseSchema = async () => {
         timestamp TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
       );
     `);
-    
     console.log('[Supabase Init] Database schema initialized successfully!');
   } catch (err) {
     console.error('[Supabase Init] Failed to initialize Postgres schema:', err);
@@ -356,20 +346,26 @@ const initSupabaseSchema = async () => {
   }
 };
 
-// Start Server
-app.listen(PORT, async () => {
-  console.log(`Backend server running at http://localhost:${PORT}`);
-  initDb();
-  
-  // Verify & Initialize Supabase schemas
-  await initSupabaseSchema();
-  
-  // Start polling Telegram updates asynchronously
-  pollTelegramUpdates();
+if (!process.env.VERCEL) {
+  app.listen(PORT, async () => {
+    console.log(`Backend server running at http://localhost:${PORT}`);
+    initDb();
+    await initSupabaseSchema();
+    pollTelegramUpdates();
+    cron.schedule('0 6 * * *', () => {
+      console.log('[Backup Cron] Starting daily 6:00 AM Tashkent time backup...');
+      runAllBackups();
+    }, {
+      scheduled: true,
+      timezone: "Asia/Tashkent"
+    });
 
-  if (process.env.TEST_BACKUP === 'true') {
-    console.log('[Test Backup] Manually triggering backup...');
-    await runAllBackups();
-    process.exit(0);
-  }
-});
+    if (process.env.TEST_BACKUP === 'true') {
+      console.log('[Test Backup] Manually triggering backup...');
+      await runAllBackups();
+      process.exit(0);
+    }
+  });
+}
+
+export default app;
