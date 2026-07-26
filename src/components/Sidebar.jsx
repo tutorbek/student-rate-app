@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react';
 import { getStartOfWeek } from '../utils/db';
 
-const Sidebar = ({ activeTab, setActiveTab, userRole, onLogout, groups = [], students = [], transactions = [] }) => {
+const Sidebar = ({ activeTab, setActiveTab, userRole, onLogout, groups = [], students = [], transactions = [], syncStatus, isSyncing }) => {
   const menuItems = [
     {
       id: 'dashboard',
@@ -155,6 +155,17 @@ const Sidebar = ({ activeTab, setActiveTab, userRole, onLogout, groups = [], stu
         </div>
 
         <div className="sidebar-footer">
+          {userRole === 'teacher' && (
+            <div className={`sync-badge sync-status-${syncStatus}`} style={{ marginBottom: '12px', fontSize: '0.8rem', padding: '6px 12px', border: '1.5px solid #000', background: syncStatus === 'saved' ? '#E7FF56' : syncStatus === 'saving' ? '#fff' : '#ff3b30', color: syncStatus === 'offline' ? '#fff' : '#000', fontWeight: 'bold', width: '100%', textAlign: 'center', borderRadius: 0 }}>
+              {syncStatus === 'saved' ? '☁️ Saqlandi' : syncStatus === 'saving' ? '⏳ Saqlanmoqda...' : '⚠️ Oflayn rejim'}
+            </div>
+          )}
+          {isSyncing && (
+            <div className="sync-indicator" style={{ marginBottom: '12px', justifyContent: 'center' }}>
+              <span className="sync-dot"></span>
+              Yuklanmoqda...
+            </div>
+          )}
           <div className="sidebar-footer-top">
             <span className="badge badge-blue">
               {userRole === 'student' ? 'Student Mode' : 'Teacher Mode'}

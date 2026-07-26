@@ -1245,23 +1245,10 @@ function App() {
       <div className="bg-glow-2"></div>
 
       {/* Sidebar Navigation */}
-      <Sidebar activeTab={activeTab} setActiveTab={handleTabChange} userRole={userRole} onLogout={handleLogout} groups={allActiveGroups} students={allActiveStudents} transactions={allActiveTransactions} />
+      <Sidebar activeTab={activeTab} setActiveTab={handleTabChange} userRole={userRole} onLogout={handleLogout} groups={allActiveGroups} students={allActiveStudents} transactions={allActiveTransactions} syncStatus={syncStatus} isSyncing={isSyncing} />
 
       {/* Main Panel Content */}
       <main className="main-content">
-        <div className="header-status-bar" style={{ display: 'flex', justifyContent: 'flex-end', padding: '0 24px 12px 24px', gap: '12px', alignItems: 'center' }}>
-          {userRole === 'teacher' && (
-            <div className={`sync-badge sync-status-${syncStatus}`} style={{ fontSize: '0.8rem', padding: '4px 10px', border: '1px solid #000', background: syncStatus === 'saved' ? '#E7FF56' : syncStatus === 'saving' ? '#fff' : '#ff3b30', color: syncStatus === 'offline' ? '#fff' : '#000', fontWeight: 'bold' }}>
-              {syncStatus === 'saved' ? '☁️ Saqlandi' : syncStatus === 'saving' ? '⏳ Saqlanmoqda...' : '⚠️ Oflayn rejim'}
-            </div>
-          )}
-          {isSyncing && (
-            <div className="sync-indicator" style={{ margin: 0 }}>
-              <span className="sync-dot"></span>
-              Yuklanmoqda...
-            </div>
-          )}
-        </div>
         <div key={activeTab} className="page-fade-in">
           {renderContent()}
         </div>
