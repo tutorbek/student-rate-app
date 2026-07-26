@@ -1158,9 +1158,7 @@ const Leaderboard = ({
         }
 
         .premium-podium-card:hover {
-          transform: translate(-2px, -2px);
-          box-shadow: 6px 6px 0px #000000;
-          background: #E7FF56;
+          /* Disabled hover transform for ultra-lightweight frontend */
         }
 
         .podium-crown-container {

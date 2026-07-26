@@ -147,9 +147,7 @@ body:has(.modal-overlay) .main-content {
 }
 
 .glass-card:hover {
-  transform: translate(-2px, -2px);
-  box-shadow: 4px 4px 0px #000000;
-  background-color: var(--accent-neon);
+  /* Hover transforms and box-shadow shifts disabled for ultra-lightweight frontend */
 }
 
 /* Main Layout */
@@ -643,16 +641,11 @@ body:has(.modal-overlay) .main-content {
 .quick-tag-bubble:hover {
   background: var(--accent-neon);
   color: #000000;
-  box-shadow: 2px 2px 0px #000000;
-  transform: translate(-1px, -1px);
 }
 
 .quick-tag-bubble:active {
-  transform: translate(1px, 1px);
-  box-shadow: none;
+  background: var(--accent-neon);
 }
-
-
 
 /* Grid Layouts */
 .grid-cards {
@@ -718,11 +711,10 @@ body:has(.modal-overlay) .main-content {
   background: #ffffff;
   border: 2px solid #000000;
   box-shadow: 6px 6px 0px #000000;
-  transition: box-shadow var(--transition-normal);
 }
 
 .login-card:hover {
-  box-shadow: 6px 6px 0px var(--accent-neon);
+  /* Disabled hover transform for ultra-lightweight frontend */
 }
 
 .login-title {
