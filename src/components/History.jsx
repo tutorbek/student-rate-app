@@ -9,7 +9,7 @@ const renderAvatar = (emoji) => {
   return emoji;
 };
 
-const History = ({ groups = [], students = [], transactions = [], attendance = [], onDeleteTransaction, onDeleteAttendance, showToast, userRole }) => {
+const History = ({ groups = [], students = [], transactions = [], attendance = [], onDeleteTransaction, onDeleteAttendance, showToast, userRole, studentGroupId }) => {
   const [activeHistoryTab, setActiveHistoryTab] = useState('points'); // 'points' | 'attendance'
   const [searchQuery, setSearchQuery] = useState('');
   const [confirmDeleteId, setConfirmDeleteId] = useState(null);
@@ -18,6 +18,16 @@ const History = ({ groups = [], students = [], transactions = [], attendance = [
   const [selectedStudentId, setSelectedStudentId] = useState('all');
   const [isGroupDropdownOpen, setIsGroupDropdownOpen] = useState(false);
   const [isStudentDropdownOpen, setIsStudentDropdownOpen] = useState(false);
+
+  // Auto-select student's group in student mode
+  useEffect(() => {
+    if (userRole === 'student') {
+      const targetGroup = studentGroupId || (groups.length > 0 ? groups[0].id : 'all');
+      if (targetGroup && targetGroup !== 'all') {
+        setSelectedGroupId(targetGroup);
+      }
+    }
+  }, [userRole, studentGroupId, groups]);
 
   useEffect(() => {
     const handleKeyDown = (e) => {
@@ -204,42 +214,44 @@ const History = ({ groups = [], students = [], transactions = [], attendance = [
       {/* Filters and Search wrapper - separated from header for cleaner responsive design */}
       <div className="history-filters-bar glass-card">
         <div className="filter-group-row">
-          {/* Group Filter */}
-          <div className="custom-dropdown-container group-filter-dropdown">
-            <button 
-              type="button" 
-              className="filter-select-btn" 
-              onClick={() => setIsGroupDropdownOpen(!isGroupDropdownOpen)}
-            >
-              <span>{selectedGroupId === 'all' ? 'Barcha guruhlar' : (groups.find(g => g.id === selectedGroupId)?.name || 'Guruhsiz')}</span>
-              <span className="dropdown-arrow">▼</span>
-            </button>
-            {isGroupDropdownOpen && (
-              <div className="custom-dropdown-list glass">
-                <div 
-                  className={`custom-dropdown-item ${selectedGroupId === 'all' ? 'active' : ''}`}
-                  onClick={() => {
-                    setSelectedGroupId('all');
-                    setIsGroupDropdownOpen(false);
-                  }}
-                >
-                  Barcha guruhlar
-                </div>
-                {groups.map((group) => (
+          {/* Group Filter (Teachers Only) */}
+          {userRole !== 'student' && (
+            <div className="custom-dropdown-container group-filter-dropdown">
+              <button 
+                type="button" 
+                className="filter-select-btn" 
+                onClick={() => setIsGroupDropdownOpen(!isGroupDropdownOpen)}
+              >
+                <span>{selectedGroupId === 'all' ? 'Barcha guruhlar' : (groups.find(g => g.id === selectedGroupId)?.name || 'Guruhsiz')}</span>
+                <span className="dropdown-arrow">▼</span>
+              </button>
+              {isGroupDropdownOpen && (
+                <div className="custom-dropdown-list glass">
                   <div 
-                    key={group.id}
-                    className={`custom-dropdown-item ${selectedGroupId === group.id ? 'active' : ''}`}
+                    className={`custom-dropdown-item ${selectedGroupId === 'all' ? 'active' : ''}`}
                     onClick={() => {
-                      setSelectedGroupId(group.id);
+                      setSelectedGroupId('all');
                       setIsGroupDropdownOpen(false);
                     }}
                   >
-                    {group.name}
+                    Barcha guruhlar
                   </div>
-                ))}
-              </div>
-            )}
-          </div>
+                  {groups.map((group) => (
+                    <div 
+                      key={group.id}
+                      className={`custom-dropdown-item ${selectedGroupId === group.id ? 'active' : ''}`}
+                      onClick={() => {
+                        setSelectedGroupId(group.id);
+                        setIsGroupDropdownOpen(false);
+                      }}
+                    >
+                      {group.name}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Student Filter */}
           <div className="custom-dropdown-container student-filter-dropdown">
@@ -838,7 +850,7 @@ const History = ({ groups = [], students = [], transactions = [], attendance = [
 
         @media (max-width: 768px) {
           .history-header {
-            display: none;
+            display: none !important;
           }
           
           .history-table {
@@ -853,82 +865,102 @@ const History = ({ groups = [], students = [], transactions = [], attendance = [
           }
 
           .history-row {
-            display: flex;
-            flex-direction: row;
-            align-items: center;
-            justify-content: space-between;
-            gap: 8px;
-            padding: 10px 12px;
-            background: #ffffff;
-            border: 1px solid #000000;
-            margin-bottom: 8px;
-            box-shadow: 2px 2px 0px #000000;
+            display: flex !important;
+            flex-direction: column !important;
+            grid-template-columns: none !important;
+            align-items: stretch !important;
+            gap: 8px !important;
+            padding: 12px 14px !important;
+            background: #ffffff !important;
+            border: 2px solid #000000 !important;
+            margin-bottom: 10px !important;
+            box-shadow: 3px 3px 0px #000000 !important;
+            box-sizing: border-box !important;
+            width: 100% !important;
           }
 
           .td-time {
-            display: none;
+            display: flex !important;
+            justify-content: space-between !important;
+            align-items: center !important;
+            font-size: 0.75rem !important;
+            color: #666666 !important;
+            border-bottom: 1px dashed #dddddd !important;
+            padding-bottom: 6px !important;
+            margin-bottom: 2px !important;
+          }
+
+          .date-text, .time-text {
+            color: #666666 !important;
+            font-weight: 600 !important;
           }
 
           .td-student {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            min-width: 0;
-            flex: 1;
+            display: flex !important;
+            align-items: center !important;
+            gap: 10px !important;
+            min-width: 0 !important;
           }
 
           .td-student .avatar-circle {
-            width: 30px !important;
-            height: 30px !important;
-            font-size: 0.9rem !important;
-            flex-shrink: 0;
+            width: 32px !important;
+            height: 32px !important;
+            font-size: 0.95rem !important;
+            flex-shrink: 0 !important;
           }
 
           .student-table-name {
-            font-size: 0.85rem;
-            font-weight: 800;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
+            font-size: 0.9rem !important;
+            font-weight: 800 !important;
+            color: #000000 !important;
+            white-space: nowrap !important;
+            overflow: hidden !important;
+            text-overflow: ellipsis !important;
           }
 
           .td-group {
-            padding-left: 0;
-            margin-top: 0;
-            font-size: 0.72rem;
-            color: #666666;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
+            padding-left: 0 !important;
+            margin-top: 0 !important;
+            font-size: 0.78rem !important;
+            color: #666666 !important;
+            font-weight: 600 !important;
           }
 
           .td-comment {
-            padding-left: 0;
-            margin-top: 0;
-            font-size: 0.72rem;
-            color: #555555;
-            display: block;
+            padding: 6px 10px !important;
+            margin-top: 2px !important;
+            font-size: 0.8rem !important;
+            color: #222222 !important;
+            background: #f8f9fa !important;
+            border-left: 3px solid #000000 !important;
+            white-space: normal !important;
+            word-break: break-word !important;
           }
 
           .td-amount {
-            padding-left: 0;
-            margin-top: 0;
-            font-size: 0.9rem;
-            flex-shrink: 0;
+            text-align: right !important;
+            padding-left: 0 !important;
+            margin-top: 2px !important;
+            font-size: 1.1rem !important;
+            font-weight: 800 !important;
           }
 
           .td-action {
-            margin-top: 0;
-            border-top: none;
-            padding-top: 0;
-            flex-shrink: 0;
+            text-align: right !important;
+            margin-top: 4px !important;
+            border-top: 1px dashed #dddddd !important;
+            padding-top: 8px !important;
           }
 
           .btn-delete-tx {
-            width: auto;
-            padding: 4px 8px;
-            font-size: 0.72rem;
-            white-space: nowrap;
+            width: 100% !important;
+            padding: 8px !important;
+            font-size: 0.78rem !important;
+            font-weight: 700 !important;
+            text-align: center !important;
+            background: #ff3b30 !important;
+            color: #ffffff !important;
+            border: 1px solid #ff3b30 !important;
           }
         }
       `}</style>
