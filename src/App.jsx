@@ -7,6 +7,7 @@ import Leaderboard from './components/Leaderboard';
 import History from './components/History';
 import Settings from './components/Settings';
 import Attendance from './components/Attendance';
+import PullToRefresh from './components/PullToRefresh';
 import {
   loadFromSupabase as loadFromFirestore,
   saveToSupabase as saveToFirestore,
@@ -831,6 +832,27 @@ function App() {
     setActiveTab('groups');
   };
 
+  // Pull-to-Refresh Sync Handler
+  const handlePullToRefresh = async () => {
+    if (!teacherId) return;
+    setIsSyncing(true);
+    try {
+      const data = await loadFromFirestore(teacherId);
+      if (data) {
+        if (data.groups) setGroups(data.groups);
+        if (data.students) setStudents(data.students);
+        if (data.transactions) setTransactions(data.transactions);
+        if (data.quickTags) setQuickTags(data.quickTags);
+        if (data.attendance) setAttendance(data.attendance);
+        showToast("Ma'lumotlar qayta sinxronlandi!", "success");
+      }
+    } catch (_err) {
+      showToast("Sinxronlashda xatolik yuz berdi!", "error");
+    } finally {
+      setIsSyncing(false);
+    }
+  };
+
   // Render Page Content
   const renderContent = () => {
     switch (activeTab) {
@@ -1249,9 +1271,11 @@ function App() {
 
       {/* Main Panel Content */}
       <main className="main-content">
-        <div key={activeTab} className="page-fade-in">
-          {renderContent()}
-        </div>
+        <PullToRefresh onRefresh={handlePullToRefresh}>
+          <div key={activeTab} className="page-fade-in">
+            {renderContent()}
+          </div>
+        </PullToRefresh>
       </main>
 
       {/* Toast Notification Popups */}

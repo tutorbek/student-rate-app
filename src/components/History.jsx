@@ -854,75 +854,81 @@ const History = ({ groups = [], students = [], transactions = [], attendance = [
 
           .history-row {
             display: flex;
-            flex-direction: column;
-            align-items: stretch;
-            gap: 12px;
-            padding: 20px;
+            flex-direction: row;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            padding: 10px 12px;
             background: #ffffff;
             border: 1px solid #000000;
-            margin-bottom: 16px;
-            box-shadow: 4px 4px 0px #000000;
+            margin-bottom: 8px;
+            box-shadow: 2px 2px 0px #000000;
           }
 
           .td-time {
-            flex-direction: row;
-            justify-content: space-between;
-            font-size: 0.8rem;
-            border-bottom: 1px solid rgba(0, 0, 0, 0.08);
-            padding-bottom: 8px;
-            margin-bottom: 4px;
-          }
-
-          .date-text, .time-text {
-            color: var(--text-secondary);
-            font-weight: 500;
+            display: none;
           }
 
           .td-student {
             display: flex;
             align-items: center;
-            gap: 12px;
+            gap: 8px;
+            min-width: 0;
+            flex: 1;
+          }
+
+          .td-student .avatar-circle {
+            width: 30px !important;
+            height: 30px !important;
+            font-size: 0.9rem !important;
+            flex-shrink: 0;
           }
 
           .student-table-name {
-            font-size: 1.1rem;
-            font-weight: 700;
+            font-size: 0.85rem;
+            font-weight: 800;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
           }
 
           .td-group {
-            font-size: 0.85rem;
-            font-weight: 600;
-            color: #000000;
-            opacity: 0.6;
-            padding-left: 42px;
-            margin-top: -8px;
+            padding-left: 0;
+            margin-top: 0;
+            font-size: 0.72rem;
+            color: #666666;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
           }
 
           .td-comment {
-            padding-left: 42px;
-            white-space: normal;
-            font-size: 0.9rem;
-            margin-top: 4px;
+            padding-left: 0;
+            margin-top: 0;
+            font-size: 0.72rem;
+            color: #555555;
+            display: block;
           }
 
           .td-amount {
-            text-align: left;
-            padding-left: 42px;
-            font-size: 1.2rem;
-            margin-top: 6px;
+            padding-left: 0;
+            margin-top: 0;
+            font-size: 0.9rem;
+            flex-shrink: 0;
           }
 
           .td-action {
-            text-align: right;
-            margin-top: 8px;
-            border-top: 1px solid rgba(0, 0, 0, 0.08);
-            padding-top: 12px;
+            margin-top: 0;
+            border-top: none;
+            padding-top: 0;
+            flex-shrink: 0;
           }
 
           .btn-delete-tx {
-            width: 100%;
-            padding: 10px;
-            text-align: center;
+            width: auto;
+            padding: 4px 8px;
+            font-size: 0.72rem;
+            white-space: nowrap;
           }
         }
       `}</style>
