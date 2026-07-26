@@ -532,6 +532,44 @@ const History = ({ groups = [], students = [], transactions = [], attendance = [
           margin-bottom: 24px;
         }
 
+        .segmented-control-brutalist {
+          display: inline-flex;
+          border: 2px solid #000000;
+          box-shadow: 4px 4px 0px #000000;
+          background: #ffffff;
+          overflow: hidden;
+        }
+
+        .tab-btn-brutalist {
+          padding: 10px 20px;
+          border: none;
+          background: #ffffff;
+          font-family: var(--font-family);
+          font-weight: 700;
+          text-transform: uppercase;
+          font-size: 0.85rem;
+          cursor: pointer;
+          color: #000000;
+          transition: all var(--transition-fast);
+          display: flex;
+          align-items: center;
+          gap: 8px;
+        }
+
+        .tab-btn-brutalist:first-child {
+          border-right: 2px solid #000000;
+        }
+
+        .tab-btn-brutalist:hover {
+          background: var(--accent-neon);
+          color: #000000;
+        }
+
+        .tab-btn-brutalist.active {
+          background: #000000;
+          color: #ffffff;
+        }
+
         .att-badge {
           display: inline-block;
           font-weight: 700;
