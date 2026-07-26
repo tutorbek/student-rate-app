@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import Sidebar from './components/Sidebar';
 import Dashboard from './components/Dashboard';
 import GroupsList from './components/GroupsList';
@@ -797,8 +798,14 @@ function App() {
     }
   };
 
-  // Logout handler
+  // Logout handler state and function
+  const [showLogoutConfirmModal, setShowLogoutConfirmModal] = useState(false);
+
   const handleLogout = () => {
+    setShowLogoutConfirmModal(true);
+  };
+
+  const executeLogout = () => {
     localStorage.removeItem('rsa_authenticated');
     localStorage.removeItem('rsa_role');
     localStorage.removeItem('rsa_teacher_id');
@@ -1264,6 +1271,43 @@ function App() {
             <span className="toast-message">{toast.message}</span>
           </div>
         </div>
+      )}
+
+      {/* Logout Confirmation Warning Modal */}
+      {showLogoutConfirmModal && createPortal(
+        <div className="modal-overlay" onClick={() => setShowLogoutConfirmModal(false)}>
+          <div className="modal-content glass" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '400px', padding: '24px' }}>
+            <button 
+              type="button" 
+              className="modal-close-btn" 
+              onClick={() => setShowLogoutConfirmModal(false)}
+              title="Yopish"
+            >
+              ✕
+            </button>
+            <h3 className="modal-title" style={{ fontSize: '1.2rem', fontWeight: '800', textTransform: 'uppercase', marginBottom: '10px' }}>
+              ⚠️ Chiqishni tasdiqlash
+            </h3>
+            <p className="modal-warning-text" style={{ fontSize: '0.9rem', marginBottom: '20px', color: '#222', lineHeight: '1.4' }}>
+              Rostdan ham tizimdan chiqmoqchimisiz?
+            </p>
+            <div className="modal-actions" style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
+              <button className="btn btn-secondary scale-active" onClick={() => setShowLogoutConfirmModal(false)}>
+                Bekor qilish
+              </button>
+              <button
+                className="btn btn-danger scale-active"
+                onClick={() => {
+                  setShowLogoutConfirmModal(false);
+                  executeLogout();
+                }}
+              >
+                Ha, chiqilsin
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body
       )}
     </div>
   );

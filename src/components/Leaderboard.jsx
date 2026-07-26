@@ -729,51 +729,52 @@ const Leaderboard = ({
 
         /* Profile Modal styles */
         .profile-modal {
-          max-width: 500px;
+          max-width: 440px;
+          padding: 16px 20px;
         }
 
         .profile-modal-header {
           display: flex;
           flex-direction: column;
           align-items: center;
-          gap: 10px;
-          margin-bottom: 24px;
+          gap: 4px;
+          margin-bottom: 14px;
           border-bottom: 2px solid #000000;
-          padding-bottom: 20px;
+          padding-bottom: 12px;
         }
 
         .profile-avatar {
-          width: 80px;
-          height: 80px;
-          font-size: 2.5rem;
-          margin-bottom: 8px;
+          width: 52px;
+          height: 52px;
+          font-size: 1.6rem;
+          margin-bottom: 4px;
         }
 
         .profile-modal-name {
-          font-size: 1.4rem;
+          font-size: 1.2rem;
           font-weight: 800;
           color: #000000;
           text-transform: uppercase;
         }
 
         .profile-modal-group {
-          font-size: 0.85rem;
+          font-size: 0.78rem;
           font-weight: 700;
           color: #000000;
-          opacity: 0.6;
+          opacity: 0.65;
           text-transform: uppercase;
         }
 
         .profile-stats-grid {
           display: grid;
           grid-template-columns: repeat(5, 1fr);
-          gap: 8px;
-          margin-bottom: 24px;
+          gap: 6px;
+          margin-bottom: 14px;
         }
 
         .profile-stat-box {
           border: 1px solid #000000;
-          padding: 14px 10px;
+          padding: 8px 4px;
           display: flex;
           flex-direction: column;
           align-items: center;
@@ -781,34 +782,36 @@ const Leaderboard = ({
         }
 
         .profile-stat-val {
-          font-size: 1.5rem;
+          font-size: 1.2rem;
           font-weight: 800;
           color: #000000;
         }
 
         .profile-stat-lbl {
-          font-size: 0.75rem;
+          font-size: 0.68rem;
           font-weight: 700;
           text-transform: uppercase;
           color: #000000;
-          opacity: 0.6;
-          margin-top: 4px;
+          opacity: 0.65;
+          margin-top: 2px;
+          text-align: center;
+          line-height: 1.1;
         }
 
         .profile-timeline-section {
-          margin-bottom: 24px;
+          margin-bottom: 14px;
         }
 
         .profile-timeline-title {
-          font-size: 0.9rem;
+          font-size: 0.8rem;
           font-weight: 800;
           text-transform: uppercase;
-          margin-bottom: 12px;
+          margin-bottom: 8px;
           color: #000000;
         }
 
         .profile-timeline-list {
-          max-height: 200px;
+          max-height: 150px;
           overflow-y: auto;
           border: 1px solid #000000;
           background: #ffffff;
@@ -817,7 +820,7 @@ const Leaderboard = ({
         .profile-timeline-item {
           display: flex;
           flex-direction: column;
-          padding: 12px;
+          padding: 8px 10px;
           border-bottom: 1px solid #000000;
         }
 
@@ -828,22 +831,22 @@ const Leaderboard = ({
         .profile-timeline-item-meta {
           display: flex;
           justify-content: space-between;
-          font-size: 0.75rem;
+          font-size: 0.72rem;
           font-weight: 700;
-          margin-bottom: 6px;
+          margin-bottom: 4px;
           color: #000000;
-          opacity: 0.6;
+          opacity: 0.65;
         }
 
         .profile-timeline-item-body {
           display: flex;
           justify-content: space-between;
           align-items: center;
-          gap: 12px;
+          gap: 8px;
         }
 
         .profile-timeline-comment {
-          font-size: 0.9rem;
+          font-size: 0.82rem;
           font-style: italic;
           color: #000000;
           font-weight: 600;
@@ -853,13 +856,13 @@ const Leaderboard = ({
           background: transparent;
           border: none;
           cursor: pointer;
-          font-size: 1rem;
+          font-size: 0.9rem;
           transition: transform var(--transition-fast);
-          padding: 2px 6px;
+          padding: 2px 4px;
         }
 
         .profile-timeline-item-delete:hover {
-          transform: scale(1.2);
+          transform: scale(1.1);
           background: #E7FF56;
         }
 
@@ -1391,6 +1394,89 @@ const Leaderboard = ({
           flex-direction: column;
           align-items: center;
           gap: 20px;
+        }
+
+        @media (max-width: 600px) {
+          .profile-modal {
+            width: 94% !important;
+            padding: 12px 14px !important;
+            border-radius: 0;
+          }
+
+          .profile-modal-header {
+            gap: 2px;
+            margin-bottom: 10px;
+            padding-bottom: 8px;
+          }
+
+          .profile-avatar {
+            width: 44px;
+            height: 44px;
+            font-size: 1.35rem;
+            margin-bottom: 2px;
+          }
+
+          .profile-modal-name {
+            font-size: 1.05rem;
+          }
+
+          .profile-modal-group {
+            font-size: 0.72rem;
+          }
+
+          .profile-stats-grid {
+            gap: 4px;
+            margin-bottom: 10px;
+          }
+
+          .profile-stat-box {
+            padding: 6px 2px;
+          }
+
+          .profile-stat-val {
+            font-size: 1.05rem;
+          }
+
+          .profile-stat-lbl {
+            font-size: 0.6rem;
+            margin-top: 2px;
+          }
+
+          .profile-timeline-section {
+            margin-bottom: 10px;
+          }
+
+          .profile-timeline-title {
+            font-size: 0.76rem;
+            margin-bottom: 6px;
+          }
+
+          .profile-timeline-list {
+            max-height: 130px;
+          }
+
+          .profile-timeline-item {
+            padding: 6px 8px;
+          }
+
+          .profile-timeline-item-meta {
+            font-size: 0.68rem;
+            margin-bottom: 2px;
+          }
+
+          .profile-timeline-comment {
+            font-size: 0.78rem;
+          }
+
+          .modal-actions {
+            margin-top: 8px;
+          }
+
+          .modal-actions .btn {
+            width: 100%;
+            padding: 7px;
+            font-size: 0.8rem;
+          }
         }
 
         @media (max-width: 480px) {
