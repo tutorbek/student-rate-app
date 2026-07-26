@@ -42,7 +42,7 @@ export const DEFAULT_QUICK_TAGS = [
   { text: 'Uy vazifasi chala bajarildi 🔄', points: 20 },
   { text: 'Darsga kechikdi ⏰', points: -10 },
   { text: 'Uy vazifasi bajarilmadi ❌', points: -30 },
-  { text: 'Darsga kelmadi 🚫', points: -40 },
+  { text: 'Darsga sababsiz kelmadi 🚫', points: -40 },
 ];
 
 const DEFAULT_POINTS_MAP = {
@@ -53,7 +53,7 @@ const DEFAULT_POINTS_MAP = {
   'Darsga kechikdi ⏰': -10,
   'Uy vazifasi bajarilmadi ❌': -30,
   'Uy vazifasini topshirmadi ❌': -30,
-  'Darsga kelmadi 🚫': -40,
+  'Darsga sababsiz kelmadi 🚫': -40,
   'Faol ishtirok 🌟': 50,
   'Ajoyib javob 💡': 20,
   'Guruh ishida faollik 👥': 20,

@@ -110,8 +110,13 @@ const GroupDetail = ({ group, students, transactions, quickTags, onBack, onAddSt
   // Open like modal
   const openScoreModal = (student, amount) => {
     setScoringStudent(student);
-    setScoreAmount(String(amount));
-    setCustomComment('');
+    setScoreAmount(amount !== '' ? String(amount) : '');
+    if (amount !== '') {
+      const match = normalizedTags.find(t => Number(t.points) === Number(amount));
+      setCustomComment(match ? match.text : '');
+    } else {
+      setCustomComment('');
+    }
   };
 
   // Handle like submission
@@ -244,26 +249,36 @@ const GroupDetail = ({ group, students, transactions, quickTags, onBack, onAddSt
               <div className="student-actions">
                 <button 
                   className="btn btn-action btn-green scale-active"
-                  onClick={() => openScoreModal(student, 2)}
+                  onClick={() => openScoreModal(student, 85)}
+                  title="+85 (Uy vazifasi bajarildi)"
                 >
-                  +2
+                  +85
                 </button>
                 <button 
                   className="btn btn-action btn-green scale-active"
-                  onClick={() => openScoreModal(student, 5)}
+                  onClick={() => openScoreModal(student, 50)}
+                  title="+50 (Mustaqil izlanish)"
                 >
-                  +5
+                  +50
                 </button>
                 <button 
                   className="btn btn-action btn-red scale-active"
-                  onClick={() => openScoreModal(student, -2)}
+                  onClick={() => openScoreModal(student, -10)}
+                  title="-10 (Darsga kechikdi)"
                 >
-                  -2
+                  -10
+                </button>
+                <button 
+                  className="btn btn-action btn-red scale-active"
+                  onClick={() => openScoreModal(student, -30)}
+                  title="-30 (Uy vazifasi bajarilmadi)"
+                >
+                  -30
                 </button>
                 <button 
                   className="btn btn-action btn-custom scale-active"
                   onClick={() => openScoreModal(student, '')}
-                  title="Boshqa like"
+                  title="Boshqa izoh / ball"
                 >
                   →
                 </button>
@@ -876,14 +891,17 @@ const GroupDetail = ({ group, students, transactions, quickTags, onBack, onAddSt
         .student-actions {
           display: flex;
           width: 100%;
-          gap: 8px;
+          gap: 6px;
         }
 
         .btn-action {
           flex: 1;
-          padding: 10px;
-          font-size: 0.9rem;
-          font-weight: 700;
+          padding: 8px 4px;
+          font-size: 0.78rem;
+          font-weight: 800;
+          white-space: nowrap;
+          text-align: center;
+          justify-content: center;
         }
 
         .btn-green {
