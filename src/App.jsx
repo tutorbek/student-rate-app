@@ -6,6 +6,7 @@ import GroupDetail from './components/GroupDetail';
 import Leaderboard from './components/Leaderboard';
 import History from './components/History';
 import Settings from './components/Settings';
+import Attendance from './components/Attendance';
 import {
   loadFromSupabase as loadFromFirestore,
   saveToSupabase as saveToFirestore,
@@ -18,6 +19,7 @@ import {
 
 import {
   DEFAULT_QUICK_TAGS,
+  saveAttendance,
   addGroup,
   deleteGroup,
   addStudent,
@@ -215,6 +217,7 @@ function App() {
   const [students, setStudents] = useState([]);
   const [transactions, setTransactions] = useState([]);
   const [quickTags, setQuickTags] = useState([]);
+  const [attendance, setAttendance] = useState([]);
   const [isLoaded, setIsLoaded] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
   const [connectionError, setConnectionError] = useState(false);
@@ -257,24 +260,46 @@ function App() {
     }
     const load = async () => {
       setIsSyncing(true);
-      const data = await loadFromFirestore(teacherId);
+      let data = await loadFromFirestore(teacherId);
+
+      // Check for local backup if network load is empty or failed
+      const localBackupStr = localStorage.getItem(`rsa_local_backup_${teacherId}`);
+      if (localBackupStr) {
+        try {
+          const localBackup = JSON.parse(localBackupStr);
+          const localHasContent = (localBackup.groups && localBackup.groups.length > 0) || (localBackup.students && localBackup.students.length > 0);
+          const cloudIsEmpty = !data || ((!data.groups || data.groups.length === 0) && (!data.students || data.students.length === 0));
+
+          if (cloudIsEmpty && localHasContent) {
+            console.warn('[Offline Backup] Restored data from localStorage backup!');
+            data = localBackup;
+            showToast("Ma'lumotlar qurilmaning ichki xotirasidan tiklandi!", "info");
+          }
+        } catch (_err) {
+          // ignore parse error
+        }
+      }
+
       if (data) {
         const loadedGroups = data.groups || [];
         const loadedStudents = data.students || [];
         const loadedTransactions = data.transactions || [];
         const loadedQuickTags = data.quickTags || DEFAULT_QUICK_TAGS;
+        const loadedAttendance = data.attendance || [];
 
         setGroups(loadedGroups);
         setStudents(loadedStudents);
         setTransactions(loadedTransactions);
         setQuickTags(loadedQuickTags);
+        setAttendance(loadedAttendance);
 
         // Update the ref so we don't save this back to Supabase
         const dbState = {
           groups: loadedGroups,
           students: loadedStudents,
           transactions: loadedTransactions,
-          quickTags: loadedQuickTags
+          quickTags: loadedQuickTags,
+          attendance: loadedAttendance
         };
         lastSavedDataRef.current = JSON.stringify(dbState);
 
@@ -339,8 +364,32 @@ function App() {
     if (!isLoaded || !isAuthenticated || !teacherId) return;
     if (userRole === 'student') return;
 
-    const db = { groups, students, transactions, quickTags };
+    const db = { groups, students, transactions, quickTags, attendance };
     const dbStr = JSON.stringify(db);
+
+    // Instant (0ms) local cache backup to localStorage for offline protection!
+    try {
+      if (groups.length > 0 || students.length > 0) {
+        localStorage.setItem(`rsa_local_backup_${teacherId}`, dbStr);
+      }
+    } catch (e) {
+      console.warn('[LocalStorage] Local backup save failed:', e);
+    }
+
+    // ACCIDENTAL WIPEOUT GUARD:
+    // If state is 0 groups and 0 students, but previous saved state had data, DO NOT auto-save!
+    if (groups.length === 0 && students.length === 0 && lastSavedDataRef.current) {
+      try {
+        const prev = JSON.parse(lastSavedDataRef.current);
+        if ((prev.groups && prev.groups.length > 0) || (prev.students && prev.students.length > 0)) {
+          console.warn('[SECURITY GUARD] Blocked accidental empty database overwrite to Supabase!');
+          setSyncStatus('saved');
+          return;
+        }
+      } catch (_err) {
+        // ignore parse error
+      }
+    }
 
     // If identical to last saved or loaded state, skip network save
     if (lastSavedDataRef.current === dbStr) {
@@ -371,7 +420,7 @@ function App() {
     }, 1500); // 1.5 second debounce
 
     return () => clearTimeout(timer);
-  }, [groups, students, transactions, quickTags, isLoaded, isAuthenticated, teacherId, userRole]);
+  }, [groups, students, transactions, quickTags, attendance, isLoaded, isAuthenticated, teacherId, userRole]);
 
   // Clear toast after timeout
   useEffect(() => {
@@ -502,7 +551,7 @@ function App() {
   // Trigger a background download of the JSON database
   const triggerSilentBackupDownload = () => {
     try {
-      const dataStr = exportDatabase();
+      const dataStr = exportDatabase(groups, students, transactions, quickTags, attendance);
       const dataUri = 'data:application/json;charset=utf-8,' + encodeURIComponent(dataStr);
       const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
       const exportFileDefaultName = `rate_student_auto_backup_${timestamp}.json`;
@@ -519,7 +568,7 @@ function App() {
 
   const handleTriggerManualBackup = () => {
     try {
-      const dataStr = exportDatabase();
+      const dataStr = exportDatabase(groups, students, transactions, quickTags, attendance);
       const dataUri = 'data:application/json;charset=utf-8,' + encodeURIComponent(dataStr);
       const timestamp = new Date().toISOString().slice(0, 10);
       const exportFileDefaultName = `rate_student_weekly_backup_${timestamp}.json`;
@@ -544,14 +593,17 @@ function App() {
       groups: [],
       students: [],
       transactions: [],
-      quickTags: DEFAULT_QUICK_TAGS
+      quickTags: DEFAULT_QUICK_TAGS,
+      attendance: []
     };
-    const success = await saveToFirestore(teacherId, defaultDb);
+    const success = await saveToFirestore(teacherId, defaultDb, true);
     if (success) {
       setGroups([]);
       setStudents([]);
       setTransactions([]);
       setQuickTags(DEFAULT_QUICK_TAGS);
+      setAttendance([]);
+      localStorage.removeItem(`rsa_local_backup_${teacherId}`);
       lastSavedDataRef.current = JSON.stringify(defaultDb);
       showToast("Barcha ma'lumotlar o'chirildi!", "info");
     } else {
@@ -570,6 +622,7 @@ function App() {
         setStudents(db.students);
         setTransactions(db.transactions);
         setQuickTags(db.quickTags);
+        setAttendance(db.attendance || []);
         lastSavedDataRef.current = JSON.stringify(db);
         showToast("Ma'lumotlar muvaffaqiyatli tiklandi!", "success");
         return true;
@@ -586,6 +639,13 @@ function App() {
   };
 
   // Actions
+  const handleSaveAttendance = (groupId, date, records) => {
+    const { updatedRecord, updatedAttendance } = saveAttendance(attendance, groupId, date, records);
+    setAttendance(updatedAttendance);
+    showToast("Davomad muvaffaqiyatli saqlandi!", "success");
+    return updatedRecord;
+  };
+
   const handleAddGroup = async (name, icon, password) => {
     const cleanPwd = password.trim().toLowerCase();
     const { newGroup, updatedGroups } = addGroup(groups, name, icon, cleanPwd);
@@ -699,6 +759,7 @@ function App() {
       setStudents(snapshotData.students || []);
       setTransactions(snapshotData.transactions || []);
       setQuickTags(snapshotData.quickTags || []);
+      setAttendance(snapshotData.attendance || []);
       lastSavedDataRef.current = JSON.stringify(snapshotData);
       showToast("Tizim oldingi holatga qaytarildi!", "success");
     } else {
@@ -829,6 +890,28 @@ function App() {
             userRole={userRole}
           />
         );
+      case 'attendance':
+        return (
+          <Attendance
+            groups={filteredGroups}
+            students={filteredStudents}
+            attendance={attendance}
+            onSaveAttendance={handleSaveAttendance}
+            showToast={showToast}
+            mode="mark"
+          />
+        );
+      case 'attendanceStats':
+        return (
+          <Attendance
+            groups={filteredGroups}
+            students={filteredStudents}
+            attendance={attendance}
+            onSaveAttendance={handleSaveAttendance}
+            showToast={showToast}
+            mode="stats"
+          />
+        );
       case 'settings':
         return (
           <Settings
@@ -840,6 +923,7 @@ function App() {
             groups={groups}
             students={students}
             transactions={transactions}
+            attendance={attendance}
             onRestoreGroup={handleRestoreGroup}
             onRestoreStudent={handleRestoreStudent}
             onPermanentlyDeleteGroup={handlePermanentlyDeleteGroup}

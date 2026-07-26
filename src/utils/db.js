@@ -224,13 +224,43 @@ export const deleteTransaction = (transactions, txId) => {
   return updatedTransactions;
 };
 
+// --- Attendance API ---
+export const saveAttendance = (attendance = [], groupId, date, records) => {
+  // records is an object: { [studentId]: 'present' | 'absent' | 'late' }
+  const existingRecordIndex = attendance.findIndex(
+    (a) => a.groupId === groupId && a.date === date
+  );
+
+  const updatedRecord = {
+    groupId,
+    date,
+    records,
+    updatedAt: new Date().toISOString(),
+  };
+
+  let updatedAttendance;
+  if (existingRecordIndex > -1) {
+    updatedRecord.id = attendance[existingRecordIndex].id;
+    updatedRecord.createdAt = attendance[existingRecordIndex].createdAt;
+    updatedAttendance = [...attendance];
+    updatedAttendance[existingRecordIndex] = updatedRecord;
+  } else {
+    updatedRecord.id = generateId();
+    updatedRecord.createdAt = new Date().toISOString();
+    updatedAttendance = [...attendance, updatedRecord];
+  }
+
+  return { updatedRecord, updatedAttendance };
+};
+
 // --- Export / Import ---
-export const exportDatabase = (groups, students, transactions, quickTags) => {
+export const exportDatabase = (groups, students, transactions, quickTags, attendance = []) => {
   const db = {
     groups,
     students,
     transactions,
     quickTags,
+    attendance,
     exportedAt: new Date().toISOString(),
   };
   return JSON.stringify(db, null, 2);
@@ -244,8 +274,9 @@ export const importDatabase = (jsonString) => {
   const students = Array.isArray(db.students) ? db.students : [];
   const transactions = Array.isArray(db.transactions) ? db.transactions : [];
   const quickTags = Array.isArray(db.quickTags) ? db.quickTags : DEFAULT_QUICK_TAGS;
+  const attendance = Array.isArray(db.attendance) ? db.attendance : [];
 
-  return { groups, students, transactions, quickTags };
+  return { groups, students, transactions, quickTags, attendance };
 };
 
 // --- Statistics and Calculations API ---
@@ -291,6 +322,7 @@ export const resetDatabase = () => {
     students: [],
     transactions: [],
     quickTags: DEFAULT_QUICK_TAGS,
+    attendance: [],
   };
 };
 

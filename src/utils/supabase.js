@@ -51,9 +51,17 @@ export const loadFromSupabase = async (teacherId) => {
 /**
  * Save all app data to Supabase for a specific teacher.
  */
-export const saveToSupabase = async (teacherId, data) => {
+export const saveToSupabase = async (teacherId, data, isExplicitReset = false) => {
   try {
-    if (!teacherId) return false;
+    if (!teacherId || !data) return false;
+
+    // Safety Guard: Block accidental empty database overwrite!
+    const isEmptyData = (!data.groups || data.groups.length === 0) && (!data.students || data.students.length === 0);
+    if (isEmptyData && !isExplicitReset) {
+      console.warn('[Supabase Guard] Aborted save: Attempted to save empty database without explicit user reset confirmation!');
+      return false;
+    }
+
     const { error } = await supabase
       .from('appdata')
       .upsert({ teacher_id: teacherId, data });

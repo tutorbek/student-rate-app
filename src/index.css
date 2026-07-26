@@ -169,6 +169,7 @@ body:has(.modal-overlay) .main-content {
 /* App Main Content Area */
 .main-content {
   flex: 1;
+  min-width: 0;
   margin-left: var(--sidebar-width);
   padding: 40px;
   min-height: 100vh;

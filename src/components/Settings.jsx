@@ -11,6 +11,7 @@ const Settings = ({
   groups = [],
   students = [],
   transactions = [],
+  attendance = [],
   onRestoreGroup,
   onRestoreStudent,
   onPermanentlyDeleteGroup,
@@ -40,7 +41,7 @@ const Settings = ({
   // Backup Export
   const handleExport = () => {
     try {
-      const dataStr = exportDatabase(groups, students, transactions, quickTags);
+      const dataStr = exportDatabase(groups, students, transactions, quickTags, attendance);
       const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
       
       const timestamp = new Date().toISOString().slice(0, 10);
