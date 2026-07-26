@@ -8,6 +8,12 @@ const renderAvatar = (emoji) => {
   return emoji;
 };
 
+const UZBEK_MONTHS = [
+  'Yanvar', 'Fevral', 'Mart', 'Aprel', 'May', 'Iyun',
+  'Iyul', 'Avgust', 'Sentabr', 'Oktabr', 'Noyabr', 'Dekabr'
+];
+const WEEKDAYS = ['Du', 'Se', 'Ch', 'Pa', 'Ju', 'Sh', 'Ya'];
+
 const Attendance = ({ groups = [], students = [], attendance = [], onSaveAttendance, showToast, mode }) => {
   const [activeSubTab, setActiveSubTab] = useState('mark'); // 'mark' | 'stats'
   const currentTab = mode || activeSubTab;
@@ -29,6 +35,110 @@ const Attendance = ({ groups = [], students = [], attendance = [], onSaveAttenda
 
   const [selectedDate, setSelectedDate] = useState(getTodayDateString);
   const [timeframe, setTimeframe] = useState('week'); // 'week' | 'month' | 'all'
+
+  // Custom Calendar Picker State
+  const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
+  const [calendarViewYear, setCalendarViewYear] = useState(() => {
+    const d = new Date(getTodayDateString());
+    return isNaN(d.getFullYear()) ? new Date().getFullYear() : d.getFullYear();
+  });
+  const [calendarViewMonth, setCalendarViewMonth] = useState(() => {
+    const d = new Date(getTodayDateString());
+    return isNaN(d.getMonth()) ? new Date().getMonth() : d.getMonth();
+  });
+
+  const formatDisplayDate = (dateStr) => {
+    if (!dateStr) return '';
+    const parts = dateStr.split('-');
+    if (parts.length !== 3) return dateStr;
+    const y = parts[0];
+    const mIndex = parseInt(parts[1], 10) - 1;
+    const d = parseInt(parts[2], 10);
+    return `${d}-${UZBEK_MONTHS[mIndex] || parts[1]}, ${y}`;
+  };
+
+  const calendarDays = useMemo(() => {
+    const year = calendarViewYear;
+    const month = calendarViewMonth;
+
+    const firstDayInstance = new Date(year, month, 1);
+    let startDayOfWeek = firstDayInstance.getDay();
+    startDayOfWeek = startDayOfWeek === 0 ? 6 : startDayOfWeek - 1;
+
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const daysInPrevMonth = new Date(year, month, 0).getDate();
+
+    const days = [];
+
+    // Prev month padding
+    for (let i = startDayOfWeek - 1; i >= 0; i--) {
+      days.push({
+        day: daysInPrevMonth - i,
+        month: month - 1,
+        year: month === 0 ? year - 1 : year,
+        isCurrentMonth: false,
+      });
+    }
+
+    // Current month
+    for (let i = 1; i <= daysInMonth; i++) {
+      days.push({
+        day: i,
+        month,
+        year,
+        isCurrentMonth: true,
+      });
+    }
+
+    // Next month padding
+    const totalGridCells = days.length > 35 ? 42 : 35;
+    const nextMonthDays = totalGridCells - days.length;
+    for (let i = 1; i <= nextMonthDays; i++) {
+      days.push({
+        day: i,
+        month: month + 1,
+        year: month === 11 ? year + 1 : year,
+        isCurrentMonth: false,
+      });
+    }
+
+    return days;
+  }, [calendarViewYear, calendarViewMonth]);
+
+  const handlePrevMonth = () => {
+    if (calendarViewMonth === 0) {
+      setCalendarViewMonth(11);
+      setCalendarViewYear((y) => y - 1);
+    } else {
+      setCalendarViewMonth((m) => m - 1);
+    }
+  };
+
+  const handleNextMonth = () => {
+    if (calendarViewMonth === 11) {
+      setCalendarViewMonth(0);
+      setCalendarViewYear((y) => y + 1);
+    } else {
+      setCalendarViewMonth((m) => m + 1);
+    }
+  };
+
+  const handleSelectCalendarDate = (d) => {
+    const formattedMonth = String(d.month + 1).padStart(2, '0');
+    const formattedDay = String(d.day).padStart(2, '0');
+    const dateStr = `${d.year}-${formattedMonth}-${formattedDay}`;
+    setSelectedDate(dateStr);
+    setIsDatePickerOpen(false);
+  };
+
+  const handleSelectToday = () => {
+    const todayStr = getTodayDateString();
+    setSelectedDate(todayStr);
+    const today = new Date();
+    setCalendarViewYear(today.getFullYear());
+    setCalendarViewMonth(today.getMonth());
+    setIsDatePickerOpen(false);
+  };
 
   // Filter students belonging to the selected group
   const groupStudents = useMemo(() => {
@@ -164,9 +274,7 @@ const Attendance = ({ groups = [], students = [], attendance = [], onSaveAttenda
     return [...new Set(dates)].sort(); // Chronological
   }, [filteredAttendanceRecords]);
 
-  const handleDateChange = (e) => {
-    setSelectedDate(e.target.value);
-  };
+
 
   return (
     <div className="attendance-container">
@@ -251,12 +359,70 @@ const Attendance = ({ groups = [], students = [], attendance = [], onSaveAttenda
         {currentTab === 'mark' ? (
           <div className="filter-item">
             <label className="form-label">Sana</label>
-            <input
-              type="date"
-              className="form-input"
-              value={selectedDate}
-              onChange={handleDateChange}
-            />
+            <div className="custom-select-container">
+              <button
+                type="button"
+                className="form-input custom-select-trigger"
+                onClick={() => setIsDatePickerOpen(!isDatePickerOpen)}
+              >
+                <span className="selected-value">
+                  📅 {formatDisplayDate(selectedDate)}
+                </span>
+                <span className="select-arrow">
+                  <svg width="12" height="8" viewBox="0 0 12 8" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M1 1L6 6L11 1" stroke="black" strokeWidth="2" strokeLinecap="round"/>
+                  </svg>
+                </span>
+              </button>
+
+              {isDatePickerOpen && (
+                <>
+                  <div className="custom-select-overlay" onClick={() => setIsDatePickerOpen(false)} />
+                  <div className="custom-calendar-popup glass-card">
+                    <div className="calendar-header-bar">
+                      <button type="button" className="cal-nav-btn" onClick={handlePrevMonth}>◀</button>
+                      <span className="cal-month-title">
+                        {UZBEK_MONTHS[calendarViewMonth]} {calendarViewYear}
+                      </span>
+                      <button type="button" className="cal-nav-btn" onClick={handleNextMonth}>▶</button>
+                    </div>
+
+                    <div className="calendar-weekdays-row">
+                      {WEEKDAYS.map((wd) => (
+                        <span key={wd} className="cal-weekday">{wd}</span>
+                      ))}
+                    </div>
+
+                    <div className="calendar-days-grid">
+                      {calendarDays.map((d, idx) => {
+                        const m = String(d.month + 1).padStart(2, '0');
+                        const dayStr = String(d.day).padStart(2, '0');
+                        const fullDateStr = `${d.year}-${m}-${dayStr}`;
+                        const isSelected = fullDateStr === selectedDate;
+                        const isToday = fullDateStr === getTodayDateString();
+
+                        return (
+                          <button
+                            key={idx}
+                            type="button"
+                            className={`cal-day-cell ${!d.isCurrentMonth ? 'other-month' : ''} ${isSelected ? 'selected' : ''} ${isToday ? 'today' : ''}`}
+                            onClick={() => handleSelectCalendarDate(d)}
+                          >
+                            {d.day}
+                          </button>
+                        );
+                      })}
+                    </div>
+
+                    <div className="calendar-footer-bar">
+                      <button type="button" className="cal-today-btn" onClick={handleSelectToday}>
+                        Bugun
+                      </button>
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
           </div>
         ) : (
           <div className="filter-item">
@@ -991,6 +1157,124 @@ const Attendance = ({ groups = [], students = [], attendance = [], onSaveAttenda
 
         .custom-select-option.active .option-name {
           color: #ffffff;
+        }
+
+        /* Custom Calendar Popup Styles */
+        .custom-calendar-popup {
+          position: absolute;
+          top: calc(100% + 6px);
+          left: 0;
+          width: 300px;
+          background: #ffffff;
+          border: 2px solid #000000 !important;
+          box-shadow: 6px 6px 0px #000000 !important;
+          z-index: 100;
+          padding: 14px;
+          border-radius: 0;
+        }
+
+        .calendar-header-bar {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 12px;
+          border-bottom: 1px solid #000000;
+          padding-bottom: 8px;
+        }
+
+        .cal-month-title {
+          font-weight: 800;
+          font-size: 0.95rem;
+          text-transform: uppercase;
+        }
+
+        .cal-nav-btn {
+          background: #ffffff;
+          border: 1px solid #000000;
+          width: 28px;
+          height: 28px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
+          font-weight: 700;
+          font-size: 0.75rem;
+          transition: background var(--transition-fast);
+        }
+
+        .cal-nav-btn:hover {
+          background: var(--accent-neon);
+        }
+
+        .calendar-weekdays-row {
+          display: grid;
+          grid-template-columns: repeat(7, 1fr);
+          text-align: center;
+          font-weight: 800;
+          font-size: 0.75rem;
+          margin-bottom: 8px;
+          color: #000000;
+        }
+
+        .calendar-days-grid {
+          display: grid;
+          grid-template-columns: repeat(7, 1fr);
+          gap: 4px;
+        }
+
+        .cal-day-cell {
+          aspect-ratio: 1;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          border: 1px solid #e0e0e0;
+          background: #ffffff;
+          font-family: var(--font-family);
+          font-size: 0.85rem;
+          font-weight: 700;
+          cursor: pointer;
+          color: #000000;
+          transition: all var(--transition-fast);
+        }
+
+        .cal-day-cell:hover {
+          background: var(--accent-neon);
+          border-color: #000000;
+        }
+
+        .cal-day-cell.other-month {
+          color: #bbbbbb;
+          background: #fafafa;
+        }
+
+        .cal-day-cell.today {
+          border: 1.5px solid #000000;
+          font-weight: 800;
+        }
+
+        .cal-day-cell.selected {
+          background: #000000 !important;
+          color: #ffffff !important;
+          border-color: #000000 !important;
+        }
+
+        .calendar-footer-bar {
+          margin-top: 12px;
+          padding-top: 8px;
+          border-top: 1px solid #000000;
+          display: flex;
+          justify-content: flex-end;
+        }
+
+        .cal-today-btn {
+          background: var(--accent-neon);
+          border: 1.5px solid #000000;
+          padding: 4px 12px;
+          font-family: var(--font-family);
+          font-weight: 800;
+          font-size: 0.75rem;
+          text-transform: uppercase;
+          cursor: pointer;
         }
       `}</style>
     </div>
