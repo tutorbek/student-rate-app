@@ -11,7 +11,8 @@ const renderAvatar = (emoji) => {
 
 const Dashboard = ({ setActiveTab, onSelectGroup, groups = [], students = [], transactions = [] }) => {
 
-  const [showCounts, setShowCounts] = useState(false); // Default = false (hidden)
+  const [showGroupCount, setShowGroupCount] = useState(false);
+  const [showStudentCount, setShowStudentCount] = useState(false);
 
   // Stats
   const totalGroups = groups.length;
@@ -177,10 +178,10 @@ const Dashboard = ({ setActiveTab, onSelectGroup, groups = [], students = [], tr
               <button
                 type="button"
                 className="stat-toggle-btn"
-                onClick={() => setShowCounts(!showCounts)}
-                title={showCounts ? "Yashirish" : "Ko'rsatish"}
+                onClick={() => setShowGroupCount(!showGroupCount)}
+                title={showGroupCount ? "Yashirish" : "Ko'rsatish"}
               >
-                {showCounts ? (
+                {showGroupCount ? (
                   <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
                     <circle cx="12" cy="12" r="3" />
@@ -193,7 +194,7 @@ const Dashboard = ({ setActiveTab, onSelectGroup, groups = [], students = [], tr
                 )}
               </button>
             </div>
-            <p className="stat-value">{showCounts ? totalGroups : '••••'}</p>
+            <p className="stat-value">{showGroupCount ? totalGroups : '••••'}</p>
           </div>
         </div>
 
@@ -205,10 +206,10 @@ const Dashboard = ({ setActiveTab, onSelectGroup, groups = [], students = [], tr
               <button
                 type="button"
                 className="stat-toggle-btn"
-                onClick={() => setShowCounts(!showCounts)}
-                title={showCounts ? "Yashirish" : "Ko'rsatish"}
+                onClick={() => setShowStudentCount(!showStudentCount)}
+                title={showStudentCount ? "Yashirish" : "Ko'rsatish"}
               >
-                {showCounts ? (
+                {showStudentCount ? (
                   <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
                     <circle cx="12" cy="12" r="3" />
@@ -221,7 +222,7 @@ const Dashboard = ({ setActiveTab, onSelectGroup, groups = [], students = [], tr
                 )}
               </button>
             </div>
-            <p className="stat-value">{showCounts ? totalStudents : '••••'}</p>
+            <p className="stat-value">{showStudentCount ? totalStudents : '••••'}</p>
           </div>
         </div>
 
