@@ -205,66 +205,72 @@ const Dashboard = ({ setActiveTab, onSelectGroup, groups = [], students = [], tr
         {/* Spotlight Section */}
         <section className="spotlight-section">
           <h3 className="section-title">🏆 O'tgan Davr Qahramonlari</h3>
-          <div className="spotlight-grid">
+          <div className="spotlight-list">
             {/* Last Week's Winner */}
-            <div className="glass-card spotlight-card last-week">
-              <div className="spotlight-glow last-week-glow"></div>
-              <div className="spotlight-badge badge-last-week">🏆 O'TGAN HAFTALIK G'OLIB</div>
+            <div className="glass-card spotlight-card-compact">
+              <div className="spotlight-header-row">
+                <span className="spotlight-badge badge-last-week">🏆 O'TGAN HAFTALIK G'OLIB</span>
+              </div>
               {lastWeekSpotlight ? (
-                <div className="spotlight-user">
-                  <div className="avatar-circle spotlight-avatar" style={{ background: lastWeekSpotlight.color, overflow: 'hidden' }}>
+                <div className="spotlight-body-row">
+                  <div className="avatar-circle spotlight-avatar-sm" style={{ background: lastWeekSpotlight.color, overflow: 'hidden' }}>
                     {renderAvatar(lastWeekSpotlight.emoji)}
                   </div>
-                  <h4 className="spotlight-name" style={{ fontSize: lastWeekSpotlight.isTie ? '1rem' : '1.25rem' }}>{lastWeekSpotlight.name}</h4>
-                  <p className="spotlight-group">{lastWeekSpotlight.groupName}</p>
-                  <div className="spotlight-score">+{lastWeekSpotlight.score} Likelar</div>
+                  <div className="spotlight-info">
+                    <h4 className="spotlight-name-sm">{lastWeekSpotlight.name}</h4>
+                    <p className="spotlight-group-sm">{lastWeekSpotlight.groupName}</p>
+                  </div>
+                  <div className="spotlight-score-pill">+{lastWeekSpotlight.score} Likelar</div>
                 </div>
               ) : (
-                <div className="spotlight-empty">
-                  <div className="empty-icon">🏆</div>
-                  <p className="empty-text">O'tgan haftada hech kim like olmagan.</p>
+                <div className="spotlight-empty-sm">
+                  <p className="empty-text-sm">O'tgan haftada hech kim like olmagan.</p>
                 </div>
               )}
             </div>
 
             {/* Last Month's Winner */}
-            <div className="glass-card spotlight-card weekly">
-              <div className="spotlight-glow weekly-glow"></div>
-              <div className="spotlight-badge badge-week">🥇 O'TGAN OY G'OLIBI</div>
+            <div className="glass-card spotlight-card-compact">
+              <div className="spotlight-header-row">
+                <span className="spotlight-badge badge-week">🥇 O'TGAN OY G'OLIBI</span>
+              </div>
               {lastMonthSpotlight ? (
-                <div className="spotlight-user">
-                  <div className="avatar-circle spotlight-avatar" style={{ background: lastMonthSpotlight.color, overflow: 'hidden' }}>
+                <div className="spotlight-body-row">
+                  <div className="avatar-circle spotlight-avatar-sm" style={{ background: lastMonthSpotlight.color, overflow: 'hidden' }}>
                     {renderAvatar(lastMonthSpotlight.emoji)}
                   </div>
-                  <h4 className="spotlight-name" style={{ fontSize: lastMonthSpotlight.isTie ? '1rem' : '1.25rem' }}>{lastMonthSpotlight.name}</h4>
-                  <p className="spotlight-group">{lastMonthSpotlight.groupName}</p>
-                  <div className="spotlight-score">+{lastMonthSpotlight.score} Likelar</div>
+                  <div className="spotlight-info">
+                    <h4 className="spotlight-name-sm">{lastMonthSpotlight.name}</h4>
+                    <p className="spotlight-group-sm">{lastMonthSpotlight.groupName}</p>
+                  </div>
+                  <div className="spotlight-score-pill">+{lastMonthSpotlight.score} Likelar</div>
                 </div>
               ) : (
-                <div className="spotlight-empty">
-                  <div className="empty-icon">🎖️</div>
-                  <p className="empty-text">O'tgan oyda hech kim like olmagan.</p>
+                <div className="spotlight-empty-sm">
+                  <p className="empty-text-sm">O'tgan oyda hech kim like olmagan.</p>
                 </div>
               )}
             </div>
 
             {/* Last Month's Winner Group */}
-            <div className="glass-card spotlight-card monthly">
-              <div className="spotlight-glow monthly-glow"></div>
-              <div className="spotlight-badge badge-month">🏢 O'TGAN OY G'OLIB GURUHI</div>
+            <div className="glass-card spotlight-card-compact">
+              <div className="spotlight-header-row">
+                <span className="spotlight-badge badge-month">🏢 O'TGAN OY G'OLIB GURUHI</span>
+              </div>
               {lastMonthGroupSpotlight ? (
-                <div className="spotlight-user">
-                  <div className="avatar-circle spotlight-avatar" style={{ background: '#ffffff', border: '1px solid #000000', overflow: 'hidden' }}>
+                <div className="spotlight-body-row">
+                  <div className="avatar-circle spotlight-avatar-sm" style={{ background: '#ffffff', border: '1px solid #000000', overflow: 'hidden' }}>
                     {renderAvatar(lastMonthGroupSpotlight.emoji)}
                   </div>
-                  <h4 className="spotlight-name">{lastMonthGroupSpotlight.name}</h4>
-                  <p className="spotlight-group">Guruh umumiy natijasi</p>
-                  <div className="spotlight-score">+{lastMonthGroupSpotlight.score} Likelar</div>
+                  <div className="spotlight-info">
+                    <h4 className="spotlight-name-sm">{lastMonthGroupSpotlight.name}</h4>
+                    <p className="spotlight-group-sm">Guruh umumiy natijasi</p>
+                  </div>
+                  <div className="spotlight-score-pill">+{lastMonthGroupSpotlight.score} Likelar</div>
                 </div>
               ) : (
-                <div className="spotlight-empty">
-                  <div className="empty-icon">👑</div>
-                  <p className="empty-text">O'tgan oyda hech bir guruh like olmagan.</p>
+                <div className="spotlight-empty-sm">
+                  <p className="empty-text-sm">O'tgan oyda hech bir guruh like olmagan.</p>
                 </div>
               )}
             </div>
@@ -317,191 +323,210 @@ const Dashboard = ({ setActiveTab, onSelectGroup, groups = [], students = [], tr
 
         .stats-grid {
           display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-          gap: 20px;
-          margin-bottom: 40px;
+          grid-template-columns: repeat(4, 1fr);
+          gap: 16px;
+          margin-bottom: 28px;
         }
 
         .stat-card {
-          padding: 24px;
+          padding: 14px 16px;
           display: flex;
           align-items: center;
-          gap: 20px;
-          border-top: none;
-          border-left: none;
-          border-bottom: none;
-          border-right: 2px solid #000000;
+          gap: 12px;
+          background: #ffffff;
+          border: 2px solid #000000;
+          box-shadow: 3px 3px 0px #000000;
         }
 
         .stat-icon {
-          width: 54px;
-          height: 54px;
+          width: 40px;
+          height: 40px;
           border-radius: 0;
           display: flex;
           align-items: center;
           justify-content: center;
-          font-size: 1.6rem;
+          font-size: 1.2rem;
           background: #ffffff;
           border: 1px solid #000000;
+          flex-shrink: 0;
         }
 
         .stat-info {
           display: flex;
           flex-direction: column;
+          min-width: 0;
         }
 
         .stat-label {
-          font-size: 0.85rem;
+          font-size: 0.72rem;
           font-weight: 700;
           color: #000000;
           text-transform: uppercase;
           letter-spacing: 0.5px;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
         }
 
         .stat-value {
-          font-size: 1.8rem;
+          font-size: 1.3rem;
           font-weight: 800;
-          margin-top: 4px;
+          margin-top: 2px;
           color: #000000;
+          line-height: 1.1;
+        }
+
+        @media (max-width: 900px) {
+          .stats-grid {
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            margin-bottom: 24px;
+          }
+
+          .stat-card {
+            padding: 10px 12px;
+            gap: 10px;
+            box-shadow: 2px 2px 0px #000000;
+          }
+
+          .stat-icon {
+            width: 34px;
+            height: 34px;
+            font-size: 1rem;
+          }
+
+          .stat-label {
+            font-size: 0.68rem;
+          }
+
+          .stat-value {
+            font-size: 1.15rem;
+          }
         }
 
         .dashboard-content-layout {
           display: grid;
-          grid-template-columns: 1.4fr 1fr;
-          gap: 32px;
+          grid-template-columns: 1.2fr 1fr;
+          gap: 24px;
         }
 
-        @media (max-width: 1100px) {
+        @media (max-width: 900px) {
           .dashboard-content-layout {
             grid-template-columns: 1fr;
+            gap: 24px;
           }
         }
 
         .section-title {
-          font-size: 1.3rem;
+          font-size: 1.1rem;
           font-weight: 800;
-          margin-bottom: 20px;
+          margin-bottom: 16px;
           color: #000000;
           text-transform: uppercase;
           letter-spacing: -0.3px;
         }
 
-        .spotlight-grid {
-          display: grid;
-          grid-template-columns: repeat(3, 1fr);
-          gap: 20px;
-        }
-
-        @media (max-width: 1000px) {
-          .spotlight-grid {
-            grid-template-columns: 1fr 1fr;
-          }
-        }
-
-        @media (max-width: 600px) {
-          .spotlight-grid {
-            grid-template-columns: 1fr;
-          }
-        }
-
-        .spotlight-card {
-          position: relative;
-          padding: 30px 20px;
+        .spotlight-list {
           display: flex;
           flex-direction: column;
-          align-items: center;
-          justify-content: center;
-          text-align: center;
-          overflow: hidden;
-          height: 480px;
-          border: 1px solid #000000;
+          gap: 12px;
         }
 
-        .spotlight-glow {
-          display: none;
+        .spotlight-card-compact {
+          padding: 12px 16px;
+          background: #ffffff;
+          border: 2px solid #000000;
+          box-shadow: 3px 3px 0px #000000;
+          display: flex;
+          flex-direction: column;
+          gap: 8px;
+        }
+
+        .spotlight-header-row {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
         }
 
         .spotlight-badge {
-          position: relative;
-          z-index: 1;
-          font-size: 0.7rem;
+          font-size: 0.68rem;
           font-weight: 800;
-          letter-spacing: 1px;
-          padding: 4px 10px;
-          border-radius: 0;
-          margin-bottom: 24px;
-          background: #ffffff;
+          letter-spacing: 0.5px;
+          padding: 2px 8px;
           border: 1px solid #000000;
-          color: #000000;
+          text-transform: uppercase;
+        }
+
+        .badge-last-week {
+          background: #000000;
+          color: #E7FF56;
         }
 
         .badge-week {
-          background: #ffffff;
-          border: 1px solid #000000;
+          background: #E7FF56;
           color: #000000;
         }
 
         .badge-month {
           background: #ffffff;
-          border: 1px solid #000000;
           color: #000000;
         }
 
-        .badge-last-week {
-          background: #000000;
-          border: 1px solid #000000;
-          color: #E7FF56;
-          font-weight: 800;
-        }
-
-        .spotlight-user {
-          position: relative;
-          z-index: 1;
+        .spotlight-body-row {
           display: flex;
-          flex-direction: column;
           align-items: center;
+          gap: 12px;
         }
 
-        .spotlight-avatar {
-          width: 72px;
-          height: 72px;
-          font-size: 2.2rem;
-          margin-bottom: 16px;
+        .spotlight-avatar-sm {
+          width: 40px;
+          height: 40px;
+          font-size: 1.2rem;
+          flex-shrink: 0;
+          border: 1.5px solid #000000;
         }
 
-        .spotlight-name {
-          font-size: 1.25rem;
-          font-weight: 700;
-          color: #000000;
-        }
-
-        .spotlight-group {
-          font-size: 0.85rem;
-          color: #000000;
-          margin-top: 4px;
-          font-weight: 500;
-        }
-
-        .spotlight-score {
-          font-size: 1.1rem;
-          font-weight: 800;
-          color: #ffffff;
-          background: #000000;
-          padding: 6px 14px;
-          border-radius: 0;
-          margin-top: 18px;
-          border: 1px solid #000000;
-        }
-
-        .spotlight-empty {
-          position: relative;
-          z-index: 1;
+        .spotlight-info {
           flex: 1;
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          justify-content: center;
-          padding: 20px;
+          min-width: 0;
+        }
+
+        .spotlight-name-sm {
+          font-size: 0.95rem;
+          font-weight: 800;
+          color: #000000;
+          margin: 0;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+
+        .spotlight-group-sm {
+          font-size: 0.78rem;
+          color: #555555;
+          margin: 2px 0 0 0;
+          font-weight: 600;
+        }
+
+        .spotlight-score-pill {
+          font-size: 0.85rem;
+          font-weight: 800;
+          color: #000000;
+          background: #E7FF56;
+          padding: 4px 10px;
+          border: 1.5px solid #000000;
+          white-space: nowrap;
+        }
+
+        .spotlight-empty-sm {
+          padding: 4px 0;
+        }
+
+        .empty-text-sm {
+          font-size: 0.8rem;
+          color: #777777;
+          margin: 0;
+          font-style: italic;
         }
 
         .empty-icon {
