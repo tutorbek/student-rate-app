@@ -11,6 +11,8 @@ const renderAvatar = (emoji) => {
 
 const Dashboard = ({ setActiveTab, onSelectGroup, groups = [], students = [], transactions = [] }) => {
 
+  const [showCounts, setShowCounts] = useState(false); // Default = false (hidden)
+
   // Stats
   const totalGroups = groups.length;
   const totalStudents = students.length;
@@ -170,16 +172,36 @@ const Dashboard = ({ setActiveTab, onSelectGroup, groups = [], students = [], tr
         <div className="glass-card stat-card">
           <div className="stat-icon">👥</div>
           <div className="stat-info">
-            <h4 className="stat-label">Guruhlar</h4>
-            <p className="stat-value">{totalGroups}</p>
+            <div className="stat-label-row">
+              <h4 className="stat-label">Guruhlar</h4>
+              <button
+                type="button"
+                className="stat-toggle-btn"
+                onClick={() => setShowCounts(!showCounts)}
+                title={showCounts ? "Yashirish" : "Ko'rsatish"}
+              >
+                {showCounts ? '👁️' : '🙈'}
+              </button>
+            </div>
+            <p className="stat-value">{showCounts ? totalGroups : '••••'}</p>
           </div>
         </div>
 
         <div className="glass-card stat-card">
           <div className="stat-icon">🎓</div>
           <div className="stat-info">
-            <h4 className="stat-label">Talabalar</h4>
-            <p className="stat-value">{totalStudents}</p>
+            <div className="stat-label-row">
+              <h4 className="stat-label">Talabalar</h4>
+              <button
+                type="button"
+                className="stat-toggle-btn"
+                onClick={() => setShowCounts(!showCounts)}
+                title={showCounts ? "Yashirish" : "Ko'rsatish"}
+              >
+                {showCounts ? '👁️' : '🙈'}
+              </button>
+            </div>
+            <p className="stat-value">{showCounts ? totalStudents : '••••'}</p>
           </div>
         </div>
 
@@ -355,6 +377,15 @@ const Dashboard = ({ setActiveTab, onSelectGroup, groups = [], students = [], tr
           display: flex;
           flex-direction: column;
           min-width: 0;
+          flex: 1;
+        }
+
+        .stat-label-row {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 4px;
+          width: 100%;
         }
 
         .stat-label {
@@ -366,6 +397,24 @@ const Dashboard = ({ setActiveTab, onSelectGroup, groups = [], students = [], tr
           white-space: nowrap;
           overflow: hidden;
           text-overflow: ellipsis;
+        }
+
+        .stat-toggle-btn {
+          background: transparent;
+          border: none;
+          cursor: pointer;
+          font-size: 0.85rem;
+          padding: 0;
+          line-height: 1;
+          opacity: 0.7;
+          transition: opacity var(--transition-fast);
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+        }
+
+        .stat-toggle-btn:hover {
+          opacity: 1;
         }
 
         .stat-value {
