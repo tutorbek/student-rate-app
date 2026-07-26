@@ -136,7 +136,7 @@ const Settings = ({
 
   return (
     <div className="settings-container">
-      <div className="page-header">
+      <div className="page-header settings-header-container">
         <div>
           <h2 className="page-title">Sozlamalar</h2>
           <p className="page-subtitle">Zaxiralash, izoh shablonlari va tizimni boshqarish</p>
@@ -217,29 +217,29 @@ const Settings = ({
           </p>
           
           {deletedGroups.length === 0 && deletedStudents.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '20px', background: 'rgba(0,0,0,0.03)', border: '1px dashed #000', fontWeight: 'bold', color: '#000' }}>
+            <div className="empty-box-subtle">
               Savat bo'sh 🗑️
             </div>
           ) : (
-            <div className="trash-list" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            <div className="trash-list">
               {deletedGroups.map(group => (
-                <div key={group.id} className="trash-item" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px', background: '#fff', border: '1px solid #000' }}>
-                  <div>
-                    <span style={{ fontSize: '1.2rem', marginRight: '8px' }}>📂</span>
-                    <strong style={{ color: '#000' }}>{group.name}</strong> (Guruh)
-                    <div style={{ fontSize: '0.75rem', color: '#666', marginTop: '4px' }}>
+                <div key={group.id} className="trash-item">
+                  <div className="trash-info">
+                    <span className="trash-icon">📂</span>
+                    <strong className="trash-name">{group.name}</strong> <span className="trash-tag">(Guruh)</span>
+                    <div className="trash-date">
                       O'chirilgan sana: {group.deletedAt ? new Date(group.deletedAt).toLocaleString() : 'Noma\'lum'}
                     </div>
                   </div>
-                  <div style={{ display: 'flex', gap: '8px' }}>
-                    <button className="btn btn-secondary scale-active btn-sm" onClick={() => onRestoreGroup(group.id)} style={{ padding: '6px 12px', background: '#E7FF56', color: '#000', border: '1px solid #000', fontWeight: 'bold' }}>
+                  <div className="trash-actions">
+                    <button className="btn btn-secondary scale-active btn-sm btn-restore" onClick={() => onRestoreGroup(group.id)}>
                       Tiklash
                     </button>
-                    <button className="btn btn-danger scale-active btn-sm" onClick={() => {
+                    <button className="btn btn-danger scale-active btn-sm btn-delete-perm" onClick={() => {
                       if (confirm(`"${group.name}" guruhini va uning barcha o'quvchilarini BUTUNLAY o'chirib yubormoqchimisiz? Ushbu amalni qaytarib bo'lmaydi!`)) {
                         onPermanentlyDeleteGroup(group.id);
                       }
-                    }} style={{ padding: '6px 12px', fontSize: '0.8rem', background: '#ff3b30', color: '#fff', border: '1px solid #ff3b30' }}>
+                    }}>
                       Butunlay o'chirish
                     </button>
                   </div>
@@ -250,23 +250,23 @@ const Settings = ({
                 const group = groups.find(g => g.id === student.groupId);
                 const groupName = group ? group.name : 'Noma\'lum guruh';
                 return (
-                  <div key={student.id} className="trash-item" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px', background: '#fff', border: '1px solid #000' }}>
-                    <div>
-                      <span style={{ fontSize: '1.2rem', marginRight: '8px' }}>{student.emoji || '👤'}</span>
-                      <strong style={{ color: '#000' }}>{student.name}</strong> (O'quvchi - {groupName})
-                      <div style={{ fontSize: '0.75rem', color: '#666', marginTop: '4px' }}>
+                  <div key={student.id} className="trash-item">
+                    <div className="trash-info">
+                      <span className="trash-icon">{student.emoji || '👤'}</span>
+                      <strong className="trash-name">{student.name}</strong> <span className="trash-tag">(O'quvchi - {groupName})</span>
+                      <div className="trash-date">
                         O'chirilgan sana: {student.deletedAt ? new Date(student.deletedAt).toLocaleString() : 'Noma\'lum'}
                       </div>
                     </div>
-                    <div style={{ display: 'flex', gap: '8px' }}>
-                      <button className="btn btn-secondary scale-active btn-sm" onClick={() => onRestoreStudent(student.id)} style={{ padding: '6px 12px', background: '#E7FF56', color: '#000', border: '1px solid #000', fontWeight: 'bold' }}>
+                    <div className="trash-actions">
+                      <button className="btn btn-secondary scale-active btn-sm btn-restore" onClick={() => onRestoreStudent(student.id)}>
                         Tiklash
                       </button>
-                      <button className="btn btn-danger scale-active btn-sm" onClick={() => {
+                      <button className="btn btn-danger scale-active btn-sm btn-delete-perm" onClick={() => {
                         if (confirm(`"${student.name}" o'quvchisini BUTUNLAY o'chirib yubormoqchimisiz? Ushbu amalni qaytarib bo'lmaydi!`)) {
                           onPermanentlyDeleteStudent(student.id);
                         }
-                      }} style={{ padding: '6px 12px', fontSize: '0.8rem', background: '#ff3b30', color: '#fff', border: '1px solid #ff3b30' }}>
+                      }}>
                         Butunlay o'chirish
                       </button>
                     </div>
@@ -285,33 +285,32 @@ const Settings = ({
           </p>
 
           {snapshots.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '20px', background: 'rgba(0,0,0,0.03)', border: '1px dashed #000', fontWeight: 'bold', color: '#000' }}>
+            <div className="empty-box-subtle">
               Zaxira nuqtalari yuklanmoqda yoki mavjud emas.
             </div>
           ) : (
-            <div className="snapshots-list" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            <div className="snapshots-list">
               {snapshots.map((snap, idx) => {
                 const snapGroupsCount = snap.data && snap.data.groups ? snap.data.groups.filter(g => !g.deleted).length : 0;
                 const snapStudentsCount = snap.data && snap.data.students ? snap.data.students.filter(s => !s.deleted).length : 0;
                 return (
-                  <div key={idx} className="snapshot-item" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px', background: '#fff', border: '1px solid #000' }}>
-                    <div>
-                      <strong style={{ color: '#000' }}>Zaxira #{idx + 1}</strong>
-                      <span style={{ fontSize: '0.8rem', color: '#666', marginLeft: '12px' }}>
+                  <div key={idx} className="snapshot-item">
+                    <div className="snapshot-info">
+                      <strong className="snapshot-title">Zaxira #{idx + 1}</strong>
+                      <span className="snapshot-time">
                         {snap.timestamp ? new Date(snap.timestamp).toLocaleString() : 'Noma\'lum'}
                       </span>
-                      <div style={{ fontSize: '0.8rem', color: '#000', marginTop: '4px' }}>
+                      <div className="snapshot-stats">
                         📊 Guruhlar: <strong>{snapGroupsCount} ta</strong> | O'quvchilar: <strong>{snapStudentsCount} ta</strong>
                       </div>
                     </div>
                     <button 
-                      className="btn btn-secondary scale-active btn-sm" 
+                      className="btn btn-secondary scale-active btn-sm btn-rollback" 
                       onClick={() => {
                         if (confirm("Haqiqatan ham tizimni ushbu zaxira nuqtasiga qaytarmoqchimisiz? Amaldagi ma'lumotlaringiz o'chib ketadi (avval joriy holatingiz avtomatik JSON ko'rinishida zaxiralanadi).")) {
                           onRollback(snap.data);
                         }
                       }} 
-                      style={{ padding: '6px 12px', background: '#000000', color: '#ffffff', border: '1px solid #000', fontWeight: 'bold' }}
                     >
                       Tiklash ➔
                     </button>
@@ -381,32 +380,57 @@ const Settings = ({
           max-width: 800px;
         }
 
+        .settings-container {
+          width: 100%;
+          max-width: 100%;
+          box-sizing: border-box;
+        }
+
+        .settings-grid {
+          display: flex;
+          flex-direction: column;
+          gap: 24px;
+          max-width: 800px;
+          width: 100%;
+        }
+
         .settings-section {
-          padding: 28px;
+          padding: 24px;
+          background: #ffffff;
+          border: 2px solid #000000;
+          box-shadow: 4px 4px 0px #000000;
+          box-sizing: border-box;
+          width: 100%;
         }
 
         .section-subtitle {
-          font-size: 1.2rem;
-          font-weight: 700;
+          font-size: 1.15rem;
+          font-weight: 800;
           color: #000000;
           margin-bottom: 8px;
         }
 
         .section-desc {
-          font-size: 0.9rem;
-          color: var(--text-secondary);
+          font-size: 0.88rem;
+          color: #444444;
           line-height: 1.5;
-          margin-bottom: 24px;
+          margin-bottom: 20px;
         }
 
         .backup-actions {
           display: flex;
-          gap: 16px;
+          gap: 12px;
           flex-wrap: wrap;
+        }
+
+        .import-wrapper {
+          display: inline-block;
         }
 
         .import-label {
           display: inline-flex;
+          align-items: center;
+          justify-content: center;
           cursor: pointer;
         }
 
@@ -414,31 +438,12 @@ const Settings = ({
           display: flex;
           gap: 12px;
           margin-bottom: 20px;
-        }
-
-        /* Teacher logout: hide on desktop (sidebar has it), show on mobile */
-        .settings-logout-btn {
-          display: none;
-          align-items: center;
-          gap: 10px;
-          white-space: nowrap;
-        }
-
-        @media (max-width: 900px) {
-          .settings-logout-btn {
-            display: flex;
-          }
-        }
-
-        @media (max-width: 480px) {
-          .add-tag-form {
-            flex-direction: column;
-            align-items: stretch;
-          }
+          flex-wrap: wrap;
         }
 
         .tag-input {
           flex: 1;
+          min-width: 200px;
         }
 
         .tags-list {
@@ -452,15 +457,9 @@ const Settings = ({
           align-items: center;
           gap: 8px;
           padding: 8px 14px;
-          border-radius: 0;
           font-size: 0.9rem;
           background: #ffffff;
           border: 1px solid #000000;
-          transition: all var(--transition-fast);
-        }
-
-        .tag-item:hover {
-          background: #E7FF56;
         }
 
         .tag-text {
@@ -473,26 +472,150 @@ const Settings = ({
           border: none;
           color: #000000;
           cursor: pointer;
-          font-size: 0.8rem;
+          font-size: 0.85rem;
+        }
+
+        .empty-box-subtle {
+          text-align: center;
+          padding: 20px;
+          background: rgba(0, 0, 0, 0.03);
+          border: 1px dashed #000000;
+          font-weight: 700;
+          color: #000000;
+        }
+
+        .trash-list, .snapshots-list {
           display: flex;
+          flex-direction: column;
+          gap: 12px;
+        }
+
+        .trash-item, .snapshot-item {
+          display: flex;
+          justify-content: space-between;
           align-items: center;
-          justify-content: center;
-          transition: transform var(--transition-fast);
+          padding: 14px;
+          background: #ffffff;
+          border: 1px solid #000000;
+          gap: 12px;
+          box-sizing: border-box;
         }
 
-        .tag-delete-btn:hover {
-          transform: scale(1.3);
-          color: #ff0000;
+        .trash-info, .snapshot-info {
+          display: flex;
+          flex-direction: column;
+          gap: 2px;
+          min-width: 0;
+          flex: 1;
         }
 
-        .border-red {
-          border-color: #000000;
-          border-style: dashed;
+        .trash-name, .snapshot-title {
+          color: #000000;
+          font-size: 0.95rem;
         }
 
-        .border-red:hover {
-          border-color: #000000;
-          border-style: solid;
+        .trash-tag {
+          font-size: 0.85rem;
+          color: #555555;
+        }
+
+        .trash-date, .snapshot-time, .snapshot-stats {
+          font-size: 0.78rem;
+          color: #666666;
+          margin-top: 2px;
+        }
+
+        .trash-actions, .snapshot-actions {
+          display: flex;
+          gap: 8px;
+          align-items: center;
+          flex-shrink: 0;
+        }
+
+        .btn-restore {
+          padding: 6px 12px;
+          background: #E7FF56;
+          color: #000000;
+          border: 1px solid #000000;
+          font-weight: 800;
+          font-size: 0.82rem;
+        }
+
+        .btn-delete-perm {
+          padding: 6px 12px;
+          font-size: 0.8rem;
+          background: #ff3b30;
+          color: #ffffff;
+          border: 1px solid #ff3b30;
+        }
+
+        .btn-rollback {
+          padding: 6px 12px;
+          background: #000000;
+          color: #ffffff;
+          border: 1px solid #000000;
+          font-weight: 800;
+          font-size: 0.82rem;
+        }
+
+        /* Teacher logout: hide on desktop (sidebar has it), show on mobile */
+        .settings-logout-btn {
+          display: none;
+          align-items: center;
+          gap: 8px;
+          white-space: nowrap;
+        }
+
+        @media (max-width: 900px) {
+          .settings-logout-btn {
+            display: inline-flex;
+          }
+
+          .settings-section {
+            padding: 16px;
+          }
+
+          .backup-actions {
+            flex-direction: column;
+          }
+
+          .backup-actions .btn, .import-wrapper, .import-label {
+            width: 100%;
+            text-align: center;
+            justify-content: center;
+          }
+
+          .add-tag-form {
+            flex-direction: column;
+          }
+
+          .add-tag-btn {
+            width: 100%;
+          }
+
+          .trash-item, .snapshot-item {
+            flex-direction: column;
+            align-items: stretch;
+            gap: 10px;
+          }
+
+          .trash-actions {
+            width: 100%;
+            display: flex;
+            gap: 8px;
+          }
+
+          .trash-actions .btn {
+            flex: 1;
+            text-align: center;
+            justify-content: center;
+          }
+
+          .btn-rollback {
+            width: 100%;
+            text-align: center;
+            justify-content: center;
+          }
         }
       `}</style>
     </div>
