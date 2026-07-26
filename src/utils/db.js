@@ -253,6 +253,39 @@ export const saveAttendance = (attendance = [], groupId, date, records) => {
   return { updatedRecord, updatedAttendance };
 };
 
+export const deleteAttendanceRecord = (attendance = [], groupId, date, studentId = null) => {
+  const existingRecordIndex = attendance.findIndex(
+    (a) => a.groupId === groupId && a.date === date
+  );
+
+  if (existingRecordIndex === -1) {
+    return attendance;
+  }
+
+  const updatedAttendance = [...attendance];
+  const targetRecord = { ...updatedAttendance[existingRecordIndex] };
+
+  if (studentId) {
+    // Delete individual student record
+    const updatedRecords = { ...targetRecord.records };
+    delete updatedRecords[studentId];
+
+    if (Object.keys(updatedRecords).length === 0) {
+      // Remove entire date record if no student records remain
+      updatedAttendance.splice(existingRecordIndex, 1);
+    } else {
+      targetRecord.records = updatedRecords;
+      targetRecord.updatedAt = new Date().toISOString();
+      updatedAttendance[existingRecordIndex] = targetRecord;
+    }
+  } else {
+    // Delete entire date record for the group
+    updatedAttendance.splice(existingRecordIndex, 1);
+  }
+
+  return updatedAttendance;
+};
+
 // --- Export / Import ---
 export const exportDatabase = (groups, students, transactions, quickTags, attendance = []) => {
   const db = {

@@ -20,6 +20,7 @@ import {
 import {
   DEFAULT_QUICK_TAGS,
   saveAttendance,
+  deleteAttendanceRecord,
   addGroup,
   deleteGroup,
   addStudent,
@@ -778,6 +779,12 @@ function App() {
     setTransactions(updatedTransactions);
   };
 
+  const handleDeleteAttendance = (groupId, date, studentId = null) => {
+    const updated = deleteAttendanceRecord(attendance, groupId, date, studentId);
+    setAttendance(updated);
+    showToast("Davomad yozuvi o'chirildi!", "info");
+  };
+
   // Handle Tab Switch (reset selected group if navigating away from groups page)
   const handleTabChange = (tabId) => {
     // Students can only access leaderboard and history
@@ -885,7 +892,9 @@ function App() {
             groups={filteredGroups}
             students={filteredStudents}
             transactions={filteredTransactions}
+            attendance={attendance}
             onDeleteTransaction={handleDeleteTransaction}
+            onDeleteAttendance={handleDeleteAttendance}
             showToast={showToast}
             userRole={userRole}
           />
