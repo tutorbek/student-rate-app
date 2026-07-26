@@ -52,7 +52,7 @@ html {
   /* Native smooth scroll */
   scroll-behavior: smooth;
   /* Prevent elastic overscroll on iOS causing layout jumps */
-  overscroll-behavior: none;
+  overscroll-behavior: auto;
   /* Enable momentum-based scrolling on iOS */
   -webkit-overflow-scrolling: touch;
   height: 100%;
@@ -66,7 +66,7 @@ body {
   min-height: 100%;
   min-height: 100dvh; /* Dynamic viewport height — fixes iOS address bar jump */
   /* Prevent pull-to-refresh causing layout freeze */
-  overscroll-behavior-y: none;
+  overscroll-behavior-y: auto;
   /* Hardware-accelerated rendering */
   -webkit-backface-visibility: hidden;
   backface-visibility: hidden;

@@ -895,6 +895,8 @@ const Leaderboard = ({
           display: flex;
           gap: 12px;
           align-items: center;
+          position: relative;
+          z-index: 100;
         }
 
         @media (max-width: 600px) {
@@ -907,6 +909,7 @@ const Leaderboard = ({
         .custom-dropdown-container {
           position: relative;
           width: 200px;
+          z-index: 101;
         }
 
         .filter-select-btn {
@@ -941,12 +944,12 @@ const Leaderboard = ({
           top: 100%;
           left: 0;
           width: 100%;
-          max-height: 180px;
+          max-height: 220px;
           overflow-y: auto;
           background: #ffffff;
           border: 2px solid #000000;
           box-shadow: 4px 4px 0px #000000;
-          z-index: 100;
+          z-index: 9999;
           margin-top: 4px;
           border-radius: 0;
         }

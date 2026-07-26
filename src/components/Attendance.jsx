@@ -665,14 +665,18 @@ const Attendance = ({ groups = [], students = [], attendance = [], onSaveAttenda
           font-weight: 700;
           text-transform: uppercase;
           font-size: 0.82rem;
+          white-space: nowrap;
           cursor: pointer;
           color: #000000;
-          transition: all var(--transition-fast);
+          transition: background-color 0.15s ease, color 0.15s ease;
+          transform: none !important;
+          box-shadow: none !important;
         }
 
         .tab-btn-brutalist.active {
           background: #000000;
           color: #ffffff;
+          transform: none !important;
         }
 
         .tab-btn-brutalist:first-child {

@@ -11,13 +11,24 @@ const renderAvatar = (emoji) => {
 
 const History = ({ groups = [], students = [], transactions = [], attendance = [], onDeleteTransaction, onDeleteAttendance, showToast, userRole }) => {
   const [activeHistoryTab, setActiveHistoryTab] = useState('points'); // 'points' | 'attendance'
-  const [searchQuery, setSearchQuery] = useState('');
   const [confirmDeleteId, setConfirmDeleteId] = useState(null);
   const [confirmDeleteAtt, setConfirmDeleteAtt] = useState(null); // { groupId, date, studentId, studentName, groupName }
-  const [selectedGroupId, setSelectedGroupId] = useState('all');
+  const [selectedGroupId, setSelectedGroupId] = useState(() => {
+    if (userRole === 'student' && groups.length > 0) {
+      return groups[0].id;
+    }
+    return 'all';
+  });
   const [selectedStudentId, setSelectedStudentId] = useState('all');
   const [isGroupDropdownOpen, setIsGroupDropdownOpen] = useState(false);
   const [isStudentDropdownOpen, setIsStudentDropdownOpen] = useState(false);
+
+  // Default select student's group for student role
+  useEffect(() => {
+    if (userRole === 'student' && groups.length > 0 && selectedGroupId !== groups[0].id) {
+      setSelectedGroupId(groups[0].id);
+    }
+  }, [userRole, groups, selectedGroupId]);
 
   useEffect(() => {
     const handleKeyDown = (e) => {
@@ -87,16 +98,8 @@ const History = ({ groups = [], students = [], transactions = [], attendance = [
       data = data.filter((tx) => tx.studentId === selectedStudentId);
     }
 
-    if (!searchQuery.trim()) return data;
-
-    const query = searchQuery.toLowerCase();
-    return data.filter(
-      (tx) =>
-        tx.studentName.toLowerCase().includes(query) ||
-        tx.groupName.toLowerCase().includes(query) ||
-        tx.comment.toLowerCase().includes(query)
-    );
-  }, [transactions, students, groups, searchQuery, selectedGroupId, selectedStudentId]);
+    return data;
+  }, [transactions, students, groups, selectedGroupId, selectedStudentId]);
 
   // Map and filter attendance records for Attendance History Tab
   const processedAttendance = useMemo(() => {
@@ -135,23 +138,12 @@ const History = ({ groups = [], students = [], transactions = [], attendance = [
       filtered = filtered.filter((item) => item.studentId === selectedStudentId);
     }
 
-    // Search Query
-    if (searchQuery.trim()) {
-      const query = searchQuery.toLowerCase();
-      filtered = filtered.filter(
-        (item) =>
-          item.studentName.toLowerCase().includes(query) ||
-          item.groupName.toLowerCase().includes(query) ||
-          item.date.includes(query)
-      );
-    }
-
     // Sort by date descending, then updated time descending
     return filtered.sort((a, b) => {
       if (b.date !== a.date) return b.date.localeCompare(a.date);
       return (b.updatedAt || '').localeCompare(a.updatedAt || '');
     });
-  }, [attendance, groups, students, selectedGroupId, selectedStudentId, searchQuery]);
+  }, [attendance, groups, students, selectedGroupId, selectedStudentId]);
 
   const handleDelete = (id) => {
     onDeleteTransaction(id);
@@ -174,12 +166,12 @@ const History = ({ groups = [], students = [], transactions = [], attendance = [
   return (
     <div className="history-container">
       <div className="page-header history-header-wrapper">
-        <div>
+        <div className="history-header-text">
           <h2 className="page-title">{activeHistoryTab === 'points' ? 'Baholash Tarixi' : 'Davomad Tarixi'}</h2>
           <p className="page-subtitle">
             {activeHistoryTab === 'points'
-              ? 'Barcha berilgan likelar jurnali va ularni tahrirlash'
-              : 'Barcha belgilangan davomadlar jurnali va ularni bekor qilish'}
+              ? 'Barcha berilgan baholar jurnali'
+              : 'Barcha belgilangan davomadlar jurnali'}
           </p>
         </div>
 
@@ -204,45 +196,47 @@ const History = ({ groups = [], students = [], transactions = [], attendance = [
       {/* Filters and Search wrapper - separated from header for cleaner responsive design */}
       <div className="history-filters-bar glass-card">
         <div className="filter-group-row">
-          {/* Group Filter */}
-          <div className="custom-dropdown-container group-filter-dropdown">
-            <button 
-              type="button" 
-              className="filter-select-btn" 
-              onClick={() => setIsGroupDropdownOpen(!isGroupDropdownOpen)}
-            >
-              <span>{selectedGroupId === 'all' ? 'Barcha guruhlar' : (groups.find(g => g.id === selectedGroupId)?.name || 'Guruhsiz')}</span>
-              <span className="dropdown-arrow">▼</span>
-            </button>
-            {isGroupDropdownOpen && (
-              <div className="custom-dropdown-list glass">
-                <div 
-                  className={`custom-dropdown-item ${selectedGroupId === 'all' ? 'active' : ''}`}
-                  onClick={() => {
-                    setSelectedGroupId('all');
-                    setIsGroupDropdownOpen(false);
-                  }}
-                >
-                  Barcha guruhlar
-                </div>
-                {groups.map((group) => (
+          {/* Group Filter - not needed for Student mode */}
+          {userRole !== 'student' && (
+            <div className={`custom-dropdown-container group-filter-dropdown ${isGroupDropdownOpen ? 'dropdown-open' : ''}`}>
+              <button 
+                type="button" 
+                className="filter-select-btn" 
+                onClick={() => setIsGroupDropdownOpen(!isGroupDropdownOpen)}
+              >
+                <span>{selectedGroupId === 'all' ? 'Barcha guruhlar' : (groups.find(g => g.id === selectedGroupId)?.name || 'Guruhsiz')}</span>
+                <span className="dropdown-arrow">▼</span>
+              </button>
+              {isGroupDropdownOpen && (
+                <div className="custom-dropdown-list glass">
                   <div 
-                    key={group.id}
-                    className={`custom-dropdown-item ${selectedGroupId === group.id ? 'active' : ''}`}
+                    className={`custom-dropdown-item ${selectedGroupId === 'all' ? 'active' : ''}`}
                     onClick={() => {
-                      setSelectedGroupId(group.id);
+                      setSelectedGroupId('all');
                       setIsGroupDropdownOpen(false);
                     }}
                   >
-                    {group.name}
+                    Barcha guruhlar
                   </div>
-                ))}
-              </div>
-            )}
-          </div>
+                  {groups.map((group) => (
+                    <div 
+                      key={group.id}
+                      className={`custom-dropdown-item ${selectedGroupId === group.id ? 'active' : ''}`}
+                      onClick={() => {
+                        setSelectedGroupId(group.id);
+                        setIsGroupDropdownOpen(false);
+                      }}
+                    >
+                      {group.name}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Student Filter */}
-          <div className="custom-dropdown-container student-filter-dropdown">
+          <div className={`custom-dropdown-container student-filter-dropdown ${isStudentDropdownOpen ? 'dropdown-open' : ''}`}>
             <button 
               type="button" 
               className="filter-select-btn" 
@@ -278,22 +272,6 @@ const History = ({ groups = [], students = [], transactions = [], attendance = [
             )}
           </div>
         </div>
-
-        {/* Search */}
-        <div className="search-wrapper">
-          <input
-            type="text"
-            className="form-input search-input"
-            placeholder="Izoh bo'yicha qidirish..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
-          {searchQuery && (
-            <button className="clear-search-btn" onClick={() => setSearchQuery('')}>
-              ✕
-            </button>
-          )}
-        </div>
       </div>
 
       {activeHistoryTab === 'points' ? (
@@ -321,7 +299,7 @@ const History = ({ groups = [], students = [], transactions = [], attendance = [
                         <span className="time-text">{formattedTime}</span>
                       </span>
                       <span className="td-student">
-                        <div className="avatar-circle table-avatar" style={{ background: tx.studentColor, width: 30, height: 30, fontSize: '0.95rem', overflow: 'hidden' }}>
+                        <div className="avatar-circle table-avatar" style={{ background: tx.studentColor, width: 24, height: 24, fontSize: '0.8rem', overflow: 'hidden' }}>
                           {renderAvatar(tx.studentEmoji)}
                         </div>
                         <span className="student-table-name">{tx.studentName}</span>
@@ -353,9 +331,7 @@ const History = ({ groups = [], students = [], transactions = [], attendance = [
             <div className="empty-history">
               <div className="placeholder-icon">⏳</div>
               <h3>Harakatlar topilmadi</h3>
-              <p>
-                {searchQuery ? "Qidiruv bo'yicha hech qanday ma'lumot topilmadi." : "Hali hech qanday talaba baholanmagan."}
-              </p>
+              <p>Hali hech qanday talaba baholanmagan.</p>
             </div>
           )}
         </div>
@@ -408,7 +384,7 @@ const History = ({ groups = [], students = [], transactions = [], attendance = [
                         <span className="date-text">{item.date}</span>
                       </span>
                       <span className="td-student">
-                        <div className="avatar-circle table-avatar" style={{ background: item.studentColor, width: 30, height: 30, fontSize: '0.95rem', overflow: 'hidden' }}>
+                        <div className="avatar-circle table-avatar" style={{ background: item.studentColor, width: 24, height: 24, fontSize: '0.8rem', overflow: 'hidden' }}>
                           {renderAvatar(item.studentEmoji)}
                         </div>
                         <span className="student-table-name">{item.studentName}</span>
@@ -446,9 +422,7 @@ const History = ({ groups = [], students = [], transactions = [], attendance = [
             <div className="empty-history">
               <div className="placeholder-icon">🗓️</div>
               <h3>Davomad tarixlari topilmadi</h3>
-              <p>
-                {searchQuery ? "Qidiruv bo'yicha hech qanday ma'lumot topilmadi." : "Hali hech qanday davomad yozuvi mavjud emas."}
-              </p>
+              <p>Hali hech qanday davomad yozuvi mavjud emas.</p>
             </div>
           )}
         </div>
@@ -528,32 +502,57 @@ const History = ({ groups = [], students = [], transactions = [], attendance = [
           justify-content: space-between;
           align-items: center;
           flex-wrap: wrap;
-          gap: 16px;
-          margin-bottom: 24px;
+          gap: 12px;
+          margin-bottom: 14px;
+        }
+
+        .history-header-text {
+          min-height: 52px;
+          display: flex;
+          flex-direction: column;
+          justify-content: flex-start;
+        }
+
+        .history-header-text .page-title {
+          line-height: 1.1;
+          margin: 0;
+        }
+
+        .history-header-text .page-subtitle {
+          line-height: 1.2;
+          margin-top: 4px;
         }
 
         .segmented-control-brutalist {
           display: inline-flex;
+          align-items: stretch;
           border: 2px solid #000000;
           box-shadow: 4px 4px 0px #000000;
           background: #ffffff;
-          overflow: hidden;
         }
 
         .tab-btn-brutalist {
-          padding: 10px 20px;
+          flex: 1;
+          min-width: 155px;
+          padding: 8px 18px;
           border: none;
           background: #ffffff;
           font-family: var(--font-family);
           font-weight: 700;
           text-transform: uppercase;
-          font-size: 0.85rem;
+          font-size: 0.82rem;
+          line-height: 1.2;
+          white-space: nowrap;
           cursor: pointer;
           color: #000000;
-          transition: all var(--transition-fast);
-          display: flex;
+          display: inline-flex;
           align-items: center;
-          gap: 8px;
+          justify-content: center;
+          gap: 6px;
+          transition: background-color 0.15s ease, color 0.15s ease;
+          transform: none !important;
+          box-shadow: none !important;
+          user-select: none;
         }
 
         .tab-btn-brutalist:first-child {
@@ -563,11 +562,19 @@ const History = ({ groups = [], students = [], transactions = [], attendance = [
         .tab-btn-brutalist:hover {
           background: var(--accent-neon);
           color: #000000;
+          transform: none !important;
         }
 
         .tab-btn-brutalist.active {
           background: #000000;
           color: #ffffff;
+          transform: none !important;
+        }
+
+        .tab-btn-brutalist.active:hover {
+          background: #000000;
+          color: #ffffff;
+          transform: none !important;
         }
 
         .att-badge {
@@ -599,12 +606,14 @@ const History = ({ groups = [], students = [], transactions = [], attendance = [
         }
 
         .history-filters-bar {
+          position: relative;
+          z-index: 100;
           display: flex;
           justify-content: space-between;
           align-items: center;
-          gap: 16px;
-          margin-bottom: 24px;
-          padding: 16px 24px;
+          gap: 12px;
+          margin-bottom: 14px;
+          padding: 10px 16px;
           background: #ffffff;
           border: 1px solid #000000;
           border-radius: 0;
@@ -612,12 +621,17 @@ const History = ({ groups = [], students = [], transactions = [], attendance = [
 
         .filter-group-row {
           display: flex;
-          gap: 12px;
+          gap: 10px;
         }
 
         .custom-dropdown-container {
           position: relative;
-          width: 180px;
+          width: 170px;
+          z-index: 101;
+        }
+
+        .custom-dropdown-container.dropdown-open {
+          z-index: 105;
         }
 
         .filter-select-btn {
@@ -627,10 +641,10 @@ const History = ({ groups = [], students = [], transactions = [], attendance = [
           align-items: center;
           background: #ffffff;
           border: 1px solid #000000;
-          padding: 10px 14px;
+          padding: 6px 12px;
           cursor: pointer;
           font-family: var(--font-family);
-          font-size: 0.95rem;
+          font-size: 0.88rem;
           font-weight: 700;
           text-align: left;
           transition: all var(--transition-fast);
@@ -652,19 +666,19 @@ const History = ({ groups = [], students = [], transactions = [], attendance = [
           top: 100%;
           left: 0;
           width: 100%;
-          max-height: 180px;
+          max-height: 220px;
           overflow-y: auto;
           background: #ffffff;
           border: 2px solid #000000;
           box-shadow: 4px 4px 0px #000000;
-          z-index: 100;
+          z-index: 9999;
           margin-top: 4px;
           border-radius: 0;
         }
 
         .custom-dropdown-item {
-          padding: 10px 14px;
-          font-size: 0.9rem;
+          padding: 7px 12px;
+          font-size: 0.85rem;
           font-weight: 600;
           cursor: pointer;
           color: #000000;
@@ -713,33 +727,43 @@ const History = ({ groups = [], students = [], transactions = [], attendance = [
         }
 
         .history-card {
-          padding: 10px 24px;
+          position: relative;
+          z-index: 1;
+          padding: 2px 12px;
           overflow-x: auto;
+          background: #ffffff;
+          border: 1px solid #000000;
+          box-shadow: 4px 4px 0px #000000;
+          border-radius: 0;
         }
 
         .history-table {
-          min-width: 750px;
+          min-width: 720px;
         }
 
         .history-header {
           display: grid;
-          grid-template-columns: 140px 1.8fr 1.2fr 2fr 80px 110px;
-          padding: 18px 0;
-          border-bottom: 1px solid var(--border-color);
-          font-size: 0.85rem;
-          font-weight: 600;
+          padding: 6px 8px;
+          border-bottom: 2px solid #000000;
+          font-size: 0.74rem;
+          font-weight: 700;
           color: var(--text-secondary);
           text-transform: uppercase;
           letter-spacing: 0.5px;
+          align-items: center;
         }
 
         .history-row {
           display: grid;
-          grid-template-columns: 140px 1.8fr 1.2fr 2fr 80px 110px;
-          padding: 16px 0;
-          border-bottom: 1px solid var(--border-color);
+          padding: 6px 8px;
+          border-bottom: 1px solid rgba(0, 0, 0, 0.07);
           align-items: center;
-          font-size: 0.95rem;
+          font-size: 0.85rem;
+          transition: background-color var(--transition-fast);
+        }
+
+        .history-row:hover {
+          background-color: rgba(0, 0, 0, 0.025);
         }
 
         .history-row:last-child {
@@ -749,51 +773,75 @@ const History = ({ groups = [], students = [], transactions = [], attendance = [
         .td-time {
           display: flex;
           flex-direction: column;
-          gap: 2px;
+          gap: 1px;
         }
 
         .date-text {
           color: #000000;
+          font-size: 0.84rem;
           font-weight: 700;
         }
 
         .time-text {
-          font-size: 0.75rem;
-          color: #000000;
+          font-size: 0.72rem;
+          color: #666666;
+          font-weight: 500;
         }
 
         .td-student {
           display: flex;
           align-items: center;
-          gap: 10px;
+          gap: 8px;
+        }
+
+        .student-table-name {
+          font-size: 0.88rem;
+          font-weight: 700;
+          color: #000000;
         }
 
         .td-group {
-          color: #000000;
+          color: #222222;
+          font-size: 0.84rem;
+          font-weight: 600;
         }
 
         .td-comment {
-          color: #000000;
+          color: #333333;
+          font-size: 0.83rem;
           font-style: italic;
           overflow: hidden;
           text-overflow: ellipsis;
           white-space: nowrap;
-          padding-right: 12px;
+          padding-right: 10px;
         }
 
         .no-comment {
-          color: #000000;
-          opacity: 0.5;
+          color: #888888;
           font-style: normal;
+        }
+
+        .td-amount {
+          font-size: 0.92rem;
+          font-weight: 800;
+        }
+
+        .att-badge {
+          display: inline-block;
+          font-weight: 700;
+          font-size: 0.76rem;
+          padding: 2px 8px;
+          border: 1px solid #000000;
+          border-radius: 2px;
         }
 
         .btn-delete-tx {
           background: #ffffff;
           color: #000000;
           border: 1px dashed #000000;
-          padding: 6px 12px;
-          border-radius: 0;
-          font-size: 0.8rem;
+          padding: 3px 8px;
+          border-radius: 2px;
+          font-size: 0.72rem;
           font-weight: 700;
           cursor: pointer;
           transition: all var(--transition-fast);
@@ -806,14 +854,14 @@ const History = ({ groups = [], students = [], transactions = [], attendance = [
         }
 
         .empty-history {
-          padding: 60px 40px;
+          padding: 40px 20px;
           text-align: center;
-          max-width: 500px;
-          margin: 40px auto;
+          max-width: 450px;
+          margin: 20px auto;
           display: flex;
           flex-direction: column;
           align-items: center;
-          gap: 20px;
+          gap: 14px;
         }
 
         @media (max-width: 900px) {
@@ -837,6 +885,46 @@ const History = ({ groups = [], students = [], transactions = [], attendance = [
         }
 
         @media (max-width: 768px) {
+          .history-header-wrapper {
+            flex-direction: column;
+            align-items: stretch;
+            gap: 12px;
+            margin-bottom: 14px;
+          }
+
+          .history-header-text {
+            min-height: 56px;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+          }
+
+          .history-header-text .page-title {
+            font-size: 1.6rem;
+            line-height: 1.1;
+            margin: 0;
+          }
+
+          .history-header-text .page-subtitle {
+            font-size: 0.84rem;
+            line-height: 1.25;
+            margin-top: 4px;
+          }
+
+          .segmented-control-brutalist {
+            width: 100%;
+            display: flex;
+          }
+
+          .tab-btn-brutalist {
+            flex: 1;
+            min-width: unset;
+            padding: 8px 6px;
+            font-size: 0.78rem;
+            justify-content: center;
+            text-align: center;
+          }
+
           .history-header {
             display: none;
           }
@@ -856,73 +944,79 @@ const History = ({ groups = [], students = [], transactions = [], attendance = [
             display: flex;
             flex-direction: column;
             align-items: stretch;
-            gap: 12px;
-            padding: 20px;
+            gap: 5px;
+            padding: 8px 10px;
             background: #ffffff;
-            border: 1px solid #000000;
-            margin-bottom: 16px;
-            box-shadow: 4px 4px 0px #000000;
+            border: 1.5px solid #000000;
+            margin-bottom: 6px;
+            box-shadow: 2px 2px 0px #000000;
           }
 
           .td-time {
             flex-direction: row;
             justify-content: space-between;
-            font-size: 0.8rem;
-            border-bottom: 1px solid rgba(0, 0, 0, 0.08);
-            padding-bottom: 8px;
-            margin-bottom: 4px;
+            align-items: center;
+            font-size: 0.72rem;
+            border-bottom: none;
+            padding-bottom: 0;
+            margin-bottom: 0;
           }
 
           .date-text, .time-text {
-            color: var(--text-secondary);
-            font-weight: 500;
+            color: #666666;
+            font-weight: 600;
+            font-size: 0.72rem;
           }
 
           .td-student {
             display: flex;
             align-items: center;
-            gap: 12px;
+            gap: 6px;
           }
 
           .student-table-name {
-            font-size: 1.1rem;
+            font-size: 0.88rem;
             font-weight: 700;
           }
 
           .td-group {
-            font-size: 0.85rem;
+            font-size: 0.78rem;
             font-weight: 600;
-            color: #000000;
-            opacity: 0.6;
-            padding-left: 42px;
-            margin-top: -8px;
+            color: #555555;
+            padding-left: 0;
+            margin-top: 0;
           }
 
           .td-comment {
-            padding-left: 42px;
+            padding-left: 0;
             white-space: normal;
-            font-size: 0.9rem;
-            margin-top: 4px;
+            font-size: 0.78rem;
+            color: #333333;
+            margin-top: 1px;
+            background: #f8f9fa;
+            padding: 2px 6px;
+            border-left: 2px solid #000000;
           }
 
           .td-amount {
-            text-align: left;
-            padding-left: 42px;
-            font-size: 1.2rem;
-            margin-top: 6px;
+            text-align: right;
+            padding-left: 0;
+            font-size: 0.95rem;
+            margin-top: 0;
           }
 
           .td-action {
             text-align: right;
-            margin-top: 8px;
-            border-top: 1px solid rgba(0, 0, 0, 0.08);
-            padding-top: 12px;
+            margin-top: 2px;
+            border-top: 1px dashed rgba(0, 0, 0, 0.12);
+            padding-top: 4px;
           }
 
           .btn-delete-tx {
-            width: 100%;
-            padding: 10px;
-            text-align: center;
+            width: auto;
+            padding: 3px 8px;
+            font-size: 0.72rem;
+            display: inline-block;
           }
         }
       `}</style>
