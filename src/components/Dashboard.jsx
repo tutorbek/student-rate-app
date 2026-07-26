@@ -591,10 +591,25 @@ const Dashboard = ({ setActiveTab, onSelectGroup, groups = [], students = [], tr
 
         /* Activity Log */
         .activity-log-card {
-          padding: 24px;
-          height: 480px;      /* Fixed height for stability */
-          overflow-y: auto;   /* Internal scroll */
-          border: 1px solid #000000;
+          padding: 20px;
+          height: 380px;
+          overflow-y: auto;
+          overscroll-behavior-y: auto;
+          touch-action: pan-y;
+          -webkit-overflow-scrolling: touch;
+          border: 2px solid #000000;
+          box-shadow: 3px 3px 0px #000000;
+          background: #ffffff;
+        }
+
+        @media (max-width: 900px) {
+          .activity-log-card {
+            padding: 16px;
+            height: 320px;
+            overscroll-behavior-y: auto;
+            touch-action: pan-y;
+            -webkit-overflow-scrolling: touch;
+          }
         }
 
         .activity-list {
