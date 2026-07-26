@@ -433,12 +433,12 @@ const GroupDetail = ({ group, students, transactions, quickTags, onBack, onAddSt
               {/* Left Column: Student Info & Direct Input */}
               <div className="score-modal-left">
                 <div className="score-modal-header">
-                  <div className="avatar-circle" style={{ background: scoringStudent.color, width: 36, height: 36, fontSize: '1.1rem', overflow: 'hidden' }}>
+                  <div className="avatar-circle" style={{ background: scoringStudent.color, width: 44, height: 44, fontSize: '1.25rem', overflow: 'hidden' }}>
                     {renderAvatar(scoringStudent.emoji)}
                   </div>
                   <div>
-                    <h3 className="modal-title" style={{ margin: 0, fontSize: '0.98rem' }}>{scoringStudent.name}</h3>
-                    <p className="score-modal-subtitle" style={{ fontSize: '0.8rem', marginTop: '1px' }}>
+                    <h3 className="modal-title" style={{ margin: 0, fontSize: '1.08rem' }}>{scoringStudent.name}</h3>
+                    <p className="score-modal-subtitle" style={{ fontSize: '0.85rem', marginTop: '2px' }}>
                       Like berish: <span className={Number(scoreAmount) >= 0 ? 'text-positive' : 'text-negative'}>
                         {scoreAmount !== '' ? (Number(scoreAmount) >= 0 ? `+${scoreAmount}` : scoreAmount) : '—'}
                       </span>
@@ -447,12 +447,12 @@ const GroupDetail = ({ group, students, transactions, quickTags, onBack, onAddSt
                 </div>
 
                 {/* Like Amount Input */}
-                <div className="form-group" style={{ marginBottom: '8px' }}>
-                  <label className="form-label" style={{ fontSize: '0.7rem', marginBottom: '3px' }}>Like miqdori (kiritish)</label>
+                <div className="form-group" style={{ marginBottom: '10px' }}>
+                  <label className="form-label" style={{ fontSize: '0.75rem', marginBottom: '4px' }}>Like miqdori (kiritish)</label>
                   <input
                     type="number"
                     className="form-input"
-                    style={{ padding: '6px 10px', fontSize: '0.84rem', height: '34px' }}
+                    style={{ padding: '8px 12px', fontSize: '0.88rem', height: '38px' }}
                     value={scoreAmount}
                     onChange={(e) => setScoreAmount(e.target.value)}
                     placeholder="Masalan: 85, 50, -10"
@@ -460,29 +460,29 @@ const GroupDetail = ({ group, students, transactions, quickTags, onBack, onAddSt
                 </div>
 
                 {/* Custom Comment form */}
-                <div className="form-group" style={{ marginBottom: '8px' }}>
-                  <label className="form-label" style={{ fontSize: '0.7rem', marginBottom: '3px' }}>Izoh (ixtiyoriy)</label>
+                <div className="form-group" style={{ marginBottom: '10px' }}>
+                  <label className="form-label" style={{ fontSize: '0.75rem', marginBottom: '4px' }}>Izoh (ixtiyoriy)</label>
                   <input
                     type="text"
                     className="form-input"
-                    style={{ padding: '6px 10px', fontSize: '0.84rem', height: '34px' }}
+                    style={{ padding: '8px 12px', fontSize: '0.88rem', height: '38px' }}
                     placeholder="Izoh yozing..."
                     value={customComment}
                     onChange={(e) => setCustomComment(e.target.value)}
                   />
                 </div>
 
-                <div className="modal-actions" style={{ marginTop: '10px', display: 'flex', gap: '8px' }}>
+                <div className="modal-actions" style={{ marginTop: '12px', display: 'flex', gap: '10px' }}>
                   <button 
                     className="btn btn-secondary scale-active" 
-                    style={{ flex: 1, padding: '7px 8px', fontSize: '0.75rem', whiteSpace: 'nowrap', justifyContent: 'center' }} 
+                    style={{ flex: 1, padding: '8px 12px', fontSize: '0.8rem', whiteSpace: 'nowrap', justifyContent: 'center' }} 
                     onClick={() => setScoringStudent(null)}
                   >
                     Bekor qilish
                   </button>
                   <button 
                     className="btn btn-primary scale-active" 
-                    style={{ flex: 1, padding: '7px 8px', fontSize: '0.75rem', whiteSpace: 'nowrap', justifyContent: 'center' }}
+                    style={{ flex: 1, padding: '8px 12px', fontSize: '0.8rem', whiteSpace: 'nowrap', justifyContent: 'center' }}
                     onClick={() => handleAwardPoints()}
                     disabled={scoreAmount === '' || isNaN(Number(scoreAmount))}
                   >
@@ -494,7 +494,7 @@ const GroupDetail = ({ group, students, transactions, quickTags, onBack, onAddSt
               {/* Right Column: Quick Comment Templates with badges */}
               {normalizedTags.length > 0 && (
                 <div className="score-modal-right">
-                  <label className="form-label" style={{ fontSize: '0.7rem', marginBottom: '6px' }}>Tezkor izoh shablonlari</label>
+                  <label className="form-label" style={{ fontSize: '0.75rem', marginBottom: '8px' }}>Tezkor izoh shablonlari</label>
                   <div className="quick-tags-list">
                     {normalizedTags.map((tagObj, idx) => {
                       const isSelected = customComment === tagObj.text && String(scoreAmount) === String(tagObj.points);
@@ -940,25 +940,26 @@ const GroupDetail = ({ group, students, transactions, quickTags, onBack, onAddSt
 
         /* Score Modal Styles */
         .score-modal {
-          max-width: 400px;
-          padding: 14px 16px;
+          max-width: 440px;
+          padding: 16px 20px;
         }
 
         .score-modal.has-quick-tags {
-          max-width: 560px;
+          max-width: 660px;
+          padding: 20px 24px;
         }
 
         .score-modal-body {
           display: flex;
           flex-direction: column;
-          gap: 14px;
+          gap: 16px;
         }
 
         @media (min-width: 769px) {
           .score-modal.has-quick-tags .score-modal-body {
             display: grid;
-            grid-template-columns: 1fr 1.1fr;
-            gap: 16px;
+            grid-template-columns: 1fr 1.25fr;
+            gap: 24px;
             align-items: start;
           }
         }
@@ -966,29 +967,29 @@ const GroupDetail = ({ group, students, transactions, quickTags, onBack, onAddSt
         .score-modal-left {
           display: flex;
           flex-direction: column;
-          gap: 10px;
+          gap: 12px;
         }
 
         .score-modal-right {
           display: flex;
           flex-direction: column;
-          gap: 6px;
-          border-left: 1.5px solid #000000;
-          padding-left: 16px;
+          gap: 8px;
+          border-left: 2px solid #000000;
+          padding-left: 20px;
         }
 
         @media (max-width: 768px) {
           .score-modal {
             width: 94% !important;
             max-width: 380px;
-            padding: 12px 14px !important;
+            padding: 14px 16px !important;
           }
 
           .score-modal-right {
             border-left: none;
             padding-left: 0;
             border-top: 1.5px dashed #000000;
-            padding-top: 10px;
+            padding-top: 12px;
             margin-top: 4px;
           }
         }
@@ -996,24 +997,24 @@ const GroupDetail = ({ group, students, transactions, quickTags, onBack, onAddSt
         .score-modal-header {
           display: flex;
           align-items: center;
-          gap: 10px;
-          margin-bottom: 2px;
-          border-bottom: 1.5px solid #000000;
-          padding-bottom: 8px;
+          gap: 12px;
+          margin-bottom: 4px;
+          border-bottom: 2px solid #000000;
+          padding-bottom: 10px;
         }
 
         .score-modal-subtitle {
-          font-size: 0.8rem;
+          font-size: 0.85rem;
           font-weight: 700;
           color: var(--text-secondary);
-          margin-top: 1px;
+          margin-top: 2px;
         }
 
         .quick-tags-list {
           display: flex;
           flex-direction: column;
-          gap: 5px;
-          max-height: 215px;
+          gap: 6px;
+          max-height: 290px;
           overflow-y: auto;
           padding: 2px 4px 2px 0;
         }
@@ -1022,17 +1023,18 @@ const GroupDetail = ({ group, students, transactions, quickTags, onBack, onAddSt
           display: flex;
           justify-content: space-between;
           align-items: center;
-          gap: 8px;
-          padding: 6px 10px;
+          gap: 10px;
+          padding: 8px 12px;
           background: #ffffff;
           border: 1.5px solid #000000;
           box-shadow: 2px 2px 0px #000000;
           cursor: pointer;
           font-family: var(--font-family);
-          font-size: 0.78rem;
+          font-size: 0.84rem;
           font-weight: 700;
           text-align: left;
           color: #000000;
+          white-space: nowrap;
           transition: all 0.15s ease;
         }
 
@@ -1046,9 +1048,9 @@ const GroupDetail = ({ group, students, transactions, quickTags, onBack, onAddSt
         }
 
         .quick-tag-badge {
-          font-size: 0.72rem;
+          font-size: 0.78rem;
           font-weight: 800;
-          padding: 1px 6px;
+          padding: 2px 8px;
           border-radius: 2px;
           border: 1px solid #000000;
           white-space: nowrap;
