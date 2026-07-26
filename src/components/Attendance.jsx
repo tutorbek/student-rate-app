@@ -1092,9 +1092,7 @@ const Attendance = ({ groups = [], students = [], attendance = [], onSaveAttenda
           transition: transform var(--transition-fast);
         }
 
-        .custom-select-container:has(.custom-select-options) .select-arrow {
-          transform: rotate(180deg);
-        }
+
 
         .custom-select-overlay {
           position: fixed;
