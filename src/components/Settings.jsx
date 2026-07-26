@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { exportDatabase, DEFAULT_QUICK_TAGS } from '../utils/db';
+import { exportDatabase, DEFAULT_QUICK_TAGS, normalizeQuickTags } from '../utils/db';
 
 const Settings = ({
   quickTags,
@@ -85,12 +85,7 @@ const Settings = ({
 
   // Normalized Quick Tags Memo
   const normalizedTags = React.useMemo(() => {
-    if (!Array.isArray(quickTags)) return [];
-    return quickTags.map(tag => {
-      if (typeof tag === 'string') return { text: tag, points: 0 };
-      if (tag && typeof tag === 'object') return { text: String(tag.text || ''), points: Number(tag.points) || 0 };
-      return { text: String(tag || ''), points: 0 };
-    });
+    return normalizeQuickTags(quickTags);
   }, [quickTags]);
 
   // Quick Tags Management

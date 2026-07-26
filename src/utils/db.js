@@ -47,34 +47,53 @@ export const DEFAULT_QUICK_TAGS = [
 
 const DEFAULT_POINTS_MAP = {
   'Uy vazifasi bajarildi 📚': 85,
+  'Uy vazifasi bajardi 📚': 85,
   'Mustaqil izlanish 🔍': 50,
   'Uy vazifasi chala bajarildi 🔄': 20,
   'Darsga kechikdi ⏰': -10,
   'Uy vazifasi bajarilmadi ❌': -30,
+  'Uy vazifasini topshirmadi ❌': -30,
   'Darsga kelmadi 🚫': -40,
+  'Faol ishtirok 🌟': 50,
+  'Ajoyib javob 💡': 20,
+  'Guruh ishida faollik 👥': 20,
+  'Intizom buzilishi ⚠️': -15,
 };
 
 export const normalizeQuickTag = (tag) => {
+  if (!tag) return null;
+
+  let text = '';
+  let points = undefined;
+
   if (typeof tag === 'string') {
-    const text = tag.trim();
-    const defaultPts = DEFAULT_POINTS_MAP[text];
-    return { text, points: defaultPts !== undefined ? defaultPts : 0 };
+    text = tag.trim();
+  } else if (typeof tag === 'object') {
+    text = String(tag.text || '').trim();
+    if (tag.points !== undefined && tag.points !== null && tag.points !== '') {
+      points = Number(tag.points);
+    }
   }
-  if (tag && typeof tag === 'object' && tag.text !== undefined) {
-    const text = String(tag.text).trim();
-    const pts = Number(tag.points);
+
+  if (!text) return null;
+
+  // If points is not a valid non-zero number, check default points map
+  if (points === undefined || isNaN(points) || points === 0) {
     const defaultPts = DEFAULT_POINTS_MAP[text];
-    return {
-      text,
-      points: !isNaN(pts) && pts !== 0 ? pts : (defaultPts !== undefined ? defaultPts : 0)
-    };
+    if (defaultPts !== undefined) {
+      points = defaultPts;
+    } else {
+      points = points || 0;
+    }
   }
-  return { text: String(tag || ''), points: 0 };
+
+  return { text, points };
 };
 
 export const normalizeQuickTags = (tags) => {
   if (!Array.isArray(tags) || tags.length === 0) return DEFAULT_QUICK_TAGS;
-  return tags.map(normalizeQuickTag);
+  const result = tags.map(normalizeQuickTag).filter(Boolean);
+  return result.length > 0 ? result : DEFAULT_QUICK_TAGS;
 };
 
 // Helper: Generate Unique ID

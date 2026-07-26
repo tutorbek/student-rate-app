@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { getStudentScore } from '../utils/db';
+import { getStudentScore, normalizeQuickTags } from '../utils/db';
 
 const renderAvatar = (emoji) => {
   if (!emoji) return '❓';
@@ -59,12 +59,7 @@ const GroupDetail = ({ group, students, transactions, quickTags, onBack, onAddSt
   const [customComment, setCustomComment] = useState('');
 
   const normalizedTags = useMemo(() => {
-    if (!Array.isArray(quickTags)) return [];
-    return quickTags.map(tag => {
-      if (typeof tag === 'string') return { text: tag, points: 0 };
-      if (tag && typeof tag === 'object') return { text: String(tag.text || ''), points: Number(tag.points) || 0 };
-      return { text: String(tag || ''), points: 0 };
-    }).filter(t => t.text.trim().length > 0);
+    return normalizeQuickTags(quickTags);
   }, [quickTags]);
 
   // Filter students in this group
