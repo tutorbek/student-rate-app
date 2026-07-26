@@ -9,7 +9,7 @@ const renderAvatar = (emoji) => {
   return emoji;
 };
 
-const History = ({ groups = [], students = [], transactions = [], attendance = [], onDeleteTransaction, onDeleteAttendance, showToast, userRole, studentGroupId }) => {
+const History = ({ groups = [], students = [], transactions = [], attendance = [], onDeleteTransaction, onDeleteAttendance, showToast, userRole }) => {
   const [activeHistoryTab, setActiveHistoryTab] = useState('points'); // 'points' | 'attendance'
   const [searchQuery, setSearchQuery] = useState('');
   const [confirmDeleteId, setConfirmDeleteId] = useState(null);
@@ -18,16 +18,6 @@ const History = ({ groups = [], students = [], transactions = [], attendance = [
   const [selectedStudentId, setSelectedStudentId] = useState('all');
   const [isGroupDropdownOpen, setIsGroupDropdownOpen] = useState(false);
   const [isStudentDropdownOpen, setIsStudentDropdownOpen] = useState(false);
-
-  // Auto-select student's group in student mode
-  useEffect(() => {
-    if (userRole === 'student') {
-      const targetGroup = studentGroupId || (groups.length > 0 ? groups[0].id : 'all');
-      if (targetGroup && targetGroup !== 'all') {
-        setSelectedGroupId(targetGroup);
-      }
-    }
-  }, [userRole, studentGroupId, groups]);
 
   useEffect(() => {
     const handleKeyDown = (e) => {
@@ -214,44 +204,42 @@ const History = ({ groups = [], students = [], transactions = [], attendance = [
       {/* Filters and Search wrapper - separated from header for cleaner responsive design */}
       <div className="history-filters-bar glass-card">
         <div className="filter-group-row">
-          {/* Group Filter (Teachers Only) */}
-          {userRole !== 'student' && (
-            <div className="custom-dropdown-container group-filter-dropdown">
-              <button 
-                type="button" 
-                className="filter-select-btn" 
-                onClick={() => setIsGroupDropdownOpen(!isGroupDropdownOpen)}
-              >
-                <span>{selectedGroupId === 'all' ? 'Barcha guruhlar' : (groups.find(g => g.id === selectedGroupId)?.name || 'Guruhsiz')}</span>
-                <span className="dropdown-arrow">▼</span>
-              </button>
-              {isGroupDropdownOpen && (
-                <div className="custom-dropdown-list glass">
+          {/* Group Filter */}
+          <div className="custom-dropdown-container group-filter-dropdown">
+            <button 
+              type="button" 
+              className="filter-select-btn" 
+              onClick={() => setIsGroupDropdownOpen(!isGroupDropdownOpen)}
+            >
+              <span>{selectedGroupId === 'all' ? 'Barcha guruhlar' : (groups.find(g => g.id === selectedGroupId)?.name || 'Guruhsiz')}</span>
+              <span className="dropdown-arrow">▼</span>
+            </button>
+            {isGroupDropdownOpen && (
+              <div className="custom-dropdown-list glass">
+                <div 
+                  className={`custom-dropdown-item ${selectedGroupId === 'all' ? 'active' : ''}`}
+                  onClick={() => {
+                    setSelectedGroupId('all');
+                    setIsGroupDropdownOpen(false);
+                  }}
+                >
+                  Barcha guruhlar
+                </div>
+                {groups.map((group) => (
                   <div 
-                    className={`custom-dropdown-item ${selectedGroupId === 'all' ? 'active' : ''}`}
+                    key={group.id}
+                    className={`custom-dropdown-item ${selectedGroupId === group.id ? 'active' : ''}`}
                     onClick={() => {
-                      setSelectedGroupId('all');
+                      setSelectedGroupId(group.id);
                       setIsGroupDropdownOpen(false);
                     }}
                   >
-                    Barcha guruhlar
+                    {group.name}
                   </div>
-                  {groups.map((group) => (
-                    <div 
-                      key={group.id}
-                      className={`custom-dropdown-item ${selectedGroupId === group.id ? 'active' : ''}`}
-                      onClick={() => {
-                        setSelectedGroupId(group.id);
-                        setIsGroupDropdownOpen(false);
-                      }}
-                    >
-                      {group.name}
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
+                ))}
+              </div>
+            )}
+          </div>
 
           {/* Student Filter */}
           <div className="custom-dropdown-container student-filter-dropdown">
@@ -828,52 +816,16 @@ const History = ({ groups = [], students = [], transactions = [], attendance = [
           gap: 20px;
         }
 
-        .history-filters-bar {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          gap: 16px;
-          padding: 16px 24px;
-          margin-bottom: 24px;
-          position: relative;
-          z-index: 100;
-          overflow: visible !important;
-        }
-
-        .custom-dropdown-container {
-          position: relative;
-          width: 180px;
-          z-index: 110;
-        }
-
-        .custom-dropdown-list {
-          position: absolute;
-          top: 100%;
-          left: 0;
-          width: 100%;
-          max-height: 220px;
-          overflow-y: auto;
-          background: #ffffff;
-          border: 2px solid #000000;
-          box-shadow: 6px 6px 0px #000000;
-          z-index: 9999 !important;
-          margin-top: 4px;
-        }
-
         @media (max-width: 900px) {
           .history-filters-bar {
             flex-direction: column;
             align-items: stretch;
             gap: 12px;
-            padding: 14px;
-            position: relative;
-            z-index: 100;
-            overflow: visible !important;
+            padding: 16px;
           }
           .filter-group-row {
             flex-direction: column;
             width: 100%;
-            gap: 10px;
           }
           .custom-dropdown-container {
             width: 100%;
@@ -886,7 +838,7 @@ const History = ({ groups = [], students = [], transactions = [], attendance = [
 
         @media (max-width: 768px) {
           .history-header {
-            display: none !important;
+            display: none;
           }
           
           .history-table {
@@ -901,114 +853,76 @@ const History = ({ groups = [], students = [], transactions = [], attendance = [
           }
 
           .history-row {
-            display: flex !important;
-            flex-direction: column !important;
-            grid-template-columns: none !important;
-            gap: 4px !important;
-            padding: 8px 12px !important;
-            background: #ffffff !important;
-            border: 1.5px solid #000000 !important;
-            margin-bottom: 8px !important;
-            box-shadow: 3px 3px 0px #000000 !important;
-            box-sizing: border-box !important;
-            width: 100% !important;
+            display: flex;
+            flex-direction: column;
+            align-items: stretch;
+            gap: 12px;
+            padding: 20px;
+            background: #ffffff;
+            border: 1px solid #000000;
+            margin-bottom: 16px;
+            box-shadow: 4px 4px 0px #000000;
           }
 
           .td-time {
-            display: inline-flex !important;
-            align-items: center !important;
-            gap: 4px !important;
-            font-size: 0.72rem !important;
-            color: #777777 !important;
-            border: none !important;
-            padding: 0 !important;
-            margin: 0 !important;
+            flex-direction: row;
+            justify-content: space-between;
+            font-size: 0.8rem;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+            padding-bottom: 8px;
+            margin-bottom: 4px;
           }
 
           .date-text, .time-text {
-            color: #777777 !important;
-            font-weight: 600 !important;
-            font-size: 0.72rem !important;
+            color: var(--text-secondary);
+            font-weight: 500;
           }
 
           .td-student {
-            display: flex !important;
-            align-items: center !important;
-            gap: 8px !important;
-            min-width: 0 !important;
-            flex: 1 !important;
-          }
-
-          .td-student .avatar-circle {
-            width: 24px !important;
-            height: 24px !important;
-            font-size: 0.8rem !important;
-            flex-shrink: 0 !important;
+            display: flex;
+            align-items: center;
+            gap: 12px;
           }
 
           .student-table-name {
-            font-size: 0.85rem !important;
-            font-weight: 800 !important;
-            color: #000000 !important;
-            white-space: nowrap !important;
-            overflow: hidden !important;
-            text-overflow: ellipsis !important;
+            font-size: 1.1rem;
+            font-weight: 700;
           }
 
           .td-group {
-            padding: 1px 6px !important;
-            margin-top: 0 !important;
-            font-size: 0.7rem !important;
-            color: #444444 !important;
-            font-weight: 600 !important;
-            background: rgba(0, 0, 0, 0.05) !important;
-            border-radius: 4px !important;
-            white-space: nowrap !important;
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: #000000;
+            opacity: 0.6;
+            padding-left: 42px;
+            margin-top: -8px;
           }
 
           .td-comment {
-            padding: 0 !important;
-            margin-top: 0 !important;
-            font-size: 0.75rem !important;
-            color: #444444 !important;
-            background: transparent !important;
-            border: none !important;
-            font-style: italic !important;
-            white-space: nowrap !important;
-            overflow: hidden !important;
-            text-overflow: ellipsis !important;
-            max-width: 170px !important;
+            padding-left: 42px;
+            white-space: normal;
+            font-size: 0.9rem;
+            margin-top: 4px;
           }
 
           .td-amount {
-            text-align: right !important;
-            padding: 1px 6px !important;
-            margin-top: 0 !important;
-            font-size: 0.82rem !important;
-            font-weight: 800 !important;
-            background: #E7FF56 !important;
-            color: #000000 !important;
-            border: 1px solid #000000 !important;
-            border-radius: 3px !important;
+            text-align: left;
+            padding-left: 42px;
+            font-size: 1.2rem;
+            margin-top: 6px;
           }
 
           .td-action {
-            text-align: right !important;
-            margin-top: 0 !important;
-            border-top: none !important;
-            padding-top: 0 !important;
+            text-align: right;
+            margin-top: 8px;
+            border-top: 1px solid rgba(0, 0, 0, 0.08);
+            padding-top: 12px;
           }
 
           .btn-delete-tx {
-            width: auto !important;
-            padding: 3px 8px !important;
-            font-size: 0.7rem !important;
-            font-weight: 700 !important;
-            text-align: center !important;
-            background: #ff3b30 !important;
-            color: #ffffff !important;
-            border: 1px solid #ff3b30 !important;
-            border-radius: 3px !important;
+            width: 100%;
+            padding: 10px;
+            text-align: center;
           }
         }
       `}</style>

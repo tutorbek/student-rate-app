@@ -831,8 +831,6 @@ function App() {
     setActiveTab('groups');
   };
 
-
-
   // Render Page Content
   const renderContent = () => {
     switch (activeTab) {
@@ -899,7 +897,6 @@ function App() {
             onDeleteAttendance={handleDeleteAttendance}
             showToast={showToast}
             userRole={userRole}
-            studentGroupId={studentGroupId}
           />
         );
       case 'attendance':

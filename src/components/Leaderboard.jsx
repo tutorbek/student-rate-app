@@ -1390,76 +1390,26 @@ const Leaderboard = ({
           gap: 20px;
         }
 
-        @media (max-width: 900px) {
+        @media (max-width: 480px) {
           .podium-container {
-            height: 190px;
+            height: 240px;
             gap: 8px;
-            margin-bottom: 20px;
           }
-
-          .podium-step {
-            width: 32%;
-          }
-
-          .bar-1 { height: 95px; }
-          .bar-2 { height: 68px; }
-          .bar-3 { height: 48px; }
-
+          .bar-1 { height: 120px; }
+          .bar-2 { height: 85px; }
+          .bar-3 { height: 60px; }
           .podium-avatar {
-            width: 36px;
-            height: 36px;
-            font-size: 1.1rem;
+            width: 48px;
+            height: 48px;
+            font-size: 1.5rem;
           }
-
           .first-place-avatar {
-            width: 46px;
-            height: 46px;
-            font-size: 1.3rem;
+            width: 60px;
+            height: 60px;
+            font-size: 1.8rem;
           }
-
           .podium-name {
-            font-size: 0.78rem;
-            max-width: 85px;
-          }
-
-          .podium-score {
-            font-size: 0.72rem;
-            padding: 2px 6px;
-          }
-
-          .standings-card {
-            padding: 8px 10px;
-          }
-
-          .standings-header {
-            grid-template-columns: 36px 1fr 65px;
-            padding: 8px 0;
-            font-size: 0.7rem;
-          }
-
-          .standings-row {
-            grid-template-columns: 36px 1fr 65px;
-            padding: 6px 0;
-            min-height: 42px;
-          }
-
-          .td-avatar {
-            width: 28px !important;
-            height: 28px !important;
-            font-size: 0.9rem !important;
-          }
-
-          .student-table-name {
-            font-size: 0.82rem;
-          }
-
-          .student-mobile-group {
-            font-size: 0.7rem;
-          }
-
-          .score-pill {
-            padding: 3px 8px;
-            font-size: 0.78rem;
+            font-size: 0.85rem;
           }
         }
       `}</style>
