@@ -58,6 +58,15 @@ const GroupDetail = ({ group, students, transactions, quickTags, onBack, onAddSt
   const [scoreAmount, setScoreAmount] = useState(''); // string for free editing
   const [customComment, setCustomComment] = useState('');
 
+  const normalizedTags = useMemo(() => {
+    if (!Array.isArray(quickTags)) return [];
+    return quickTags.map(tag => {
+      if (typeof tag === 'string') return { text: tag, points: 0 };
+      if (tag && typeof tag === 'object') return { text: String(tag.text || ''), points: Number(tag.points) || 0 };
+      return { text: String(tag || ''), points: 0 };
+    }).filter(t => t.text.trim().length > 0);
+  }, [quickTags]);
+
   // Filter students in this group
   const groupStudents = useMemo(() => {
     return students
@@ -397,7 +406,10 @@ const GroupDetail = ({ group, students, transactions, quickTags, onBack, onAddSt
       {/* Score and Comment Input Modal */}
       {scoringStudent && createPortal(
         <div className="modal-overlay" onClick={() => setScoringStudent(null)}>
-          <div className="modal-content glass score-modal" onClick={(e) => e.stopPropagation()}>
+          <div 
+            className={`modal-content glass score-modal ${normalizedTags.length > 0 ? 'has-quick-tags' : 'no-quick-tags'}`} 
+            onClick={(e) => e.stopPropagation()}
+          >
             <button 
               type="button" 
               className="modal-close-btn" 
@@ -406,89 +418,89 @@ const GroupDetail = ({ group, students, transactions, quickTags, onBack, onAddSt
             >
               ✕
             </button>
-            <div className="score-modal-header">
-              <div className="avatar-circle" style={{ background: scoringStudent.color, width: 40, height: 40, fontSize: '1.2rem', overflow: 'hidden' }}>
-                {renderAvatar(scoringStudent.emoji)}
-              </div>
-              <div>
-                <h3 className="modal-title" style={{ margin: 0 }}>{scoringStudent.name}</h3>
-                <p className="score-modal-subtitle">
-                  Like berish: <span className={Number(scoreAmount) >= 0 ? 'text-positive' : 'text-negative'}>
-                    {scoreAmount !== '' ? (Number(scoreAmount) >= 0 ? `+${scoreAmount}` : scoreAmount) : '—'}
-                  </span>
-                </p>
-              </div>
-            </div>
 
-            {/* Like preset buttons */}
-            <div className="form-group">
-              <label className="form-label">Tezkor like miqdori</label>
-              <div className="like-presets">
-                {[2, -2, 5, -2].map((preset, i) => (
-                  <button
-                    key={i}
-                    type="button"
-                    className={`like-preset-btn scale-active ${String(scoreAmount) === String(preset) ? 'active' : ''} ${preset > 0 ? 'positive' : 'negative'}`}
-                    onClick={() => setScoreAmount(String(preset))}
-                  >
-                    {preset > 0 ? `+${preset}` : preset}
+            <div className="score-modal-body">
+              {/* Left Column: Student Info & Direct Input */}
+              <div className="score-modal-left">
+                <div className="score-modal-header">
+                  <div className="avatar-circle" style={{ background: scoringStudent.color, width: 44, height: 44, fontSize: '1.3rem', overflow: 'hidden' }}>
+                    {renderAvatar(scoringStudent.emoji)}
+                  </div>
+                  <div>
+                    <h3 className="modal-title" style={{ margin: 0 }}>{scoringStudent.name}</h3>
+                    <p className="score-modal-subtitle">
+                      Like berish: <span className={Number(scoreAmount) >= 0 ? 'text-positive' : 'text-negative'}>
+                        {scoreAmount !== '' ? (Number(scoreAmount) >= 0 ? `+${scoreAmount}` : scoreAmount) : '—'}
+                      </span>
+                    </p>
+                  </div>
+                </div>
+
+                {/* Like Amount Input */}
+                <div className="form-group">
+                  <label className="form-label">Like miqdori (kiritish)</label>
+                  <input
+                    type="number"
+                    className="form-input"
+                    value={scoreAmount}
+                    onChange={(e) => setScoreAmount(e.target.value)}
+                    placeholder="Masalan: 85, 50, -10"
+                  />
+                </div>
+
+                {/* Custom Comment form */}
+                <div className="form-group">
+                  <label className="form-label">Izoh (ixtiyoriy)</label>
+                  <input
+                    type="text"
+                    className="form-input"
+                    placeholder="Izoh yozing..."
+                    value={customComment}
+                    onChange={(e) => setCustomComment(e.target.value)}
+                  />
+                </div>
+
+                <div className="modal-actions" style={{ marginTop: '16px' }}>
+                  <button className="btn btn-secondary scale-active" onClick={() => setScoringStudent(null)}>
+                    Bekor qilish
                   </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Like Amount Input */}
-            <div className="form-group">
-              <label className="form-label">Like miqdori (erkin kiritish)</label>
-              <input
-                type="number"
-                className="form-input"
-                value={scoreAmount}
-                onChange={(e) => setScoreAmount(e.target.value)}
-                placeholder="Masalan: 3, 10, -5"
-              />
-            </div>
-
-            {/* Quick tags grid */}
-            <div className="form-group">
-              <label className="form-label">Tezkor izoh shablonlari</label>
-              <div className="quick-tags-picker">
-                {quickTags.map((tag) => (
-                  <button
-                    key={tag}
-                    type="button"
-                    className="quick-tag-bubble scale-active"
-                    onClick={() => handleAwardPoints(tag)}
+                  <button 
+                    className="btn btn-primary scale-active" 
+                    onClick={() => handleAwardPoints()}
+                    disabled={scoreAmount === '' || isNaN(Number(scoreAmount))}
                   >
-                    {tag}
+                    Likeni tasdiqlash
                   </button>
-                ))}
+                </div>
               </div>
-            </div>
 
-            {/* Custom Comment form */}
-            <div className="form-group">
-              <label className="form-label">Yoki boshqa izoh yozing (ixtiyoriy)</label>
-              <input
-                type="text"
-                className="form-input"
-                placeholder="Izoh yozing..."
-                value={customComment}
-                onChange={(e) => setCustomComment(e.target.value)}
-              />
-            </div>
-
-            <div className="modal-actions">
-              <button className="btn btn-secondary scale-active" onClick={() => setScoringStudent(null)}>
-                Bekor qilish
-              </button>
-              <button 
-                className="btn btn-primary scale-active" 
-                onClick={() => handleAwardPoints()}
-                disabled={scoreAmount === '' || isNaN(Number(scoreAmount))}
-              >
-                Likeni tasdiqlash
-              </button>
+              {/* Right Column: Quick Comment Templates with badges */}
+              {normalizedTags.length > 0 && (
+                <div className="score-modal-right">
+                  <label className="form-label" style={{ marginBottom: '10px' }}>Tezkor izoh shablonlari</label>
+                  <div className="quick-tags-list">
+                    {normalizedTags.map((tagObj, idx) => {
+                      const isSelected = customComment === tagObj.text && String(scoreAmount) === String(tagObj.points);
+                      return (
+                        <button
+                          key={idx}
+                          type="button"
+                          className={`quick-tag-card scale-active ${isSelected ? 'selected' : ''}`}
+                          onClick={() => {
+                            setScoreAmount(String(tagObj.points));
+                            setCustomComment(tagObj.text);
+                          }}
+                        >
+                          <span className="quick-tag-text">{tagObj.text}</span>
+                          <span className={`quick-tag-badge ${tagObj.points >= 0 ? 'positive' : 'negative'}`}>
+                            {tagObj.points >= 0 ? `+${tagObj.points}` : tagObj.points}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>,
@@ -908,63 +920,133 @@ const GroupDetail = ({ group, students, transactions, quickTags, onBack, onAddSt
 
         /* Score Modal Styles */
         .score-modal {
-          max-width: 450px;
+          max-width: 440px;
+          padding: 20px 24px;
         }
 
-        .like-presets {
-          display: grid;
-          grid-template-columns: repeat(4, 1fr);
-          gap: 8px;
+        .score-modal.has-quick-tags {
+          max-width: 680px;
         }
 
-        .like-preset-btn {
-          padding: 10px 6px;
-          font-size: 1rem;
-          font-weight: 800;
-          border: 2px solid #000000;
-          border-radius: 0;
-          cursor: pointer;
-          transition: all 0.15s;
-          background: #ffffff;
-          color: #000000;
+        .score-modal-body {
+          display: flex;
+          flex-direction: column;
+          gap: 20px;
         }
 
-        .like-preset-btn.positive {
-          background: #000000;
-          color: #E7FF56;
+        @media (min-width: 769px) {
+          .score-modal.has-quick-tags .score-modal-body {
+            display: grid;
+            grid-template-columns: 1fr 1.15fr;
+            gap: 24px;
+            align-items: start;
+          }
         }
 
-        .like-preset-btn.negative {
-          background: #ffffff;
-          color: #000000;
-          border-style: dashed;
+        .score-modal-left {
+          display: flex;
+          flex-direction: column;
+          gap: 14px;
         }
 
-        .like-preset-btn.active {
-          background: #E7FF56;
-          color: #000000;
-          border-style: solid;
+        .score-modal-right {
+          display: flex;
+          flex-direction: column;
+          gap: 10px;
+          border-left: 2px solid #000000;
+          padding-left: 20px;
         }
 
-        .like-preset-btn:hover {
-          background: #E7FF56;
-          color: #000000;
-          border-style: solid;
+        @media (max-width: 768px) {
+          .score-modal-right {
+            border-left: none;
+            padding-left: 0;
+            border-top: 2px dashed #000000;
+            padding-top: 14px;
+            margin-top: 6px;
+          }
         }
 
         .score-modal-header {
           display: flex;
           align-items: center;
-          gap: 14px;
-          margin-bottom: 24px;
-          border-bottom: 1px solid var(--glass-border);
-          padding-bottom: 16px;
+          gap: 12px;
+          margin-bottom: 6px;
+          border-bottom: 2px solid #000000;
+          padding-bottom: 10px;
         }
 
         .score-modal-subtitle {
-          font-size: 0.9rem;
+          font-size: 0.88rem;
+          font-weight: 700;
           color: var(--text-secondary);
-          margin-top: 4px;
+          margin-top: 2px;
+        }
+
+        .quick-tags-list {
+          display: flex;
+          flex-direction: column;
+          gap: 6px;
+          max-height: 260px;
+          overflow-y: auto;
+          padding-right: 4px;
+        }
+
+        .quick-tag-card {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          gap: 10px;
+          padding: 8px 12px;
+          background: #ffffff;
+          border: 1.5px solid #000000;
+          box-shadow: 2px 2px 0px #000000;
+          cursor: pointer;
+          font-family: var(--font-family);
+          font-size: 0.85rem;
+          font-weight: 700;
+          text-align: left;
+          color: #000000;
+          transition: all 0.15s ease;
+        }
+
+        .quick-tag-card:hover {
+          background: var(--accent-neon);
+        }
+
+        .quick-tag-card.selected {
+          background: #000000;
+          color: #ffffff;
+        }
+
+        .quick-tag-badge {
+          font-size: 0.78rem;
+          font-weight: 800;
+          padding: 2px 8px;
+          border-radius: 2px;
+          border: 1px solid #000000;
+          white-space: nowrap;
+        }
+
+        .quick-tag-badge.positive {
+          background: #e2ffd0;
+          color: #000000;
+        }
+
+        .quick-tag-badge.negative {
+          background: #ffd0d0;
+          color: #000000;
+        }
+
+        .quick-tag-card.selected .quick-tag-badge.positive {
+          background: #E7FF56;
+          color: #000000;
+        }
+
+        .quick-tag-card.selected .quick-tag-badge.negative {
+          background: #ff5252;
+          color: #ffffff;
+          border-color: #ffffff;
         }
 
         .empty-students-placeholder {

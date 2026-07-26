@@ -20,6 +20,7 @@ import {
 
 import {
   DEFAULT_QUICK_TAGS,
+  normalizeQuickTags,
   saveAttendance,
   deleteAttendanceRecord,
   addGroup,
@@ -286,7 +287,7 @@ function App() {
         const loadedGroups = data.groups || [];
         const loadedStudents = data.students || [];
         const loadedTransactions = data.transactions || [];
-        const loadedQuickTags = data.quickTags || DEFAULT_QUICK_TAGS;
+        const loadedQuickTags = normalizeQuickTags(data.quickTags);
         const loadedAttendance = data.attendance || [];
 
         setGroups(loadedGroups);

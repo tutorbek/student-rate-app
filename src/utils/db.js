@@ -35,15 +35,47 @@ export const generateUniqueGroupPassword = async () => {
   return `guruh_${Math.random().toString(36).substring(2, 7)}`;
 };
 
-// Default Quick Tags
+// Default Quick Tags with associated default points
 export const DEFAULT_QUICK_TAGS = [
-  'Faol ishtirok 🌟',
-  'Uy vazifasi bajardi 📚',
-  'Ajoyib javob 💡',
-  'Darsga kechikdi ⏰',
-  'Guruh ishida faollik 👥',
-  'Intizom buzilishi ⚠️',
+  { text: 'Uy vazifasi bajarildi 📚', points: 85 },
+  { text: 'Mustaqil izlanish 🔍', points: 50 },
+  { text: 'Uy vazifasi chala bajarildi 🔄', points: 20 },
+  { text: 'Darsga kechikdi ⏰', points: -10 },
+  { text: 'Uy vazifasi bajarilmadi ❌', points: -30 },
+  { text: 'Darsga kelmadi 🚫', points: -40 },
 ];
+
+const DEFAULT_POINTS_MAP = {
+  'Uy vazifasi bajarildi 📚': 85,
+  'Mustaqil izlanish 🔍': 50,
+  'Uy vazifasi chala bajarildi 🔄': 20,
+  'Darsga kechikdi ⏰': -10,
+  'Uy vazifasi bajarilmadi ❌': -30,
+  'Darsga kelmadi 🚫': -40,
+};
+
+export const normalizeQuickTag = (tag) => {
+  if (typeof tag === 'string') {
+    const text = tag.trim();
+    const defaultPts = DEFAULT_POINTS_MAP[text];
+    return { text, points: defaultPts !== undefined ? defaultPts : 0 };
+  }
+  if (tag && typeof tag === 'object' && tag.text !== undefined) {
+    const text = String(tag.text).trim();
+    const pts = Number(tag.points);
+    const defaultPts = DEFAULT_POINTS_MAP[text];
+    return {
+      text,
+      points: !isNaN(pts) && pts !== 0 ? pts : (defaultPts !== undefined ? defaultPts : 0)
+    };
+  }
+  return { text: String(tag || ''), points: 0 };
+};
+
+export const normalizeQuickTags = (tags) => {
+  if (!Array.isArray(tags) || tags.length === 0) return DEFAULT_QUICK_TAGS;
+  return tags.map(normalizeQuickTag);
+};
 
 // Helper: Generate Unique ID
 const generateId = () => Math.random().toString(36).substring(2, 11);

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { exportDatabase } from '../utils/db';
+import { exportDatabase, DEFAULT_QUICK_TAGS } from '../utils/db';
 
 const Settings = ({
   quickTags,
@@ -22,7 +22,11 @@ const Settings = ({
   userRole,
   onLogout
 }) => {
-  const [newTag, setNewTag] = useState('');
+  const [newTagText, setNewTagText] = useState('');
+  const [newTagPoints, setNewTagPoints] = useState('');
+  const [editingTagIndex, setEditingTagIndex] = useState(null);
+  const [editTagText, setEditTagText] = useState('');
+  const [editTagPoints, setEditTagPoints] = useState('');
   const [showResetConfirm, setShowResetConfirm] = useState(false);
 
   const deletedGroups = groups.filter((g) => g.deleted);
@@ -79,26 +83,69 @@ const Settings = ({
     fileReader.readAsText(file, "UTF-8");
   };
 
+  // Normalized Quick Tags Memo
+  const normalizedTags = React.useMemo(() => {
+    if (!Array.isArray(quickTags)) return [];
+    return quickTags.map(tag => {
+      if (typeof tag === 'string') return { text: tag, points: 0 };
+      if (tag && typeof tag === 'object') return { text: String(tag.text || ''), points: Number(tag.points) || 0 };
+      return { text: String(tag || ''), points: 0 };
+    });
+  }, [quickTags]);
+
   // Quick Tags Management
   const handleAddTag = (e) => {
     e.preventDefault();
-    if (!newTag.trim()) return;
+    if (!newTagText.trim()) {
+      showToast("Izoh shablon matnini kiriting!", "error");
+      return;
+    }
 
-    if (quickTags.includes(newTag.trim())) {
+    const pts = Number(newTagPoints) || 0;
+    const tagObj = { text: newTagText.trim(), points: pts };
+
+    if (normalizedTags.some(t => t.text.toLowerCase() === tagObj.text.toLowerCase())) {
       showToast("Ushbu izoh shabloni allaqachon mavjud!", "error");
       return;
     }
 
-    const updatedTags = [...quickTags, newTag.trim()];
+    const updatedTags = [...normalizedTags, tagObj];
     setQuickTags(updatedTags);
-    setNewTag('');
+    setNewTagText('');
+    setNewTagPoints('');
     showToast("Yangi izoh shabloni qo'shildi!", "success");
   };
 
-  const handleDeleteTag = (tagToDelete) => {
-    const updatedTags = quickTags.filter(tag => tag !== tagToDelete);
+  const handleDeleteTag = (textToDelete) => {
+    const updatedTags = normalizedTags.filter(t => t.text !== textToDelete);
     setQuickTags(updatedTags);
+    if (editingTagIndex !== null) setEditingTagIndex(null);
     showToast("Izoh shabloni o'chirildi!", "success");
+  };
+
+  const handleStartEditTag = (index, tagObj) => {
+    setEditingTagIndex(index);
+    setEditTagText(tagObj.text);
+    setEditTagPoints(String(tagObj.points));
+  };
+
+  const handleSaveEditTag = (index) => {
+    if (!editTagText.trim()) {
+      showToast("Izoh shablon matnini kiriting!", "error");
+      return;
+    }
+    const pts = Number(editTagPoints) || 0;
+    const updated = [...normalizedTags];
+    updated[index] = { text: editTagText.trim(), points: pts };
+    setQuickTags(updated);
+    setEditingTagIndex(null);
+    showToast("Izoh shabloni yangilandi!", "success");
+  };
+
+  const handleResetDefaultTags = () => {
+    setQuickTags(DEFAULT_QUICK_TAGS);
+    setEditingTagIndex(null);
+    showToast("Tezkor shablonlar standart holatga keltirildi!", "info");
   };
 
   // Reset database
@@ -184,28 +231,111 @@ const Settings = ({
             Baholash vaqtida tez-tez ishlatiladigan izohlarni boshqaring.
           </p>
 
-          <form onSubmit={handleAddTag} className="add-tag-form">
+          <form onSubmit={handleAddTag} className="add-tag-form" style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
             <input
               type="text"
               className="form-input tag-input"
-              placeholder="Masalan: Uy vazifasini topshirmadi ❌"
-              value={newTag}
-              onChange={(e) => setNewTag(e.target.value)}
+              style={{ flex: 2, minWidth: '180px' }}
+              placeholder="Masalan: Uy vazifasi bajarildi 📚"
+              value={newTagText}
+              onChange={(e) => setNewTagText(e.target.value)}
+            />
+            <input
+              type="number"
+              className="form-input tag-points-input"
+              style={{ flex: 1, minWidth: '90px', maxWidth: '120px' }}
+              placeholder="Ball (+ / -)"
+              value={newTagPoints}
+              onChange={(e) => setNewTagPoints(e.target.value)}
             />
             <button type="submit" className="btn btn-primary scale-active add-tag-btn">
               Qo'shish
             </button>
           </form>
 
-          <div className="tags-list">
-            {quickTags.map((tag) => (
-              <div key={tag} className="tag-item glass">
-                <span className="tag-text">{tag}</span>
-                <button className="tag-delete-btn" onClick={() => handleDeleteTag(tag)}>
-                  ✕
-                </button>
-              </div>
-            ))}
+          {normalizedTags.length > 0 ? (
+            <div className="tags-list" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '10px', marginTop: '14px' }}>
+              {normalizedTags.map((tagObj, idx) => {
+                const isEditing = editingTagIndex === idx;
+                return (
+                  <div key={idx} className="tag-item glass" style={{ display: 'flex', flexDirection: 'column', gap: '6px', padding: '10px 12px' }}>
+                    {isEditing ? (
+                      <div style={{ display: 'flex', gap: '6px', width: '100%', flexWrap: 'wrap', alignItems: 'center' }}>
+                        <input
+                          type="text"
+                          className="form-input"
+                          style={{ flex: 2, minWidth: '130px', padding: '4px 8px', fontSize: '0.85rem' }}
+                          value={editTagText}
+                          onChange={(e) => setEditTagText(e.target.value)}
+                        />
+                        <input
+                          type="number"
+                          className="form-input"
+                          style={{ width: '70px', padding: '4px 6px', fontSize: '0.85rem' }}
+                          value={editTagPoints}
+                          onChange={(e) => setEditTagPoints(e.target.value)}
+                        />
+                        <button 
+                          className="btn btn-primary" 
+                          style={{ padding: '4px 10px', fontSize: '0.8rem' }}
+                          onClick={() => handleSaveEditTag(idx)}
+                          title="Saqlash"
+                        >
+                          ✓
+                        </button>
+                        <button 
+                          className="btn btn-secondary" 
+                          style={{ padding: '4px 10px', fontSize: '0.8rem' }}
+                          onClick={() => setEditingTagIndex(null)}
+                          title="Bekor qilish"
+                        >
+                          ✕
+                        </button>
+                      </div>
+                    ) : (
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
+                        <span className="tag-text" style={{ fontSize: '0.85rem', fontWeight: 700 }}>{tagObj.text}</span>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <span className={`att-badge ${tagObj.points >= 0 ? 'present' : 'absent'}`} style={{ fontSize: '0.75rem', fontWeight: 800 }}>
+                            {tagObj.points >= 0 ? `+${tagObj.points}` : tagObj.points}
+                          </span>
+                          <button 
+                            className="tag-edit-btn" 
+                            style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.85rem', padding: '2px 4px' }} 
+                            onClick={() => handleStartEditTag(idx, tagObj)}
+                            title="Tahrirlash"
+                          >
+                            ✏️
+                          </button>
+                          <button 
+                            className="tag-delete-btn" 
+                            onClick={() => handleDeleteTag(tagObj.text)}
+                            title="O'chirish"
+                          >
+                            ✕
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="empty-box-subtle" style={{ marginTop: '12px' }}>
+              Hozircha tezkor izoh shablonlari mavjud emas.
+            </div>
+          )}
+
+          <div style={{ marginTop: '16px', display: 'flex', justifyContent: 'flex-end' }}>
+            <button 
+              type="button" 
+              className="btn btn-secondary scale-active" 
+              style={{ fontSize: '0.8rem', padding: '6px 12px' }}
+              onClick={handleResetDefaultTags}
+            >
+              🔄 Standart shablonlarni tiklash
+            </button>
           </div>
         </section>
 
