@@ -1,20 +1,9 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { getStudentScore, normalizeQuickTags } from '../utils/db';
-
-const renderAvatar = (emoji) => {
-  if (!emoji) return '❓';
-  if (emoji.startsWith('http') || emoji.startsWith('data:image') || emoji.includes('/') || emoji.includes('.')) {
-    return <img src={emoji} alt="avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />;
-  }
-  return emoji;
-};
-
-const EMOJI_OPTIONS = [
-  '🦁', '🐯', '🐼', '🐨', '🦊', '🐰', '🐱', '🐶', '🦉', '🦜', '🦅', '🐧',
-  '🦋', '🐝', '🐞', '🦄', '🦖', '🐉', '🍀', '🌸', '🧸', '🎈', '👑', '🧙‍♂️',
-  '👾', '🚀', '🎨', '🎸', '🎮', '🛹', '🍓', '🍒', '🍉', '🍩', '🍦', '🍕'
-];
+import { renderGroupIcon } from '../utils/groupIcons';
+import { STUDENT_AVATARS, renderStudentAvatar as renderAvatar } from '../utils/studentAvatars';
+import { AVATAR_GALLERY_IMAGES, isGalleryImage, compressUploadedImage } from '../utils/avatarGallery';
 
 const COLOR_OPTIONS = [
   { name: 'Burnt Sienna', value: '#E35336' },
@@ -23,15 +12,23 @@ const COLOR_OPTIONS = [
   { name: 'Sienna', value: '#A0522D' },
 ];
 
+const IconHistory = ({ size = 16, strokeWidth = 2.2 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round">
+    <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+    <path d="M3 3v5h5" />
+    <path d="M12 7v5l4 2" />
+  </svg>
+);
+
 const GroupDetail = ({ group, students, transactions, quickTags, onBack, onAddStudent, onUpdateStudent, onDeleteStudent, onAwardPoints, onDeleteTransaction, showToast, userRole }) => {
   const [profileStudent, setProfileStudent] = useState(null);
   const [showPassword, setShowPassword] = useState(false);
   const [editingStudent, setEditingStudent] = useState(null);
   const [editStudentName, setEditStudentName] = useState('');
-  const [editStudentEmoji, setEditStudentEmoji] = useState('🚀');
+  const [editStudentEmoji, setEditStudentEmoji] = useState(AVATAR_GALLERY_IMAGES[0].path);
   const [editStudentColor, setEditStudentColor] = useState(COLOR_OPTIONS[0].value);
-  const [avatarTab, setAvatarTab] = useState('emoji');
-  const [editAvatarTab, setEditAvatarTab] = useState('emoji');
+  const [avatarTab, setAvatarTab] = useState('gallery');
+  const [editAvatarTab, setEditAvatarTab] = useState('gallery');
 
   useEffect(() => {
     const handleKeyDown = (e) => {
@@ -49,7 +46,7 @@ const GroupDetail = ({ group, students, transactions, quickTags, onBack, onAddSt
 
   const [showAddStudentModal, setShowAddStudentModal] = useState(false);
   const [newStudentName, setNewStudentName] = useState('');
-  const [selectedEmoji, setSelectedEmoji] = useState(EMOJI_OPTIONS[0]);
+  const [selectedEmoji, setSelectedEmoji] = useState(AVATAR_GALLERY_IMAGES[0].path);
   const [selectedColor, setSelectedColor] = useState(COLOR_OPTIONS[0].value);
   const [confirmDeleteId, setConfirmDeleteId] = useState(null);
 
@@ -150,8 +147,8 @@ const GroupDetail = ({ group, students, transactions, quickTags, onBack, onAddSt
         <div className="page-header detail-header">
           <div>
             <h2 className="page-title" style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-              <div className="avatar-circle" style={{ width: 36, height: 36, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.4rem', overflow: 'hidden', padding: 0, border: '1px solid #000', borderRadius: 0, background: '#ffffff', boxShadow: 'none' }}>
-                {renderAvatar(group.icon)}
+              <div className="avatar-circle group-folder-icon" style={{ width: 38, height: 38, display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', padding: 0, border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', background: 'var(--bg-segment)', boxShadow: 'none' }}>
+                {renderGroupIcon(group.icon, 20)}
               </div>
               <span>{group.name}</span>
             </h2>
@@ -172,17 +169,11 @@ const GroupDetail = ({ group, students, transactions, quickTags, onBack, onAddSt
                     alignSelf: 'flex-start'
                   }}
                   onClick={() => setShowPassword(!showPassword)}
-                  title={showPassword ? "Yashirish" : "Ko'rsatish"}
                 >
                   <span>🔑 Guruh paroli:</span>
                   <strong 
+                    className="group-pwd-badge-text"
                     style={{ 
-                      background: '#E7FF56', 
-                      color: '#000000', 
-                      padding: '2px 8px', 
-                      border: '1px solid #000000', 
-                      fontFamily: 'monospace', 
-                      fontSize: '0.85rem',
                       letterSpacing: showPassword ? 'normal' : '2px',
                       textTransform: 'lowercase'
                     }}
@@ -201,94 +192,102 @@ const GroupDetail = ({ group, students, transactions, quickTags, onBack, onAddSt
       </div>
 
       {groupStudents.length > 0 ? (
-        <div className="grid-cards student-grid">
+        <div className="students-vertical-list">
           {groupStudents.map((student) => (
-            <div key={student.id} className="glass-card student-card">
-              {/* Delete & Edit buttons top right */}
-              <button 
-                className="student-delete-btn" 
-                onClick={() => setConfirmDeleteId(student.id)}
-                title="Talabani o'chirish"
-              >
-                ✕
-              </button>
-              <button 
-                className="student-edit-btn" 
-                onClick={() => {
-                  setEditingStudent(student);
-                  setEditStudentName(student.name);
-                  setEditStudentEmoji(student.emoji);
-                  setEditStudentColor(student.color);
-                  if (!student.emoji) {
-                    setEditAvatarTab('emoji');
-                  } else if (student.emoji.startsWith('data:image')) {
-                    setEditAvatarTab('file');
-                  } else if (student.emoji.startsWith('http') || student.emoji.includes('/') || student.emoji.includes('.')) {
-                    setEditAvatarTab('url');
-                  } else {
-                    setEditAvatarTab('emoji');
-                  }
-                }}
-                title="Talabani tahrirlash"
-              >
-                ✏️
-              </button>
-
-              <div className="student-card-info clickable-info" onClick={() => setProfileStudent(student)} title="Talaba profilini ochish">
-                <div className="avatar-circle student-avatar" style={{ background: student.color, overflow: 'hidden' }}>
-                  {renderAvatar(student.emoji)}
+            <div key={student.id} className="glass-card student-list-item">
+              <div className="student-item-header-row">
+                <div 
+                  className="student-item-main clickable-info" 
+                  onClick={() => openScoreModal(student, '')}
+                >
+                  <div className="avatar-circle student-avatar" style={{ background: student.color, overflow: 'hidden' }}>
+                    {renderAvatar(student.emoji)}
+                  </div>
+                  <div className="student-item-info">
+                    <h3 className="student-name">{student.name}</h3>
+                    <div className="student-score-badge">
+                      <span className="score-num">{student.totalScore >= 0 ? `+${student.totalScore}` : student.totalScore}</span>
+                      <span className="score-label">Likelar</span>
+                    </div>
+                  </div>
                 </div>
-                <h3 className="student-name">{student.name}</h3>
-                <div className="student-score-badge">
-                  <span className="score-num">{student.totalScore >= 0 ? `+${student.totalScore}` : student.totalScore}</span>
-                  <span className="score-label">Likelar</span>
+
+                <div className="student-item-manage-btns">
+                  <button 
+                    className="btn btn-secondary scale-active btn-sm btn-icon-only" 
+                    onClick={() => {
+                      setEditingStudent(student);
+                      setEditStudentName(student.name);
+                      setEditStudentEmoji(student.emoji);
+                      setEditStudentColor(student.color);
+                      if (!student.emoji) {
+                        setEditAvatarTab('gallery');
+                      } else if (isGalleryImage(student.emoji)) {
+                        setEditAvatarTab('gallery');
+                      } else if (student.emoji.startsWith('data:image')) {
+                        setEditAvatarTab('file');
+                      } else {
+                        setEditAvatarTab('svg');
+                      }
+                    }}
+                  >
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                      <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                    </svg>
+                  </button>
+                  <button 
+                    className="btn btn-danger scale-active btn-sm btn-icon-only" 
+                    onClick={() => setConfirmDeleteId(student.id)}
+                  >
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="3 6 5 6 21 6" />
+                      <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                    </svg>
+                  </button>
                 </div>
               </div>
 
-              {/* Actions Grid */}
-              <div className="student-actions">
-                <button 
-                  className="btn btn-action btn-green scale-active"
-                  onClick={() => openScoreModal(student, 85)}
-                  title="+85 (Uy vazifasi bajarildi)"
-                >
-                  +85
-                </button>
-                <button 
-                  className="btn btn-action btn-green scale-active"
-                  onClick={() => openScoreModal(student, 50)}
-                  title="+50 (Mustaqil izlanish)"
-                >
-                  +50
-                </button>
-                <button 
-                  className="btn btn-action btn-red scale-active"
-                  onClick={() => openScoreModal(student, -10)}
-                  title="-10 (Darsga kechikdi)"
-                >
-                  -10
-                </button>
-                <button 
-                  className="btn btn-action btn-red scale-active"
-                  onClick={() => openScoreModal(student, -30)}
-                  title="-30 (Uy vazifasi bajarilmadi)"
-                >
-                  -30
-                </button>
-                <button 
-                  className="btn btn-action btn-custom scale-active"
-                  onClick={() => openScoreModal(student, '')}
-                  title="Boshqa izoh / ball"
-                >
-                  →
-                </button>
+              {/* Scoring Controls */}
+              <div className="student-item-controls">
+                <div className="student-actions">
+                  <button 
+                    className="btn btn-action btn-green scale-active"
+                    onClick={() => openScoreModal(student, 85)}
+                  >
+                    +85
+                  </button>
+                  <button 
+                    className="btn btn-action btn-green scale-active"
+                    onClick={() => openScoreModal(student, 50)}
+                  >
+                    +50
+                  </button>
+                  <button 
+                    className="btn btn-action btn-red scale-active"
+                    onClick={() => openScoreModal(student, -30)}
+                  >
+                    -30
+                  </button>
+                  <button 
+                    className="btn btn-action btn-custom scale-active"
+                    onClick={() => setProfileStudent(student)}
+                  >
+                    <IconHistory size={16} />
+                  </button>
+                </div>
               </div>
             </div>
           ))}
         </div>
       ) : (
         <div className="glass-card empty-students-placeholder">
-          <div className="placeholder-icon">👨‍🎓</div>
+          <div className="placeholder-icon" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M22 10v6M2 10l10-5 10 5-10 5z" />
+              <path d="M6 12v5c3 3 9 3 12 0v-5" />
+            </svg>
+          </div>
           <h3>Talabalar hali qo'shilmagan</h3>
           <p>Ushbu guruhga baholashni boshlash uchun dastlab talabalarni qo'shing.</p>
           <button className="btn btn-primary scale-active" onClick={() => setShowAddStudentModal(true)}>
@@ -305,9 +304,11 @@ const GroupDetail = ({ group, students, transactions, quickTags, onBack, onAddSt
               type="button" 
               className="modal-close-btn" 
               onClick={() => setShowAddStudentModal(false)}
-              title="Yopish"
             >
-              ✕
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18" />
+                <line x1="6" y1="6" x2="18" y2="18" />
+              </svg>
             </button>
             <h3 className="modal-title">Yangi talaba qo'shish</h3>
             <form onSubmit={handleAddStudentSubmit}>
@@ -323,40 +324,57 @@ const GroupDetail = ({ group, students, transactions, quickTags, onBack, onAddSt
                 />
               </div>
 
-              {/* Emoji Picker Tabs */}
+              {/* SVG Avatar Picker Tabs */}
               <div className="form-group">
-                <label className="form-label">Avatar Turi</label>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
+                  <label className="form-label" style={{ margin: 0 }}>Talaba Avatari</label>
+                  <div className="avatar-preview-badge" style={{ display: 'inline-flex', alignItems: 'center' }}>
+                    <span style={{ fontSize: '0.72rem', fontWeight: 800, textTransform: 'uppercase', marginRight: '6px' }}>Tanlandi:</span>
+                    <div className="avatar-circle" style={{ width: 32, height: 32, background: selectedColor, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', padding: 0, border: '1px solid rgba(0,0,0,0.08)', borderRadius: 'var(--radius-sm)' }}>
+                      {renderAvatar(selectedEmoji)}
+                    </div>
+                  </div>
+                </div>
                 <div className="avatar-tabs-header">
-                  <button type="button" className={`avatar-tab-btn ${avatarTab === 'emoji' ? 'active' : ''}`} onClick={() => setAvatarTab('emoji')}>Emoji</button>
-                  <button type="button" className={`avatar-tab-btn ${avatarTab === 'url' ? 'active' : ''}`} onClick={() => setAvatarTab('url')}>Internet URL</button>
+                  <button type="button" className={`avatar-tab-btn ${avatarTab === 'gallery' ? 'active' : ''}`} onClick={() => setAvatarTab('gallery')}>Rasmlar</button>
+                  <button type="button" className={`avatar-tab-btn ${avatarTab === 'svg' ? 'active' : ''}`} onClick={() => setAvatarTab('svg')}>SVG Ikonkalar</button>
                   <button type="button" className={`avatar-tab-btn ${avatarTab === 'file' ? 'active' : ''}`} onClick={() => setAvatarTab('file')}>Rasm yuklash</button>
                 </div>
 
-                {avatarTab === 'emoji' && (
-                  <div className="emoji-picker-grid">
-                    {EMOJI_OPTIONS.map((emoji) => (
+                {avatarTab === 'gallery' && (
+                  <div className="avatar-gallery-picker-grid">
+                    {AVATAR_GALLERY_IMAGES.map((img) => (
                       <button
-                        key={emoji}
+                        key={img.id}
                         type="button"
-                        className={`emoji-btn ${selectedEmoji === emoji ? 'selected' : ''}`}
-                        onClick={() => setSelectedEmoji(emoji)}
+                        className={`avatar-gallery-item-btn scale-active ${selectedEmoji === img.path ? 'selected' : ''}`}
+                        onClick={() => setSelectedEmoji(img.path)}
                       >
-                        {emoji}
+                        <img src={img.path} alt={img.label} loading="lazy" decoding="async" className="gallery-thumb-img" />
+                        {selectedEmoji === img.path && (
+                          <div className="gallery-selected-badge">
+                            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round">
+                              <polyline points="20 6 9 17 4 12" />
+                            </svg>
+                          </div>
+                        )}
                       </button>
                     ))}
                   </div>
                 )}
 
-                {avatarTab === 'url' && (
-                  <div>
-                    <label className="form-label" style={{ fontSize: '0.75rem', opacity: 0.8 }}>Rasm URL manzili yoki maxsus emoji</label>
-                    <input
-                      type="text"
-                      className="form-input"
-                      placeholder="Masalan: 🤩 yoki https://example.com/rasm.png"
-                      value={EMOJI_OPTIONS.includes(selectedEmoji) ? '' : selectedEmoji}
-                      onChange={(e) => setSelectedEmoji(e.target.value || EMOJI_OPTIONS[0])}
-                    />
+                {avatarTab === 'svg' && (
+                  <div className="student-svg-picker-grid">
+                    {STUDENT_AVATARS.map((item) => (
+                      <button
+                        key={item.id}
+                        type="button"
+                        className={`student-svg-btn scale-active ${selectedEmoji === item.id ? 'selected' : ''}`}
+                        onClick={() => setSelectedEmoji(item.id)}
+                      >
+                        {item.svg(26)}
+                      </button>
+                    ))}
                   </div>
                 )}
 
@@ -367,14 +385,15 @@ const GroupDetail = ({ group, students, transactions, quickTags, onBack, onAddSt
                       type="file"
                       accept="image/*"
                       className="form-input"
-                      onChange={(e) => {
+                      onChange={async (e) => {
                         const file = e.target.files[0];
                         if (file) {
-                          const reader = new FileReader();
-                          reader.onloadend = () => {
-                            setSelectedEmoji(reader.result);
-                          };
-                          reader.readAsDataURL(file);
+                          try {
+                            const compressed = await compressUploadedImage(file);
+                            if (compressed) setSelectedEmoji(compressed);
+                          } catch (err) {
+                            console.error('Failed to compress image:', err);
+                          }
                         }
                       }}
                     />
@@ -393,7 +412,6 @@ const GroupDetail = ({ group, students, transactions, quickTags, onBack, onAddSt
                       className={`color-btn ${selectedColor === color.value ? 'selected' : ''}`}
                       style={{ background: color.value }}
                       onClick={() => setSelectedColor(color.value)}
-                      title={color.name}
                     />
                   ))}
                 </div>
@@ -424,9 +442,11 @@ const GroupDetail = ({ group, students, transactions, quickTags, onBack, onAddSt
               type="button" 
               className="modal-close-btn" 
               onClick={() => setScoringStudent(null)}
-              title="Yopish"
             >
-              ✕
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18" />
+                <line x1="6" y1="6" x2="18" y2="18" />
+              </svg>
             </button>
 
             <div className="score-modal-body">
@@ -455,7 +475,7 @@ const GroupDetail = ({ group, students, transactions, quickTags, onBack, onAddSt
                     style={{ padding: '8px 12px', fontSize: '0.88rem', height: '38px' }}
                     value={scoreAmount}
                     onChange={(e) => setScoreAmount(e.target.value)}
-                    placeholder="Masalan: 85, 50, -10"
+                    placeholder="Masalan: 85, 50, -30"
                   />
                 </div>
 
@@ -532,9 +552,11 @@ const GroupDetail = ({ group, students, transactions, quickTags, onBack, onAddSt
               type="button" 
               className="modal-close-btn" 
               onClick={() => setConfirmDeleteId(null)}
-              title="Yopish"
             >
-              ✕
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18" />
+                <line x1="6" y1="6" x2="18" y2="18" />
+              </svg>
             </button>
             <h3 className="modal-title text-red">⚠️ Talabani o'chirish</h3>
             <p className="modal-warning-text">
@@ -564,9 +586,11 @@ const GroupDetail = ({ group, students, transactions, quickTags, onBack, onAddSt
               type="button" 
               className="modal-close-btn" 
               onClick={() => setProfileStudent(null)}
-              title="Yopish"
             >
-              ✕
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18" />
+                <line x1="6" y1="6" x2="18" y2="18" />
+              </svg>
             </button>
             {/* Profile Header */}
             <div className="profile-modal-header">
@@ -580,16 +604,8 @@ const GroupDetail = ({ group, students, transactions, quickTags, onBack, onAddSt
             {/* Profile Stats Grid */}
             <div className="profile-stats-grid">
               <div className="profile-stat-box">
-                <span className="profile-stat-val">{getStudentScore(transactions, profileStudent.id, 'week')}</span>
-                <span className="profile-stat-lbl">Yangi hafta</span>
-              </div>
-              <div className="profile-stat-box">
-                <span className="profile-stat-val">{getStudentScore(transactions, profileStudent.id, 'lastWeek')}</span>
-                <span className="profile-stat-lbl">O'tgan hafta</span>
-              </div>
-              <div className="profile-stat-box">
                 <span className="profile-stat-val">{getStudentScore(transactions, profileStudent.id, 'month')}</span>
-                <span className="profile-stat-lbl">Oylik</span>
+                <span className="profile-stat-lbl">Bu Oy</span>
               </div>
               <div className="profile-stat-box">
                 <span className="profile-stat-val">{getStudentScore(transactions, profileStudent.id, 'lastMonth')}</span>
@@ -597,13 +613,13 @@ const GroupDetail = ({ group, students, transactions, quickTags, onBack, onAddSt
               </div>
               <div className="profile-stat-box">
                 <span className="profile-stat-val">{getStudentScore(transactions, profileStudent.id, 'all')}</span>
-                <span className="profile-stat-lbl">Kurs</span>
+                <span className="profile-stat-lbl">Kurs Davomida</span>
               </div>
             </div>
 
             {/* Timeline / History */}
             <div className="profile-timeline-section">
-              <h4 className="profile-timeline-title">📜 Baholash Tarixi</h4>
+              <h4 className="profile-timeline-title">Baholash Tarixi</h4>
               <div className="profile-timeline-list">
                 {studentTxs.length > 0 ? (
                   studentTxs.map((tx) => {
@@ -627,9 +643,11 @@ const GroupDetail = ({ group, students, transactions, quickTags, onBack, onAddSt
                               onDeleteTransaction(tx.id);
                               showToast("Baholash harakati bekor qilindi!", "success");
                             }}
-                            title="Bahoni o'chirish"
                           >
-                            🗑️
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                              <polyline points="3 6 5 6 21 6" />
+                              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                            </svg>
                           </button>
                         </div>
                       </div>
@@ -658,9 +676,11 @@ const GroupDetail = ({ group, students, transactions, quickTags, onBack, onAddSt
               type="button" 
               className="modal-close-btn" 
               onClick={() => setEditingStudent(null)}
-              title="Yopish"
             >
-              ✕
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18" />
+                <line x1="6" y1="6" x2="18" y2="18" />
+              </svg>
             </button>
             <h3 className="modal-title">Talaba Ma'lumotlarini Tahrirlash</h3>
             <form onSubmit={handleEditStudentSubmit}>
@@ -676,40 +696,57 @@ const GroupDetail = ({ group, students, transactions, quickTags, onBack, onAddSt
                 />
               </div>
 
-              {/* Emoji Picker Tabs */}
+              {/* SVG Avatar Picker Tabs */}
               <div className="form-group">
-                <label className="form-label">Avatar Turi</label>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
+                  <label className="form-label" style={{ margin: 0 }}>Talaba Avatari</label>
+                  <div className="avatar-preview-badge" style={{ display: 'inline-flex', alignItems: 'center' }}>
+                    <span style={{ fontSize: '0.72rem', fontWeight: 800, textTransform: 'uppercase', marginRight: '6px' }}>Tanlandi:</span>
+                    <div className="avatar-circle" style={{ width: 32, height: 32, background: editStudentColor, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', padding: 0, border: '1px solid rgba(0,0,0,0.08)', borderRadius: 'var(--radius-sm)' }}>
+                      {renderAvatar(editStudentEmoji)}
+                    </div>
+                  </div>
+                </div>
                 <div className="avatar-tabs-header">
-                  <button type="button" className={`avatar-tab-btn ${editAvatarTab === 'emoji' ? 'active' : ''}`} onClick={() => setEditAvatarTab('emoji')}>Emoji</button>
-                  <button type="button" className={`avatar-tab-btn ${editAvatarTab === 'url' ? 'active' : ''}`} onClick={() => setEditAvatarTab('url')}>Internet URL</button>
+                  <button type="button" className={`avatar-tab-btn ${editAvatarTab === 'gallery' ? 'active' : ''}`} onClick={() => setEditAvatarTab('gallery')}>Rasmlar</button>
+                  <button type="button" className={`avatar-tab-btn ${editAvatarTab === 'svg' ? 'active' : ''}`} onClick={() => setEditAvatarTab('svg')}>SVG Ikonkalar</button>
                   <button type="button" className={`avatar-tab-btn ${editAvatarTab === 'file' ? 'active' : ''}`} onClick={() => setEditAvatarTab('file')}>Rasm yuklash</button>
                 </div>
 
-                {editAvatarTab === 'emoji' && (
-                  <div className="emoji-picker-grid">
-                    {EMOJI_OPTIONS.map((emoji) => (
+                {editAvatarTab === 'gallery' && (
+                  <div className="avatar-gallery-picker-grid">
+                    {AVATAR_GALLERY_IMAGES.map((img) => (
                       <button
-                        key={emoji}
+                        key={img.id}
                         type="button"
-                        className={`emoji-btn ${editStudentEmoji === emoji ? 'selected' : ''}`}
-                        onClick={() => setEditStudentEmoji(emoji)}
+                        className={`avatar-gallery-item-btn scale-active ${editStudentEmoji === img.path ? 'selected' : ''}`}
+                        onClick={() => setEditStudentEmoji(img.path)}
                       >
-                        {emoji}
+                        <img src={img.path} alt={img.label} loading="lazy" decoding="async" className="gallery-thumb-img" />
+                        {editStudentEmoji === img.path && (
+                          <div className="gallery-selected-badge">
+                            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round">
+                              <polyline points="20 6 9 17 4 12" />
+                            </svg>
+                          </div>
+                        )}
                       </button>
                     ))}
                   </div>
                 )}
 
-                {editAvatarTab === 'url' && (
-                  <div>
-                    <label className="form-label" style={{ fontSize: '0.75rem', opacity: 0.8 }}>Rasm URL manzili yoki maxsus emoji</label>
-                    <input
-                      type="text"
-                      className="form-input"
-                      placeholder="Masalan: 🤩 yoki https://example.com/rasm.png"
-                      value={EMOJI_OPTIONS.includes(editStudentEmoji) ? '' : editStudentEmoji}
-                      onChange={(e) => setEditStudentEmoji(e.target.value || EMOJI_OPTIONS[0])}
-                    />
+                {editAvatarTab === 'svg' && (
+                  <div className="student-svg-picker-grid">
+                    {STUDENT_AVATARS.map((item) => (
+                      <button
+                        key={item.id}
+                        type="button"
+                        className={`student-svg-btn scale-active ${editStudentEmoji === item.id ? 'selected' : ''}`}
+                        onClick={() => setEditStudentEmoji(item.id)}
+                      >
+                        {item.svg(26)}
+                      </button>
+                    ))}
                   </div>
                 )}
 
@@ -720,14 +757,15 @@ const GroupDetail = ({ group, students, transactions, quickTags, onBack, onAddSt
                       type="file"
                       accept="image/*"
                       className="form-input"
-                      onChange={(e) => {
+                      onChange={async (e) => {
                         const file = e.target.files[0];
                         if (file) {
-                          const reader = new FileReader();
-                          reader.onloadend = () => {
-                            setEditStudentEmoji(reader.result);
-                          };
-                          reader.readAsDataURL(file);
+                          try {
+                            const compressed = await compressUploadedImage(file);
+                            if (compressed) setEditStudentEmoji(compressed);
+                          } catch (err) {
+                            console.error('Failed to compress image:', err);
+                          }
                         }
                       }}
                     />
@@ -746,7 +784,6 @@ const GroupDetail = ({ group, students, transactions, quickTags, onBack, onAddSt
                       className={`color-btn ${editStudentColor === color.value ? 'selected' : ''}`}
                       style={{ background: color.value }}
                       onClick={() => setEditStudentColor(color.value)}
-                      title={color.name}
                     />
                   ))}
                 </div>
@@ -767,7 +804,9 @@ const GroupDetail = ({ group, students, transactions, quickTags, onBack, onAddSt
       )}
       <style>{`
         .group-detail-container {
-          animation: fade-in 0.4s ease-out;
+          display: flex;
+          flex-direction: column;
+          gap: 20px;
         }
 
         .detail-header-wrapper {
@@ -779,6 +818,7 @@ const GroupDetail = ({ group, students, transactions, quickTags, onBack, onAddSt
 
         .back-btn {
           align-self: flex-start;
+          border-radius: var(--radius-md);
         }
 
         .detail-header {
@@ -786,167 +826,233 @@ const GroupDetail = ({ group, students, transactions, quickTags, onBack, onAddSt
         }
 
         .student-grid {
-          margin-top: 24px;
+          margin-top: 16px;
         }
 
-        .student-card {
-          padding: 24px;
+        .students-vertical-list {
           display: flex;
           flex-direction: column;
-          align-items: center;
-          text-align: center;
-          position: relative;
+          gap: 12px;
         }
 
-        .student-delete-btn {
-          position: absolute;
-          top: 12px;
-          right: 12px;
-          background: rgba(255, 255, 255, 0.05);
-          border: none;
-          color: var(--text-tertiary);
-          width: 26px;
-          height: 26px;
-          border-radius: 50%;
-          cursor: pointer;
+        .student-list-item {
+          padding: 14px 18px;
           display: flex;
           align-items: center;
-          justify-content: center;
-          font-size: 0.8rem;
-          transition: all var(--transition-fast);
+          justify-content: space-between;
+          gap: 16px;
+          background: #FFFFFF;
+          border: 1px solid rgba(0, 0, 0, 0.06);
+          border-radius: var(--radius-lg);
+          box-shadow: var(--shadow-sm);
+          transition: box-shadow var(--transition-fast);
+          content-visibility: auto;
+          contain-intrinsic-size: 0 72px;
         }
 
-        .student-delete-btn:hover {
-          background: #E7FF56;
-          color: #000000;
+        @media (hover: hover) and (pointer: fine) {
+          .student-list-item:hover {
+            box-shadow: var(--shadow-md);
+          }
         }
 
-        .student-edit-btn {
-          position: absolute;
-          top: 12px;
-          right: 44px;
-          background: rgba(255, 255, 255, 0.05);
-          border: none;
-          color: var(--text-tertiary);
-          width: 26px;
-          height: 26px;
-          border-radius: 50%;
-          cursor: pointer;
+        .student-item-header-row {
           display: flex;
           align-items: center;
-          justify-content: center;
-          font-size: 0.8rem;
-          transition: all var(--transition-fast);
+          justify-content: space-between;
+          gap: 14px;
+          flex: 1;
+          min-width: 0;
         }
 
-        .student-edit-btn:hover {
-          background: #E7FF56;
-          color: #000000;
-        }
-
-        .student-card-info {
+        .student-item-main {
           display: flex;
-          flex-direction: column;
           align-items: center;
           gap: 14px;
-          margin-bottom: 24px;
+          min-width: 0;
+          flex: 1;
+          cursor: pointer;
         }
 
         .student-avatar {
-          width: 64px;
-          height: 64px;
-          font-size: 2rem;
+          width: 44px;
+          height: 44px;
+          font-size: 1.4rem;
+          border-radius: var(--radius-md);
+          border: 1px solid rgba(0, 0, 0, 0.06);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          flex-shrink: 0;
+        }
+
+        .student-item-info {
+          display: flex;
+          flex-direction: column;
+          align-items: flex-start;
+          gap: 4px;
+          min-width: 0;
+          flex: 1;
         }
 
         .student-name {
-          font-size: 1.15rem;
+          font-size: 1.02rem;
           font-weight: 700;
-          color: #000000;
+          color: var(--text-primary);
+          letter-spacing: -0.01em;
+          margin: 0;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
         }
 
         .student-score-badge {
-          display: flex;
+          display: inline-flex;
           align-items: center;
-          gap: 6px;
-          background: #ffffff;
-          padding: 6px 14px;
-          border-radius: 0;
-          border: 1px solid #000000;
+          gap: 4px;
+          background: #F5F5F7;
+          padding: 2px 8px;
+          border-radius: var(--radius-full);
+          border: 1px solid rgba(0, 0, 0, 0.06);
+          white-space: nowrap;
         }
 
         .score-num {
-          font-size: 1.05rem;
-          font-weight: 800;
-          color: #000000;
+          font-size: 0.82rem;
+          font-weight: 700;
+          color: var(--text-primary);
+          font-variant-numeric: tabular-nums;
         }
 
         .score-label {
-          font-size: 0.75rem;
-          color: #000000;
-          text-transform: uppercase;
-          font-weight: 700;
-          letter-spacing: 0.5px;
+          font-size: 0.68rem;
+          color: var(--text-secondary);
+          font-weight: 600;
+        }
+
+        .student-item-manage-btns {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          flex-shrink: 0;
+          margin-left: auto;
+        }
+
+        .student-item-controls {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          flex-shrink: 0;
         }
 
         .student-actions {
           display: flex;
-          width: 100%;
+          align-items: center;
           gap: 6px;
         }
 
         .btn-action {
-          flex: 1;
-          padding: 8px 4px;
-          font-size: 0.78rem;
-          font-weight: 800;
+          padding: 6px 10px;
+          font-size: 0.82rem;
+          font-weight: 700;
           white-space: nowrap;
           text-align: center;
           justify-content: center;
+          min-width: 46px;
+          height: 36px;
+          font-variant-numeric: tabular-nums;
+          border-radius: var(--radius-md);
+          touch-action: manipulation;
+          transition: all var(--transition-fast);
         }
 
         .btn-green {
-          background: #000000;
-          color: #ffffff;
-          border: 1px solid #000000;
+          background: #ECFDF5;
+          color: #059669;
+          border: 1px solid #A7F3D0;
         }
 
         .btn-green:hover {
-          background: #E7FF56;
-          color: #000000;
+          background: #D1FAE5;
         }
 
         .btn-red {
-          background: #ffffff;
-          color: #000000;
-          border: 1px dashed #000000;
+          background: #FEF2F2;
+          color: #DC2626;
+          border: 1px solid #FECACA;
         }
 
         .btn-red:hover {
-          background: #E7FF56;
-          color: #000000;
-          border-style: solid;
+          background: #FEE2E2;
         }
 
         .btn-custom {
-          background: #ffffff;
-          color: #000000;
-          border: 1px solid #000000;
+          background: #F5F5F7;
+          color: var(--text-primary);
+          border: 1px solid #E5E5EA;
         }
 
         .btn-custom:hover {
-          background: #E7FF56;
-          color: #000000;
+          background: #E5E5EA;
+        }
+
+        .student-item-manage-btns {
+          display: flex;
+          align-items: center;
+          gap: 5px;
+          padding-left: 6px;
+        }
+
+        .btn-icon-only {
+          padding: 6px 8px;
+          font-size: 0.85rem;
+          height: 36px;
+          border-radius: var(--radius-sm);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+
+        @media (max-width: 768px) {
+          .student-list-item {
+            flex-direction: column;
+            align-items: stretch;
+            gap: 12px;
+            padding: 12px 14px;
+          }
+
+          .student-item-header-row {
+            width: 100%;
+          }
+
+          .student-item-controls {
+            width: 100%;
+          }
+
+          .student-actions {
+            width: 100%;
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 4px;
+          }
+
+          .btn-action {
+            width: 100%;
+            min-width: 0;
+            padding: 6px 2px;
+            font-size: 0.78rem;
+          }
         }
 
         /* Score Modal Styles */
         .score-modal {
           max-width: 440px;
-          padding: 16px 20px;
+          padding: 20px 22px;
         }
 
         .score-modal.has-quick-tags {
-          max-width: 660px;
-          padding: 20px 24px;
+          max-width: 620px;
+          padding: 22px 24px;
         }
 
         .score-modal-body {
@@ -958,8 +1064,8 @@ const GroupDetail = ({ group, students, transactions, quickTags, onBack, onAddSt
         @media (min-width: 769px) {
           .score-modal.has-quick-tags .score-modal-body {
             display: grid;
-            grid-template-columns: 1fr 1.25fr;
-            gap: 24px;
+            grid-template-columns: 1fr 1.2fr;
+            gap: 20px;
             align-items: start;
           }
         }
@@ -973,22 +1079,21 @@ const GroupDetail = ({ group, students, transactions, quickTags, onBack, onAddSt
         .score-modal-right {
           display: flex;
           flex-direction: column;
-          gap: 8px;
-          border-left: 2px solid #000000;
-          padding-left: 20px;
+          gap: 10px;
+          border-left: 1px solid var(--border-color);
+          padding-left: 18px;
         }
 
         @media (max-width: 768px) {
           .score-modal {
-            width: 94% !important;
-            max-width: 380px;
-            padding: 14px 16px !important;
+            max-width: 100%;
+            padding: 16px 16px !important;
           }
 
           .score-modal-right {
             border-left: none;
             padding-left: 0;
-            border-top: 1.5px dashed #000000;
+            border-top: 1px dashed var(--border-color);
             padding-top: 12px;
             margin-top: 4px;
           }
@@ -999,13 +1104,13 @@ const GroupDetail = ({ group, students, transactions, quickTags, onBack, onAddSt
           align-items: center;
           gap: 12px;
           margin-bottom: 4px;
-          border-bottom: 2px solid #000000;
+          border-bottom: 1px solid var(--border-color);
           padding-bottom: 10px;
         }
 
         .score-modal-subtitle {
-          font-size: 0.85rem;
-          font-weight: 700;
+          font-size: 0.84rem;
+          font-weight: 500;
           color: var(--text-secondary);
           margin-top: 2px;
         }
@@ -1014,78 +1119,87 @@ const GroupDetail = ({ group, students, transactions, quickTags, onBack, onAddSt
           display: flex;
           flex-direction: column;
           gap: 6px;
-          max-height: 290px;
+          max-height: 220px;
           overflow-y: auto;
-          padding: 2px 4px 2px 0;
+          padding: 2px 2px 2px 0;
         }
 
         .quick-tag-card {
           display: flex;
           justify-content: space-between;
           align-items: center;
-          gap: 10px;
+          gap: 8px;
           padding: 8px 12px;
-          background: #ffffff;
-          border: 1.5px solid #000000;
-          box-shadow: 2px 2px 0px #000000;
+          background: #FFFFFF;
+          border: 1px solid rgba(0, 0, 0, 0.08);
+          border-radius: var(--radius-md);
+          box-shadow: var(--shadow-sm);
           cursor: pointer;
           font-family: var(--font-family);
           font-size: 0.84rem;
-          font-weight: 700;
+          font-weight: 600;
           text-align: left;
-          color: #000000;
+          color: var(--text-primary);
           white-space: nowrap;
-          transition: all 0.15s ease;
+          transition: all var(--transition-fast);
+          touch-action: manipulation;
         }
 
         .quick-tag-card:hover {
-          background: var(--accent-neon);
+          background: #F5F5F7;
         }
 
         .quick-tag-card.selected {
-          background: #000000;
-          color: #ffffff;
+          background: #1D1D1F;
+          color: #FFFFFF;
+          border-color: #1D1D1F;
         }
 
         .quick-tag-badge {
-          font-size: 0.78rem;
-          font-weight: 800;
+          font-size: 0.76rem;
+          font-weight: 700;
           padding: 2px 8px;
-          border-radius: 2px;
-          border: 1px solid #000000;
+          border-radius: var(--radius-full);
           white-space: nowrap;
         }
 
         .quick-tag-badge.positive {
-          background: #e2ffd0;
-          color: #000000;
+          background: #ECFDF5;
+          color: #059669;
+          border: 1px solid #A7F3D0;
         }
 
         .quick-tag-badge.negative {
-          background: #ffd0d0;
-          color: #000000;
+          background: #FEF2F2;
+          color: #DC2626;
+          border: 1px solid #FECACA;
         }
 
         .quick-tag-card.selected .quick-tag-badge.positive {
-          background: #E7FF56;
-          color: #000000;
+          background: rgba(255, 255, 255, 0.2);
+          color: #FFFFFF;
+          border-color: rgba(255, 255, 255, 0.3);
         }
 
         .quick-tag-card.selected .quick-tag-badge.negative {
-          background: #ff5252;
-          color: #ffffff;
-          border-color: #ffffff;
+          background: #EF4444;
+          color: #FFFFFF;
+          border-color: #EF4444;
         }
 
         .empty-students-placeholder {
-          padding: 60px 40px;
+          padding: 48px 24px;
           text-align: center;
           max-width: 500px;
-          margin: 40px auto;
+          margin: 20px auto;
           display: flex;
           flex-direction: column;
           align-items: center;
-          gap: 20px;
+          gap: 16px;
+          background: #FFFFFF;
+          border: 1px solid rgba(0, 0, 0, 0.06);
+          border-radius: var(--radius-xl);
+          box-shadow: var(--shadow-sm);
         }
 
         .student-modal {
@@ -1094,102 +1208,101 @@ const GroupDetail = ({ group, students, transactions, quickTags, onBack, onAddSt
 
         /* Profile Modal styles */
         .profile-modal {
-          max-width: 500px;
+          max-width: 460px;
+          padding: 24px;
         }
 
         .profile-modal-header {
           display: flex;
           flex-direction: column;
           align-items: center;
-          gap: 10px;
-          margin-bottom: 24px;
-          border-bottom: 2px solid #000000;
-          padding-bottom: 20px;
+          gap: 6px;
+          margin-bottom: 16px;
+          border-bottom: 1px solid var(--border-color);
+          padding-bottom: 14px;
         }
 
         .profile-avatar {
-          width: 80px;
-          height: 80px;
-          font-size: 2.5rem;
-          margin-bottom: 8px;
+          width: 56px;
+          height: 56px;
+          font-size: 1.6rem;
+          margin-bottom: 4px;
+          border-radius: var(--radius-lg);
+          border: 1px solid rgba(0, 0, 0, 0.08);
+          box-shadow: var(--shadow-sm);
         }
 
         .profile-modal-name {
-          font-size: 1.4rem;
-          font-weight: 800;
-          color: #000000;
-          text-transform: uppercase;
+          font-size: 1.2rem;
+          font-weight: 700;
+          color: var(--text-primary);
+          letter-spacing: -0.02em;
         }
 
         .profile-modal-group {
-          font-size: 0.85rem;
-          font-weight: 700;
-          color: #000000;
-          opacity: 0.6;
-          text-transform: uppercase;
+          font-size: 0.82rem;
+          font-weight: 500;
+          color: var(--text-secondary);
         }
 
         .profile-stats-grid {
           display: grid;
-          grid-template-columns: repeat(5, 1fr);
-          gap: 8px;
-          margin-bottom: 24px;
-        }
-
-        @media (max-width: 600px) {
-          .profile-stats-grid {
-            grid-template-columns: repeat(2, 1fr);
-          }
+          grid-template-columns: repeat(3, 1fr);
+          gap: 10px;
+          margin-bottom: 16px;
         }
 
         .profile-stat-box {
-          border: 1px solid #000000;
-          padding: 14px 10px;
+          border: 1px solid rgba(0, 0, 0, 0.04);
+          border-radius: var(--radius-md);
+          padding: 10px 6px;
           display: flex;
           flex-direction: column;
           align-items: center;
-          background: #ffffff;
+          background: #F5F5F7;
         }
 
         .profile-stat-val {
-          font-size: 1.5rem;
-          font-weight: 800;
-          color: #000000;
+          font-size: 1.3rem;
+          font-weight: 700;
+          color: var(--text-primary);
+          letter-spacing: -0.02em;
         }
 
         .profile-stat-lbl {
-          font-size: 0.75rem;
-          font-weight: 700;
-          text-transform: uppercase;
-          color: #000000;
-          opacity: 0.6;
-          margin-top: 4px;
+          font-size: 0.72rem;
+          font-weight: 600;
+          color: var(--text-secondary);
+          margin-top: 2px;
+          text-align: center;
+          line-height: 1.2;
         }
 
         .profile-timeline-section {
-          margin-bottom: 24px;
+          margin-bottom: 14px;
         }
 
         .profile-timeline-title {
-          font-size: 0.9rem;
-          font-weight: 800;
-          text-transform: uppercase;
-          margin-bottom: 12px;
-          color: #000000;
+          font-size: 0.85rem;
+          font-weight: 700;
+          margin-bottom: 10px;
+          color: var(--text-primary);
+          letter-spacing: -0.01em;
         }
 
         .profile-timeline-list {
-          max-height: 200px;
+          max-height: 180px;
           overflow-y: auto;
-          border: 1px solid #000000;
-          background: #ffffff;
+          border: 1px solid var(--border-color);
+          border-radius: var(--radius-md);
+          background: #FFFFFF;
         }
 
         .profile-timeline-item {
           display: flex;
           flex-direction: column;
-          padding: 12px;
-          border-bottom: 1px solid #000000;
+          padding: 10px 12px;
+          border-bottom: 1px solid var(--border-color-subtle);
         }
 
         .profile-timeline-item:last-child {
@@ -1199,55 +1312,259 @@ const GroupDetail = ({ group, students, transactions, quickTags, onBack, onAddSt
         .profile-timeline-item-meta {
           display: flex;
           justify-content: space-between;
-          font-size: 0.75rem;
-          font-weight: 700;
-          margin-bottom: 6px;
-          color: #000000;
-          opacity: 0.6;
+          font-size: 0.76rem;
+          font-weight: 600;
+          margin-bottom: 4px;
+          color: var(--text-secondary);
         }
 
         .profile-timeline-item-body {
           display: flex;
           justify-content: space-between;
           align-items: center;
-          gap: 12px;
+          gap: 8px;
         }
 
         .profile-timeline-comment {
-          font-size: 0.9rem;
-          font-style: italic;
-          color: #000000;
-          font-weight: 600;
+          font-size: 0.85rem;
+          color: var(--text-primary);
+          font-weight: 500;
         }
 
         .profile-timeline-item-delete {
           background: transparent;
           border: none;
           cursor: pointer;
-          font-size: 1rem;
-          transition: transform var(--transition-fast);
-          padding: 2px 6px;
+          font-size: 0.9rem;
+          padding: 2px 4px;
+          touch-action: manipulation;
+          color: var(--text-tertiary);
+          transition: color var(--transition-fast);
         }
 
         .profile-timeline-item-delete:hover {
-          transform: scale(1.2);
-          background: #E7FF56;
+          color: var(--apple-red);
         }
 
         .profile-timeline-empty {
-          padding: 30px;
+          padding: 24px;
           text-align: center;
-          font-size: 0.9rem;
-          color: #000000;
-          opacity: 0.5;
-        }
-
-        .clickable-info {
-          cursor: pointer;
+          font-size: 0.86rem;
+          color: var(--text-tertiary);
         }
 
         .clickable-info:hover .student-name {
-          text-decoration: underline;
+          color: var(--apple-blue);
+        }
+
+        .student-svg-picker-grid {
+          display: grid;
+          grid-template-columns: repeat(9, 1fr);
+          gap: 6px;
+          max-height: 200px;
+          overflow-y: auto;
+          padding: 8px;
+          background: #F5F5F7;
+          border-radius: var(--radius-md);
+          border: 1px solid rgba(0, 0, 0, 0.04);
+          margin-bottom: 12px;
+        }
+
+        @media (max-width: 600px) {
+          .student-svg-picker-grid {
+            grid-template-columns: repeat(6, 1fr);
+            max-height: 180px;
+          }
+        }
+
+        .student-svg-btn {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          aspect-ratio: 1;
+          background: #FFFFFF;
+          border: 1px solid rgba(0, 0, 0, 0.08);
+          border-radius: var(--radius-md);
+          box-shadow: var(--shadow-sm);
+          cursor: pointer;
+          padding: 4px;
+          transition: all var(--transition-fast);
+        }
+
+        .student-svg-btn:hover {
+          background: #F5F5F7;
+        }
+
+        .student-svg-btn.selected {
+          background: #1D1D1F;
+          border-color: #1D1D1F;
+        }
+
+        .group-pwd-badge-text {
+          background: #F5F5F7;
+          color: var(--text-primary);
+          padding: 3px 10px;
+          border: 1px solid rgba(0, 0, 0, 0.08);
+          border-radius: var(--radius-sm);
+          font-family: monospace;
+          font-size: 0.85rem;
+        }
+
+        /* GroupDetail Dark Mode Overrides */
+        [data-theme="dark"] .group-pwd-badge-text {
+          background: #303134;
+          color: #E8EAED;
+          border-color: #3C4043;
+        }
+
+        [data-theme="dark"] .student-list-item {
+          background: #292A2D;
+          border-color: #3C4043;
+        }
+
+        [data-theme="dark"] .student-avatar {
+          border-color: rgba(255, 255, 255, 0.12);
+        }
+
+        [data-theme="dark"] .student-score-badge {
+          background: #303134;
+          border-color: #3C4043;
+        }
+
+        [data-theme="dark"] .student-score-badge .score-num {
+          color: #81C995;
+        }
+
+        [data-theme="dark"] .student-score-badge .score-label {
+          color: #9AA0A6;
+        }
+
+        [data-theme="dark"] .btn-green {
+          background: rgba(129, 201, 149, 0.15) !important;
+          color: #81C995 !important;
+          border: 1px solid rgba(129, 201, 149, 0.35) !important;
+        }
+
+        [data-theme="dark"] .btn-green:hover {
+          background: rgba(129, 201, 149, 0.25) !important;
+          border-color: rgba(129, 201, 149, 0.5) !important;
+        }
+
+        [data-theme="dark"] .btn-red {
+          background: rgba(242, 139, 130, 0.15) !important;
+          color: #F28B82 !important;
+          border: 1px solid rgba(242, 139, 130, 0.35) !important;
+        }
+
+        [data-theme="dark"] .btn-red:hover {
+          background: rgba(242, 139, 130, 0.25) !important;
+          border-color: rgba(242, 139, 130, 0.5) !important;
+        }
+
+        [data-theme="dark"] .btn-custom {
+          background: #303134 !important;
+          color: #8AB4F8 !important;
+          border: 1px solid #3C4043 !important;
+        }
+
+        [data-theme="dark"] .btn-custom:hover {
+          background: #3C4043 !important;
+          border-color: #5F6368 !important;
+        }
+
+        [data-theme="dark"] .student-svg-picker-grid {
+          background: #202124;
+          border-color: #3C4043;
+        }
+
+        [data-theme="dark"] .student-svg-btn {
+          background: #303134;
+          border-color: #3C4043;
+        }
+
+        [data-theme="dark"] .student-svg-btn:hover {
+          background: #3C4043;
+        }
+
+        [data-theme="dark"] .student-svg-btn.selected {
+          background: #8AB4F8;
+          border-color: #8AB4F8;
+          color: #202124;
+        }
+
+        [data-theme="dark"] .profile-stat-box {
+          background: #202124;
+          border-color: #3C4043;
+        }
+
+        [data-theme="dark"] .profile-timeline-list {
+          background: #202124;
+          border-color: #3C4043;
+        }
+
+        [data-theme="dark"] .profile-timeline-item {
+          border-bottom-color: #3C4043;
+        }
+
+        [data-theme="dark"] .profile-timeline-time {
+          color: #9AA0A6;
+        }
+
+        [data-theme="dark"] .profile-timeline-amount {
+          color: #81C995;
+        }
+
+        [data-theme="dark"] .profile-timeline-comment {
+          color: #E8EAED;
+        }
+
+        [data-theme="dark"] .profile-timeline-item-delete {
+          color: #9AA0A6;
+        }
+
+        [data-theme="dark"] .profile-timeline-item-delete:hover {
+          color: #F28B82;
+        }
+
+        /* Score Modal Quick Tags Dark Mode */
+        [data-theme="dark"] .quick-tag-card {
+          background: #202124 !important;
+          border-color: #3C4043 !important;
+          color: #E8EAED !important;
+        }
+
+        [data-theme="dark"] .quick-tag-card:hover {
+          background: #303134 !important;
+          border-color: #5F6368 !important;
+        }
+
+        [data-theme="dark"] .quick-tag-card.selected {
+          background: #8AB4F8 !important;
+          color: #202124 !important;
+          border-color: #8AB4F8 !important;
+        }
+
+        [data-theme="dark"] .quick-tag-text {
+          color: inherit;
+        }
+
+        [data-theme="dark"] .quick-tag-badge.positive {
+          background: rgba(129, 201, 149, 0.15) !important;
+          color: #81C995 !important;
+          border: 1px solid rgba(129, 201, 149, 0.35) !important;
+        }
+
+        [data-theme="dark"] .quick-tag-badge.negative {
+          background: rgba(242, 139, 130, 0.15) !important;
+          color: #F28B82 !important;
+          border: 1px solid rgba(242, 139, 130, 0.35) !important;
+        }
+
+        [data-theme="dark"] .quick-tag-card.selected .quick-tag-badge.positive,
+        [data-theme="dark"] .quick-tag-card.selected .quick-tag-badge.negative {
+          background: rgba(0, 0, 0, 0.2) !important;
+          color: #202124 !important;
+          border-color: rgba(0, 0, 0, 0.3) !important;
         }
       `}</style>
     </div>

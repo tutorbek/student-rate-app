@@ -44,7 +44,7 @@ const initDb = () => {
   if (!fs.existsSync(DB_DIR)) {
     fs.mkdirSync(DB_DIR, { recursive: true });
   }
-  
+
   if (!fs.existsSync(DB_FILE)) {
     const defaultData = {
       groups: [],
@@ -66,7 +66,7 @@ const initDb = () => {
 const CREDENTIALS = {
   // Teacher 1 (User)
   'insight': { role: 'teacher' },
-  'ozimsila': { role: 'teacher' },
+  'beksila': { role: 'teacher' },
   'studentman': { role: 'student' },
 
   // Teacher 2
@@ -115,7 +115,7 @@ app.post('/api/db', (req, res) => {
   try {
     initDb();
     const dbData = req.body;
-    
+
     // Simple validation (must have core keys)
     if (!dbData || typeof dbData !== 'object') {
       return res.status(400).json({ error: "Invalid database format." });
@@ -152,7 +152,7 @@ const sendTelegramBackupDocument = async (teacherId, data) => {
     const filename = `${teacherId}_backup_${new Date().toISOString().slice(0, 10)}.json`;
     const jsonString = JSON.stringify(data, null, 2);
     const blob = new Blob([jsonString], { type: 'application/json' });
-    
+
     const formData = new FormData();
     formData.append('chat_id', ADMIN_CHAT_ID);
     formData.append('caption', `📂 *Zaxira nusxasi:* \`${teacherId}\`\n🕒 Sana: ${new Date().toLocaleString()}`);
@@ -163,7 +163,7 @@ const sendTelegramBackupDocument = async (teacherId, data) => {
       method: 'POST',
       body: formData
     });
-    
+
     const result = await response.json();
     if (!result.ok) {
       console.error(`[Telegram] Failed to send document for ${teacherId}:`, result);
@@ -176,7 +176,7 @@ const sendTelegramBackupDocument = async (teacherId, data) => {
 const runAllBackups = async () => {
   const teachers = ['teacher1', 'teacher2', 'teacher3', 'teacher4'];
   let successCount = 0;
-  
+
   for (const teacherId of teachers) {
     try {
       const { data: row, error } = await supabase
@@ -196,7 +196,7 @@ const runAllBackups = async () => {
       console.error(`[Backup] Failed to fetch data for ${teacherId}:`, err);
     }
   }
-  
+
   await sendTelegramMessage(ADMIN_CHAT_ID, `✅ *Tizim zaxirasi yakunlandi!*\n📈 Muvaffaqiyatli: *${successCount}/${teachers.length}* ta profil.`);
 };
 
@@ -206,7 +206,7 @@ app.post('/api/webhook', async (req, res) => {
     if (update && update.message && update.message.text) {
       const text = update.message.text.trim();
       const chatId = String(update.message.chat.id);
-      
+
       if (chatId === ADMIN_CHAT_ID) {
         if (text === '/backup') {
           await sendTelegramMessage(chatId, "⏳ *Zaxiralash jarayoni boshlandi...* Iltimos kutib turing.");
@@ -232,11 +232,11 @@ app.get('/api/set-webhook', async (req, res) => {
     const protocol = req.headers['x-forwarded-proto'] || 'https';
     const host = req.headers['host'];
     const webhookUrl = `${protocol}://${host}/api/webhook`;
-    
+
     console.log(`[Webhook Register] Registering webhook endpoint: ${webhookUrl}`);
     const response = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/setWebhook?url=${webhookUrl}`);
     const result = await response.json();
-    
+
     if (result.ok) {
       res.json({
         success: true,
@@ -259,11 +259,11 @@ app.get('/api/set-webhook', async (req, res) => {
 app.all('/api/run-backup', async (req, res) => {
   const isVercelCron = req.headers['x-vercel-cron'] === 'true';
   const isLocal = !process.env.VERCEL;
-  
+
   if (!isVercelCron && !isLocal) {
     return res.status(401).json({ error: 'Unauthorized' });
   }
-  
+
   try {
     console.log('[Vercel Cron] Starting daily Tashkent time backup...');
     await runAllBackups();
@@ -288,7 +288,7 @@ const pollTelegramUpdates = async () => {
           if (message && message.text) {
             const text = message.text.trim();
             const chatId = String(message.chat.id);
-            
+
             if (chatId === ADMIN_CHAT_ID) {
               if (text === '/backup') {
                 await sendTelegramMessage(chatId, "⏳ *Zaxiralash jarayoni boshlandi...* Iltimos kutib turing.");

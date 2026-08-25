@@ -1,7 +1,38 @@
 <!doctype html>
-<html lang="uz" class="h-full">
+<html lang="uz" class="min-h-full">
   <head>
     <meta charset="UTF-8" />
+    <script>
+      (function() {
+        try {
+          var saved = localStorage.getItem('rsa_theme');
+          var isDark = saved === 'dark' || (!saved && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+          var theme = isDark ? 'dark' : 'light';
+          document.documentElement.setAttribute('data-theme', theme);
+          document.documentElement.style.backgroundColor = isDark ? '#202124' : '#F5F5F7';
+          document.documentElement.style.colorScheme = theme;
+        } catch (e) {}
+      })();
+    </script>
+    <style>
+      html, body {
+        overscroll-behavior: none !important;
+        overscroll-behavior-y: none !important;
+        overscroll-behavior-x: none !important;
+      }
+      html[data-theme="dark"],
+      html[data-theme="dark"] body {
+        background-color: #202124 !important;
+        color: #E8EAED !important;
+        color-scheme: dark;
+      }
+      html[data-theme="light"],
+      html[data-theme="light"] body {
+        background-color: #F5F5F7 !important;
+        color: #1D1D1F !important;
+        color-scheme: light;
+      }
+    </style>
     <!-- Favicons -->
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
     <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
@@ -26,9 +57,8 @@
     <meta property="og:description" content="Bilim olishingizni Like bilan taqdirlang! Haftalik va oylik musobaqalarda g'olib bo'ling."/>
     <meta property="og:site_name" content="Epchil Robot"/>
 
-    <!-- Google Fonts & Icons -->
+    <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&display=swap" rel="stylesheet"/>
-    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
 
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com?plugins=forms"></script>
@@ -37,13 +67,13 @@
             theme: {
                 extend: {
                     colors: {
-                        'cyber-yellow': '#DFFF00',
-                        'deep-void': '#000000',
+                        'apple-blue': '#0071E3',
+                        'deep-void': '#1D1D1F',
                         'stark-white': '#FFFFFF',
-                        'muted-gray': '#F3F4F6',
+                        'muted-gray': '#F5F5F7',
                     },
                     fontFamily: {
-                        sans: ['Outfit', 'sans-serif'],
+                        sans: ['Outfit', '-apple-system', 'BlinkMacSystemFont', 'sans-serif'],
                     }
                 }
             }
@@ -59,210 +89,9 @@
             person_profiles: 'identified_only',
         })
     </script>
-    
-    <style>
-        /* Neo-Brutalism maxsus stillari */
-        .relative {
-            position: relative !important;
-        }
-        .absolute {
-            position: absolute !important;
-        }
-        .left-4 {
-            left: 16px !important;
-        }
-        .right-4 {
-            right: 16px !important;
-        }
-        .top-4 {
-            top: 16px !important;
-        }
-        .input-group {
-            position: relative !important;
-            width: 100%;
-        }
-        .input-group label {
-            position: absolute !important;
-            left: 16px !important;
-            top: 16px !important;
-            pointer-events: none;
-            transition: all 0.2s ease;
-        }
-        .input-group button {
-            position: absolute !important;
-            right: 16px !important;
-            top: 16px !important;
-            background: none;
-            border: none;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 0;
-        }
-        .hard-shadow {
-            box-shadow: 4px 4px 0px 0px #000000;
-        }
-        .hard-shadow-lg {
-            box-shadow: 8px 8px 0px 0px #000000;
-        }
-        .hard-shadow-btn:hover {
-            box-shadow: 6px 6px 0px 0px #000000;
-            transform: translate(-2px, -2px);
-        }
-        .hard-shadow-btn:active {
-            box-shadow: 0px 0px 0px 0px #000000;
-            transform: translate(4px, 4px);
-        }
-        .custom-pattern {
-            background-image: radial-gradient(#000000 2px, transparent 2px);
-            background-size: 20px 20px;
-        }
-        /* Input validatsiya va label o'zgarishi */
-        .input-group input:focus ~ label,
-        .input-group input:not(:placeholder-shown) ~ label {
-            transform: translateY(-1.5rem) scale(0.85);
-            background-color: #FFFFFF;
-            padding-left: 4px;
-            padding-right: 4px;
-        }
-        .input-focus-effect:focus {
-            border-color: #000000 !important;
-            box-shadow: 0 0 0 3px #DFFF00 !important;
-        }
-
-        /* Yuqori unumdorlikka ega, qotmaydigan Like oqimi uchun qatlam */
-        #like-particles-container {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            overflow: hidden;
-            pointer-events: none;
-            z-index: 1;
-        }
-
-        /* Tartibsiz suzuvchi ob'ektlar stili */
-        .floating-brutal-like {
-            position: absolute;
-            background: #FFFFFF;
-            border: 2px solid #000000;
-            padding: 6px 10px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 4px;
-            box-shadow: 3px 3px 0px 0px #000000;
-            font-weight: 900;
-            font-size: 14px;
-            will-change: transform;
-            transform-origin: center;
-        }
-
-        /* Core Layout to prevent jumping/FOUC before Tailwind CDN loads */
-        .login-header-brutal {
-            width: 100%;
-            background-color: #FFFFFF;
-            border-bottom: 2px solid #000000;
-            padding: 16px 24px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            box-sizing: border-box;
-        }
-        .login-main-brutal {
-            display: flex;
-            flex-direction: column;
-            flex-grow: 1;
-            position: relative;
-            width: 100%;
-            box-sizing: border-box;
-        }
-        @media (min-width: 1024px) {
-            .login-main-brutal {
-                flex-direction: row;
-            }
-        }
-        .login-left-brutal {
-            width: 100%;
-            background-color: #DFFF00;
-            border-bottom: 2px solid #000000;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            padding: 24px;
-            box-sizing: border-box;
-        }
-        @media (min-width: 1024px) {
-            .login-left-brutal {
-                width: 50%;
-                border-bottom: none;
-                border-right: 2px solid #000000;
-                padding: 64px;
-            }
-        }
-        .login-right-brutal {
-            width: 100%;
-            background-color: #F3F4F6;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 16px;
-            position: relative;
-            box-sizing: border-box;
-        }
-        @media (min-width: 1024px) {
-            .login-right-brutal {
-                width: 50%;
-                padding: 64px;
-            }
-        }
-        .login-card-brutal {
-            width: 100%;
-            max-width: 448px;
-            background-color: #FFFFFF;
-            border: 2px solid #000000;
-            padding: 24px;
-            position: relative;
-            box-shadow: 8px 8px 0px 0px #000000;
-            box-sizing: border-box;
-        }
-        @media (min-width: 640px) {
-            .login-card-brutal {
-                padding: 40px;
-            }
-        }
-        .login-input-brutal {
-            width: 100%;
-            height: 56px;
-            background-color: #FFFFFF;
-            border: 2px solid #000000;
-            padding: 0 16px;
-            font-family: monospace;
-            font-size: 18px;
-            box-sizing: border-box;
-        }
-        .login-btn-brutal {
-            width: 100%;
-            height: 56px;
-            background-color: #000000;
-            color: #FFFFFF;
-            font-weight: bold;
-            border: 2px solid #DFFF00;
-            text-transform: uppercase;
-            letter-spacing: 0.1em;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-            cursor: pointer;
-            box-sizing: border-box;
-        }
-    </style>
   </head>
-  <body class="h-full">
-    <div id="root" class="h-full"></div>
+  <body class="min-h-full">
+    <div id="root" class="min-h-full"></div>
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>

@@ -1,4 +1,5 @@
 import { getGroupPasswordsRegistry } from './supabase';
+import { normalizeIconUrl } from './avatarGallery';
 
 const UZBEK_WORDS = [
   'olma', 'anor', 'uzum', 'anjir', 'orik', 'shaftoli', 'behi', 'tarvuz', 'qovun', 'bodring',
@@ -91,45 +92,18 @@ export const normalizeQuickTag = (tag) => {
 };
 
 export const normalizeQuickTags = (tags) => {
-  if (!Array.isArray(tags) || tags.length === 0) return DEFAULT_QUICK_TAGS;
-  const result = tags.map(normalizeQuickTag).filter(Boolean);
-  return result.length > 0 ? result : DEFAULT_QUICK_TAGS;
+  if (tags === undefined || tags === null) return DEFAULT_QUICK_TAGS;
+  if (!Array.isArray(tags)) return DEFAULT_QUICK_TAGS;
+  return tags.map(normalizeQuickTag).filter(Boolean);
 };
 
 // Helper: Generate Unique ID
 const generateId = () => Math.random().toString(36).substring(2, 11);
 
-// Helper: Get Start of Current Week (Monday 00:00)
-export const getStartOfWeek = () => {
-  const now = new Date();
-  const day = now.getDay(); // 0: Sunday, 1: Monday, etc.
-  const diff = now.getDate() - day + (day === 0 ? -6 : 1);
-  const monday = new Date(now);
-  monday.setDate(diff);
-  monday.setHours(0, 0, 0, 0);
-  return monday;
-};
-
 // Helper: Get Start of Current Month (1st of current month 00:00)
 export const getStartOfMonth = () => {
   const now = new Date();
   return new Date(now.getFullYear(), now.getMonth(), 1);
-};
-
-// Helper: Get Start of Last Week (Monday 00:00 of previous week)
-export const getStartOfLastWeek = () => {
-  const currentMonday = getStartOfWeek();
-  const lastMonday = new Date(currentMonday);
-  lastMonday.setDate(lastMonday.getDate() - 7);
-  return lastMonday;
-};
-
-// Helper: Get End of Last Week (Sunday 23:59:59.999 of previous week)
-export const getEndOfLastWeek = () => {
-  const currentMonday = getStartOfWeek();
-  const lastSunday = new Date(currentMonday);
-  lastSunday.setMilliseconds(lastSunday.getMilliseconds() - 1);
-  return lastSunday;
 };
 
 // Helper: Get Start of Last Month (1st of previous month 00:00)
@@ -145,27 +119,29 @@ export const getEndOfLastMonth = () => {
 };
 
 // --- Groups API ---
-export const addGroup = (groups, name, icon, password) => {
+export const addGroup = (groups, name, icon, password, color) => {
   const newGroup = {
     id: generateId(),
     name: name.trim(),
-    icon: icon || '📁',
+    icon: normalizeIconUrl(icon || 'folder'),
     password: password ? password.trim().toLowerCase() : '',
+    color: color || '#FFFFFF',
     createdAt: new Date().toISOString(),
   };
   const updatedGroups = [...groups, newGroup];
   return { newGroup, updatedGroups };
 };
 
-export const updateGroup = (groups, groupId, newName, newIcon, newPassword) => {
+export const updateGroup = (groups, groupId, newName, newIcon, newPassword, newColor) => {
   let updatedGroup = null;
   const updatedGroups = groups.map((g) => {
     if (g.id === groupId) {
       updatedGroup = {
         ...g,
         name: newName.trim(),
-        icon: newIcon || g.icon || '📁',
+        icon: normalizeIconUrl(newIcon || g.icon || 'folder'),
         password: newPassword !== undefined ? newPassword.trim().toLowerCase() : g.password,
+        color: newColor !== undefined ? newColor : (g.color || '#FFFFFF'),
       };
       return updatedGroup;
     }
@@ -208,7 +184,7 @@ export const addStudent = (students, name, groupId, emoji, color) => {
     id: generateId(),
     name: name.trim(),
     groupId,
-    emoji: emoji || '🚀',
+    emoji: normalizeIconUrl(emoji || 'lion'),
     color: color || '#007AFF', // Default Apple blue
     createdAt: new Date().toISOString(),
   };
@@ -223,7 +199,7 @@ export const updateStudent = (students, studentId, newName, newEmoji, newColor) 
       updatedStudent = {
         ...s,
         name: newName.trim(),
-        emoji: newEmoji || s.emoji,
+        emoji: normalizeIconUrl(newEmoji || s.emoji),
         color: newColor || s.color,
       };
       return updatedStudent;
@@ -339,9 +315,18 @@ export const deleteAttendanceRecord = (attendance = [], groupId, date, studentId
 
 // --- Export / Import ---
 export const exportDatabase = (groups, students, transactions, quickTags, attendance = []) => {
+  const normalizedGroups = (groups || []).map((g) => ({
+    ...g,
+    icon: normalizeIconUrl(g.icon),
+  }));
+  const normalizedStudents = (students || []).map((s) => ({
+    ...s,
+    emoji: normalizeIconUrl(s.emoji),
+  }));
+
   const db = {
-    groups,
-    students,
+    groups: normalizedGroups,
+    students: normalizedStudents,
     transactions,
     quickTags,
     attendance,
@@ -354,32 +339,31 @@ export const importDatabase = (jsonString) => {
   const db = JSON.parse(jsonString);
   if (!db || typeof db !== 'object') throw new Error("Yaroqsiz ma'lumot formati");
   
-  const groups = Array.isArray(db.groups) ? db.groups : [];
-  const students = Array.isArray(db.students) ? db.students : [];
+  const rawGroups = Array.isArray(db.groups) ? db.groups : [];
+  const rawStudents = Array.isArray(db.students) ? db.students : [];
   const transactions = Array.isArray(db.transactions) ? db.transactions : [];
   const quickTags = Array.isArray(db.quickTags) ? db.quickTags : DEFAULT_QUICK_TAGS;
   const attendance = Array.isArray(db.attendance) ? db.attendance : [];
+
+  const groups = rawGroups.map((g) => ({
+    ...g,
+    icon: normalizeIconUrl(g.icon),
+  }));
+
+  const students = rawStudents.map((s) => ({
+    ...s,
+    emoji: normalizeIconUrl(s.emoji),
+  }));
 
   return { groups, students, transactions, quickTags, attendance };
 };
 
 // --- Statistics and Calculations API ---
-export const getStudentScore = (transactions, studentId, timeframe = 'all') => {
+export const getStudentScore = (transactions, studentId, timeframe = 'month') => {
   const txs = transactions.filter((t) => t.studentId === studentId && !t.deleted);
   
   if (timeframe === 'all') {
     return txs.reduce((sum, t) => sum + t.amount, 0);
-  }
-
-  if (timeframe === 'lastWeek') {
-    const startOfLastWeek = getStartOfLastWeek();
-    const endOfLastWeek = getEndOfLastWeek();
-    return txs
-      .filter((t) => {
-        const txDate = new Date(t.timestamp);
-        return txDate >= startOfLastWeek && txDate <= endOfLastWeek;
-      })
-      .reduce((sum, t) => sum + t.amount, 0);
   }
 
   if (timeframe === 'lastMonth') {
@@ -393,10 +377,10 @@ export const getStudentScore = (transactions, studentId, timeframe = 'all') => {
       .reduce((sum, t) => sum + t.amount, 0);
   }
 
-  const limitDate = timeframe === 'week' ? getStartOfWeek() : getStartOfMonth();
-
+  // default 'month'
+  const startOfMonth = getStartOfMonth();
   return txs
-    .filter((t) => new Date(t.timestamp) >= limitDate)
+    .filter((t) => new Date(t.timestamp) >= startOfMonth)
     .reduce((sum, t) => sum + t.amount, 0);
 };
 

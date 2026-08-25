@@ -25,11 +25,18 @@ const DEFAULT_DATA = {
 export const loadFromSupabase = async (teacherId) => {
   try {
     if (!teacherId) return null;
-    const { data, error } = await supabase
+
+    const timeoutPromise = new Promise((_, reject) =>
+      setTimeout(() => reject(new Error('Supabase load timed out')), 4500)
+    );
+
+    const queryPromise = supabase
       .from('appdata')
       .select('data')
       .eq('teacher_id', teacherId)
       .maybeSingle();
+
+    const { data, error } = await Promise.race([queryPromise, timeoutPromise]);
 
     if (error) throw error;
     if (data && data.data) {

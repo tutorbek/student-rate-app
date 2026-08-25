@@ -5,7 +5,6 @@ import Dashboard from './components/Dashboard';
 import GroupsList from './components/GroupsList';
 import GroupDetail from './components/GroupDetail';
 import Leaderboard from './components/Leaderboard';
-import History from './components/History';
 import Settings from './components/Settings';
 import Attendance from './components/Attendance';
 import {
@@ -38,12 +37,13 @@ import {
   exportDatabase,
   importDatabase
 } from './utils/db';
+import { normalizeIconUrl } from './utils/avatarGallery';
 
 function App() {
   const [activeTab, setActiveTab] = useState(() => {
     const savedRole = localStorage.getItem('rsa_role');
     const isStudent = savedRole === 'student';
-    const savedTab = localStorage.getItem('rsa_active_tab') || 'dashboard';
+    const savedTab = localStorage.getItem('rsa_active_tab') || 'groups';
     // Students can only access leaderboard and history
     if (isStudent && savedTab !== 'leaderboard' && savedTab !== 'history') {
       return 'leaderboard';
@@ -62,6 +62,69 @@ function App() {
   useEffect(() => {
     localStorage.setItem('rsa_selected_group_id', JSON.stringify(selectedGroupId));
   }, [selectedGroupId]);
+
+  const [theme, setTheme] = useState(() => {
+    const savedTheme = localStorage.getItem('rsa_theme');
+    if (savedTheme === 'dark' || savedTheme === 'light') {
+      return savedTheme;
+    }
+    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+      return 'dark';
+    }
+    return 'light';
+  });
+
+  const applyThemeInstantly = useCallback((newTheme) => {
+    // Temporarily disable CSS transitions so that background, text, and cards switch in 0ms without white flicker
+    const css = document.createElement('style');
+    css.appendChild(
+      document.createTextNode(
+        `*, *::before, *::after {
+           -webkit-transition: none !important;
+           -moz-transition: none !important;
+           -o-transition: none !important;
+           -ms-transition: none !important;
+           transition: none !important;
+         }`
+      )
+    );
+    document.head.appendChild(css);
+
+    setTheme(newTheme);
+    document.documentElement.setAttribute('data-theme', newTheme);
+    document.documentElement.style.backgroundColor = newTheme === 'dark' ? '#202124' : '#F5F5F7';
+    document.documentElement.style.colorScheme = newTheme;
+    localStorage.setItem('rsa_theme', newTheme);
+
+    // Force style recalculation
+    const _ = window.getComputedStyle(css).opacity;
+
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        if (document.head.contains(css)) {
+          document.head.removeChild(css);
+        }
+      });
+    });
+  }, []);
+
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme);
+    document.documentElement.style.backgroundColor = theme === 'dark' ? '#202124' : '#F5F5F7';
+    document.documentElement.style.colorScheme = theme;
+    localStorage.setItem('rsa_theme', theme);
+  }, [theme]);
+
+  const toggleTheme = useCallback(() => {
+    const nextTheme = theme === 'dark' ? 'light' : 'dark';
+    applyThemeInstantly(nextTheme);
+  }, [theme, applyThemeInstantly]);
+
+  const handleSetTheme = useCallback((newTheme) => {
+    if (newTheme === 'dark' || newTheme === 'light') {
+      applyThemeInstantly(newTheme);
+    }
+  }, [applyThemeInstantly]);
 
   const [isAuthenticated, setIsAuthenticated] = useState(() => {
     return localStorage.getItem('rsa_authenticated') === 'true';
@@ -105,7 +168,7 @@ function App() {
     const CREDENTIALS = {
       // Teacher 1
       'insight': { role: 'teacher', teacherId: 'teacher1' },
-      'ozimsila': { role: 'teacher', teacherId: 'teacher1' }, // backward compatibility
+      'beksila': { role: 'teacher', teacherId: 'teacher1' }, // backward compatibility
 
       // Teacher 2
       'quyosh': { role: 'teacher', teacherId: 'teacher2' },
@@ -134,7 +197,7 @@ function App() {
       if (match.role === 'student') {
         setActiveTab('leaderboard');
       } else {
-        setActiveTab('dashboard');
+        setActiveTab('groups');
       }
       showToast("Muvaffaqiyatli kirdingiz!", "success");
       setLoginLoading(false);
@@ -215,7 +278,7 @@ function App() {
     };
   }, [isAuthenticated]);
 
-  // Sync state
+  // Sync state (Strict Cloud-First: Supabase is Single Source of Truth)
   const [groups, setGroups] = useState([]);
   const [students, setStudents] = useState([]);
   const [transactions, setTransactions] = useState([]);
@@ -255,7 +318,7 @@ function App() {
     }
   }, [isAuthenticated, userRole]);
 
-  // Load database from Firestore when authenticated and teacherId is ready
+  // Load database from Supabase when authenticated and teacherId is ready
   useEffect(() => {
     if (!isAuthenticated || !teacherId) {
       setIsLoaded(false);
@@ -263,29 +326,36 @@ function App() {
     }
     const load = async () => {
       setIsSyncing(true);
+      // Always prioritize live Cloud Database (Supabase) as Single Source of Truth
       let data = await loadFromFirestore(teacherId);
 
-      // Check for local backup if network load is empty or failed
-      const localBackupStr = localStorage.getItem(`rsa_local_backup_${teacherId}`);
-      if (localBackupStr) {
-        try {
-          const localBackup = JSON.parse(localBackupStr);
-          const localHasContent = (localBackup.groups && localBackup.groups.length > 0) || (localBackup.students && localBackup.students.length > 0);
-          const cloudIsEmpty = !data || ((!data.groups || data.groups.length === 0) && (!data.students || data.students.length === 0));
-
-          if (cloudIsEmpty && localHasContent) {
-            console.warn('[Offline Backup] Restored data from localStorage backup!');
-            data = localBackup;
-            showToast("Ma'lumotlar qurilmaning ichki xotirasidan tiklandi!", "info");
+      // Disaster recovery fallback ONLY if network completely failed
+      if (!data) {
+        const localBackupStr = localStorage.getItem(`rsa_local_backup_${teacherId}`);
+        if (localBackupStr) {
+          try {
+            const localBackup = JSON.parse(localBackupStr);
+            const localHasContent = (localBackup.groups && localBackup.groups.length > 0) || (localBackup.students && localBackup.students.length > 0);
+            if (localHasContent) {
+              console.warn('[Disaster Recovery] Network failed; loaded offline cache.');
+              data = localBackup;
+              showToast("Internet uzildi. Ma'lumotlar qurilmaning vaqtinchalik xotirasidan ochildi!", "info");
+            }
+          } catch (_err) {
+            // ignore parse error
           }
-        } catch (_err) {
-          // ignore parse error
         }
       }
 
       if (data) {
-        const loadedGroups = data.groups || [];
-        const loadedStudents = data.students || [];
+        const loadedGroups = (data.groups || []).map((g) => ({
+          ...g,
+          icon: normalizeIconUrl(g.icon),
+        }));
+        const loadedStudents = (data.students || []).map((s) => ({
+          ...s,
+          emoji: normalizeIconUrl(s.emoji),
+        }));
         const loadedTransactions = data.transactions || [];
         const loadedQuickTags = normalizeQuickTags(data.quickTags);
         const loadedAttendance = data.attendance || [];
@@ -296,7 +366,7 @@ function App() {
         setQuickTags(loadedQuickTags);
         setAttendance(loadedAttendance);
 
-        // Update the ref so we don't save this back to Supabase
+        // Update the ref so we don't accidentally re-save on mount
         const dbState = {
           groups: loadedGroups,
           students: loadedStudents,
@@ -306,10 +376,18 @@ function App() {
         };
         lastSavedDataRef.current = JSON.stringify(dbState);
 
+        // Cache fresh cloud data to local storage for offline protection
+        try {
+          if (loadedGroups.length > 0 || loadedStudents.length > 0) {
+            localStorage.setItem(`rsa_local_backup_${teacherId}`, JSON.stringify(dbState));
+          }
+        } catch (_) {}
+
         setIsLoaded(true);
         setConnectionError(false);
+        setSyncStatus('saved');
       } else {
-        // Load failed due to network / database error
+        // Load failed due to network / database error and no local cache exists
         console.error('[Supabase] Load failed on startup.');
         setSyncStatus('offline');
         setConnectionError(true);
@@ -319,7 +397,7 @@ function App() {
       // Load snapshots for rollback points (Teachers only)
       if (userRole === 'teacher') {
         const history = await loadSnapshotsFromFirestore(teacherId);
-        setSnapshots(history);
+        if (history) setSnapshots(history);
       }
 
       setIsSyncing(false);
@@ -327,21 +405,36 @@ function App() {
     load();
   }, [isAuthenticated, teacherId, userRole, reloadTrigger]);
 
+  // Natural sorting function for group names (e.g. G1, G2, G3, G4, G10...)
+  const sortGroupsNaturally = (list) => {
+    return [...list].sort((a, b) => {
+      const nameA = a.name || '';
+      const nameB = b.name || '';
+      return nameA.localeCompare(nameB, undefined, { numeric: true, sensitivity: 'base' });
+    });
+  };
+
   // Filter states to exclude soft-deleted items, and enforce student group-level isolation
   const filteredGroups = useMemo(() => {
     const activeGroups = groups.filter(g => !g.deleted);
+    const sorted = sortGroupsNaturally(activeGroups);
     if (userRole === 'student' && studentGroupId) {
-      return activeGroups.filter(g => g.id === studentGroupId);
+      return sorted.filter(g => g.id === studentGroupId);
     }
-    return activeGroups;
+    return sorted;
   }, [groups, userRole, studentGroupId]);
 
   const filteredStudents = useMemo(() => {
     const activeStudents = students.filter(s => !s.deleted);
+    const sorted = [...activeStudents].sort((a, b) => {
+      const nameA = a.name || '';
+      const nameB = b.name || '';
+      return nameA.localeCompare(nameB, undefined, { numeric: true, sensitivity: 'base' });
+    });
     if (userRole === 'student' && studentGroupId) {
-      return activeStudents.filter(s => s.groupId === studentGroupId);
+      return sorted.filter(s => s.groupId === studentGroupId);
     }
-    return activeStudents;
+    return sorted;
   }, [students, userRole, studentGroupId]);
 
   const studentIds = useMemo(() => {
@@ -357,8 +450,7 @@ function App() {
   }, [transactions, studentIds, userRole, studentGroupId]);
 
   // All active data for the current teacher (no student-group isolation)
-  // Used for Top 3 groups widget in Sidebar — students should see ALL teacher groups
-  const allActiveGroups = useMemo(() => groups.filter(g => !g.deleted), [groups]);
+  const allActiveGroups = useMemo(() => sortGroupsNaturally(groups.filter(g => !g.deleted)), [groups]);
   const allActiveStudents = useMemo(() => students.filter(s => !s.deleted), [students]);
   const allActiveTransactions = useMemo(() => transactions.filter(t => !t.deleted), [transactions]);
 
@@ -434,122 +526,9 @@ function App() {
     return () => clearTimeout(timer);
   }, [toast]);
 
-  // Handle mobile visual viewport changes (fixes virtual keyboard overlays / pans)
-  useEffect(() => {
-    if (typeof window === 'undefined' || !window.visualViewport) return;
 
-    const handleViewportChange = () => {
-      const vv = window.visualViewport;
-      // pageTop handles scrolled document position + offset
-      const top = vv.pageTop !== undefined ? vv.pageTop : (vv.offsetTop + window.scrollY);
-      const left = vv.pageLeft !== undefined ? vv.pageLeft : (vv.offsetLeft + window.scrollX);
-      const height = vv.height;
-      const width = vv.width;
 
-      document.documentElement.style.setProperty('--viewport-top', `${top}px`);
-      document.documentElement.style.setProperty('--viewport-left', `${left}px`);
-      document.documentElement.style.setProperty('--viewport-height', `${height}px`);
-      document.documentElement.style.setProperty('--viewport-width', `${width}px`);
-    };
 
-    // Initial call
-    handleViewportChange();
-
-    window.visualViewport.addEventListener('resize', handleViewportChange);
-    window.visualViewport.addEventListener('scroll', handleViewportChange);
-    window.addEventListener('scroll', handleViewportChange);
-
-    return () => {
-      if (window.visualViewport) {
-        window.visualViewport.removeEventListener('resize', handleViewportChange);
-        window.visualViewport.removeEventListener('scroll', handleViewportChange);
-      }
-      window.removeEventListener('scroll', handleViewportChange);
-    };
-  }, []);
-
-  // Like particles generator for Login screen
-  useEffect(() => {
-    if (isAuthenticated) return;
-
-    const container = document.getElementById("like-particles-container");
-    if (!container) return;
-
-    const particleCount = window.innerWidth < 768 ? 5 : 10;
-    const textOptions = ["+1 Like", "👍", "Epchil", "🔥", "ZO'R"];
-    const colors = ["#DFFF00", "#FFFFFF"];
-    const particles = [];
-    let animationFrameId;
-
-    function createParticle(isInitial = false) {
-      const el = document.createElement("div");
-      el.className = "floating-brutal-like select-none opacity-0 transition-opacity duration-500";
-      
-      el.innerText = textOptions[Math.floor(Math.random() * textOptions.length)];
-      const randomBg = colors[Math.floor(Math.random() * colors.length)];
-      el.style.backgroundColor = randomBg;
-      if (randomBg === "#DFFF00") {
-        el.style.color = "#000000";
-      }
-
-      const x = Math.random() * 100;
-      const y = isInitial ? (Math.random() * 85 + 5) : 105;
-      
-      el.style.left = `${x}%`;
-      el.style.top = `${y}%`;
-      
-      container.appendChild(el);
-
-      setTimeout(() => { el.style.opacity = "1"; }, 50);
-
-      const pData = {
-        element: el,
-        x: x,
-        y: y,
-        speed: 0.08 + Math.random() * 0.12,
-        angle: (Math.random() - 0.5) * 0.15,
-        rot: Math.random() * 360,
-        rotSpeed: (Math.random() - 0.5) * 0.5,
-        scale: 0.85 + Math.random() * 0.3
-      };
-
-      particles.push(pData);
-    }
-
-    for (let i = 0; i < particleCount; i++) {
-      createParticle(true);
-    }
-
-    function updateParticles() {
-      for (let i = particles.length - 1; i >= 0; i--) {
-        const p = particles[i];
-        p.y -= p.speed;
-        p.x += p.angle;
-        p.rot += p.rotSpeed;
-
-        if (p.x < -15 || p.x > 115 || p.y < -15) {
-          p.element.remove();
-          particles.splice(i, 1);
-          createParticle(false);
-          continue;
-        }
-
-        p.element.style.top = `${p.y}%`;
-        p.element.style.left = `${p.x}%`;
-        p.element.style.transform = `translate3d(0,0,0) translate(-50%, -50%) rotate(${p.rot}deg) scale(${p.scale})`;
-      }
-      animationFrameId = requestAnimationFrame(updateParticles);
-    }
-
-    animationFrameId = requestAnimationFrame(updateParticles);
-
-    return () => {
-      cancelAnimationFrame(animationFrameId);
-      if (container) {
-        container.innerHTML = '';
-      }
-    };
-  }, [isAuthenticated, isLoginStyleReady]);
 
   // Trigger a background download of the JSON database
   const triggerSilentBackupDownload = () => {
@@ -583,7 +562,7 @@ function App() {
 
       localStorage.setItem('rsa_last_backup_prompt_date', String(Date.now()));
       setShowWeeklyBackupBanner(false);
-      showToast("Haftalik zaxira nusxasi yuklab olindi!", "success");
+      showToast("Zaxira nusxasi yuklab olindi!", "success");
     } catch (e) {
       showToast("Zaxiralashda xatolik yuz berdi: " + e.message, "error");
     }
@@ -645,13 +624,12 @@ function App() {
   const handleSaveAttendance = (groupId, date, records) => {
     const { updatedRecord, updatedAttendance } = saveAttendance(attendance, groupId, date, records);
     setAttendance(updatedAttendance);
-    showToast("Davomad muvaffaqiyatli saqlandi!", "success");
     return updatedRecord;
   };
 
-  const handleAddGroup = async (name, icon, password) => {
+  const handleAddGroup = async (name, icon, password, color) => {
     const cleanPwd = password.trim().toLowerCase();
-    const { newGroup, updatedGroups } = addGroup(groups, name, icon, cleanPwd);
+    const { newGroup, updatedGroups } = addGroup(groups, name, icon, cleanPwd, color);
     
     // Register password globally in Supabase registry
     const success = await registerGroupPassword(cleanPwd, teacherId, newGroup.id);
@@ -695,7 +673,7 @@ function App() {
     setTransactions(updatedTransactions);
   };
 
-  const handleUpdateGroup = async (id, name, icon, password) => {
+  const handleUpdateGroup = async (id, name, icon, password, color) => {
     const group = groups.find((g) => g.id === id);
     const oldPassword = group ? group.password : '';
     const cleanNewPassword = password.trim().toLowerCase();
@@ -711,7 +689,7 @@ function App() {
       }
     }
 
-    const { updatedGroup, updatedGroups } = updateGroup(groups, id, name, icon, cleanNewPassword);
+    const { updatedGroup, updatedGroups } = updateGroup(groups, id, name, icon, cleanNewPassword, color);
     setGroups(updatedGroups);
     return true;
   };
@@ -789,8 +767,8 @@ function App() {
 
   // Handle Tab Switch (reset selected group if navigating away from groups page)
   const handleTabChange = (tabId) => {
-    // Students can only access leaderboard and history
-    if (userRole === 'student' && tabId !== 'leaderboard' && tabId !== 'history') {
+    // Students can only access leaderboard
+    if (userRole === 'student' && tabId !== 'leaderboard') {
       return;
     }
     setActiveTab(tabId);
@@ -843,7 +821,7 @@ function App() {
   const renderContent = () => {
     switch (activeTab) {
       case 'dashboard':
-        return <Dashboard setActiveTab={handleTabChange} onSelectGroup={handleSelectGroup} groups={filteredGroups} students={filteredStudents} transactions={filteredTransactions} />;
+        return <Dashboard setActiveTab={handleTabChange} onSelectGroup={handleSelectGroup} groups={filteredGroups} students={filteredStudents} transactions={filteredTransactions} attendance={attendance} />;
       case 'groups':
         if (selectedGroupId) {
           const group = filteredGroups.find((g) => g.id === selectedGroupId);
@@ -894,19 +872,6 @@ function App() {
             showToast={showToast}
           />
         );
-      case 'history':
-        return (
-          <History
-            groups={filteredGroups}
-            students={filteredStudents}
-            transactions={filteredTransactions}
-            attendance={attendance}
-            onDeleteTransaction={handleDeleteTransaction}
-            onDeleteAttendance={handleDeleteAttendance}
-            showToast={showToast}
-            userRole={userRole}
-          />
-        );
       case 'attendance':
         return (
           <Attendance
@@ -914,19 +879,8 @@ function App() {
             students={filteredStudents}
             attendance={attendance}
             onSaveAttendance={handleSaveAttendance}
+            onDeleteAttendance={handleDeleteAttendance}
             showToast={showToast}
-            mode="mark"
-          />
-        );
-      case 'attendanceStats':
-        return (
-          <Attendance
-            groups={filteredGroups}
-            students={filteredStudents}
-            attendance={attendance}
-            onSaveAttendance={handleSaveAttendance}
-            showToast={showToast}
-            mode="stats"
           />
         );
       case 'settings':
@@ -950,10 +904,14 @@ function App() {
             triggerSilentBackupDownload={triggerSilentBackupDownload}
             userRole={userRole}
             onLogout={handleLogout}
+            syncStatus={syncStatus}
+            isSyncing={isSyncing}
+            theme={theme}
+            setTheme={handleSetTheme}
           />
         );
       default:
-        return <Dashboard setActiveTab={handleTabChange} onSelectGroup={handleSelectGroup} groups={filteredGroups} students={filteredStudents} transactions={filteredTransactions} />;
+        return <Dashboard setActiveTab={handleTabChange} onSelectGroup={handleSelectGroup} groups={filteredGroups} students={filteredStudents} transactions={filteredTransactions} attendance={attendance} />;
     }
   };
 
@@ -966,7 +924,7 @@ function App() {
           left: 0,
           right: 0,
           bottom: 0,
-          backgroundColor: '#FFFFFF',
+          backgroundColor: 'var(--bg-primary)',
           zIndex: 99999
         }} />
       );
@@ -974,212 +932,182 @@ function App() {
 
     return (
       <div 
-        className="bg-stark-white text-deep-void font-sans antialiased min-h-screen flex flex-col justify-between w-full"
+        className="login-page-apple min-h-screen flex flex-col justify-between w-full"
         style={{
           opacity: isLoginStyleReady ? 1 : 0,
-          transition: 'opacity 0.15s ease-in'
+          transition: 'opacity 0.2s ease-in'
         }}
       >
-        {/* Top Floating Header */}
-        <header className="login-header-brutal w-full bg-stark-white border-b-2 border-deep-void px-6 py-4 flex justify-between items-center sticky top-0 z-50">
-          <div className="flex items-center gap-2">
-            <h1 className="text-xl md:text-2xl font-black tracking-tighter uppercase select-none">
-              EPCHIL <span className="text-deep-void bg-cyber-yellow px-2 py-0.5 border border-deep-void">ROBOT</span>
-            </h1>
-          </div>
-          <div className="flex items-center gap-4">
-            <span className="font-bold text-xs bg-muted-gray border-2 border-deep-void px-2.5 py-1 uppercase tracking-wider rounded-none">V1.0.0</span>
+        {/* Top Header */}
+        <header className="landing-header glass" style={{ borderBottom: '1px solid var(--border-color)' }}>
+          <div className="landing-header-inner max-w-7xl mx-auto w-full px-4 sm:px-8 md:px-10 py-3.5 flex justify-between items-center">
+            <div className="flex items-center gap-2">
+              <h1 className="text-lg md:text-xl font-bold tracking-tight select-none flex items-center gap-2" style={{ color: 'var(--text-primary)' }}>
+                EPCHIL <span className="logo-badge">ROBOT</span>
+              </h1>
+            </div>
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                className="btn btn-secondary scale-active theme-toggle-btn"
+                onClick={toggleTheme}
+                aria-label="Mavzuni o'zgartirish"
+              >
+                {theme === 'dark' ? (
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="12" cy="12" r="5" />
+                    <line x1="12" y1="1" x2="12" y2="3" />
+                    <line x1="12" y1="21" x2="12" y2="23" />
+                    <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" />
+                    <line x1="18.36" y1="18.36" x2="19.78" y2="19.78" />
+                    <line x1="1" y1="12" x2="3" y2="12" />
+                    <line x1="21" y1="12" x2="23" y2="12" />
+                    <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" />
+                    <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
+                  </svg>
+                ) : (
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+                  </svg>
+                )}
+              </button>
+              <span className="badge">V2.0.0</span>
+            </div>
           </div>
         </header>
 
-        {/* Main Layout Container */}
-        <main className="login-main-brutal flex-grow flex flex-col lg:flex-row relative">
+        {/* Full-Height Split Screen Container */}
+        <main className="landing-main-split flex-grow flex flex-col lg:flex-row w-full">
           
-          {/* Left Section: Educational Story */}
-          <section className="login-left-brutal w-full lg:w-1/2 bg-cyber-yellow border-b-2 lg:border-b-0 lg:border-r-2 border-deep-void flex flex-col justify-center p-6 sm:p-12 md:p-16 relative overflow-hidden min-h-[450px] lg:min-h-0">
-            {/* Atmospheric Pattern */}
-            <div className="absolute inset-0 opacity-10 pointer-events-none custom-pattern"></div>
-            
-            <div className="relative z-10 max-w-xl mx-auto lg:mx-0">
-              <span className="inline-block bg-deep-void text-stark-white px-3 py-1 text-xs font-bold uppercase tracking-widest mb-4 rounded-none">
-                LIKE TIZIMI MAQSADI
-              </span>
-              <h2 className="text-3xl sm:text-4xl md:text-5xl font-black uppercase leading-none tracking-tight mb-6">
-                BILIM OLISHLARINI <br className="hidden sm:inline"/>
-                <span className="bg-stark-white text-deep-void px-2 border-2 border-deep-void inline-block my-1">"LIKE"</span> BILAN <br className="hidden sm:inline"/>
-                TAQDIRLANG!
+          {/* Left Section: Value Story (70%) */}
+          <section className="landing-left-panel w-full lg:w-[70%] flex flex-col justify-center p-6 sm:p-10 lg:p-12 xl:p-16 order-2 lg:order-1">
+            <div className="w-full max-w-3xl mx-auto lg:mx-0">
+              <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight mb-4" style={{ color: 'var(--text-primary)', letterSpacing: '-0.03em', lineHeight: '1.2' }}>
+                Bilim olishlarini <br className="hidden sm:inline"/>
+                <span style={{ color: 'var(--apple-blue)' }}>"Like"</span> bilan taqdirlang!
               </h2>
               
-              <div className="w-16 h-1 bg-deep-void mb-8"></div>
+              <p className="text-sm sm:text-base mb-8 font-normal leading-relaxed max-w-2xl" style={{ color: 'var(--text-secondary)' }}>
+                O'quvchilaringizning darsdagi faolligini rag'batlantiring va sog'lom raqobat muhitini shakllantiring.
+              </p>
               
-              {/* Features List */}
-              <div className="space-y-6 md:space-y-8">
-                <div className="flex items-start gap-4 group">
-                  <div className="w-12 h-12 flex-shrink-0 bg-stark-white border-2 border-deep-void hard-shadow flex items-center justify-center transition-transform group-hover:scale-105 rounded-none">
-                    <span className="material-symbols-outlined text-2xl font-bold" style={{ fontVariationSettings: "'FILL' 1" }}>thumb_up</span>
-                  </div>
-                  <div>
-                    <h3 className="text-lg font-bold uppercase tracking-tight mb-1">FAOL TA'LIM TIZIMI</h3>
-                    <p className="text-sm md:text-base opacity-90 font-medium">Har bir darsda faol qatnashing va ustozingizdan qimmatli dars "Like"larini qo'lga kiriting.</p>
-                  </div>
+              {/* Features List (2x2 Grid) */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                <div className="landing-feature-card p-4 rounded-2xl">
+                  <h3 className="text-sm font-bold mb-1" style={{ color: 'var(--text-primary)' }}>Faol ta'lim tizimi</h3>
+                  <p className="text-xs font-medium leading-relaxed" style={{ color: 'var(--text-secondary)' }}>Har bir darsda faol qatnashing va ustozingizdan qimmatli dars "Like"larini qo'lga kiriting.</p>
                 </div>
                 
-                <div className="flex items-start gap-4 group">
-                  <div className="w-12 h-12 flex-shrink-0 bg-stark-white border-2 border-deep-void hard-shadow flex items-center justify-center transition-transform group-hover:scale-105 rounded-none">
-                    <span className="material-symbols-outlined text-2xl font-bold" style={{ fontVariationSettings: "'FILL' 1" }}>emoji_events</span>
-                  </div>
-                  <div>
-                    <h3 className="text-lg font-bold uppercase tracking-tight mb-1">HAFTALIK VA OYLIK REYTING</h3>
-                    <p className="text-sm md:text-base opacity-90 font-medium">Eng ko'p Like to'plagan g'oliblar qatoridan joy oling va maxsus sovg'alarga ega bo'ling.</p>
-                  </div>
+                <div className="landing-feature-card p-4 rounded-2xl">
+                  <h3 className="text-sm font-bold mb-1" style={{ color: 'var(--text-primary)' }}>Oylik va umumiy reyting</h3>
+                  <p className="text-xs font-medium leading-relaxed" style={{ color: 'var(--text-secondary)' }}>Eng ko'p Like to'plagan g'oliblar qatoridan joy oling va maxsus sovg'alarga ega bo'ling.</p>
                 </div>
                 
-                <div className="flex items-start gap-4 group">
-                  <div className="w-12 h-12 flex-shrink-0 bg-stark-white border-2 border-deep-void hard-shadow flex items-center justify-center transition-transform group-hover:scale-105 rounded-none">
-                    <span className="material-symbols-outlined text-2xl font-bold" style={{ fontVariationSettings: "'FILL' 1" }}>groups</span>
-                  </div>
-                  <div>
-                    <h3 className="text-lg font-bold uppercase tracking-tight mb-1">HAMJIHAT GURUH RAQOBATI</h3>
-                    <p className="text-sm md:text-base opacity-90 font-medium">O'z guruhingiz a'zolari bilan birlashing va boshqa guruhlar orasida peshqadam bo'ling!</p>
-                  </div>
+                <div className="landing-feature-card p-4 rounded-2xl">
+                  <h3 className="text-sm font-bold mb-1" style={{ color: 'var(--text-primary)' }}>Hamjihat guruh raqobati</h3>
+                  <p className="text-xs font-medium leading-relaxed" style={{ color: 'var(--text-secondary)' }}>O'z guruhingiz a'zolari bilan birlashing va boshqa guruhlar orasida peshqadam bo'ling!</p>
                 </div>
-              </div>
 
-              <div className="mt-12 flex items-center gap-4 opacity-30">
-                <span className="material-symbols-outlined text-3xl">precision_manufacturing</span>
-                <span className="material-symbols-outlined text-3xl">smart_toy</span>
-                <span className="material-symbols-outlined text-3xl">settings_input_component</span>
+                <div className="landing-feature-card p-4 rounded-2xl">
+                  <h3 className="text-sm font-bold mb-1" style={{ color: 'var(--text-primary)' }}>Shaffof davomad tizimi</h3>
+                  <p className="text-xs font-medium leading-relaxed" style={{ color: 'var(--text-secondary)' }}>Har bir darsdagi ishtirok, qatnashuv va davomad hisobini muntazam ravishda aniq kuzatib boring.</p>
+                </div>
               </div>
             </div>
           </section>
-          
-          {/* Right Section: Login Form Box with Interactive Particles Background */}
-          <section className="login-right-brutal w-full lg:w-1/2 bg-muted-gray flex items-center justify-center p-4 sm:p-8 md:p-12 lg:p-16 relative">
-            
-            {/* Dynamic Like Particles Engine Cover Layer */}
-            <div id="like-particles-container"></div>
-            
-            <div className="w-full max-w-md my-auto relative z-10">
-              {/* Brutalist Login Box Card */}
-              <div className="login-card-brutal bg-stark-white border-2 border-deep-void p-6 sm:p-10 relative overflow-hidden hard-shadow-lg rounded-none">
-                
-                {/* Form Header */}
-                <div className="text-center mb-8">
-                  <div className="inline-flex items-center justify-center w-16 h-16 border-2 border-deep-void bg-cyber-yellow mb-4 rounded-none">
-                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-deep-void">
-                      <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
-                      <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-                    </svg>
-                  </div>
-                  <h2 className="text-2xl font-extrabold uppercase tracking-tight">TIZIMGA KIRISH</h2>
-                  <p className="text-xs font-bold tracking-wider opacity-60 mt-1 uppercase">Davom etish uchun parolni kiriting</p>
-                </div>
-                
-                {/* Form Action */}
-                <form className="space-y-6" onSubmit={handleLoginSubmit}>
-                  <div className="relative input-group">
+
+          {/* Right Section: Login Form (30% - Full Height White Panel with Border) */}
+          <section className="landing-right-panel w-full lg:w-[30%] flex flex-col justify-center items-center p-6 sm:p-10 lg:p-8 xl:p-10 order-1 lg:order-2">
+            <div className="w-full max-w-sm my-auto">
+              
+              {/* Form Header */}
+              <div className="text-center mb-8">
+                <h2 className="text-2xl sm:text-3xl font-bold tracking-tight" style={{ color: 'var(--text-primary)' }}>Tizimga kirish</h2>
+                <p className="text-xs font-medium mt-1.5" style={{ color: 'var(--text-secondary)' }}>Davom etish uchun parolni kiriting</p>
+              </div>
+              
+              {/* Form Action */}
+              <form className="space-y-5" onSubmit={handleLoginSubmit}>
+                <div className="form-group">
+                  <label 
+                    htmlFor="passwordField" 
+                    className="form-label"
+                  >
+                    Parol
+                  </label>
+                  <div className="password-input-wrapper">
                     <input 
                       type={showPassword ? 'text' : 'password'}
                       id="passwordField" 
-                      placeholder=" " 
+                      placeholder="Parolni kiriting..." 
                       required
                       value={loginPassword}
                       onChange={(e) => setLoginPassword(e.target.value)}
-                      className="login-input-brutal w-full h-14 bg-stark-white border-2 border-deep-void px-4 pr-12 rounded-none focus:ring-0 focus:outline-none input-focus-effect font-mono tracking-widest text-lg transition-all"
+                      className="form-input password-input"
                       autoFocus
                     />
-                    <label 
-                      htmlFor="passwordField" 
-                      className="absolute left-4 top-4 text-xs font-bold uppercase tracking-wider text-deep-void opacity-70 transition-all pointer-events-none origin-left"
-                    >
-                      PAROL
-                    </label>
                     <button 
                       type="button" 
                       onClick={() => setShowPassword(!showPassword)} 
-                      className="absolute right-4 top-4 text-deep-void opacity-75 hover:opacity-100 transition-opacity focus:outline-none flex items-center justify-center"
-                      title="Parolni ko'rsatish/yashirish"
-                      style={{ height: '24px', width: '24px' }}
+                      className="password-toggle-btn"
+                      aria-label="Parolni ko'rsatish"
                     >
                       {showPassword ? (
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                           <path d="M9.88 9.88a3 3 0 1 0 4.24 4.24" />
                           <path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68" />
                           <path d="M6.61 6.61A13.52 13.52 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61" />
                           <line x1="2" y1="2" x2="22" y2="22" />
                         </svg>
                       ) : (
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                           <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z" />
                           <circle cx="12" cy="12" r="3" />
                         </svg>
                       )}
                     </button>
                   </div>
-                  
-                  {loginError && <p className="text-red-600 text-xs font-bold uppercase tracking-wider" style={{ marginTop: '8px' }}>{loginError}</p>}
-
-                  <button 
-                    type="submit" 
-                    disabled={loginLoading}
-                    className="login-btn-brutal w-full h-14 bg-deep-void text-stark-white font-bold text-sm md:text-base border-2 border-cyber-yellow uppercase tracking-widest transition-all hard-shadow-btn flex items-center justify-center gap-2 rounded-none group"
-                  >
-                    <span>{loginLoading ? "TEKSHIRILMOQDA..." : "KIRISH"}</span>
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-cyber-yellow group-hover:translate-x-1 transition-transform">
-                      <line x1="5" y1="12" x2="19" y2="12" />
-                      <polyline points="12 5 19 12 12 19" />
-                    </svg>
-                  </button>
-                  
-                  <div className="flex items-center justify-between pt-2 border-t border-dashed border-gray-300">
-                    <div className="flex gap-1.5" aria-hidden="true">
-                      <div className="w-2 h-2 bg-cyber-yellow border border-deep-void"></div>
-                      <div className="w-2 h-2 bg-deep-void"></div>
-                      <div className="w-2 h-2 bg-cyber-yellow border border-deep-void"></div>
-                    </div>
-                  </div>
-                </form>
+                </div>
                 
-                <div className="absolute -bottom-8 -right-8 opacity-5 pointer-events-none rotate-12 select-none">
-                  <span className="material-symbols-outlined text-[140px]" style={{ fontVariationSettings: "'wght' 200" }}>settings</span>
-                </div>
-              </div>
+                {loginError && <p className="login-error-text">{loginError}</p>}
+
+                <button 
+                  type="submit" 
+                  disabled={loginLoading}
+                  className="btn btn-primary login-btn scale-active"
+                >
+                  <span>{loginLoading ? "Tekshirilmoqda..." : "Kirish"}</span>
+                </button>
+              </form>
               
-              {/* Support Center Information */}
-              <div className="mt-6 flex flex-col items-center gap-3">
-                <p className="text-xs font-medium text-center text-gray-600 max-w-xs leading-relaxed">
-                  Tizimga kirishda muammo bormi? <br/> Admin bilan bog'laning.
+              {/* Support info */}
+              <div className="landing-support-divider mt-8 pt-6 flex flex-col items-center gap-3">
+                <p className="text-xs text-center" style={{ color: 'var(--text-secondary)' }}>
+                  Tizimga kirishda muammo bormi? Admin bilan bog'laning:
                 </p>
-                <div className="flex gap-3">
-                  <a href="https://t.me/bkzd19" target="_blank" rel="noopener noreferrer" className="w-10 h-10 border-2 border-deep-void bg-stark-white hard-shadow-btn transition-all rounded-none flex items-center justify-center" title="Telegram">
-                    <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg>
+                <div className="flex gap-2">
+                  <a href="https://t.me/bkzd19" target="_blank" rel="noopener noreferrer" className="btn btn-secondary btn-sm">
+                    Telegram
                   </a>
-                  <a href="https://instagram.com/1bkzd" target="_blank" rel="noopener noreferrer" className="w-10 h-10 border-2 border-deep-void bg-stark-white hard-shadow-btn transition-all rounded-none flex items-center justify-center" title="Instagram">
-                    <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="20" x="2" y="2" rx="0"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" x2="17.51" y1="6.5" y2="6.5"/></svg>
+                  <a href="https://instagram.com/1bkzd" target="_blank" rel="noopener noreferrer" className="btn btn-secondary btn-sm">
+                    Instagram
                   </a>
                 </div>
               </div>
-              
             </div>
           </section>
         </main>
 
-        {/* Bottom System Technical Footer */}
-        <footer className="bg-deep-void text-stark-white px-6 py-4 flex flex-col sm:flex-row justify-between items-center text-[11px] font-bold uppercase tracking-widest gap-2 sm:gap-0 border-t-2 border-deep-void">
-          <div className="flex flex-wrap items-center justify-center gap-4 md:gap-6">
+        {/* Bottom Technical Footer */}
+        <footer className="landing-footer px-6 py-4 flex justify-center items-center text-xs glass">
+          <div className="flex flex-wrap items-center justify-center gap-4">
             <span>© 2026 EPCHIL ROBOT</span>
-            <span className="hidden sm:block opacity-30">|</span>
-            <a href="https://t.me/bkzd19" target="_blank" rel="noopener noreferrer" className="text-cyber-yellow hover:text-stark-white lowercase transition-colors">Made with 🥷🏻 by bkzd19</a>
-          </div>
-          <div className="flex items-center gap-2 text-cyber-yellow bg-zinc-900 px-2.5 py-1 border border-zinc-800 text-[10px]">
-            <span className="w-1.5 h-1.5 rounded-full bg-cyber-yellow animate-ping"></span>
-            TIZIM FAOLLIGI: A'LO
           </div>
         </footer>
 
         {toast && (
           <div className="toast-container">
-            <div className={`toast toast-${toast.type} glass`}>
+            <div className={`toast toast-${toast.type}`}>
               <span className="toast-icon">
                 {toast.type === 'success' ? '✓' : toast.type === 'error' ? '⚠️' : 'ℹ️'}
               </span>
@@ -1207,9 +1135,8 @@ function App() {
             setIsLoaded(false);
             setReloadTrigger(prev => prev + 1);
           }}
-          style={{ background: '#000', color: '#fff', border: '1px solid #000', padding: '10px 24px', fontWeight: 'bold', cursor: 'pointer', fontFamily: 'var(--font-family)' }}
         >
-          QAYTA URINISH
+          Qayta urinish
         </button>
       </div>
     );
@@ -1230,30 +1157,27 @@ function App() {
   return (
     <div className="app-container">
       {showWeeklyBackupBanner && (
-        <div className="weekly-backup-banner animate-slide-down" style={{ position: 'fixed', top: 0, left: 0, right: 0, background: '#E7FF56', borderBottom: '2px solid #000000', padding: '12px 24px', zIndex: 9999, display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontFamily: 'var(--font-family)' }}>
-          <div style={{ color: '#000000', fontWeight: '800', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.9rem' }}>
+        <div className="weekly-backup-banner animate-slide-down glass" style={{ position: 'fixed', top: 0, left: 0, right: 0, padding: '14px 24px', zIndex: 9999, display: 'flex', justifyContent: 'space-between', alignItems: 'center', boxShadow: 'var(--shadow-md)' }}>
+          <div style={{ color: 'var(--text-primary)', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.88rem' }}>
             <span>⚠️</span>
-            <span><strong>Haftalik eslatma:</strong> Ma'lumotlaringiz yo'qolib ketmasligi uchun zaxira nusxasini (Backup JSON) yuklab olishni tavsiya qilamiz.</span>
+            <span><strong>Zaxira eslatmasi:</strong> Ma'lumotlaringiz yo'qolib ketmasligi uchun zaxira nusxasini (Backup JSON) yuklab olishni tavsiya qilamiz.</span>
           </div>
-          <div style={{ display: 'flex', gap: '12px' }}>
-            <button className="btn btn-secondary scale-active btn-sm" onClick={handleTriggerManualBackup} style={{ background: '#000000', color: '#ffffff', border: '1px solid #000000', padding: '6px 12px', fontSize: '0.8rem', fontWeight: 'bold' }}>
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <button className="btn btn-primary scale-active btn-sm" onClick={handleTriggerManualBackup}>
               Yuklab olish
             </button>
             <button className="btn btn-secondary scale-active btn-sm" onClick={() => {
               localStorage.setItem('rsa_last_backup_prompt_date', String(Date.now()));
               setShowWeeklyBackupBanner(false);
-            }} style={{ background: 'transparent', color: '#000000', border: '1px solid #000000', padding: '6px 12px', fontSize: '0.8rem', fontWeight: 'bold' }}>
+            }}>
               Keyinroq
             </button>
           </div>
         </div>
       )}
-      {/* Dynamic Ambient Background Glows */}
-      <div className="bg-glow-1"></div>
-      <div className="bg-glow-2"></div>
 
       {/* Sidebar Navigation */}
-      <Sidebar activeTab={activeTab} setActiveTab={handleTabChange} userRole={userRole} onLogout={handleLogout} groups={allActiveGroups} students={allActiveStudents} transactions={allActiveTransactions} syncStatus={syncStatus} isSyncing={isSyncing} />
+      <Sidebar activeTab={activeTab} setActiveTab={handleTabChange} userRole={userRole} onLogout={handleLogout} syncStatus={syncStatus} isSyncing={isSyncing} theme={theme} toggleTheme={toggleTheme} />
 
       {/* Main Panel Content */}
       <main className="main-content">
@@ -1265,7 +1189,7 @@ function App() {
       {/* Toast Notification Popups */}
       {toast && (
         <div className="toast-container">
-          <div className={`toast toast-${toast.type} glass`}>
+          <div className={`toast toast-${toast.type}`}>
             <span className="toast-icon">
               {toast.type === 'success' ? '✓' : toast.type === 'error' ? '⚠️' : 'ℹ️'}
             </span>
@@ -1277,19 +1201,21 @@ function App() {
       {/* Logout Confirmation Warning Modal */}
       {showLogoutConfirmModal && createPortal(
         <div className="modal-overlay" onClick={() => setShowLogoutConfirmModal(false)}>
-          <div className="modal-content glass" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '400px', padding: '24px' }}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '420px', padding: '24px' }}>
             <button 
               type="button" 
               className="modal-close-btn" 
               onClick={() => setShowLogoutConfirmModal(false)}
-              title="Yopish"
             >
-              ✕
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18" />
+                <line x1="6" y1="6" x2="18" y2="18" />
+              </svg>
             </button>
-            <h3 className="modal-title" style={{ fontSize: '1.2rem', fontWeight: '800', textTransform: 'uppercase', marginBottom: '10px' }}>
-              ⚠️ Chiqishni tasdiqlash
+            <h3 className="modal-title" style={{ fontSize: '1.25rem', fontWeight: '700', marginBottom: '10px' }}>
+              Chiqishni tasdiqlash
             </h3>
-            <p className="modal-warning-text" style={{ fontSize: '0.9rem', marginBottom: '20px', color: '#222', lineHeight: '1.4' }}>
+            <p className="modal-warning-text" style={{ fontSize: '0.9rem', marginBottom: '20px', color: 'var(--text-secondary)', lineHeight: '1.5' }}>
               Rostdan ham tizimdan chiqmoqchimisiz?
             </p>
             <div className="modal-actions" style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
