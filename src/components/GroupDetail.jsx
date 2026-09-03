@@ -20,15 +20,22 @@ const IconHistory = ({ size = 16, strokeWidth = 2.2 }) => (
   </svg>
 );
 
-const GroupDetail = ({ group, students, transactions, quickTags, onBack, onAddStudent, onUpdateStudent, onDeleteStudent, onAwardPoints, onDeleteTransaction, showToast, userRole }) => {
+const GroupDetail = ({ group, allGroups = [], students, transactions, quickTags, onBack, onAddStudent, onUpdateStudent, onTransferStudent, onDeleteStudent, onAwardPoints, onDeleteTransaction, showToast, userRole }) => {
   const [profileStudent, setProfileStudent] = useState(null);
   const [showPassword, setShowPassword] = useState(false);
   const [editingStudent, setEditingStudent] = useState(null);
   const [editStudentName, setEditStudentName] = useState('');
   const [editStudentEmoji, setEditStudentEmoji] = useState(AVATAR_GALLERY_IMAGES[0].path);
   const [editStudentColor, setEditStudentColor] = useState(COLOR_OPTIONS[0].value);
+  const [editStudentGroupId, setEditStudentGroupId] = useState(group.id);
+  const [transferringStudent, setTransferringStudent] = useState(null);
+  const [targetGroupId, setTargetGroupId] = useState('');
   const [avatarTab, setAvatarTab] = useState('gallery');
   const [editAvatarTab, setEditAvatarTab] = useState('gallery');
+
+  const otherGroups = useMemo(() => {
+    return (allGroups || []).filter(g => !g.deleted && g.id !== group.id);
+  }, [allGroups, group.id]);
 
   useEffect(() => {
     const handleKeyDown = (e) => {
@@ -38,6 +45,7 @@ const GroupDetail = ({ group, students, transactions, quickTags, onBack, onAddSt
         setScoringStudent(null);
         setProfileStudent(null);
         setEditingStudent(null);
+        setTransferringStudent(null);
       }
     };
     window.addEventListener('keydown', handleKeyDown);
@@ -84,7 +92,7 @@ const GroupDetail = ({ group, students, transactions, quickTags, onBack, onAddSt
     }
     onAddStudent(newStudentName, group.id, selectedEmoji, selectedColor);
     setNewStudentName('');
-    setSelectedEmoji(EMOJI_OPTIONS[0]);
+    setSelectedEmoji(AVATAR_GALLERY_IMAGES[0].path);
     setSelectedColor(COLOR_OPTIONS[0].value);
     setShowAddStudentModal(false);
     showToast("Talaba muvaffaqiyatli qo'shildi!", "success");
@@ -96,12 +104,40 @@ const GroupDetail = ({ group, students, transactions, quickTags, onBack, onAddSt
       showToast("Talaba ismini kiriting!", "error");
       return;
     }
-    onUpdateStudent(editingStudent.id, editStudentName, editStudentEmoji, editStudentColor);
+    const isMoved = editStudentGroupId && editStudentGroupId !== group.id;
+    onUpdateStudent(editingStudent.id, editStudentName, editStudentEmoji, editStudentColor, editStudentGroupId);
+    const targetGroup = (allGroups || []).find(g => g.id === editStudentGroupId);
     setEditingStudent(null);
     setEditStudentName('');
     setEditStudentEmoji('🚀');
     setEditStudentColor(COLOR_OPTIONS[0].value);
-    showToast("Talaba ma'lumotlari yangilandi!", "success");
+    if (isMoved && targetGroup) {
+      showToast(`${editStudentName.trim()} muvaffaqiyatli "${targetGroup.name}" guruhiga ko'chirildi!`, "success");
+    } else {
+      showToast("Talaba ma'lumotlari yangilandi!", "success");
+    }
+  };
+
+  const handleTransferSubmit = (e) => {
+    e.preventDefault();
+    if (!transferringStudent) return;
+    if (!targetGroupId) {
+      showToast("Yangi guruhni tanlang!", "error");
+      return;
+    }
+    const targetGroup = (allGroups || []).find(g => g.id === targetGroupId);
+    if (!targetGroup) {
+      showToast("Guruh topilmadi!", "error");
+      return;
+    }
+    if (onTransferStudent) {
+      onTransferStudent(transferringStudent.id, targetGroupId);
+    } else {
+      onUpdateStudent(transferringStudent.id, transferringStudent.name, transferringStudent.emoji, transferringStudent.color, targetGroupId);
+    }
+    showToast(`${transferringStudent.name} muvaffaqiyatli "${targetGroup.name}" guruhiga ko'chirildi!`, "success");
+    setTransferringStudent(null);
+    setTargetGroupId('');
   };
 
   // Open like modal
@@ -213,13 +249,32 @@ const GroupDetail = ({ group, students, transactions, quickTags, onBack, onAddSt
                 </div>
 
                 <div className="student-item-manage-btns">
+                  {userRole === 'teacher' && (
+                    <button 
+                      className="btn btn-secondary scale-active btn-sm btn-icon-only transfer-btn" 
+                      title="Guruhga ko'chirish"
+                      onClick={() => {
+                        setTransferringStudent(student);
+                        setTargetGroupId(otherGroups.length > 0 ? otherGroups[0].id : '');
+                      }}
+                    >
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                        <polyline points="17 1 21 5 17 9" />
+                        <path d="M3 11V9a4 4 0 0 1 4-4h14" />
+                        <polyline points="7 23 3 19 7 15" />
+                        <path d="M21 13v2a4 4 0 0 1-4 4H3" />
+                      </svg>
+                    </button>
+                  )}
                   <button 
                     className="btn btn-secondary scale-active btn-sm btn-icon-only" 
+                    title="Tahrirlash"
                     onClick={() => {
                       setEditingStudent(student);
                       setEditStudentName(student.name);
                       setEditStudentEmoji(student.emoji);
                       setEditStudentColor(student.color);
+                      setEditStudentGroupId(student.groupId || group.id);
                       if (!student.emoji) {
                         setEditAvatarTab('gallery');
                       } else if (isGalleryImage(student.emoji)) {
@@ -238,6 +293,7 @@ const GroupDetail = ({ group, students, transactions, quickTags, onBack, onAddSt
                   </button>
                   <button 
                     className="btn btn-danger scale-active btn-sm btn-icon-only" 
+                    title="O'chirish"
                     onClick={() => setConfirmDeleteId(student.id)}
                   >
                     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
@@ -789,6 +845,31 @@ const GroupDetail = ({ group, students, transactions, quickTags, onBack, onAddSt
                 </div>
               </div>
 
+              {/* Group selection */}
+              {userRole === 'teacher' && (allGroups || []).length > 1 && (
+                <div className="form-group">
+                  <label className="form-label">Guruh</label>
+                  <select
+                    className="form-input"
+                    value={editStudentGroupId}
+                    onChange={(e) => setEditStudentGroupId(e.target.value)}
+                    style={{ cursor: 'pointer', appearance: 'auto' }}
+                  >
+                    <option value={group.id}>{group.name} (Hozirgi guruh)</option>
+                    {otherGroups.map((g) => (
+                      <option key={g.id} value={g.id}>
+                        {g.name}
+                      </option>
+                    ))}
+                  </select>
+                  {editStudentGroupId !== group.id && (
+                    <p style={{ margin: '6px 0 0 0', fontSize: '0.8rem', color: 'var(--primary-color, #007AFF)' }}>
+                      ℹ️ Saqlash bosilgach, talaba ushbu guruhga ko'chiriladi.
+                    </p>
+                  )}
+                </div>
+              )}
+
               <div className="modal-actions">
                 <button type="button" className="btn btn-secondary scale-active" onClick={() => setEditingStudent(null)}>
                   Bekor qilish
@@ -798,6 +879,129 @@ const GroupDetail = ({ group, students, transactions, quickTags, onBack, onAddSt
                 </button>
               </div>
             </form>
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {/* Transfer Student Modal */}
+      {transferringStudent && createPortal(
+        <div className="modal-overlay" onClick={() => setTransferringStudent(null)}>
+          <div className="modal-content glass transfer-modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 440 }}>
+            <button 
+              type="button" 
+              className="modal-close-btn" 
+              onClick={() => setTransferringStudent(null)}
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18" />
+                <line x1="6" y1="6" x2="18" y2="18" />
+              </svg>
+            </button>
+
+            <div style={{ textAlign: 'center', marginBottom: 16 }}>
+              <div 
+                className="avatar-circle" 
+                style={{ 
+                  width: 48, 
+                  height: 48, 
+                  margin: '0 auto 10px', 
+                  background: transferringStudent.color,
+                  border: '1px solid rgba(0,0,0,0.08)',
+                  borderRadius: 'var(--radius-md)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  overflow: 'hidden'
+                }}
+              >
+                {renderAvatar(transferringStudent.emoji)}
+              </div>
+              <h3 className="modal-title" style={{ margin: 0, fontSize: '1.25rem' }}>Guruhga ko'chirish</h3>
+              <p style={{ margin: '4px 0 0', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
+                <strong style={{ color: 'var(--text-primary)' }}>{transferringStudent.name}</strong>ni boshqa guruhga o'tkazish
+              </p>
+            </div>
+
+            {otherGroups.length > 0 ? (
+              <form onSubmit={handleTransferSubmit}>
+                <div className="form-group" style={{ marginBottom: 16 }}>
+                  <label className="form-label" style={{ marginBottom: 8 }}>Yangi guruhni tanlang:</label>
+                  <div className="transfer-groups-grid" style={{ display: 'flex', flexDirection: 'column', gap: 8, maxHeight: 220, overflowY: 'auto', paddingRight: 4 }}>
+                    {otherGroups.map((g) => {
+                      const isSelected = targetGroupId === g.id;
+                      return (
+                        <div
+                          key={g.id}
+                          onClick={() => setTargetGroupId(g.id)}
+                          className="scale-active"
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 12,
+                            padding: '10px 14px',
+                            borderRadius: 'var(--radius-md)',
+                            border: isSelected ? '2px solid var(--accent-color, #007AFF)' : '1px solid var(--border-color)',
+                            background: isSelected ? 'var(--bg-segment, rgba(0,122,255,0.06))' : 'var(--bg-card, #FFFFFF)',
+                            cursor: 'pointer',
+                            transition: 'all 0.15s ease'
+                          }}
+                        >
+                          <div 
+                            style={{ 
+                              width: 32, 
+                              height: 32, 
+                              borderRadius: 'var(--radius-sm)', 
+                              background: 'var(--bg-segment, #F5F5F7)', 
+                              display: 'flex', 
+                              alignItems: 'center', 
+                              justifyContent: 'center',
+                              flexShrink: 0
+                            }}
+                          >
+                            {renderGroupIcon(g.icon, 16)}
+                          </div>
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{ fontWeight: 600, fontSize: '0.95rem', color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                              {g.name}
+                            </div>
+                          </div>
+                          {isSelected && (
+                            <div style={{ color: 'var(--accent-color, #007AFF)', display: 'flex', alignItems: 'center' }}>
+                              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                                <polyline points="20 6 9 17 4 12" />
+                              </svg>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <div className="transfer-info-box" style={{ padding: '10px 12px', background: 'var(--bg-segment, #F5F5F7)', borderRadius: 'var(--radius-md)', fontSize: '0.82rem', color: 'var(--text-secondary)', marginBottom: 20 }}>
+                  💡 Talabaning to'plagan barcha ballari va tranzaksiyalari yangi guruh reytingiga to'liq o'tadi.
+                </div>
+
+                <div className="modal-actions">
+                  <button type="button" className="btn btn-secondary scale-active" onClick={() => setTransferringStudent(null)}>
+                    Bekor qilish
+                  </button>
+                  <button type="submit" className="btn btn-primary scale-active" disabled={!targetGroupId}>
+                    Ko'chirish
+                  </button>
+                </div>
+              </form>
+            ) : (
+              <div style={{ textAlign: 'center', padding: '16px 0 8px' }}>
+                <p style={{ color: 'var(--text-secondary)', fontSize: '0.92rem', marginBottom: 20 }}>
+                  Talabani ko'chirish uchun tizimda kamida 2 ta guruh bo'lishi kerak. Boshqa faol guruhlar topilmadi.
+                </p>
+                <button type="button" className="btn btn-secondary scale-active" onClick={() => setTransferringStudent(null)}>
+                  Yopish
+                </button>
+              </div>
+            )}
           </div>
         </div>,
         document.body

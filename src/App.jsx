@@ -30,6 +30,7 @@ import {
   deleteTransaction,
   updateGroup,
   updateStudent,
+  transferStudent,
   restoreGroup,
   restoreStudent,
   permanentlyDeleteGroup,
@@ -141,7 +142,7 @@ function App() {
   const [syncStatus, setSyncStatus] = useState('saved'); // 'saved', 'saving', 'offline'
   const [snapshots, setSnapshots] = useState([]);
   const [showWeeklyBackupBanner, setShowWeeklyBackupBanner] = useState(false);
-  
+
   const [loginPassword, setLoginPassword] = useState('');
   const [loginError, setLoginError] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -188,12 +189,12 @@ function App() {
       localStorage.setItem('rsa_role', match.role);
       localStorage.setItem('rsa_teacher_id', match.teacherId);
       localStorage.removeItem('rsa_student_group_id');
-      
+
       setIsAuthenticated(true);
       setUserRole(match.role);
       setTeacherId(match.teacherId);
       setStudentGroupId(null);
-      
+
       if (match.role === 'student') {
         setActiveTab('leaderboard');
       } else {
@@ -211,13 +212,13 @@ function App() {
           localStorage.setItem('rsa_role', 'student');
           localStorage.setItem('rsa_teacher_id', groupMatch.teacherId);
           localStorage.setItem('rsa_student_group_id', groupMatch.groupId);
-          
+
           setIsAuthenticated(true);
           setUserRole('student');
           setTeacherId(groupMatch.teacherId);
           setStudentGroupId(groupMatch.groupId);
           setActiveTab('leaderboard');
-          
+
           showToast("Guruh reytingiga muvaffaqiyatli kirdingiz!", "success");
         } else {
           setLoginError("Noto'g'ri parol!");
@@ -253,7 +254,7 @@ function App() {
       setUserRole('student');
       setActiveTab('dashboard');
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Enforce student role routing constraints — always block unauthorized tabs
@@ -381,7 +382,7 @@ function App() {
           if (loadedGroups.length > 0 || loadedStudents.length > 0) {
             localStorage.setItem(`rsa_local_backup_${teacherId}`, JSON.stringify(dbState));
           }
-        } catch (_) {}
+        } catch (_) { }
 
         setIsLoaded(true);
         setConnectionError(false);
@@ -630,7 +631,7 @@ function App() {
   const handleAddGroup = async (name, icon, password, color) => {
     const cleanPwd = password.trim().toLowerCase();
     const { newGroup, updatedGroups } = addGroup(groups, name, icon, cleanPwd, color);
-    
+
     // Register password globally in Supabase registry
     const success = await registerGroupPassword(cleanPwd, teacherId, newGroup.id);
     if (!success) {
@@ -661,8 +662,13 @@ function App() {
     setStudents(updatedStudents);
   };
 
-  const handleUpdateStudent = (id, name, emoji, color) => {
-    const { updatedStudent, updatedStudents } = updateStudent(students, id, name, emoji, color);
+  const handleUpdateStudent = (id, name, emoji, color, groupId = null) => {
+    const { updatedStudent, updatedStudents } = updateStudent(students, id, name, emoji, color, groupId);
+    setStudents(updatedStudents);
+  };
+
+  const handleTransferStudent = (studentId, targetGroupId) => {
+    const { updatedStudent, updatedStudents } = transferStudent(students, studentId, targetGroupId);
     setStudents(updatedStudents);
   };
 
@@ -790,7 +796,7 @@ function App() {
     localStorage.removeItem('rsa_teacher_id');
     localStorage.removeItem('rsa_active_tab');
     localStorage.removeItem('rsa_student_group_id');
-    
+
     // Clear localized caches to prevent cross-teacher leakage
     localStorage.removeItem('rsa_groups');
     localStorage.removeItem('rsa_students');
@@ -801,7 +807,7 @@ function App() {
     setStudents([]);
     setTransactions([]);
     setQuickTags([]);
-    
+
     setIsAuthenticated(false);
     setTeacherId(null);
     setStudentGroupId(null);
@@ -832,12 +838,14 @@ function App() {
           return (
             <GroupDetail
               group={group}
+              allGroups={filteredGroups}
               students={filteredStudents}
               transactions={filteredTransactions}
               quickTags={quickTags}
               onBack={() => setSelectedGroupId(null)}
               onAddStudent={handleAddStudent}
               onUpdateStudent={handleUpdateStudent}
+              onTransferStudent={handleTransferStudent}
               onDeleteStudent={handleDeleteStudent}
               onAwardPoints={handleAwardPoints}
               onDeleteTransaction={handleDeleteTransaction}
@@ -931,7 +939,7 @@ function App() {
     }
 
     return (
-      <div 
+      <div
         className="login-page-apple min-h-screen flex flex-col justify-between w-full"
         style={{
           opacity: isLoginStyleReady ? 1 : 0,
@@ -978,31 +986,31 @@ function App() {
 
         {/* Full-Height Split Screen Container */}
         <main className="landing-main-split flex-grow flex flex-col lg:flex-row w-full">
-          
+
           {/* Left Section: Value Story (70%) */}
           <section className="landing-left-panel w-full lg:w-[70%] flex flex-col justify-center p-6 sm:p-10 lg:p-12 xl:p-16 order-2 lg:order-1">
             <div className="w-full max-w-3xl mx-auto lg:mx-0">
               <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight mb-4" style={{ color: 'var(--text-primary)', letterSpacing: '-0.03em', lineHeight: '1.2' }}>
-                Bilim olishlarini <br className="hidden sm:inline"/>
+                Bilim olishlarini <br className="hidden sm:inline" />
                 <span style={{ color: 'var(--apple-blue)' }}>"Like"</span> bilan taqdirlang!
               </h2>
-              
+
               <p className="text-sm sm:text-base mb-8 font-normal leading-relaxed max-w-2xl" style={{ color: 'var(--text-secondary)' }}>
                 O'quvchilaringizning darsdagi faolligini rag'batlantiring va sog'lom raqobat muhitini shakllantiring.
               </p>
-              
+
               {/* Features List (2x2 Grid) */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                 <div className="landing-feature-card p-4 rounded-2xl">
                   <h3 className="text-sm font-bold mb-1" style={{ color: 'var(--text-primary)' }}>Faol ta'lim tizimi</h3>
                   <p className="text-xs font-medium leading-relaxed" style={{ color: 'var(--text-secondary)' }}>Har bir darsda faol qatnashing va ustozingizdan qimmatli dars "Like"larini qo'lga kiriting.</p>
                 </div>
-                
+
                 <div className="landing-feature-card p-4 rounded-2xl">
                   <h3 className="text-sm font-bold mb-1" style={{ color: 'var(--text-primary)' }}>Oylik va umumiy reyting</h3>
                   <p className="text-xs font-medium leading-relaxed" style={{ color: 'var(--text-secondary)' }}>Eng ko'p Like to'plagan g'oliblar qatoridan joy oling va maxsus sovg'alarga ega bo'ling.</p>
                 </div>
-                
+
                 <div className="landing-feature-card p-4 rounded-2xl">
                   <h3 className="text-sm font-bold mb-1" style={{ color: 'var(--text-primary)' }}>Hamjihat guruh raqobati</h3>
                   <p className="text-xs font-medium leading-relaxed" style={{ color: 'var(--text-secondary)' }}>O'z guruhingiz a'zolari bilan birlashing va boshqa guruhlar orasida peshqadam bo'ling!</p>
@@ -1019,36 +1027,36 @@ function App() {
           {/* Right Section: Login Form (30% - Full Height White Panel with Border) */}
           <section className="landing-right-panel w-full lg:w-[30%] flex flex-col justify-center items-center p-6 sm:p-10 lg:p-8 xl:p-10 order-1 lg:order-2">
             <div className="w-full max-w-sm my-auto">
-              
+
               {/* Form Header */}
               <div className="text-center mb-8">
                 <h2 className="text-2xl sm:text-3xl font-bold tracking-tight" style={{ color: 'var(--text-primary)' }}>Tizimga kirish</h2>
                 <p className="text-xs font-medium mt-1.5" style={{ color: 'var(--text-secondary)' }}>Davom etish uchun parolni kiriting</p>
               </div>
-              
+
               {/* Form Action */}
               <form className="space-y-5" onSubmit={handleLoginSubmit}>
                 <div className="form-group">
-                  <label 
-                    htmlFor="passwordField" 
+                  <label
+                    htmlFor="passwordField"
                     className="form-label"
                   >
                     Parol
                   </label>
                   <div className="password-input-wrapper">
-                    <input 
+                    <input
                       type={showPassword ? 'text' : 'password'}
-                      id="passwordField" 
-                      placeholder="Parolni kiriting..." 
+                      id="passwordField"
+                      placeholder="Parolni kiriting..."
                       required
                       value={loginPassword}
                       onChange={(e) => setLoginPassword(e.target.value)}
                       className="form-input password-input"
                       autoFocus
                     />
-                    <button 
-                      type="button" 
-                      onClick={() => setShowPassword(!showPassword)} 
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
                       className="password-toggle-btn"
                       aria-label="Parolni ko'rsatish"
                     >
@@ -1068,18 +1076,18 @@ function App() {
                     </button>
                   </div>
                 </div>
-                
+
                 {loginError && <p className="login-error-text">{loginError}</p>}
 
-                <button 
-                  type="submit" 
+                <button
+                  type="submit"
                   disabled={loginLoading}
                   className="btn btn-primary login-btn scale-active"
                 >
                   <span>{loginLoading ? "Tekshirilmoqda..." : "Kirish"}</span>
                 </button>
               </form>
-              
+
               {/* Support info */}
               <div className="landing-support-divider mt-8 pt-6 flex flex-col items-center gap-3">
                 <p className="text-xs text-center" style={{ color: 'var(--text-secondary)' }}>
@@ -1128,8 +1136,8 @@ function App() {
         <p style={{ margin: 0, opacity: 0.8, maxWidth: '320px', textAlign: 'center', fontSize: '0.9rem', fontFamily: 'var(--font-family)', lineHeight: '1.4' }}>
           Ma'lumotlarni yuklab bo'lmadi. Internet aloqasini tekshiring va qayta urinib ko'ring.
         </p>
-        <button 
-          className="btn btn-primary scale-active" 
+        <button
+          className="btn btn-primary scale-active"
           onClick={() => {
             setConnectionError(false);
             setIsLoaded(false);
@@ -1202,9 +1210,9 @@ function App() {
       {showLogoutConfirmModal && createPortal(
         <div className="modal-overlay" onClick={() => setShowLogoutConfirmModal(false)}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '420px', padding: '24px' }}>
-            <button 
-              type="button" 
-              className="modal-close-btn" 
+            <button
+              type="button"
+              className="modal-close-btn"
               onClick={() => setShowLogoutConfirmModal(false)}
             >
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">

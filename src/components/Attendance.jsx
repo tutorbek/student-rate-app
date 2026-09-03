@@ -380,18 +380,41 @@ const Attendance = ({ groups = [], students = [], attendance = [], onSaveAttenda
     attendance
       .filter((r) => r.groupId === selectedGroupId)
       .forEach((rec) => {
+        // Collect all students relevant to this session:
+        // 1. Current group students
+        // 2. Plus any students recorded in rec.records (including transferred/deleted)
+        const recordedIds = Object.keys(rec.records || {});
+        const extraStudents = (students || []).filter(
+          (s) => recordedIds.includes(s.id) && !groupStudents.some((gs) => gs.id === s.id)
+        );
+        const sessionStudentsList = [...groupStudents, ...extraStudents];
+
         let present = 0, absent = 0, late = 0;
-        Object.values(rec.records || {}).forEach((st) => {
-          if (st === 'present') present++;
-          else if (st === 'absent') absent++;
-          else if (st === 'late') late++;
+        const effectiveRecords = {};
+
+        sessionStudentsList.forEach((student) => {
+          const status = rec.records?.[student.id] || 'present';
+          effectiveRecords[student.id] = status;
+          if (status === 'present') present++;
+          else if (status === 'absent') absent++;
+          else if (status === 'late') late++;
         });
-        const totalMarked = present + absent + late;
+
+        const totalMarked = sessionStudentsList.length;
         const rate = totalMarked > 0 ? Math.round(((present + late * 0.5) / totalMarked) * 100) : 100;
-        map[rec.date] = { ...rec, present, absent, late, totalMarked, rate };
+        map[rec.date] = {
+          ...rec,
+          records: effectiveRecords,
+          studentsList: sessionStudentsList,
+          present,
+          absent,
+          late,
+          totalMarked,
+          rate,
+        };
       });
     return map;
-  }, [activeTab, attendance, selectedGroupId]);
+  }, [activeTab, attendance, selectedGroupId, groupStudents, students]);
 
   const handleMarkStatus = useCallback((studentId, status) => {
     if (!selectedGroupId || !selectedDate) { showToast("Iltimos, guruh va sanani tanlang!", "error"); return; }
@@ -451,13 +474,11 @@ const Attendance = ({ groups = [], students = [], attendance = [], onSaveAttenda
     return groupStudents.map((student) => {
       let presentCount = 0, absentCount = 0, lateCount = 0, totalLessons = 0;
       filteredAttendanceRecords.forEach((record) => {
-        const status = record.records?.[student.id];
-        if (status) {
-          totalLessons++;
-          if (status === 'present') presentCount++;
-          else if (status === 'absent') absentCount++;
-          else if (status === 'late') lateCount++;
-        }
+        const status = record.records?.[student.id] || 'present';
+        totalLessons++;
+        if (status === 'present') presentCount++;
+        else if (status === 'absent') absentCount++;
+        else if (status === 'late') lateCount++;
       });
       const calculatedPresents = presentCount + lateCount * 0.5;
       const rate = totalLessons > 0 ? Math.round((calculatedPresents / totalLessons) * 100) : 100;
@@ -741,11 +762,18 @@ const Attendance = ({ groups = [], students = [], attendance = [], onSaveAttenda
                 const session = journalRecordsByDate[fullDateStr];
                 const isToday = fullDateStr === getTodayDateString();
                 const isSunday = (idx % 7) === 6;
+                const rateStatusClass = session
+                  ? session.rate >= 90
+                    ? 'has-attendance-good'
+                    : session.rate >= 70
+                    ? 'has-attendance-avg'
+                    : 'has-attendance-bad'
+                  : '';
 
                 return (
                   <div
                     key={idx}
-                    className={`journal-cal-cell ${isSunday ? 'day-sunday' : 'day-weekday'} ${!d.isCurrentMonth ? 'other-month' : ''} ${isToday ? 'today-cell' : ''} ${session ? 'has-attendance-cell' : ''}`}
+                    className={`journal-cal-cell ${isSunday ? 'day-sunday' : 'day-weekday'} ${!d.isCurrentMonth ? 'other-month' : ''} ${isToday ? 'today-cell' : ''} ${session ? `has-attendance-cell ${rateStatusClass}` : ''}`}
                     onClick={() => {
                       if (session) {
                         setSelectedDayDetail(session);
@@ -1057,9 +1085,9 @@ const Attendance = ({ groups = [], students = [], attendance = [], onSaveAttenda
             </div>
 
             <div className="journal-modal-students-scroll">
-              {groupStudents.length > 0 ? (
-                groupStudents.map((student) => {
-                  const status = selectedDayDetail.records?.[student.id];
+              {(selectedDayDetail.studentsList || groupStudents).length > 0 ? (
+                (selectedDayDetail.studentsList || groupStudents).map((student) => {
+                  const status = selectedDayDetail.records?.[student.id] || 'present';
                   return (
                     <div key={student.id} className="journal-modal-student-row">
                       <div className="student-info-left">
@@ -1077,12 +1105,10 @@ const Attendance = ({ groups = [], students = [], attendance = [], onSaveAttenda
                           <span className="badge-status absent">
                             Kelmadi
                           </span>
-                        ) : status === 'late' ? (
+                        ) : (
                           <span className="badge-status late">
                             Kechikdi
                           </span>
-                        ) : (
-                          <span className="badge-status none">—</span>
                         )}
                       </div>
                     </div>
@@ -2017,15 +2043,43 @@ const Attendance = ({ groups = [], students = [], attendance = [], onSaveAttenda
         }
 
         .journal-cal-cell.has-attendance-cell {
+          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+        }
+
+        .journal-cal-cell.has-attendance-cell.has-attendance-good {
           background: #F0FDF4;
           border: 1.5px solid #86EFAC;
           box-shadow: 0 2px 8px rgba(34, 197, 94, 0.08);
         }
 
-        .journal-cal-cell.has-attendance-cell:hover {
+        .journal-cal-cell.has-attendance-cell.has-attendance-good:hover {
           background: #DCFCE7;
           border-color: #4ADE80;
           box-shadow: 0 4px 14px rgba(34, 197, 94, 0.14);
+        }
+
+        .journal-cal-cell.has-attendance-cell.has-attendance-avg {
+          background: #FFFBEB;
+          border: 1.5px solid #FCD34D;
+          box-shadow: 0 2px 8px rgba(245, 158, 11, 0.08);
+        }
+
+        .journal-cal-cell.has-attendance-cell.has-attendance-avg:hover {
+          background: #FEF3C7;
+          border-color: #F59E0B;
+          box-shadow: 0 4px 14px rgba(245, 158, 11, 0.14);
+        }
+
+        .journal-cal-cell.has-attendance-cell.has-attendance-bad {
+          background: #FEF2F2;
+          border: 1.5px solid #FCA5A5;
+          box-shadow: 0 2px 8px rgba(239, 68, 68, 0.08);
+        }
+
+        .journal-cal-cell.has-attendance-cell.has-attendance-bad:hover {
+          background: #FEE2E2;
+          border-color: #EF4444;
+          box-shadow: 0 4px 14px rgba(239, 68, 68, 0.14);
         }
 
         .journal-cal-cell.other-month {
@@ -3026,15 +3080,43 @@ const Attendance = ({ groups = [], students = [], attendance = [], onSaveAttenda
         }
 
         [data-theme="dark"] .journal-cal-cell.has-attendance-cell {
+          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        [data-theme="dark"] .journal-cal-cell.has-attendance-cell.has-attendance-good {
           background: #1C2921;
           border: 1.5px solid #2E5C3E;
           box-shadow: 0 2px 8px rgba(129, 201, 149, 0.1);
         }
 
-        [data-theme="dark"] .journal-cal-cell.has-attendance-cell:hover {
+        [data-theme="dark"] .journal-cal-cell.has-attendance-cell.has-attendance-good:hover {
           background: #24382C;
           border-color: #3D7A52;
           box-shadow: 0 4px 14px rgba(129, 201, 149, 0.2);
+        }
+
+        [data-theme="dark"] .journal-cal-cell.has-attendance-cell.has-attendance-avg {
+          background: #2C261A;
+          border: 1.5px solid #5C4A26;
+          box-shadow: 0 2px 8px rgba(251, 191, 36, 0.1);
+        }
+
+        [data-theme="dark"] .journal-cal-cell.has-attendance-cell.has-attendance-avg:hover {
+          background: #3B3220;
+          border-color: #785F2C;
+          box-shadow: 0 4px 14px rgba(251, 191, 36, 0.2);
+        }
+
+        [data-theme="dark"] .journal-cal-cell.has-attendance-cell.has-attendance-bad {
+          background: #2D1A1E;
+          border: 1.5px solid #5E2C33;
+          box-shadow: 0 2px 8px rgba(242, 139, 130, 0.1);
+        }
+
+        [data-theme="dark"] .journal-cal-cell.has-attendance-cell.has-attendance-bad:hover {
+          background: #3B2127;
+          border-color: #7A3540;
+          box-shadow: 0 4px 14px rgba(242, 139, 130, 0.2);
         }
 
         [data-theme="dark"] .journal-cal-cell.today-cell {

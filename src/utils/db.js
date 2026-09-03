@@ -192,15 +192,31 @@ export const addStudent = (students, name, groupId, emoji, color) => {
   return { newStudent, updatedStudents };
 };
 
-export const updateStudent = (students, studentId, newName, newEmoji, newColor) => {
+export const updateStudent = (students, studentId, newName, newEmoji, newColor, newGroupId = null) => {
   let updatedStudent = null;
   const updatedStudents = students.map((s) => {
     if (s.id === studentId) {
       updatedStudent = {
         ...s,
-        name: newName.trim(),
+        name: newName !== undefined && newName !== null ? newName.trim() : s.name,
         emoji: normalizeIconUrl(newEmoji || s.emoji),
         color: newColor || s.color,
+        groupId: newGroupId || s.groupId,
+      };
+      return updatedStudent;
+    }
+    return s;
+  });
+  return { updatedStudent, updatedStudents };
+};
+
+export const transferStudent = (students, studentId, targetGroupId) => {
+  let updatedStudent = null;
+  const updatedStudents = students.map((s) => {
+    if (s.id === studentId) {
+      updatedStudent = {
+        ...s,
+        groupId: targetGroupId,
       };
       return updatedStudent;
     }
