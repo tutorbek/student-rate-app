@@ -60,8 +60,7 @@ export default function LoginPage({
               disabled={loginLoading}
               autoComplete="current-password"
               required
-              autoFocus
-              className="w-full bg-[#F5F5F7] dark:bg-[#2C2C2E] text-[#1D1D1F] dark:text-[#F5F5F7] placeholder-[#86868B] border border-black/[0.08] dark:border-white/[0.08] rounded-2xl px-4 py-3.5 pr-11 text-xs sm:text-sm font-normal focus:outline-none focus:ring-2 focus:ring-[#0071E3]/30 focus:border-[#0071E3] transition-all"
+              className="w-full bg-[#F5F5F7] dark:bg-[#2C2C2E] text-[#1D1D1F] dark:text-[#F5F5F7] placeholder-[#86868B] border border-black/[0.08] dark:border-white/[0.08] rounded-2xl px-4 py-3.5 pr-11 text-base sm:text-sm font-normal focus:outline-none focus:ring-2 focus:ring-[#0071E3]/30 focus:border-[#0071E3] transition-all"
             />
             <button
               type="button"

@@ -88,12 +88,8 @@
 
 html {
   min-height: 100%;
-  scroll-behavior: smooth;
   scrollbar-width: none;
   -ms-overflow-style: none;
-  overscroll-behavior: none;
-  overscroll-behavior-y: none;
-  overscroll-behavior-x: none;
 }
 
 body {
@@ -106,9 +102,22 @@ body {
   padding-left: env(safe-area-inset-left, 0px);
   padding-right: env(safe-area-inset-right, 0px);
   -webkit-overflow-scrolling: touch;
-  overscroll-behavior: none;
-  overscroll-behavior-y: none;
-  overscroll-behavior-x: none;
+}
+
+/* Prevent iOS Safari automatic viewport zoom on form inputs */
+@media screen and (max-width: 768px) {
+  input[type="text"],
+  input[type="password"],
+  input[type="email"],
+  input[type="number"],
+  input[type="search"],
+  input[type="tel"],
+  input[type="url"],
+  select,
+  textarea,
+  .form-input {
+    font-size: 16px !important;
+  }
 }
 
 /* Hide Scrollbars cleanly while preserving high performance fluid scrolling */
@@ -2069,24 +2078,19 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 }
 
 /* ========================================================
-   Landing Page Stacking Cards Styles
+   Landing Page Stacking Cards Styles & Responsive Breakpoints
    ======================================================== */
 :root {
-  --stack-base-top: calc(88px + env(safe-area-inset-top, 0px));
-  --stack-step-y: 10px;
-  --stack-gap: 40vh;
-}
-
-@media (max-width: 640px) {
-  :root {
-    --stack-base-top: calc(72px + env(safe-area-inset-top, 0px));
-    --stack-step-y: 6px;
-    --stack-gap: 30vh;
-  }
+  --stack-base-top: calc(76px + env(safe-area-inset-top, 0px));
+  --stack-step-y: 8px;
+  --stack-gap: 32vh;
 }
 
 .landing-root {
-  overflow: visible !important;
+  overflow-x: clip;
+  max-width: 100%;
+  width: 100%;
+  position: relative;
 }
 
 .landing-root ::selection,
@@ -2098,23 +2102,96 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .stacking-cards-container {
   width: 100%;
   position: relative;
-  overflow: visible !important;
 }
 
-.stacking-card-item {
-  position: -webkit-sticky !important;
-  position: sticky !important;
-  will-change: transform;
+/* Animations for Mobile Navigation Drawer */
+@keyframes fadeInBackdrop {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
-.stacking-card-frame {
-  transform-origin: center top;
-  will-change: transform;
-  transition: transform 0.2s ease, border-color 0.2s ease;
+@keyframes slideDownDrawer {
+  from {
+    opacity: 0;
+    transform: translateY(-12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
-@media (hover: hover) and (pointer: fine) {
+.animate-fade-in {
+  animation: fadeInBackdrop 0.2s ease-out forwards;
+}
+
+.animate-drawer-down {
+  animation: slideDownDrawer 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Base Mobile (< 768px): Fluid natural layout */
+@media (max-width: 767px) {
+  .stacking-card-item {
+    position: relative !important;
+    top: auto !important;
+    margin-bottom: 20px !important;
+    will-change: auto !important;
+  }
+
+  .stacking-card-item:last-child {
+    margin-bottom: 0 !important;
+  }
+
+  .stacking-card-frame {
+    height: auto !important;
+    max-height: none !important;
+    min-height: unset !important;
+    transform: none !important;
+    transition: none !important;
+    will-change: auto !important;
+  }
+}
+
+/* Breakpoint 480px (xs): Larger mobile / landscape */
+@media (min-width: 480px) and (max-width: 767px) {
+  .stacking-card-item {
+    margin-bottom: 24px !important;
+  }
+}
+
+/* Breakpoint 768px (md): Desktop / Tablet stacking playing card deck */
+@media (min-width: 768px) {
+  .stacking-card-item {
+    position: -webkit-sticky !important;
+    position: sticky !important;
+    will-change: transform;
+  }
+
+  .stacking-card-frame {
+    transform-origin: center top;
+    will-change: transform;
+    transition: transform 0.2s ease, border-color 0.2s ease;
+  }
+
   .stacking-card-frame:hover {
     border-color: rgba(255, 255, 255, 0.35);
+  }
+}
+
+/* Breakpoint 1024px (lg): Laptops */
+@media (min-width: 1024px) {
+  :root {
+    --stack-base-top: calc(88px + env(safe-area-inset-top, 0px));
+    --stack-step-y: 10px;
+    --stack-gap: 34vh;
+  }
+}
+
+/* Breakpoint 1200px (xl): Large Desktop displays */
+@media (min-width: 1200px) {
+  :root {
+    --stack-base-top: calc(92px + env(safe-area-inset-top, 0px));
+    --stack-step-y: 12px;
+    --stack-gap: 32vh;
   }
 }
