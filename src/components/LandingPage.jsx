@@ -302,7 +302,7 @@ export default function LandingPage({ onNavigateToLogin }) {
   };
 
   return (
-    <div className="landing-root w-full min-h-screen bg-[var(--bg-primary)] text-[var(--text-primary)] relative overflow-x-clip font-sans antialiased selection:bg-[#0071E3] selection:text-white">
+    <div className="landing-root w-full min-h-screen bg-[var(--bg-primary)] text-[var(--text-primary)] relative font-sans antialiased selection:bg-[#0071E3] selection:text-white">
       
       {/* 1. Header & Navigation */}
       <header className="app-navbar sticky top-0 z-50 backdrop-blur-2xl bg-[var(--bg-primary)]/80 border-b border-[var(--border-color)] pt-[env(safe-area-inset-top,0px)]">
@@ -687,10 +687,12 @@ export default function LandingPage({ onNavigateToLogin }) {
               <div
                 key={screen.id}
                 data-card-index={index}
-                className="stacking-card-item relative w-full"
+                className="stacking-card-item w-full"
                 style={{
-                  top: `calc(var(--stack-base-top) + ${index} * var(--stack-step-y))`,
-                  marginBottom: isLast ? '0px' : 'var(--stack-gap)',
+                  position: 'sticky',
+                  WebkitPosition: '-webkit-sticky',
+                  top: `calc(var(--stack-base-top, 80px) + ${index} * var(--stack-step-y, 10px))`,
+                  marginBottom: isLast ? '0px' : 'var(--stack-gap, 35vh)',
                   zIndex: index + 1,
                 }}
               >

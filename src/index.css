@@ -2086,7 +2086,7 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 }
 
 .landing-root {
-  overflow-x: clip !important;
+  overflow: visible !important;
 }
 
 .landing-root ::selection,
@@ -2098,11 +2098,12 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .stacking-cards-container {
   width: 100%;
   position: relative;
+  overflow: visible !important;
 }
 
 .stacking-card-item {
-  position: -webkit-sticky;
-  position: sticky;
+  position: -webkit-sticky !important;
+  position: sticky !important;
   will-change: transform;
 }
 
