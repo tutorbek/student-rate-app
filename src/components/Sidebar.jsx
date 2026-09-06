@@ -85,6 +85,9 @@ const Navbar = ({ activeTab, setActiveTab, userRole, onLogout, theme, toggleThem
     if (userRole === 'student') {
       return item.id === 'leaderboard';
     }
+    if (userRole === 'admin') {
+      return item.id === 'dashboard' || item.id === 'groups' || item.id === 'attendance';
+    }
     return true;
   });
 
@@ -96,9 +99,12 @@ const Navbar = ({ activeTab, setActiveTab, userRole, onLogout, theme, toggleThem
           {/* Brand Logo */}
           <div
             className="navbar-brand-section scale-active"
-            onClick={() => setActiveTab(userRole === 'student' ? 'leaderboard' : 'groups')}
+            onClick={() => setActiveTab(userRole === 'student' ? 'leaderboard' : userRole === 'admin' ? 'dashboard' : 'groups')}
           >
-            <h1 className="navbar-logo-text">EPCHIL <span className="logo-badge">ROBOT</span></h1>
+            <h1 className="navbar-logo-text">
+              EPCHIL <span className="logo-badge">ROBOT</span>
+              {userRole === 'admin' && <span className="admin-nav-role-badge">ADMIN</span>}
+            </h1>
           </div>
 
           {/* Student Mode Header Actions */}
@@ -131,7 +137,7 @@ const Navbar = ({ activeTab, setActiveTab, userRole, onLogout, theme, toggleThem
             </div>
           )}
 
-          {/* Teacher Desktop Nav Links */}
+          {/* Teacher & Admin Desktop Nav Links */}
           {userRole !== 'student' && (
             <div className="teacher-header-actions">
               {toggleTheme && (
@@ -157,6 +163,22 @@ const Navbar = ({ activeTab, setActiveTab, userRole, onLogout, theme, toggleThem
                   </button>
                 ))}
               </nav>
+
+              {userRole === 'admin' && onLogout && (
+                <button
+                  type="button"
+                  className="btn btn-secondary scale-active student-logout-btn"
+                  onClick={onLogout}
+                  style={{ marginLeft: 4 }}
+                >
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                    <polyline points="16 17 21 12 16 7" />
+                    <line x1="21" y1="12" x2="9" y2="12" />
+                  </svg>
+                  <span>Chiqish</span>
+                </button>
+              )}
             </div>
           )}
         </div>
@@ -240,10 +262,17 @@ const Navbar = ({ activeTab, setActiveTab, userRole, onLogout, theme, toggleThem
           transition: background-color var(--transition-fast), color var(--transition-fast);
         }
 
-        [data-theme="dark"] .logo-badge {
-          background: #FFFFFF;
-          color: #000000;
+        .admin-nav-role-badge {
+          background: #8B5CF6;
+          color: #FFFFFF;
+          padding: 2px 8px;
+          border-radius: var(--radius-full);
+          font-size: 0.72rem;
+          font-weight: 700;
+          letter-spacing: 0.02em;
         }
+
+
 
         .student-header-actions,
         .teacher-header-actions {

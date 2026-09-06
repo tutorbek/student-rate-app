@@ -7,9 +7,15 @@ import GroupDetail from './components/GroupDetail';
 import Leaderboard from './components/Leaderboard';
 import Settings from './components/Settings';
 import Attendance from './components/Attendance';
+import AdminDashboard from './components/admin/AdminDashboard';
+import AdminGroups from './components/admin/AdminGroups';
+import AdminAttendance from './components/admin/AdminAttendance';
+import LoginPage from './components/LoginPage';
+import LandingPage from './components/LandingPage';
 import {
   loadFromSupabase as loadFromFirestore,
   saveToSupabase as saveToFirestore,
+  loadAllTeachersFromSupabase,
   registerGroupPassword,
   deregisterGroupPassword,
   getGroupPasswordsRegistry,
@@ -69,11 +75,30 @@ function App() {
     if (savedTheme === 'dark' || savedTheme === 'light') {
       return savedTheme;
     }
-    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
-      return 'dark';
-    }
     return 'light';
   });
+
+  const [isAuthenticated, setIsAuthenticated] = useState(() => {
+    return localStorage.getItem('rsa_authenticated') === 'true';
+  });
+  const [userRole, setUserRole] = useState(() => {
+    return localStorage.getItem('rsa_role') || 'student';
+  });
+  const [teacherId, setTeacherId] = useState(() => {
+    return localStorage.getItem('rsa_teacher_id') || null;
+  });
+  const [studentGroupId, setStudentGroupId] = useState(() => {
+    return localStorage.getItem('rsa_student_group_id') || null;
+  });
+  const [syncStatus, setSyncStatus] = useState('saved'); // 'saved', 'saving', 'offline'
+  const [snapshots, setSnapshots] = useState([]);
+  const [showWeeklyBackupBanner, setShowWeeklyBackupBanner] = useState(false);
+
+  const [loginPassword, setLoginPassword] = useState('');
+  const [loginError, setLoginError] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [loginLoading, setLoginLoading] = useState(false);
+  const [authView, setAuthView] = useState('landing');
 
   const applyThemeInstantly = useCallback((newTheme) => {
     // Temporarily disable CSS transitions so that background, text, and cards switch in 0ms without white flicker
@@ -110,11 +135,17 @@ function App() {
   }, []);
 
   useEffect(() => {
+    if (!isAuthenticated) {
+      document.documentElement.setAttribute('data-theme', 'light');
+      document.documentElement.style.backgroundColor = '#F5F5F7';
+      document.documentElement.style.colorScheme = 'light';
+      return;
+    }
     document.documentElement.setAttribute('data-theme', theme);
     document.documentElement.style.backgroundColor = theme === 'dark' ? '#202124' : '#F5F5F7';
     document.documentElement.style.colorScheme = theme;
     localStorage.setItem('rsa_theme', theme);
-  }, [theme]);
+  }, [theme, isAuthenticated]);
 
   const toggleTheme = useCallback(() => {
     const nextTheme = theme === 'dark' ? 'light' : 'dark';
@@ -127,36 +158,6 @@ function App() {
     }
   }, [applyThemeInstantly]);
 
-  const [isAuthenticated, setIsAuthenticated] = useState(() => {
-    return localStorage.getItem('rsa_authenticated') === 'true';
-  });
-  const [userRole, setUserRole] = useState(() => {
-    return localStorage.getItem('rsa_role') || 'student';
-  });
-  const [teacherId, setTeacherId] = useState(() => {
-    return localStorage.getItem('rsa_teacher_id') || null;
-  });
-  const [studentGroupId, setStudentGroupId] = useState(() => {
-    return localStorage.getItem('rsa_student_group_id') || null;
-  });
-  const [syncStatus, setSyncStatus] = useState('saved'); // 'saved', 'saving', 'offline'
-  const [snapshots, setSnapshots] = useState([]);
-  const [showWeeklyBackupBanner, setShowWeeklyBackupBanner] = useState(false);
-
-  const [loginPassword, setLoginPassword] = useState('');
-  const [loginError, setLoginError] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
-  const [loginLoading, setLoginLoading] = useState(false);
-  const [isLoginStyleReady, setIsLoginStyleReady] = useState(false);
-
-  useEffect(() => {
-    if (isAuthenticated) return;
-    const timer = setTimeout(() => {
-      setIsLoginStyleReady(true);
-    }, 120);
-    return () => clearTimeout(timer);
-  }, [isAuthenticated]);
-
   const handleLoginSubmit = async (e) => {
     e.preventDefault();
     if (!loginPassword) {
@@ -167,6 +168,9 @@ function App() {
     setLoginError('');
 
     const CREDENTIALS = {
+      // Super Admin
+      'hammaguruhlar': { role: 'admin', teacherId: 'admin' },
+
       // Teacher 1
       'insight': { role: 'teacher', teacherId: 'teacher1' },
       'beksila': { role: 'teacher', teacherId: 'teacher1' }, // backward compatibility
@@ -197,10 +201,12 @@ function App() {
 
       if (match.role === 'student') {
         setActiveTab('leaderboard');
+      } else if (match.role === 'admin') {
+        setActiveTab('dashboard');
       } else {
         setActiveTab('groups');
       }
-      showToast("Muvaffaqiyatli kirdingiz!", "success");
+      showToast(match.role === 'admin' ? "Admin paneliga muvaffaqiyatli kirdingiz!" : "Muvaffaqiyatli kirdingiz!", "success");
       setLoginLoading(false);
     } else {
       // Try to check group password registry
@@ -285,6 +291,8 @@ function App() {
   const [transactions, setTransactions] = useState([]);
   const [quickTags, setQuickTags] = useState([]);
   const [attendance, setAttendance] = useState([]);
+  const [allTeachersData, setAllTeachersData] = useState({});
+  const [selectedAdminTeacherFilter, setSelectedAdminTeacherFilter] = useState('all');
   const [isLoaded, setIsLoaded] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
   const [connectionError, setConnectionError] = useState(false);
@@ -327,6 +335,36 @@ function App() {
     }
     const load = async () => {
       setIsSyncing(true);
+
+      // Handle Admin Mode: Load all 4 teachers concurrently
+      if (userRole === 'admin') {
+        const allData = await loadAllTeachersFromSupabase(['teacher1', 'teacher2', 'teacher3', 'teacher4']);
+        if (allData) {
+          const normalized = {};
+          Object.keys(allData).forEach(tId => {
+            const t = allData[tId];
+            normalized[tId] = {
+              ...t,
+              groups: (t.groups || []).map(g => ({ ...g, icon: normalizeIconUrl(g.icon) })),
+              students: (t.students || []).map(s => ({ ...s, emoji: normalizeIconUrl(s.emoji) })),
+              transactions: t.transactions || [],
+              quickTags: normalizeQuickTags(t.quickTags),
+              attendance: t.attendance || []
+            };
+          });
+          setAllTeachersData(normalized);
+          setIsLoaded(true);
+          setConnectionError(false);
+          setSyncStatus('saved');
+        } else {
+          setSyncStatus('offline');
+          setConnectionError(true);
+          setIsLoaded(false);
+        }
+        setIsSyncing(false);
+        return;
+      }
+
       // Always prioritize live Cloud Database (Supabase) as Single Source of Truth
       let data = await loadFromFirestore(teacherId);
 
@@ -406,7 +444,7 @@ function App() {
     load();
   }, [isAuthenticated, teacherId, userRole, reloadTrigger]);
 
-  // Natural sorting function for group names (e.g. G1, G2, G3, G4, G10...)
+  //  Natural sorting function for group names (e.g. G1, G2, G3, G4, G10...)
   const sortGroupsNaturally = (list) => {
     return [...list].sort((a, b) => {
       const nameA = a.name || '';
@@ -458,7 +496,7 @@ function App() {
   // Debounced Save to Firestore whenever state changes (Teachers only!)
   useEffect(() => {
     if (!isLoaded || !isAuthenticated || !teacherId) return;
-    if (userRole === 'student') return;
+    if (userRole === 'student' || userRole === 'admin') return;
 
     const db = { groups, students, transactions, quickTags, attendance };
     const dbStr = JSON.stringify(db);
@@ -807,6 +845,7 @@ function App() {
     setStudents([]);
     setTransactions([]);
     setQuickTags([]);
+    setAllTeachersData({});
 
     setIsAuthenticated(false);
     setTeacherId(null);
@@ -817,6 +856,30 @@ function App() {
     setLoginError('');
   };
 
+  const handleAdminRefresh = async () => {
+    setIsSyncing(true);
+    const allData = await loadAllTeachersFromSupabase(['teacher1', 'teacher2', 'teacher3', 'teacher4']);
+    if (allData) {
+      const normalized = {};
+      Object.keys(allData).forEach(tId => {
+        const t = allData[tId];
+        normalized[tId] = {
+          ...t,
+          groups: (t.groups || []).map(g => ({ ...g, icon: normalizeIconUrl(g.icon) })),
+          students: (t.students || []).map(s => ({ ...s, emoji: normalizeIconUrl(s.emoji) })),
+          transactions: t.transactions || [],
+          quickTags: normalizeQuickTags(t.quickTags),
+          attendance: t.attendance || []
+        };
+      });
+      setAllTeachersData(normalized);
+      showToast("Barcha ma'lumotlar muvaffaqiyatli yangilandi!", "success");
+    } else {
+      showToast("Yangilashda xatolik yuz berdi. Internetni tekshiring.", "error");
+    }
+    setIsSyncing(false);
+  };
+
   // Select Group Helper
   const handleSelectGroup = (groupId) => {
     setSelectedGroupId(groupId);
@@ -825,6 +888,52 @@ function App() {
 
   // Render Page Content
   const renderContent = () => {
+    if (userRole === 'admin') {
+      switch (activeTab) {
+        case 'dashboard':
+          return (
+            <AdminDashboard
+              allTeachersData={allTeachersData}
+              onSelectTeacher={(tId) => {
+                setSelectedAdminTeacherFilter(tId);
+                setActiveTab('groups');
+              }}
+              setActiveTab={handleTabChange}
+              onRefresh={handleAdminRefresh}
+              isSyncing={isSyncing}
+            />
+          );
+        case 'groups':
+          return (
+            <AdminGroups
+              allTeachersData={allTeachersData}
+              selectedTeacherFilter={selectedAdminTeacherFilter}
+              onSelectTeacherFilter={setSelectedAdminTeacherFilter}
+            />
+          );
+        case 'attendance':
+          return (
+            <AdminAttendance
+              allTeachersData={allTeachersData}
+              selectedTeacherFilter={selectedAdminTeacherFilter}
+            />
+          );
+        default:
+          return (
+            <AdminDashboard
+              allTeachersData={allTeachersData}
+              onSelectTeacher={(tId) => {
+                setSelectedAdminTeacherFilter(tId);
+                setActiveTab('groups');
+              }}
+              setActiveTab={handleTabChange}
+              onRefresh={handleAdminRefresh}
+              isSyncing={isSyncing}
+            />
+          );
+      }
+    }
+
     switch (activeTab) {
       case 'dashboard':
         return <Dashboard setActiveTab={handleTabChange} onSelectGroup={handleSelectGroup} groups={filteredGroups} students={filteredStudents} transactions={filteredTransactions} attendance={attendance} />;
@@ -924,194 +1033,25 @@ function App() {
   };
 
   if (!isAuthenticated) {
-    if (!isLoginStyleReady) {
-      return (
-        <div style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          backgroundColor: 'var(--bg-primary)',
-          zIndex: 99999
-        }} />
-      );
-    }
-
     return (
-      <div
-        className="login-page-apple min-h-screen flex flex-col justify-between w-full"
-        style={{
-          opacity: isLoginStyleReady ? 1 : 0,
-          transition: 'opacity 0.2s ease-in'
-        }}
-      >
-        {/* Top Header */}
-        <header className="landing-header glass" style={{ borderBottom: '1px solid var(--border-color)' }}>
-          <div className="landing-header-inner max-w-7xl mx-auto w-full px-4 sm:px-8 md:px-10 py-3.5 flex justify-between items-center">
-            <div className="flex items-center gap-2">
-              <h1 className="text-lg md:text-xl font-bold tracking-tight select-none flex items-center gap-2" style={{ color: 'var(--text-primary)' }}>
-                EPCHIL <span className="logo-badge">ROBOT</span>
-              </h1>
-            </div>
-            <div className="flex items-center gap-3">
-              <button
-                type="button"
-                className="btn btn-secondary scale-active theme-toggle-btn"
-                onClick={toggleTheme}
-                aria-label="Mavzuni o'zgartirish"
-              >
-                {theme === 'dark' ? (
-                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                    <circle cx="12" cy="12" r="5" />
-                    <line x1="12" y1="1" x2="12" y2="3" />
-                    <line x1="12" y1="21" x2="12" y2="23" />
-                    <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" />
-                    <line x1="18.36" y1="18.36" x2="19.78" y2="19.78" />
-                    <line x1="1" y1="12" x2="3" y2="12" />
-                    <line x1="21" y1="12" x2="23" y2="12" />
-                    <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" />
-                    <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
-                  </svg>
-                ) : (
-                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
-                  </svg>
-                )}
-              </button>
-              <span className="badge">V2.0.0</span>
-            </div>
-          </div>
-        </header>
-
-        {/* Full-Height Split Screen Container */}
-        <main className="landing-main-split flex-grow flex flex-col lg:flex-row w-full">
-
-          {/* Left Section: Value Story (70%) */}
-          <section className="landing-left-panel w-full lg:w-[70%] flex flex-col justify-center p-6 sm:p-10 lg:p-12 xl:p-16 order-2 lg:order-1">
-            <div className="w-full max-w-3xl mx-auto lg:mx-0">
-              <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight mb-4" style={{ color: 'var(--text-primary)', letterSpacing: '-0.03em', lineHeight: '1.2' }}>
-                Bilim olishlarini <br className="hidden sm:inline" />
-                <span style={{ color: 'var(--apple-blue)' }}>"Like"</span> bilan taqdirlang!
-              </h2>
-
-              <p className="text-sm sm:text-base mb-8 font-normal leading-relaxed max-w-2xl" style={{ color: 'var(--text-secondary)' }}>
-                O'quvchilaringizning darsdagi faolligini rag'batlantiring va sog'lom raqobat muhitini shakllantiring.
-              </p>
-
-              {/* Features List (2x2 Grid) */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-                <div className="landing-feature-card p-4 rounded-2xl">
-                  <h3 className="text-sm font-bold mb-1" style={{ color: 'var(--text-primary)' }}>Faol ta'lim tizimi</h3>
-                  <p className="text-xs font-medium leading-relaxed" style={{ color: 'var(--text-secondary)' }}>Har bir darsda faol qatnashing va ustozingizdan qimmatli dars "Like"larini qo'lga kiriting.</p>
-                </div>
-
-                <div className="landing-feature-card p-4 rounded-2xl">
-                  <h3 className="text-sm font-bold mb-1" style={{ color: 'var(--text-primary)' }}>Oylik va umumiy reyting</h3>
-                  <p className="text-xs font-medium leading-relaxed" style={{ color: 'var(--text-secondary)' }}>Eng ko'p Like to'plagan g'oliblar qatoridan joy oling va maxsus sovg'alarga ega bo'ling.</p>
-                </div>
-
-                <div className="landing-feature-card p-4 rounded-2xl">
-                  <h3 className="text-sm font-bold mb-1" style={{ color: 'var(--text-primary)' }}>Hamjihat guruh raqobati</h3>
-                  <p className="text-xs font-medium leading-relaxed" style={{ color: 'var(--text-secondary)' }}>O'z guruhingiz a'zolari bilan birlashing va boshqa guruhlar orasida peshqadam bo'ling!</p>
-                </div>
-
-                <div className="landing-feature-card p-4 rounded-2xl">
-                  <h3 className="text-sm font-bold mb-1" style={{ color: 'var(--text-primary)' }}>Shaffof davomad tizimi</h3>
-                  <p className="text-xs font-medium leading-relaxed" style={{ color: 'var(--text-secondary)' }}>Har bir darsdagi ishtirok, qatnashuv va davomad hisobini muntazam ravishda aniq kuzatib boring.</p>
-                </div>
-              </div>
-            </div>
-          </section>
-
-          {/* Right Section: Login Form (30% - Full Height White Panel with Border) */}
-          <section className="landing-right-panel w-full lg:w-[30%] flex flex-col justify-center items-center p-6 sm:p-10 lg:p-8 xl:p-10 order-1 lg:order-2">
-            <div className="w-full max-w-sm my-auto">
-
-              {/* Form Header */}
-              <div className="text-center mb-8">
-                <h2 className="text-2xl sm:text-3xl font-bold tracking-tight" style={{ color: 'var(--text-primary)' }}>Tizimga kirish</h2>
-                <p className="text-xs font-medium mt-1.5" style={{ color: 'var(--text-secondary)' }}>Davom etish uchun parolni kiriting</p>
-              </div>
-
-              {/* Form Action */}
-              <form className="space-y-5" onSubmit={handleLoginSubmit}>
-                <div className="form-group">
-                  <label
-                    htmlFor="passwordField"
-                    className="form-label"
-                  >
-                    Parol
-                  </label>
-                  <div className="password-input-wrapper">
-                    <input
-                      type={showPassword ? 'text' : 'password'}
-                      id="passwordField"
-                      placeholder="Parolni kiriting..."
-                      required
-                      value={loginPassword}
-                      onChange={(e) => setLoginPassword(e.target.value)}
-                      className="form-input password-input"
-                      autoFocus
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="password-toggle-btn"
-                      aria-label="Parolni ko'rsatish"
-                    >
-                      {showPassword ? (
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                          <path d="M9.88 9.88a3 3 0 1 0 4.24 4.24" />
-                          <path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68" />
-                          <path d="M6.61 6.61A13.52 13.52 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61" />
-                          <line x1="2" y1="2" x2="22" y2="22" />
-                        </svg>
-                      ) : (
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                          <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z" />
-                          <circle cx="12" cy="12" r="3" />
-                        </svg>
-                      )}
-                    </button>
-                  </div>
-                </div>
-
-                {loginError && <p className="login-error-text">{loginError}</p>}
-
-                <button
-                  type="submit"
-                  disabled={loginLoading}
-                  className="btn btn-primary login-btn scale-active"
-                >
-                  <span>{loginLoading ? "Tekshirilmoqda..." : "Kirish"}</span>
-                </button>
-              </form>
-
-              {/* Support info */}
-              <div className="landing-support-divider mt-8 pt-6 flex flex-col items-center gap-3">
-                <p className="text-xs text-center" style={{ color: 'var(--text-secondary)' }}>
-                  Tizimga kirishda muammo bormi? Admin bilan bog'laning:
-                </p>
-                <div className="flex gap-2">
-                  <a href="https://t.me/bkzd19" target="_blank" rel="noopener noreferrer" className="btn btn-secondary btn-sm">
-                    Telegram
-                  </a>
-                  <a href="https://instagram.com/1bkzd" target="_blank" rel="noopener noreferrer" className="btn btn-secondary btn-sm">
-                    Instagram
-                  </a>
-                </div>
-              </div>
-            </div>
-          </section>
-        </main>
-
-        {/* Bottom Technical Footer */}
-        <footer className="landing-footer px-6 py-4 flex justify-center items-center text-xs glass">
-          <div className="flex flex-wrap items-center justify-center gap-4">
-            <span>© 2026 EPCHIL ROBOT</span>
-          </div>
-        </footer>
+      <div className="unauthenticated-root" style={{ width: '100%', minHeight: '100vh' }}>
+        {authView === 'landing' ? (
+          <LandingPage
+            onNavigateToLogin={() => setAuthView('login')}
+          />
+        ) : (
+          <LoginPage
+            handleLoginSubmit={handleLoginSubmit}
+            loginPassword={loginPassword}
+            setLoginPassword={setLoginPassword}
+            loginError={loginError}
+            loginLoading={loginLoading}
+            showPassword={showPassword}
+            setShowPassword={setShowPassword}
+            showToast={showToast}
+            onBackToLanding={() => setAuthView('landing')}
+          />
+        )}
 
         {toast && (
           <div className="toast-container">
@@ -1151,7 +1091,7 @@ function App() {
   }
 
   // Show full screen loading animation if authenticated but database load is in progress and cache is empty
-  const isInitialLoading = isAuthenticated && !isLoaded && groups.length === 0;
+  const isInitialLoading = isAuthenticated && !isLoaded && groups.length === 0 && Object.keys(allTeachersData).length === 0;
 
   if (isInitialLoading) {
     return (

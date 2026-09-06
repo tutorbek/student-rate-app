@@ -64,6 +64,9 @@ const initDb = () => {
 };
 
 const CREDENTIALS = {
+  // Super Admin
+  'hammaguruhlar': { role: 'admin' },
+
   // Teacher 1 (User)
   'insight': { role: 'teacher' },
   'beksila': { role: 'teacher' },

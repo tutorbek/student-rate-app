@@ -255,7 +255,6 @@ const Dashboard = ({ setActiveTab, onSelectGroup, groups = [], students = [], tr
       <div className="page-header">
         <div>
           <h2 className="page-title">Dashboard</h2>
-          <p className="page-subtitle">Umumiy ko'rsatkichlar va peshqadamlar</p>
         </div>
       </div>
 
@@ -342,11 +341,6 @@ const Dashboard = ({ setActiveTab, onSelectGroup, groups = [], students = [], tr
 
       {/* Spotlight Section */}
       <section className="spotlight-section-wrapper">
-        <h3 className="section-title-main">
-          <IconTrophy size={20} />
-          <span>Peshqadamlar & G'oliblar</span>
-        </h3>
-
         <div className="spotlight-grid">
           {/* This Month's Current 1st Place Leader */}
           <div className="glass-card spotlight-card">

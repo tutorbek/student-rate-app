@@ -541,7 +541,6 @@ const Attendance = ({ groups = [], students = [], attendance = [], onSaveAttenda
       <div className="page-header">
         <div>
           <h2 className="page-title">Davomad</h2>
-          <p className="page-subtitle">O'quvchilar davomatini belgilash, jurnali va statistikasi</p>
         </div>
         <div className="tab-control-brutalist">
           <button type="button" className={`tab-btn-brutalist ${activeTab === 'mark' ? 'active' : ''}`} onClick={() => setActiveTab('mark')}>
@@ -843,7 +842,7 @@ const Attendance = ({ groups = [], students = [], attendance = [], onSaveAttenda
               </div>
             </div>
 
-            {/* Students Table */}
+            {/* Desktop Students Table */}
             <div className="table-responsive-brutalist">
               <table className="brutalist-table">
                 <thead>
@@ -908,6 +907,50 @@ const Attendance = ({ groups = [], students = [], attendance = [], onSaveAttenda
                   ))}
                 </tbody>
               </table>
+            </div>
+
+            {/* Mobile View: Student Stat Cards List */}
+            <div className="student-stats-mobile-list">
+              {studentStats.map((s) => (
+                <div 
+                  key={s.student.id}
+                  className="student-stat-mobile-card scale-active"
+                  onClick={() => setSelectedStudentHistoryModal(s.student)}
+                >
+                  <div className="stat-card-top">
+                    <div className="table-student-cell">
+                      <div className="avatar-circle table-avatar" style={{ background: s.student.color }}>
+                        {renderAvatar(s.student.emoji)}
+                      </div>
+                      <span className="font-bold student-name-link">{s.student.name}</span>
+                    </div>
+                    <div className="stat-card-right">
+                      <span className={`rate-pill ${s.rate >= 90 ? 'good' : s.rate >= 70 ? 'avg' : 'bad'}`}>
+                        {s.rate}%
+                      </span>
+                      <IconChevronRight size={14} />
+                    </div>
+                  </div>
+                  <div className="stat-card-metrics">
+                    <span className="mobile-metric-item metric-present">
+                      <span className="m-label">Keldi</span>
+                      <strong className="m-val">{s.presentCount}</strong>
+                    </span>
+                    <span className="mobile-metric-item metric-absent">
+                      <span className="m-label">Kelmadi</span>
+                      <strong className="m-val">{s.absentCount}</strong>
+                    </span>
+                    <span className="mobile-metric-item metric-late">
+                      <span className="m-label">Kechikdi</span>
+                      <strong className="m-val">{s.lateCount}</strong>
+                    </span>
+                    <span className="mobile-metric-item metric-total">
+                      <span className="m-label">Jami</span>
+                      <strong className="m-val">{s.totalLessons}</strong>
+                    </span>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         </div>
@@ -1215,8 +1258,10 @@ const Attendance = ({ groups = [], students = [], attendance = [], onSaveAttenda
           cursor: pointer;
           color: var(--text-secondary);
           border-radius: var(--radius-sm);
-          transition: all var(--transition-fast);
+          transition: background-color var(--transition-fast), color var(--transition-fast), box-shadow var(--transition-fast);
           touch-action: manipulation;
+          box-sizing: border-box;
+          white-space: nowrap;
         }
 
         .tab-btn-brutalist:hover {
@@ -1227,7 +1272,7 @@ const Attendance = ({ groups = [], students = [], attendance = [], onSaveAttenda
           background: #FFFFFF;
           color: var(--text-primary);
           box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
-          font-weight: 700;
+          font-weight: 600;
         }
 
         /* Filters Toolbar */
@@ -1249,12 +1294,14 @@ const Attendance = ({ groups = [], students = [], attendance = [], onSaveAttenda
           display: flex;
           flex-direction: column;
           gap: 6px;
-          min-width: 180px;
-          flex: 1;
+          min-width: 200px;
+          max-width: 320px;
+          flex: 0 1 320px;
         }
 
         .filter-date-item {
-          flex: 1.5;
+          flex: 1 1 360px;
+          max-width: 440px;
         }
 
         .filter-right-item {
@@ -1557,7 +1604,10 @@ const Attendance = ({ groups = [], students = [], attendance = [], onSaveAttenda
           font-weight: 600;
           cursor: pointer;
           color: var(--text-secondary);
-          transition: all var(--transition-fast);
+          transition: background-color var(--transition-fast), color var(--transition-fast), box-shadow var(--transition-fast);
+          touch-action: manipulation;
+          box-sizing: border-box;
+          white-space: nowrap;
         }
 
         .seg-btn:last-child {
@@ -1568,7 +1618,7 @@ const Attendance = ({ groups = [], students = [], attendance = [], onSaveAttenda
           background: #FFFFFF;
           color: var(--text-primary);
           box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
-          font-weight: 700;
+          font-weight: 600;
         }
 
         /* TAB 1: MARK ATTENDANCE */
@@ -2714,7 +2764,123 @@ const Attendance = ({ groups = [], students = [], attendance = [], onSaveAttenda
           font-weight: 500;
         }
 
+        /* Mobile Student Stat Cards (hidden on desktop) */
+        .student-stats-mobile-list {
+          display: none;
+        }
+
+        .student-stat-mobile-card {
+          padding: 12px 14px;
+          background: #FFFFFF;
+          border: 1px solid rgba(0, 0, 0, 0.06);
+          border-radius: var(--radius-md);
+          box-shadow: var(--shadow-sm);
+          display: flex;
+          flex-direction: column;
+          gap: 10px;
+          cursor: pointer;
+          transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+          touch-action: manipulation;
+        }
+
+        .student-stat-mobile-card:active {
+          transform: scale(0.99);
+        }
+
+        .stat-card-top {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 10px;
+        }
+
+        .stat-card-right {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          flex-shrink: 0;
+          color: var(--text-tertiary);
+        }
+
+        .stat-card-metrics {
+          display: grid;
+          grid-template-columns: repeat(4, 1fr);
+          gap: 6px;
+          padding-top: 8px;
+          border-top: 1px solid var(--border-color-subtle);
+        }
+
+        .mobile-metric-item {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          padding: 5px 2px;
+          border-radius: var(--radius-sm);
+          background: #F5F5F7;
+          border: 1px solid rgba(0, 0, 0, 0.04);
+        }
+
+        .mobile-metric-item .m-label {
+          font-size: 0.65rem;
+          font-weight: 600;
+          color: var(--text-secondary);
+        }
+
+        .mobile-metric-item .m-val {
+          font-size: 0.88rem;
+          font-weight: 700;
+          margin-top: 1px;
+        }
+
+        .mobile-metric-item.metric-present {
+          background: #ECFDF5;
+          border-color: rgba(5, 150, 105, 0.15);
+        }
+        .mobile-metric-item.metric-present .m-label { color: #065F46; }
+        .mobile-metric-item.metric-present .m-val { color: #059669; }
+
+        .mobile-metric-item.metric-absent {
+          background: #FEF2F2;
+          border-color: rgba(220, 38, 38, 0.15);
+        }
+        .mobile-metric-item.metric-absent .m-label { color: #991B1B; }
+        .mobile-metric-item.metric-absent .m-val { color: #DC2626; }
+
+        .mobile-metric-item.metric-late {
+          background: #FFFBEB;
+          border-color: rgba(217, 119, 6, 0.15);
+        }
+        .mobile-metric-item.metric-late .m-label { color: #92400E; }
+        .mobile-metric-item.metric-late .m-val { color: #D97706; }
+
+        .mobile-metric-item.metric-total {
+          background: #F5F5F7;
+        }
+        .mobile-metric-item.metric-total .m-label { color: var(--text-secondary); }
+        .mobile-metric-item.metric-total .m-val { color: var(--text-primary); }
+
         @media (max-width: 768px) {
+          .attendance-container {
+            gap: 12px;
+          }
+
+          /* Header & Tab Control */
+          .tab-control-brutalist {
+            display: flex !important;
+            width: 100% !important;
+            background: #EEEEF0;
+          }
+
+          .tab-btn-brutalist {
+            flex: 1 1 0px !important;
+            justify-content: center !important;
+            padding: 9px 6px !important;
+            font-size: 0.82rem !important;
+            white-space: nowrap !important;
+            min-height: 40px;
+          }
+
+          /* Filters Toolbar */
           .filters-toolbar {
             flex-direction: column;
             align-items: stretch;
@@ -2724,7 +2890,8 @@ const Attendance = ({ groups = [], students = [], attendance = [], onSaveAttenda
 
           .filter-item {
             width: 100%;
-            min-width: 100%;
+            min-width: 0;
+            flex: none;
           }
 
           .date-picker-row {
@@ -2734,16 +2901,81 @@ const Attendance = ({ groups = [], students = [], attendance = [], onSaveAttenda
             gap: 6px;
           }
 
+          .date-input-container {
+            flex: 1;
+            min-width: 0;
+          }
+
           .date-input-container .filter-select-btn {
+            height: 38px;
+            padding: 0 10px;
             font-size: 0.82rem;
-            padding: 0 8px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+          }
+
+          .btn-date-nav {
+            width: 38px;
+            height: 38px;
+            flex-shrink: 0;
+          }
+
+          .btn-today-quick {
+            height: 38px;
+            padding: 0 10px;
+            font-size: 0.8rem;
+            flex-shrink: 0;
+          }
+
+          .custom-calendar-popup {
+            position: fixed;
+            top: auto;
+            bottom: 20px;
+            left: 16px;
+            right: 16px;
+            width: auto;
+            max-width: 340px;
+            margin: 0 auto;
+            z-index: 1001;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+          }
+
+          /* TAB 1: Mark View */
+          .attendance-search-filter-bar {
+            flex-direction: column;
+            align-items: stretch;
+            gap: 8px;
+            padding: 10px 12px;
+            margin-bottom: 12px;
+          }
+
+          .attendance-search-input-wrap {
+            width: 100%;
+            min-width: 0;
+            flex: none;
+          }
+
+          .attendance-search-input {
+            height: 38px;
+            font-size: 0.84rem;
+            padding: 8px 32px 8px 34px;
+          }
+
+          .prev-absent-info-badge {
+            width: 100%;
+            justify-content: center;
+            font-size: 0.74rem;
+            padding: 6px 10px;
+            box-sizing: border-box;
           }
 
           .quick-actions-bar {
             flex-direction: column;
             align-items: stretch;
-            gap: 12px;
+            gap: 10px;
             padding: 12px 14px;
+            margin-bottom: 12px;
           }
 
           .quick-actions-btns {
@@ -2759,9 +2991,13 @@ const Attendance = ({ groups = [], students = [], attendance = [], onSaveAttenda
 
           .quick-actions-btns .btn {
             width: 100%;
-            padding: 9px 8px;
+            height: 38px;
+            padding: 0 8px;
             font-size: 0.8rem;
             white-space: nowrap;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
           }
 
           .quick-actions-save-wrapper {
@@ -2770,60 +3006,104 @@ const Attendance = ({ groups = [], students = [], attendance = [], onSaveAttenda
 
           .quick-actions-save-wrapper .save-att-btn {
             width: 100%;
+            height: 40px;
+            font-size: 0.88rem;
             justify-content: center;
           }
 
-          .summary-pill {
-            text-align: center;
-            justify-content: center;
-            font-size: 0.74rem;
-            padding: 6px 4px;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
+          .students-attendance-list {
+            gap: 10px;
           }
 
           .student-attendance-row {
             flex-direction: column;
             align-items: stretch;
-            gap: 10px;
+            gap: 12px;
             padding: 12px 14px;
+            contain-intrinsic-size: auto 112px;
           }
 
           .student-info-left {
             width: 100%;
+            gap: 10px;
+          }
+
+          .student-avatar-circle {
+            width: 40px;
+            height: 40px;
+            font-size: 1.25rem;
+          }
+
+          .student-name-group {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 3px;
+            flex: 1;
+            min-width: 0;
+          }
+
+          .student-name {
+            font-size: 0.95rem;
+            width: 100%;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+          }
+
+          .prev-absent-tag {
+            font-size: 0.65rem;
+            padding: 1px 7px;
           }
 
           .attendance-options-group {
             width: 100%;
+            min-width: 0;
             display: grid;
             grid-template-columns: repeat(3, 1fr);
             gap: 6px;
+            justify-content: stretch;
           }
 
           .att-status-btn {
             width: 100%;
             min-width: 0;
-            padding: 8px 2px;
-            font-size: 0.78rem;
+            height: 40px;
+            padding: 0 4px;
+            font-size: 0.82rem;
+            font-weight: 700;
             text-align: center;
-            height: 38px;
             touch-action: manipulation;
           }
 
-          .student-modal-kpi-row {
-            grid-template-columns: repeat(3, 1fr);
-            gap: 6px;
-          }
-
+          /* TAB 2: Journal & Stats */
           .journal-cal-card {
-            padding: 12px 10px;
+            padding: 14px 10px;
+            gap: 12px;
           }
 
           .journal-cal-toolbar {
             flex-direction: column;
             align-items: stretch;
             gap: 10px;
+            padding-bottom: 10px;
+          }
+
+          .journal-cal-heading-group {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+            gap: 8px;
+          }
+
+          .journal-cal-title {
+            font-size: 1.1rem;
+          }
+
+          .journal-cal-stats-badge {
+            font-size: 0.72rem;
+            padding: 2px 8px;
+            white-space: nowrap;
           }
 
           .journal-cal-nav-buttons {
@@ -2837,7 +3117,19 @@ const Attendance = ({ groups = [], students = [], attendance = [], onSaveAttenda
             display: flex;
             align-items: center;
             justify-content: center;
-            padding: 8px;
+            height: 38px;
+            padding: 0 8px;
+            font-size: 0.82rem;
+          }
+
+          .journal-cal-weekdays {
+            gap: 3px;
+            padding-bottom: 4px;
+            font-size: 0.72rem;
+          }
+
+          .journal-cal-weekday-name {
+            padding: 5px 0;
           }
 
           .journal-cal-grid {
@@ -2845,26 +3137,29 @@ const Attendance = ({ groups = [], students = [], attendance = [], onSaveAttenda
           }
 
           .journal-cal-cell {
-            min-height: 56px;
-            height: 56px;
-            padding: 3px 4px;
+            min-height: 64px;
+            height: 64px;
+            padding: 4px 3px;
             border-radius: var(--radius-sm);
             min-width: 0;
             width: 100%;
             box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
           }
 
           .cell-top-bar {
             display: flex;
             justify-content: space-between;
-            align-items: flex-start;
+            align-items: center;
             width: 100%;
             min-width: 0;
             gap: 2px;
           }
 
           .cell-day-num {
-            font-size: 0.78rem;
+            font-size: 0.76rem;
             font-weight: 700;
             line-height: 1;
             flex-shrink: 0;
@@ -2874,9 +3169,13 @@ const Attendance = ({ groups = [], students = [], attendance = [], onSaveAttenda
             display: none;
           }
 
+          .journal-cal-cell.today-cell {
+            border: 1.5px solid var(--apple-blue) !important;
+          }
+
           .cell-rate-pill {
-            font-size: 0.62rem;
-            font-weight: 700;
+            font-size: 0.58rem;
+            font-weight: 800;
             padding: 1px 3px;
             border-radius: 3px;
             line-height: 1;
@@ -2884,17 +3183,219 @@ const Attendance = ({ groups = [], students = [], attendance = [], onSaveAttenda
           }
 
           .cell-session-info {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 2px;
+            margin-top: 2px;
+            flex-wrap: nowrap;
+          }
+
+          .pill-metric {
+            font-size: 0.62rem;
+            font-weight: 700;
+            padding: 1px 3px;
+            border-radius: 4px;
+            min-width: 14px;
+            line-height: 1.1;
+          }
+
+          .cell-empty-hint {
             display: none;
           }
 
+          /* Section 2: Student stats breakdown */
+          .student-stats-combined-card {
+            padding: 14px 12px;
+            margin-top: 4px;
+          }
+
+          .stats-section-header {
+            flex-direction: column;
+            align-items: stretch;
+            gap: 10px;
+            margin-bottom: 12px;
+            padding-bottom: 10px;
+          }
+
+          .stats-section-header .section-title {
+            font-size: 0.98rem;
+          }
+
+          .timeframe-filter-wrap {
+            width: 100%;
+          }
+
+          .segmented-control {
+            width: 100%;
+            display: flex;
+          }
+
+          .seg-btn {
+            flex: 1 1 0px;
+            text-align: center;
+            justify-content: center;
+            padding: 7px 4px;
+            font-size: 0.78rem;
+            white-space: nowrap;
+          }
+
+          .stats-kpi-grid, .stats-kpi-grid.inside-section {
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+            margin-bottom: 14px;
+          }
+
+          .stats-kpi-card {
+            padding: 10px 12px;
+            gap: 2px;
+          }
+
+          .kpi-label {
+            font-size: 0.7rem;
+          }
+
+          .kpi-value {
+            font-size: 1.18rem;
+          }
+
+          /* Switch Desktop table to Mobile Card List */
+          .table-responsive-brutalist {
+            display: none;
+          }
+
+          .student-stats-mobile-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            width: 100%;
+          }
+
+          /* Modals on Mobile */
           .journal-day-modal, .student-absent-history-modal {
-            padding: 16px 18px;
-            max-height: calc(100dvh - 80px);
+            padding: 16px 14px;
+            max-height: calc(100dvh - 60px);
+            width: 95%;
+          }
+
+          .journal-modal-header {
+            margin-bottom: 12px;
+            padding-bottom: 10px;
+          }
+
+          .journal-modal-header .modal-title {
+            font-size: 1.1rem;
           }
 
           .journal-modal-metrics {
             grid-template-columns: repeat(2, 1fr);
             gap: 6px;
+            margin-bottom: 14px;
+          }
+
+          .modal-metric-box {
+            padding: 8px 4px;
+          }
+
+          .modal-metric-box .metric-lbl {
+            font-size: 0.65rem;
+          }
+
+          .modal-metric-box .metric-val {
+            font-size: 0.95rem;
+          }
+
+          .journal-modal-students-scroll {
+            max-height: 220px;
+            gap: 6px;
+            margin-bottom: 14px;
+          }
+
+          .journal-modal-student-row {
+            padding: 8px 10px;
+          }
+
+          .student-modal-header {
+            gap: 10px;
+            margin-bottom: 12px;
+            padding-bottom: 10px;
+          }
+
+          .student-modal-avatar {
+            width: 42px;
+            height: 42px;
+            font-size: 1.35rem;
+          }
+
+          .student-modal-title {
+            font-size: 1.1rem;
+          }
+
+          .student-modal-subtitle {
+            font-size: 0.75rem;
+          }
+
+          .student-modal-kpi-row {
+            grid-template-columns: repeat(3, 1fr);
+            gap: 6px;
+            margin-bottom: 14px;
+          }
+
+          .student-modal-kpi-row .kpi-mini-card:nth-child(4) {
+            grid-column: 1 / 2;
+          }
+
+          .student-modal-kpi-row .kpi-mini-card:nth-child(5) {
+            grid-column: 2 / 4;
+          }
+
+          .kpi-mini-card {
+            padding: 6px 4px;
+          }
+
+          .kpi-mini-card .lbl {
+            font-size: 0.62rem;
+          }
+
+          .kpi-mini-card .val {
+            font-size: 0.88rem;
+          }
+
+          .absent-day-item, .late-day-item {
+            padding: 7px 10px;
+            gap: 8px;
+          }
+
+          .absent-date-left {
+            min-width: 0;
+            flex: 1;
+            gap: 6px;
+          }
+
+          .date-text {
+            font-size: 0.8rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+          }
+
+          .absent-badge, .late-badge {
+            font-size: 0.7rem;
+            padding: 2px 6px;
+            flex-shrink: 0;
+          }
+
+          .all-present-notice {
+            padding: 10px 12px;
+            gap: 8px;
+          }
+
+          .notice-text strong {
+            font-size: 0.84rem;
+          }
+
+          .notice-text p {
+            font-size: 0.74rem;
           }
         }
 
@@ -3230,6 +3731,59 @@ const Attendance = ({ groups = [], students = [], attendance = [], onSaveAttenda
           background: rgba(253, 214, 99, 0.15);
           color: #FDD663;
           border-color: rgba(253, 214, 99, 0.3);
+        }
+
+        /* Dark Mode Overrides for Mobile Stat Cards */
+        [data-theme="dark"] .student-stat-mobile-card {
+          background: #202124;
+          border-color: #3C4043;
+        }
+
+        [data-theme="dark"] .stat-card-metrics {
+          border-top-color: #3C4043;
+        }
+
+        [data-theme="dark"] .mobile-metric-item.metric-present {
+          background: rgba(129, 201, 149, 0.12);
+          border-color: rgba(129, 201, 149, 0.25);
+        }
+
+        [data-theme="dark"] .mobile-metric-item.metric-present .m-label,
+        [data-theme="dark"] .mobile-metric-item.metric-present .m-val {
+          color: #81C995 !important;
+        }
+
+        [data-theme="dark"] .mobile-metric-item.metric-absent {
+          background: rgba(242, 139, 130, 0.12);
+          border-color: rgba(242, 139, 130, 0.25);
+        }
+
+        [data-theme="dark"] .mobile-metric-item.metric-absent .m-label,
+        [data-theme="dark"] .mobile-metric-item.metric-absent .m-val {
+          color: #F28B82 !important;
+        }
+
+        [data-theme="dark"] .mobile-metric-item.metric-late {
+          background: rgba(253, 214, 99, 0.12);
+          border-color: rgba(253, 214, 99, 0.25);
+        }
+
+        [data-theme="dark"] .mobile-metric-item.metric-late .m-label,
+        [data-theme="dark"] .mobile-metric-item.metric-late .m-val {
+          color: #FDD663 !important;
+        }
+
+        [data-theme="dark"] .mobile-metric-item.metric-total {
+          background: #292A2D;
+          border-color: #3C4043;
+        }
+
+        [data-theme="dark"] .mobile-metric-item.metric-total .m-label {
+          color: #9AA0A6;
+        }
+
+        [data-theme="dark"] .mobile-metric-item.metric-total .m-val {
+          color: #E8EAED;
         }
 
         [data-theme="dark"] .absent-day-item,

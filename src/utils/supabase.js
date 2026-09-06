@@ -212,3 +212,58 @@ export const saveSnapshotToSupabase = async (teacherId, data) => {
     return false;
   }
 };
+
+/**
+ * Load data for all teachers from Supabase (Admin view).
+ * Returns an object mapping teacherId -> teacher data.
+ */
+export const loadAllTeachersFromSupabase = async (teacherIds = ['teacher1', 'teacher2', 'teacher3', 'teacher4']) => {
+  try {
+    const timeoutPromise = new Promise((_, reject) =>
+      setTimeout(() => reject(new Error('Supabase load timed out')), 6000)
+    );
+
+    const queryPromise = supabase
+      .from('appdata')
+      .select('teacher_id, data, updated_at')
+      .in('teacher_id', teacherIds);
+
+    const { data, error } = await Promise.race([queryPromise, timeoutPromise]);
+
+    if (error) throw error;
+
+    const result = {};
+    // Initialize all requested teacher IDs with empty structure
+    teacherIds.forEach(id => {
+      result[id] = {
+        groups: [],
+        students: [],
+        transactions: [],
+        quickTags: DEFAULT_DATA.quickTags,
+        attendance: [],
+        updatedAt: null
+      };
+    });
+
+    if (data) {
+      data.forEach(row => {
+        if (row.data) {
+          result[row.teacher_id] = {
+            groups: row.data.groups || [],
+            students: row.data.students || [],
+            transactions: row.data.transactions || [],
+            quickTags: row.data.quickTags || DEFAULT_DATA.quickTags,
+            attendance: row.data.attendance || [],
+            updatedAt: row.updated_at || null
+          };
+        }
+      });
+    }
+
+    return result;
+  } catch (err) {
+    console.error('[Supabase] loadAllTeachersFromSupabase failed:', err);
+    return null;
+  }
+};
+

@@ -5,8 +5,9 @@
     <script>
       (function() {
         try {
+          var isAuth = localStorage.getItem('rsa_authenticated') === 'true';
           var saved = localStorage.getItem('rsa_theme');
-          var isDark = saved === 'dark' || (!saved && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+          var isDark = isAuth && saved === 'dark';
           var theme = isDark ? 'dark' : 'light';
           document.documentElement.setAttribute('data-theme', theme);
           document.documentElement.style.backgroundColor = isDark ? '#202124' : '#F5F5F7';
@@ -16,6 +17,9 @@
     </script>
     <style>
       html, body {
+        background-color: #F5F5F7;
+        color: #1D1D1F;
+        color-scheme: light;
         overscroll-behavior: none !important;
         overscroll-behavior-y: none !important;
         overscroll-behavior-x: none !important;
@@ -63,7 +67,10 @@
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com?plugins=forms"></script>
     <script>
-        tailwind.config = {
+      try {
+        window.tailwind = window.tailwind || {};
+        window.tailwind.config = {
+            darkMode: ['selector', '[data-theme="dark"]'],
             theme: {
                 extend: {
                     colors: {
@@ -77,7 +84,8 @@
                     }
                 }
             }
-        }
+        };
+      } catch (e) {}
     </script>
     
     <!-- PostHog Analytics & Session Replay -->

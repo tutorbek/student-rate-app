@@ -1227,49 +1227,229 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
   color: var(--text-secondary);
 }
 
-/* Dark Navbar (Chrome Top Bar) */
+/* Top Navbar (Chrome Top Bar) */
+.app-navbar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1000;
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(12px) saturate(160%);
+  -webkit-backdrop-filter: blur(12px) saturate(160%);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+  width: 100%;
+  padding-top: env(safe-area-inset-top, 0px);
+  box-sizing: border-box;
+  transform: translate3d(0, 0, 0);
+  -webkit-transform: translate3d(0, 0, 0);
+}
+
+.navbar-inner {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 12px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.navbar-brand-section {
+  cursor: pointer;
+  user-select: none;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+}
+
+.navbar-logo-text {
+  font-size: 1.15rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--text-primary);
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.logo-badge {
+  background: #1D1D1F;
+  color: #FFFFFF;
+  padding: 2px 8px;
+  border-radius: var(--radius-full);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  transition: background-color var(--transition-fast), color var(--transition-fast);
+}
+
+.admin-nav-role-badge {
+  background: #8B5CF6;
+  color: #FFFFFF;
+  padding: 2px 8px;
+  border-radius: var(--radius-full);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.student-header-actions,
+.teacher-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.student-logout-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 14px;
+  font-family: var(--font-family);
+  font-size: 0.82rem;
+  font-weight: 600;
+  background: #FEE2E2;
+  color: #DC2626;
+  border: 1px solid #FECACA;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.student-logout-btn:hover {
+  background: #FCA5A5;
+}
+
+/* Desktop Nav Links */
+.navbar-nav-desktop {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  background: #F5F5F7;
+  padding: 4px;
+  border-radius: var(--radius-md);
+  border: 1px solid rgba(0, 0, 0, 0.04);
+}
+
+.nav-item-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 14px;
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-sm);
+  font-family: var(--font-family);
+  font-size: 0.84rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  letter-spacing: -0.01em;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.nav-item-btn:hover {
+  color: var(--text-primary);
+  background: rgba(0, 0, 0, 0.04);
+}
+
+.nav-item-btn.active {
+  background: #FFFFFF;
+  color: var(--text-primary);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+}
+
+.nav-item-btn.nav-item-icon-only {
+  padding: 7px 10px;
+}
+
+.nav-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.landing-nav-login-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 7px 16px;
+  font-family: var(--font-family);
+  font-size: 0.84rem;
+  font-weight: 600;
+  border-radius: var(--radius-md);
+}
+
+@media (max-width: 900px) {
+  .navbar-nav-desktop {
+    display: none;
+  }
+
+  .navbar-inner {
+    padding: 10px 16px;
+  }
+}
+
+/* Top Navbar (Always White / Crisp Light Theme in both Light & Dark Mode) */
 [data-theme="dark"] .app-navbar {
-  background: rgba(41, 42, 45, 0.92);
-  border-color: #3C4043;
+  background: rgba(255, 255, 255, 0.88);
+  backdrop-filter: blur(16px) saturate(180%);
+  -webkit-backdrop-filter: blur(16px) saturate(180%);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
 }
 
 [data-theme="dark"] .navbar-logo-text {
-  color: #E8EAED;
+  color: #1D1D1F;
 }
 
 [data-theme="dark"] .logo-badge {
-  background: #FFFFFF;
-  color: #000000;
+  background: #1D1D1F;
+  color: #FFFFFF;
 }
 
 [data-theme="dark"] .navbar-nav-desktop {
-  background: #202124;
-  border-color: #3C4043;
+  background: #F5F5F7;
+  border-color: rgba(0, 0, 0, 0.04);
 }
 
 [data-theme="dark"] .nav-item-btn {
-  color: var(--text-secondary);
+  color: #6E6E73;
 }
 
 [data-theme="dark"] .nav-item-btn:hover {
-  color: var(--text-primary);
-  background: rgba(255, 255, 255, 0.05);
+  color: #1D1D1F;
+  background: rgba(0, 0, 0, 0.04);
 }
 
 [data-theme="dark"] .nav-item-btn.active {
-  background: #303134;
-  color: #E8EAED;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
+  background: #FFFFFF;
+  color: #1D1D1F;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
 }
 
 [data-theme="dark"] .student-logout-btn {
-  background: rgba(242, 139, 130, 0.15);
-  color: #F28B82;
-  border-color: rgba(242, 139, 130, 0.3);
+  background: #FEE2E2;
+  color: #DC2626;
+  border-color: #FECACA;
 }
 
 [data-theme="dark"] .student-logout-btn:hover {
-  background: rgba(242, 139, 130, 0.25);
+  background: #FCA5A5;
+}
+
+[data-theme="dark"] .app-navbar .theme-toggle-btn {
+  background: #F5F5F7;
+  color: #1D1D1F;
+  border-color: rgba(0, 0, 0, 0.08);
+}
+
+[data-theme="dark"] .app-navbar .theme-toggle-btn:hover {
+  background: #EBEBEF;
+  color: #000000;
 }
 
 [data-theme="dark"] .mobile-bottom-navbar {
@@ -1303,6 +1483,7 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
   background: #303134;
   color: #E8EAED;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
+  font-weight: 600;
 }
 
 [data-theme="dark"] .filters-toolbar {
@@ -1311,26 +1492,31 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 }
 
 [data-theme="dark"] .student-scope-toggle,
-[data-theme="dark"] .timeframe-toggle {
+[data-theme="dark"] .timeframe-toggle,
+[data-theme="dark"] .segmented-control {
   background: #202124;
   border-color: #3C4043;
 }
 
 [data-theme="dark"] .student-scope-btn,
-[data-theme="dark"] .toggle-btn {
+[data-theme="dark"] .toggle-btn,
+[data-theme="dark"] .seg-btn {
   color: var(--text-secondary);
 }
 
 [data-theme="dark"] .student-scope-btn:hover,
-[data-theme="dark"] .toggle-btn:hover {
+[data-theme="dark"] .toggle-btn:hover,
+[data-theme="dark"] .seg-btn:hover {
   color: var(--text-primary);
 }
 
 [data-theme="dark"] .student-scope-btn.active,
-[data-theme="dark"] .toggle-btn.active {
+[data-theme="dark"] .toggle-btn.active,
+[data-theme="dark"] .seg-btn.active {
   background: #303134;
   color: #E8EAED;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
+  font-weight: 600;
 }
 
 [data-theme="dark"] .filter-select-btn {
@@ -1831,4 +2017,103 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 [data-theme="dark"] .login-page-apple footer,
 [data-theme="dark"] .landing-footer {
   border-color: #3C4043;
+}
+
+/* ========================================================
+   Redesigned Full-Page Split Login Styles
+   ======================================================== */
+
+@keyframes loginShake {
+  0%, 100% { transform: translateX(0); }
+  20%, 60% { transform: translateX(-4px); }
+  40%, 80% { transform: translateX(4px); }
+}
+
+.animate-shake {
+  animation: loginShake 0.35s ease-in-out;
+}
+
+.login-bg-grid {
+  background-image: repeating-linear-gradient(
+    -45deg,
+    transparent,
+    transparent 100px,
+    rgba(0, 0, 0, 0.05) 100px,
+    rgba(0, 0, 0, 0.05) 101.5px
+  );
+}
+
+[data-theme="dark"] .login-bg-grid {
+  background-image: repeating-linear-gradient(
+    -45deg,
+    transparent,
+    transparent 100px,
+    rgba(255, 255, 255, 0.04) 100px,
+    rgba(255, 255, 255, 0.04) 101.5px
+  );
+}
+
+@keyframes slideDownNotice {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-slide-down {
+  animation: slideDownNotice 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* ========================================================
+   Landing Page Stacking Cards Styles
+   ======================================================== */
+:root {
+  --stack-base-top: calc(88px + env(safe-area-inset-top, 0px));
+  --stack-step-y: 10px;
+  --stack-gap: 40vh;
+}
+
+@media (max-width: 640px) {
+  :root {
+    --stack-base-top: calc(72px + env(safe-area-inset-top, 0px));
+    --stack-step-y: 6px;
+    --stack-gap: 30vh;
+  }
+}
+
+.landing-root {
+  overflow-x: clip !important;
+}
+
+.landing-root ::selection,
+.landing-root *::selection {
+  background-color: #0071E3 !important;
+  color: #FFFFFF !important;
+}
+
+.stacking-cards-container {
+  width: 100%;
+  position: relative;
+}
+
+.stacking-card-item {
+  position: -webkit-sticky;
+  position: sticky;
+  will-change: transform;
+}
+
+.stacking-card-frame {
+  transform-origin: center top;
+  will-change: transform;
+  transition: transform 0.2s ease, border-color 0.2s ease;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .stacking-card-frame:hover {
+    border-color: rgba(255, 255, 255, 0.35);
+  }
 }

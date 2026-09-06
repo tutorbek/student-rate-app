@@ -891,8 +891,10 @@ const Leaderboard = ({
           cursor: pointer;
           color: var(--text-secondary);
           border-radius: var(--radius-sm);
-          transition: all var(--transition-fast);
+          transition: background-color var(--transition-fast), color var(--transition-fast), box-shadow var(--transition-fast);
           touch-action: manipulation;
+          box-sizing: border-box;
+          white-space: nowrap;
         }
 
         .tab-btn-brutalist:hover {
@@ -903,7 +905,7 @@ const Leaderboard = ({
           background: #FFFFFF;
           color: var(--text-primary);
           box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
-          font-weight: 700;
+          font-weight: 600;
         }
 
         .filters-toolbar {
@@ -912,7 +914,7 @@ const Leaderboard = ({
           padding: 12px 18px;
           display: flex;
           align-items: flex-end;
-          justify-content: space-between;
+          justify-content: flex-start;
           gap: 16px;
           background: #FFFFFF;
           border: 1px solid rgba(0, 0, 0, 0.06);
@@ -925,18 +927,22 @@ const Leaderboard = ({
           display: flex;
           flex-direction: column;
           gap: 6px;
-          min-width: 180px;
-          flex: 1;
+          min-width: 200px;
+          max-width: 320px;
+          flex: 0 1 320px;
         }
 
         .filter-right-item {
           flex: 0 0 auto;
           min-width: unset;
+          max-width: none;
+          margin-left: auto;
         }
 
         .student-scope-filter-item {
           flex: 0 0 auto;
           min-width: unset;
+          max-width: none;
         }
 
         .student-scope-toggle {
@@ -962,8 +968,9 @@ const Leaderboard = ({
           cursor: pointer;
           color: var(--text-secondary);
           border-radius: var(--radius-sm);
-          transition: all var(--transition-fast);
+          transition: background-color var(--transition-fast), color var(--transition-fast), box-shadow var(--transition-fast);
           touch-action: manipulation;
+          box-sizing: border-box;
           white-space: nowrap;
         }
 
@@ -975,7 +982,7 @@ const Leaderboard = ({
           background: #FFFFFF;
           color: var(--text-primary);
           box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
-          font-weight: 700;
+          font-weight: 600;
         }
 
         .custom-dropdown-container {
@@ -1047,7 +1054,7 @@ const Leaderboard = ({
         .custom-dropdown-item:hover, .custom-dropdown-item.active {
           background: #F5F5F7;
           color: var(--apple-blue);
-          font-weight: 700;
+          font-weight: 600;
         }
 
         .timeframe-toggle-desktop-wrapper {
@@ -1077,7 +1084,9 @@ const Leaderboard = ({
           cursor: pointer;
           color: var(--text-secondary);
           touch-action: manipulation;
-          transition: all var(--transition-fast);
+          transition: background-color var(--transition-fast), color var(--transition-fast), box-shadow var(--transition-fast);
+          box-sizing: border-box;
+          white-space: nowrap;
         }
 
         .toggle-btn:last-child {
@@ -1088,7 +1097,7 @@ const Leaderboard = ({
           background: #FFFFFF;
           color: var(--text-primary);
           box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
-          font-weight: 700;
+          font-weight: 600;
         }
 
         .timeframe-dropdown-container {
@@ -1723,10 +1732,12 @@ const Leaderboard = ({
           }
 
           .tab-btn-brutalist {
-            flex: 1;
+            flex: 1 1 0px;
+            justify-content: center;
             text-align: center;
-            padding: 9px 8px;
-            font-size: 0.76rem;
+            padding: 9px 6px;
+            font-size: 0.78rem;
+            white-space: nowrap;
           }
 
           .filters-toolbar {
@@ -1738,14 +1749,17 @@ const Leaderboard = ({
           .filter-item {
             width: 100%;
             min-width: 100%;
+            max-width: 100%;
           }
 
           .filter-right-item {
             width: 100%;
+            margin-left: 0;
           }
 
           .student-scope-filter-item {
             width: 100%;
+            max-width: 100%;
           }
 
           .student-scope-toggle {
@@ -1754,9 +1768,10 @@ const Leaderboard = ({
           }
 
           .student-scope-btn {
-            flex: 1;
+            flex: 1 1 0px;
             justify-content: center;
-            padding: 8px 10px;
+            padding: 8px 6px;
+            white-space: nowrap;
           }
 
           .timeframe-toggle-desktop-wrapper {

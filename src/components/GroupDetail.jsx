@@ -20,6 +20,27 @@ const IconHistory = ({ size = 16, strokeWidth = 2.2 }) => (
   </svg>
 );
 
+const IconLock = ({ size = 14, strokeWidth = 2.2 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round">
+    <rect width="18" height="11" x="3" y="11" rx="2" ry="2" />
+    <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+  </svg>
+);
+
+const IconEye = ({ size = 14, strokeWidth = 2 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round">
+    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+    <circle cx="12" cy="12" r="3" />
+  </svg>
+);
+
+const IconEyeOff = ({ size = 14, strokeWidth = 2 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round">
+    <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
+    <line x1="1" y1="1" x2="23" y2="23" />
+  </svg>
+);
+
 const GroupDetail = ({ group, allGroups = [], students, transactions, quickTags, onBack, onAddStudent, onUpdateStudent, onTransferStudent, onDeleteStudent, onAwardPoints, onDeleteTransaction, showToast, userRole }) => {
   const [profileStudent, setProfileStudent] = useState(null);
   const [showPassword, setShowPassword] = useState(false);
@@ -188,37 +209,62 @@ const GroupDetail = ({ group, allGroups = [], students, transactions, quickTags,
               </div>
               <span>{group.name}</span>
             </h2>
-            <div className="page-subtitle-container" style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+            <div className="page-subtitle-container" style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
               <p className="page-subtitle" style={{ margin: 0 }}>Talabalar ro'yxati va ularni baholash</p>
-              {userRole === 'teacher' && (
+              <div className="group-meta-row" style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '10px 14px', marginTop: '2px' }}>
                 <div 
-                  className="group-password-badge" 
+                  className="group-meta-item group-students-count-badge"
                   style={{ 
                     display: 'inline-flex', 
                     alignItems: 'center', 
-                    gap: '8px', 
+                    gap: '6px', 
                     fontSize: '0.85rem', 
-                    color: 'var(--text-secondary)',
-                    marginTop: '4px',
-                    cursor: 'pointer',
-                    userSelect: 'none',
-                    alignSelf: 'flex-start'
+                    color: 'var(--text-secondary)'
                   }}
-                  onClick={() => setShowPassword(!showPassword)}
                 >
-                  <span>🔑 Guruh paroli:</span>
-                  <strong 
-                    className="group-pwd-badge-text"
-                    style={{ 
-                      letterSpacing: showPassword ? 'normal' : '2px',
-                      textTransform: 'lowercase'
-                    }}
-                  >
-                    {showPassword ? (group.password || "yo'q") : '••••••'}
-                  </strong>
-                  <span style={{ fontSize: '1rem' }}>{showPassword ? '👁️' : '👁️‍🗨️'}</span>
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                    <circle cx="9" cy="7" r="4" />
+                    <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+                    <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+                  </svg>
+                  <span>Talabalar: <strong>{groupStudents.length} ta</strong></span>
                 </div>
-              )}
+
+                {userRole === 'teacher' && (
+                  <>
+                    <span className="meta-separator" style={{ color: 'var(--border-color)', fontSize: '0.85rem', userSelect: 'none' }}>•</span>
+                    <div 
+                      className="group-meta-item group-password-badge" 
+                      style={{ 
+                        display: 'inline-flex', 
+                        alignItems: 'center', 
+                        gap: '6px', 
+                        fontSize: '0.85rem', 
+                        color: 'var(--text-secondary)',
+                        cursor: 'pointer',
+                        userSelect: 'none'
+                      }}
+                      onClick={() => setShowPassword(!showPassword)}
+                    >
+                      <IconLock size={14} />
+                      <span>Guruh paroli:</span>
+                      <strong 
+                        className="group-pwd-badge-text"
+                        style={{ 
+                          letterSpacing: showPassword ? 'normal' : '2px',
+                          textTransform: 'lowercase'
+                        }}
+                      >
+                        {showPassword ? (group.password || "yo'q") : '••••••'}
+                      </strong>
+                      <span style={{ display: 'inline-flex', alignItems: 'center', opacity: 0.7, marginLeft: '2px' }}>
+                        {showPassword ? <IconEye size={14} /> : <IconEyeOff size={14} />}
+                      </span>
+                    </div>
+                  </>
+                )}
+              </div>
             </div>
           </div>
           <button className="btn btn-primary scale-active" onClick={() => setShowAddStudentModal(true)}>
@@ -249,6 +295,13 @@ const GroupDetail = ({ group, allGroups = [], students, transactions, quickTags,
                 </div>
 
                 <div className="student-item-manage-btns">
+                  <button 
+                    className="btn btn-secondary scale-active btn-sm btn-icon-only history-btn" 
+                    title="Tarix / Profil"
+                    onClick={() => setProfileStudent(student)}
+                  >
+                    <IconHistory size={15} />
+                  </button>
                   {userRole === 'teacher' && (
                     <button 
                       className="btn btn-secondary scale-active btn-sm btn-icon-only transfer-btn" 
@@ -300,36 +353,6 @@ const GroupDetail = ({ group, allGroups = [], students, transactions, quickTags,
                       <polyline points="3 6 5 6 21 6" />
                       <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
                     </svg>
-                  </button>
-                </div>
-              </div>
-
-              {/* Scoring Controls */}
-              <div className="student-item-controls">
-                <div className="student-actions">
-                  <button 
-                    className="btn btn-action btn-green scale-active"
-                    onClick={() => openScoreModal(student, 85)}
-                  >
-                    +85
-                  </button>
-                  <button 
-                    className="btn btn-action btn-green scale-active"
-                    onClick={() => openScoreModal(student, 50)}
-                  >
-                    +50
-                  </button>
-                  <button 
-                    className="btn btn-action btn-red scale-active"
-                    onClick={() => openScoreModal(student, -30)}
-                  >
-                    -30
-                  </button>
-                  <button 
-                    className="btn btn-action btn-custom scale-active"
-                    onClick={() => setProfileStudent(student)}
-                  >
-                    <IconHistory size={16} />
                   </button>
                 </div>
               </div>
@@ -1142,75 +1165,11 @@ const GroupDetail = ({ group, allGroups = [], students, transactions, quickTags,
           margin-left: auto;
         }
 
-        .student-item-controls {
-          display: flex;
-          align-items: center;
-          gap: 8px;
-          flex-shrink: 0;
-        }
-
-        .student-actions {
-          display: flex;
-          align-items: center;
-          gap: 6px;
-        }
-
-        .btn-action {
-          padding: 6px 10px;
-          font-size: 0.82rem;
-          font-weight: 700;
-          white-space: nowrap;
-          text-align: center;
-          justify-content: center;
-          min-width: 46px;
-          height: 36px;
-          font-variant-numeric: tabular-nums;
-          border-radius: var(--radius-md);
-          touch-action: manipulation;
-          transition: all var(--transition-fast);
-        }
-
-        .btn-green {
-          background: #ECFDF5;
-          color: #059669;
-          border: 1px solid #A7F3D0;
-        }
-
-        .btn-green:hover {
-          background: #D1FAE5;
-        }
-
-        .btn-red {
-          background: #FEF2F2;
-          color: #DC2626;
-          border: 1px solid #FECACA;
-        }
-
-        .btn-red:hover {
-          background: #FEE2E2;
-        }
-
-        .btn-custom {
-          background: #F5F5F7;
-          color: var(--text-primary);
-          border: 1px solid #E5E5EA;
-        }
-
-        .btn-custom:hover {
-          background: #E5E5EA;
-        }
-
-        .student-item-manage-btns {
-          display: flex;
-          align-items: center;
-          gap: 5px;
-          padding-left: 6px;
-        }
-
         .btn-icon-only {
           padding: 6px 8px;
           font-size: 0.85rem;
           height: 36px;
+          min-width: 36px;
           border-radius: var(--radius-sm);
           display: flex;
           align-items: center;
@@ -1219,32 +1178,36 @@ const GroupDetail = ({ group, allGroups = [], students, transactions, quickTags,
 
         @media (max-width: 768px) {
           .student-list-item {
-            flex-direction: column;
-            align-items: stretch;
-            gap: 12px;
             padding: 12px 14px;
+            gap: 10px;
           }
 
           .student-item-header-row {
             width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
           }
 
-          .student-item-controls {
-            width: 100%;
+          .student-avatar {
+            width: 40px;
+            height: 40px;
+            font-size: 1.25rem;
           }
 
-          .student-actions {
-            width: 100%;
-            display: grid;
-            grid-template-columns: repeat(5, 1fr);
+          .student-name {
+            font-size: 0.95rem;
+          }
+
+          .student-item-manage-btns {
             gap: 4px;
           }
 
-          .btn-action {
-            width: 100%;
-            min-width: 0;
-            padding: 6px 2px;
-            font-size: 0.78rem;
+          .btn-icon-only {
+            height: 34px;
+            min-width: 34px;
+            padding: 0;
           }
         }
 

@@ -16,7 +16,7 @@ const GroupsList = ({ groups, students, onSelectGroup, onAddGroup, onUpdateGroup
   const [editGroupColor, setEditGroupColor] = useState(GROUP_COLOR_OPTIONS[0].value);
   const [groupIconTab, setGroupIconTab] = useState('gallery');
   const [editGroupIconTab, setEditGroupIconTab] = useState('gallery');
-  
+
   const [newGroupPassword, setNewGroupPassword] = useState('');
   const [editGroupPassword, setEditGroupPassword] = useState('');
   const [isGeneratingPassword, setIsGeneratingPassword] = useState(false);
@@ -108,7 +108,6 @@ const GroupsList = ({ groups, students, onSelectGroup, onAddGroup, onUpdateGroup
       <div className="page-header">
         <div>
           <h2 className="page-title">Guruhlar</h2>
-          <p className="page-subtitle">O'quv guruhlarini boshqarish va baholashga o'tish</p>
         </div>
         <button className="btn btn-primary scale-active" onClick={() => setShowAddModal(true)}>
           <span>+ Yangi guruh</span>
@@ -121,10 +120,10 @@ const GroupsList = ({ groups, students, onSelectGroup, onAddGroup, onUpdateGroup
             const count = getStudentCount(group.id);
             const colorOption = GROUP_COLOR_OPTIONS.find(c => c.value === group.color) || GROUP_COLOR_OPTIONS[0];
             return (
-              <div 
-                key={group.id} 
+              <div
+                key={group.id}
                 className="glass-card group-list-item"
-                style={{ 
+                style={{
                   '--group-bg-light': colorOption.value || '#FFFFFF',
                   '--group-border-light': colorOption.border || 'rgba(0, 0, 0, 0.08)',
                   '--group-bg-dark': colorOption.darkBg || '#292A2D',
@@ -152,8 +151,8 @@ const GroupsList = ({ groups, students, onSelectGroup, onAddGroup, onUpdateGroup
                     Ochish ➔
                   </button>
                   <div className="group-item-action-btns">
-                    <button 
-                      className="btn btn-secondary scale-active btn-sm btn-icon-only" 
+                    <button
+                      className="btn btn-secondary scale-active btn-sm btn-icon-only"
                       onClick={() => {
                         setEditingGroup(group);
                         setEditGroupName(group.name);
@@ -176,8 +175,8 @@ const GroupsList = ({ groups, students, onSelectGroup, onAddGroup, onUpdateGroup
                         <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
                       </svg>
                     </button>
-                    <button 
-                      className="btn btn-danger scale-active btn-sm btn-icon-only" 
+                    <button
+                      className="btn btn-danger scale-active btn-sm btn-icon-only"
                       onClick={() => setConfirmDeleteId(group.id)}
                     >
                       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
@@ -206,9 +205,9 @@ const GroupsList = ({ groups, students, onSelectGroup, onAddGroup, onUpdateGroup
       {showAddModal && createPortal(
         <div className="modal-overlay" onClick={() => setShowAddModal(false)}>
           <div className="modal-content glass" onClick={(e) => e.stopPropagation()}>
-            <button 
-              type="button" 
-              className="modal-close-btn" 
+            <button
+              type="button"
+              className="modal-close-btn"
               onClick={() => setShowAddModal(false)}
             >
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -380,9 +379,9 @@ const GroupsList = ({ groups, students, onSelectGroup, onAddGroup, onUpdateGroup
       {confirmDeleteId && createPortal(
         <div className="modal-overlay" onClick={() => setConfirmDeleteId(null)}>
           <div className="modal-content glass" onClick={(e) => e.stopPropagation()}>
-            <button 
-              type="button" 
-              className="modal-close-btn" 
+            <button
+              type="button"
+              className="modal-close-btn"
               onClick={() => setConfirmDeleteId(null)}
             >
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -398,8 +397,8 @@ const GroupsList = ({ groups, students, onSelectGroup, onAddGroup, onUpdateGroup
               <button className="btn btn-secondary scale-active" onClick={() => setConfirmDeleteId(null)}>
                 Bekor qilish
               </button>
-              <button 
-                className="btn btn-danger scale-active" 
+              <button
+                className="btn btn-danger scale-active"
                 onClick={() => handleDelete(confirmDeleteId)}
               >
                 Ha, Butunlay O'chirilsin
@@ -413,9 +412,9 @@ const GroupsList = ({ groups, students, onSelectGroup, onAddGroup, onUpdateGroup
       {editingGroup && createPortal(
         <div className="modal-overlay" onClick={() => setEditingGroup(null)}>
           <div className="modal-content glass" onClick={(e) => e.stopPropagation()}>
-            <button 
-              type="button" 
-              className="modal-close-btn" 
+            <button
+              type="button"
+              className="modal-close-btn"
               onClick={() => setEditingGroup(null)}
             >
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
