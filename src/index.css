@@ -2135,6 +2135,13 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
   color: #FFFFFF !important;
 }
 
+:root {
+  --stack-base-top: calc(80px + env(safe-area-inset-top, 0px));
+  --stack-step-y: 8px;
+  --stack-gap: 25vh;
+  --stack-end-spacer: 40vh;
+}
+
 .stacking-cards-container {
   width: 100%;
   position: relative;
@@ -2166,33 +2173,22 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
   animation: slideDownDrawer 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
-/* Base Mobile (< 768px): Fluid natural layout */
+/* Base Mobile (< 768px): Sticky stacking playing card deck */
 @media (max-width: 767px) {
   .stacking-card-item {
-    position: relative !important;
-    top: auto !important;
-    margin-bottom: 20px !important;
-    will-change: auto !important;
-  }
-
-  .stacking-card-item:last-child {
-    margin-bottom: 0 !important;
+    position: -webkit-sticky !important;
+    position: sticky !important;
+    margin-bottom: var(--stack-gap, 25vh) !important;
+    will-change: transform;
   }
 
   .stacking-card-frame {
-    height: auto !important;
-    max-height: none !important;
-    min-height: unset !important;
-    transform: none !important;
-    transition: none !important;
-    will-change: auto !important;
-  }
-}
-
-/* Breakpoint 480px (xs): Larger mobile / landscape */
-@media (min-width: 480px) and (max-width: 767px) {
-  .stacking-card-item:not(:last-child) {
-    margin-bottom: 24px !important;
+    height: calc(100dvh - 150px) !important;
+    max-height: 540px !important;
+    min-height: 320px !important;
+    transform-origin: center top;
+    will-change: transform;
+    transition: transform 0.2s ease, border-color 0.2s ease;
   }
 }
 

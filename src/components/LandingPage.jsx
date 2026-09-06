@@ -967,10 +967,10 @@ export default function LandingPage({ onNavigateToLogin }) {
             </div>
           ))}
 
-          {/* Desktop Runway Buffer: 7-karta 6-karta ustiga (xuddi 6-karta 5-karta ustiga o'tirganidek) 100% to'liq o'tirishini va dasta saqlanishini ta'minlaydi */}
+          {/* Runway Buffer: 7-karta 6-karta ustiga (xuddi 6-karta 5-karta ustiga o'tirganidek) barcha ekranlarda (mobil va desktop) 100% to'liq o'tirishini ta'minlaydi */}
           <div
-            className="hidden md:block w-full pointer-events-none"
-            style={{ height: 'var(--stack-end-spacer, 50vh)' }}
+            className="w-full pointer-events-none"
+            style={{ height: 'var(--stack-end-spacer, 40vh)' }}
             aria-hidden="true"
           />
         </div>
@@ -1307,8 +1307,6 @@ export default function LandingPage({ onNavigateToLogin }) {
             </div>
             <div className="flex flex-wrap items-center justify-center sm:justify-end gap-2 sm:gap-4 font-mono text-[11px] sm:text-xs text-white/40">
               <span>V2.0.0</span>
-              <span>•</span>
-              <span>Designed with Apple Minimalism</span>
             </div>
           </div>
 
