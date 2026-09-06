@@ -2138,6 +2138,7 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .stacking-cards-container {
   width: 100%;
   position: relative;
+  display: flow-root;
 }
 
 /* Animations for Mobile Navigation Drawer */
@@ -2190,16 +2191,24 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 
 /* Breakpoint 480px (xs): Larger mobile / landscape */
 @media (min-width: 480px) and (max-width: 767px) {
-  .stacking-card-item {
+  .stacking-card-item:not(:last-child) {
     margin-bottom: 24px !important;
   }
 }
 
 /* Breakpoint 768px (md): Desktop / Tablet stacking playing card deck */
 @media (min-width: 768px) {
+  :root {
+    --stack-base-top: calc(80px + env(safe-area-inset-top, 0px));
+    --stack-step-y: 10px;
+    --stack-gap: 35vh;
+    --stack-end-spacer: 50vh;
+  }
+
   .stacking-card-item {
     position: -webkit-sticky !important;
     position: sticky !important;
+    margin-bottom: var(--stack-gap, 35vh) !important;
     will-change: transform;
   }
 
@@ -2220,6 +2229,7 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
     --stack-base-top: calc(88px + env(safe-area-inset-top, 0px));
     --stack-step-y: 10px;
     --stack-gap: 34vh;
+    --stack-end-spacer: 50vh;
   }
 }
 
@@ -2229,5 +2239,18 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
     --stack-base-top: calc(92px + env(safe-area-inset-top, 0px));
     --stack-step-y: 12px;
     --stack-gap: 32vh;
+    --stack-end-spacer: 50vh;
   }
 }
+
+/* Breakpoint 1536px (2xl): Extra Large & Ultra-wide displays */
+@media (min-width: 1536px) {
+  :root {
+    --stack-base-top: calc(100px + env(safe-area-inset-top, 0px));
+    --stack-step-y: 14px;
+    --stack-gap: 30vh;
+    --stack-end-spacer: 50vh;
+  }
+}
+
+

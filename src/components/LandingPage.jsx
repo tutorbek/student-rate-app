@@ -281,20 +281,6 @@ const FAQS = [
   }
 ];
 
-// SOHub Starburst Spark Icon
-const IconSpark = ({ size = 26 }) => (
-  <svg width={size} height={size} viewBox="0 0 44 44" fill="none" stroke="currentColor" xmlns="http://www.w3.org/2000/svg">
-    <path d="M19.6094 43.9991V22.582" strokeWidth="2.4" strokeLinecap="round" />
-    <path d="M4.75391 35.8655L19.8966 20.7207" strokeWidth="2.4" strokeLinecap="round" />
-    <path d="M0 19.6074H21.4171" strokeWidth="2.4" strokeLinecap="round" />
-    <path d="M8.13672 4.75195L23.2815 19.8946" strokeWidth="2.4" strokeLinecap="round" />
-    <path d="M24.3906 0V21.4171" strokeWidth="2.4" strokeLinecap="round" />
-    <path d="M39.2481 8.13477L24.1055 23.2795" strokeWidth="2.4" strokeLinecap="round" />
-    <path d="M43.9991 24.3926H22.582" strokeWidth="2.4" strokeLinecap="round" />
-    <path d="M35.8635 39.2481L20.7188 24.1055" strokeWidth="2.4" strokeLinecap="round" />
-  </svg>
-);
-
 export default function LandingPage({ onNavigateToLogin }) {
   const [isVideoPlaying, setIsVideoPlaying] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -342,7 +328,7 @@ export default function LandingPage({ onNavigateToLogin }) {
       
       {/* 1. Header & Navigation (Responsive Mobile-first Header with Slide-out Drawer) */}
       <header className="sticky top-0 z-50 w-full backdrop-blur-2xl bg-[var(--bg-primary)]/90 dark:bg-[#202124]/90 border-b border-[var(--border-color)] pt-[env(safe-area-inset-top,0px)] transition-colors">
-        <div className="max-w-7xl mx-auto px-4 sm:px-8 lg:px-12 flex items-center justify-between h-16 sm:h-20 gap-2 min-w-0">
+        <div className="max-w-7xl 2xl:max-w-[1440px] mx-auto px-4 sm:px-8 lg:px-12 2xl:px-16 flex items-center justify-between h-16 sm:h-20 xl:h-22 gap-2 min-w-0">
           
           {/* Logo Brand */}
           <div
@@ -352,58 +338,58 @@ export default function LandingPage({ onNavigateToLogin }) {
               window.scrollTo({ top: 0, behavior: 'smooth' });
             }}
           >
-            <h1 className="navbar-logo-text text-lg min-[360px]:text-xl sm:text-2xl font-bold tracking-tight text-[var(--text-primary)]">
+            <h1 className="navbar-logo-text text-lg min-[360px]:text-xl sm:text-2xl 2xl:text-3xl font-bold tracking-tight text-[var(--text-primary)]">
               EPCHIL <span className="logo-badge">ROBOT</span>
             </h1>
           </div>
           
           {/* Desktop in-page nav links */}
-          <nav className="hidden md:flex items-center gap-1 text-xs lg:text-sm font-medium text-[var(--text-secondary)]">
+          <nav className="hidden md:flex items-center gap-1 xl:gap-2 text-xs lg:text-sm xl:text-base font-medium text-[var(--text-secondary)]">
             <button
               type="button"
               onClick={() => scrollToSection('pricing-section')}
-              className="px-3.5 py-2 rounded-full hover:text-[var(--text-primary)] hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer min-h-[40px] flex items-center"
+              className="px-3.5 py-2 xl:px-4 xl:py-2.5 rounded-full hover:text-[var(--text-primary)] hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer min-h-[40px] flex items-center"
             >
               Narxlar
             </button>
             <button
               type="button"
               onClick={() => scrollToSection('platform-screens')}
-              className="px-3.5 py-2 rounded-full hover:text-[var(--text-primary)] hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer min-h-[40px] flex items-center"
+              className="px-3.5 py-2 xl:px-4 xl:py-2.5 rounded-full hover:text-[var(--text-primary)] hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer min-h-[40px] flex items-center"
             >
               Skrinshotlar
             </button>
             <button
               type="button"
               onClick={() => scrollToSection('platform-features')}
-              className="px-3.5 py-2 rounded-full hover:text-[var(--text-primary)] hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer min-h-[40px] flex items-center"
+              className="px-3.5 py-2 xl:px-4 xl:py-2.5 rounded-full hover:text-[var(--text-primary)] hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer min-h-[40px] flex items-center"
             >
               Imkoniyatlar
             </button>
             <button
               type="button"
               onClick={() => scrollToSection('testimonials')}
-              className="px-3.5 py-2 rounded-full hover:text-[var(--text-primary)] hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer min-h-[40px] flex items-center"
+              className="px-3.5 py-2 xl:px-4 xl:py-2.5 rounded-full hover:text-[var(--text-primary)] hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer min-h-[40px] flex items-center"
             >
               Fikrlar
             </button>
             <button
               type="button"
               onClick={() => scrollToSection('faq')}
-              className="px-3.5 py-2 rounded-full hover:text-[var(--text-primary)] hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer min-h-[40px] flex items-center"
+              className="px-3.5 py-2 xl:px-4 xl:py-2.5 rounded-full hover:text-[var(--text-primary)] hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer min-h-[40px] flex items-center"
             >
               FAQ
             </button>
           </nav>
 
           {/* Right Header Actions & Mobile Hamburger */}
-          <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+          <div className="flex items-center gap-2 sm:gap-3 xl:gap-4 shrink-0">
             {/* Demo Button (Desktop & Tablet) */}
             <a
               href="https://t.me/bkzd19?text=Assalomu%20alaykum!%20Epchil%20Robot%20platformasi%20bo'yicha%20demo%20so'ramoqchi%20edim."
               target="_blank"
               rel="noopener noreferrer"
-              className="hidden sm:inline-flex h-10 sm:h-11 px-4 sm:px-6 rounded-full border border-black/10 dark:border-white/15 bg-black/[0.03] hover:bg-black/[0.07] dark:bg-white/[0.05] dark:hover:bg-white/[0.1] hover:border-black/20 dark:hover:border-white/30 text-[var(--text-primary)] transition-all duration-300 ease-out items-center justify-center text-xs sm:text-sm font-semibold tracking-wide uppercase cursor-pointer shadow-sm active:scale-95 no-underline min-h-[44px]"
+              className="hidden sm:inline-flex h-10 sm:h-11 xl:h-12 px-4 sm:px-6 xl:px-8 rounded-full border border-black/10 dark:border-white/15 bg-black/[0.03] hover:bg-black/[0.07] dark:bg-white/[0.05] dark:hover:bg-white/[0.1] hover:border-black/20 dark:hover:border-white/30 text-[var(--text-primary)] transition-all duration-300 ease-out items-center justify-center text-xs sm:text-sm xl:text-base font-semibold tracking-wide uppercase cursor-pointer shadow-sm active:scale-95 no-underline min-h-[44px]"
             >
               Demo
             </a>
@@ -412,10 +398,10 @@ export default function LandingPage({ onNavigateToLogin }) {
             <button
               type="button"
               onClick={onNavigateToLogin}
-              className="group h-10 sm:h-11 p-1 pl-3.5 pr-1.5 sm:pl-6 sm:pr-2 rounded-full bg-[#0C1016] text-white hover:bg-[#1E242C] dark:bg-white dark:text-[#0C1016] dark:hover:bg-[#EBEBEF] transition-all duration-300 ease-out flex items-center gap-2 sm:gap-3 cursor-pointer shadow-md active:scale-95 min-h-[44px]"
+              className="group h-10 sm:h-11 xl:h-12 p-1 pl-3.5 pr-1.5 sm:pl-6 sm:pr-2 xl:pl-7 xl:pr-2.5 rounded-full bg-[#0C1016] text-white hover:bg-[#1E242C] dark:bg-white dark:text-[#0C1016] dark:hover:bg-[#EBEBEF] transition-all duration-300 ease-out flex items-center gap-2 sm:gap-3 xl:gap-3.5 cursor-pointer shadow-md active:scale-95 min-h-[44px]"
             >
-              <span className="text-xs sm:text-sm font-semibold tracking-wide uppercase">Kirish</span>
-              <span className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-white/15 dark:bg-black/10 flex items-center justify-center transition-transform duration-300 group-hover:translate-x-0.5 shrink-0">
+              <span className="text-xs sm:text-sm xl:text-base font-semibold tracking-wide uppercase">Kirish</span>
+              <span className="w-7 h-7 sm:w-8 sm:h-8 xl:w-9 xl:h-9 rounded-full bg-white/15 dark:bg-black/10 flex items-center justify-center transition-transform duration-300 group-hover:translate-x-0.5 shrink-0">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M5 12h14" />
                   <path d="m12 5 7 7-7 7" />
@@ -470,7 +456,7 @@ export default function LandingPage({ onNavigateToLogin }) {
             
             {/* Full-Screen Menu Top Header Bar (1:1 identical alignment and styling with Navbar) */}
             <div className="w-full bg-[var(--bg-primary)] dark:bg-[#202124] border-b border-[var(--border-color)] pt-[env(safe-area-inset-top,0px)] shrink-0 transition-colors">
-              <div className="max-w-7xl mx-auto px-4 sm:px-8 lg:px-12 flex items-center justify-between h-16 sm:h-20 gap-2 min-w-0">
+              <div className="max-w-7xl 2xl:max-w-[1440px] mx-auto px-4 sm:px-8 lg:px-12 2xl:px-16 flex items-center justify-between h-16 sm:h-20 xl:h-22 gap-2 min-w-0">
                 <div
                   className="navbar-brand-section scale-active cursor-pointer shrink-0 min-h-[44px] flex items-center select-none"
                   onClick={() => {
@@ -478,7 +464,7 @@ export default function LandingPage({ onNavigateToLogin }) {
                     window.scrollTo({ top: 0, behavior: 'smooth' });
                   }}
                 >
-                  <h1 className="navbar-logo-text text-lg min-[360px]:text-xl sm:text-2xl font-bold tracking-tight text-[var(--text-primary)]">
+                  <h1 className="navbar-logo-text text-lg min-[360px]:text-xl sm:text-2xl 2xl:text-3xl font-bold tracking-tight text-[var(--text-primary)]">
                     EPCHIL <span className="logo-badge">ROBOT</span>
                   </h1>
                 </div>
@@ -617,30 +603,30 @@ export default function LandingPage({ onNavigateToLogin }) {
 
       {/* 2. Hero Section (Fluid Clamp Typography & Responsive Video Player) */}
       <section className="relative w-full pt-12 pb-16 sm:pt-24 sm:pb-28 overflow-hidden">
-        <div className="w-full px-4 sm:px-6 lg:px-12 mb-12 sm:mb-24">
+        <div className="max-w-7xl 2xl:max-w-[1440px] mx-auto px-4 sm:px-8 lg:px-12 2xl:px-16 mb-12 sm:mb-20 2xl:mb-24">
           <div className="flex flex-col items-start gap-3 sm:gap-6">
             
             <h1
-              className="w-full text-[clamp(2rem,1.4rem+4vw,4.5rem)] lg:text-[clamp(4.5rem,2rem+4.5vw,7.5rem)] font-black tracking-[-0.03em] leading-[1.08] sm:leading-[0.92] text-[var(--text-primary)] select-none break-words [overflow-wrap:anywhere]"
+              className="w-full text-3xl min-[360px]:text-4xl sm:text-6xl md:text-7xl lg:text-7xl 2xl:text-[5.5rem] font-black tracking-[-0.03em] leading-[1.08] sm:leading-[0.96] text-[var(--text-primary)] select-none break-words [overflow-wrap:anywhere]"
             >
               O'quvchilarni rag'batlantirishning <br className="hidden sm:inline" />
               <span className="text-[#0071E3]">zamonaviy usuli.</span>
             </h1>
             
-            <p className="text-sm min-[360px]:text-base sm:text-2xl md:text-3xl text-[var(--text-secondary)] font-normal max-w-4xl mt-1 sm:mt-2 leading-relaxed">
+            <p className="text-sm min-[360px]:text-base sm:text-2xl md:text-2xl lg:text-3xl 2xl:text-[2rem] text-[var(--text-secondary)] font-normal max-w-4xl mt-1 sm:mt-3 2xl:mt-4 leading-relaxed">
               O'quvchilar faolligini jonli "Like"lar orqali baholang, oylik reytingni yuritib boring va sog'lom raqobat muhitini shakllantiring.
             </p>
             
-            <div className="flex flex-wrap items-center gap-3 sm:gap-4 mt-2 sm:mt-4 w-full">
+            <div className="flex flex-wrap items-center gap-3 sm:gap-4 lg:gap-5 mt-2 sm:mt-4 w-full">
               {/* Primary Login Button */}
               <button
                 type="button"
                 onClick={onNavigateToLogin}
-                className="group p-1.5 pl-5 pr-2 sm:p-2 sm:pl-8 sm:pr-2.5 rounded-full bg-[#0C1016] text-white hover:bg-[#1E242C] dark:bg-white dark:text-[#0C1016] dark:hover:bg-[#EBEBEF] transition-all duration-300 ease-out flex items-center gap-2.5 sm:gap-4 cursor-pointer shadow-lg active:scale-95 min-h-[48px]"
+                className="group p-1.5 pl-5 pr-2 sm:p-2.5 sm:pl-8 sm:pr-3 lg:p-3 lg:pl-10 lg:pr-3.5 2xl:p-3.5 2xl:pl-12 2xl:pr-4 rounded-full bg-[#0C1016] text-white hover:bg-[#1E242C] dark:bg-white dark:text-[#0C1016] dark:hover:bg-[#EBEBEF] transition-all duration-300 ease-out flex items-center gap-2.5 sm:gap-4 2xl:gap-5 cursor-pointer shadow-lg active:scale-95 min-h-[48px] sm:min-h-[54px] lg:min-h-[60px] 2xl:min-h-[64px]"
               >
-                <span className="text-xs sm:text-base font-semibold tracking-wider uppercase">Tizimga kirish</span>
-                <span className="w-8 h-8 sm:w-11 sm:h-11 rounded-full bg-white/15 dark:bg-black/10 flex items-center justify-center transition-transform duration-300 group-hover:translate-x-1 shrink-0">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <span className="text-xs sm:text-base lg:text-lg 2xl:text-xl font-semibold tracking-wider uppercase">Tizimga kirish</span>
+                <span className="w-8 h-8 sm:w-11 sm:h-11 lg:w-12 lg:h-12 2xl:w-13 2xl:h-13 rounded-full bg-white/15 dark:bg-black/10 flex items-center justify-center transition-transform duration-300 group-hover:translate-x-1 shrink-0">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="sm:w-5 sm:h-5">
                     <path d="M5 12h14" />
                     <path d="m12 5 7 7-7 7" />
                   </svg>
@@ -650,7 +636,7 @@ export default function LandingPage({ onNavigateToLogin }) {
               <button
                 type="button"
                 onClick={() => scrollToSection('pricing-section')}
-                className="px-5 py-3.5 sm:px-8 sm:py-4 rounded-full bg-[var(--bg-card)] hover:bg-[var(--bg-secondary)] text-[var(--text-primary)] font-semibold text-xs sm:text-base border border-[var(--border-color)] transition-all duration-200 cursor-pointer shadow-sm active:scale-95 min-h-[48px]"
+                className="px-5 py-3.5 sm:px-8 sm:py-4 lg:px-10 lg:py-5 2xl:px-12 2xl:py-5.5 rounded-full bg-[var(--bg-card)] hover:bg-[var(--bg-secondary)] text-[var(--text-primary)] font-semibold text-xs sm:text-base lg:text-lg 2xl:text-xl border border-[var(--border-color)] transition-all duration-200 cursor-pointer shadow-sm active:scale-95 min-h-[48px] sm:min-h-[54px] lg:min-h-[60px] 2xl:min-h-[64px] flex items-center"
               >
                 Tariflar & Natijalar ↓
               </button>
@@ -659,7 +645,7 @@ export default function LandingPage({ onNavigateToLogin }) {
         </div>
 
         {/* Video Showcase Card */}
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="max-w-7xl 2xl:max-w-[1440px] mx-auto px-4 sm:px-8 lg:px-12 2xl:px-16">
           <div className="rounded-2xl sm:rounded-3xl lg:rounded-[3rem] bg-[#0C1016] shadow-[0_30px_70px_rgba(0,0,0,0.3)] border border-white/10 aspect-video relative overflow-hidden flex items-center justify-center group">
           {isVideoPlaying ? (
             <iframe
@@ -708,40 +694,40 @@ export default function LandingPage({ onNavigateToLogin }) {
         id="pricing-section"
         className="relative w-full border-t border-[var(--border-color)] bg-[var(--bg-secondary)] py-14 sm:py-24 lg:py-28 scroll-mt-20"
       >
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-12">
+        <div className="max-w-7xl 2xl:max-w-[1440px] mx-auto px-4 sm:px-8 lg:px-12 2xl:px-16">
           
           {/* Section Header */}
           <div className="mb-10 sm:mb-20">
-            <span className="text-xs sm:text-sm font-bold tracking-widest text-[#0071E3] uppercase mb-2 sm:mb-3 block">
+            <span className="text-xs sm:text-sm lg:text-base font-bold tracking-widest text-[#0071E3] uppercase mb-2 sm:mb-3 block">
               ISHONCH VA QULAY SHARTLAR
             </span>
-            <h2 className="text-2xl min-[360px]:text-3xl sm:text-5xl lg:text-6xl font-black tracking-tight leading-[1.08] text-[var(--text-primary)]">
+            <h2 className="text-2xl min-[360px]:text-3xl sm:text-5xl lg:text-6xl 2xl:text-7xl font-black tracking-tight leading-[1.08] text-[var(--text-primary)]">
               Darslaringizni bugunoq <br className="hidden sm:inline" />
               <span className="text-[#0071E3]">bepul sinab ko'ring.</span>
             </h2>
-            <p className="text-sm sm:text-xl text-[var(--text-secondary)] mt-3 sm:mt-4 max-w-2xl font-normal leading-relaxed">
+            <p className="text-sm sm:text-xl lg:text-2xl text-[var(--text-secondary)] mt-3 sm:mt-4 max-w-3xl font-normal leading-relaxed">
               O'quv markazingiz yoki maktabingiz uchun eng qulay shartlar. Hech qanday murakkab shartnomalarsiz to'g'ridan-to'g'ri boshlang.
             </p>
           </div>
 
           {/* Social Proof Stats Grid (Mobile 1 col, xs 2 cols, lg 4 cols) */}
-          <div className="grid grid-cols-1 xs:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6 mb-12 sm:mb-20">
+          <div className="grid grid-cols-1 xs:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6 lg:gap-8 mb-12 sm:mb-20">
             {STATS.map((stat, idx) => (
               <div
                 key={idx}
-                className="p-4 sm:p-7 lg:p-8 rounded-2xl sm:rounded-[28px] bg-[var(--bg-card)] border border-[var(--border-color)] shadow-sm hover:shadow-md transition-all duration-300 flex flex-col justify-between group min-w-0"
+                className="p-4 sm:p-7 lg:p-8 2xl:p-9 rounded-2xl sm:rounded-[28px] bg-[var(--bg-card)] border border-[var(--border-color)] shadow-sm hover:shadow-md transition-all duration-300 flex flex-col justify-between group min-w-0"
               >
-                <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl bg-[#0071E3]/10 text-[#0071E3] flex items-center justify-center mb-3 sm:mb-6 group-hover:scale-110 transition-transform shrink-0">
+                <div className="w-10 h-10 sm:w-11 sm:h-11 lg:w-12 lg:h-12 2xl:w-14 2xl:h-14 rounded-xl sm:rounded-2xl bg-[#0071E3]/10 text-[#0071E3] flex items-center justify-center mb-3 sm:mb-6 group-hover:scale-110 transition-transform shrink-0">
                   {stat.icon}
                 </div>
                 <div className="min-w-0">
-                  <div className="text-2xl sm:text-4xl lg:text-5xl font-black tracking-tight text-[var(--text-primary)] mb-1 truncate">
+                  <div className="text-2xl sm:text-4xl lg:text-5xl 2xl:text-6xl font-black tracking-tight text-[var(--text-primary)] mb-1 truncate">
                     {stat.value}
                   </div>
-                  <div className="text-sm sm:text-base font-bold text-[var(--text-primary)] mb-1 break-words">
+                  <div className="text-sm sm:text-base lg:text-lg font-bold text-[var(--text-primary)] mb-1 break-words">
                     {stat.label}
                   </div>
-                  <p className="text-xs sm:text-sm text-[var(--text-secondary)] leading-relaxed">
+                  <p className="text-xs sm:text-sm lg:text-base text-[var(--text-secondary)] leading-relaxed">
                     {stat.description}
                   </p>
                 </div>
@@ -750,11 +736,11 @@ export default function LandingPage({ onNavigateToLogin }) {
           </div>
 
           {/* Pricing Plans Grid (2 Cards: Trial & Pro) */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8 items-stretch">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8 lg:gap-10 items-stretch">
             {PRICING_PLANS.map((plan) => (
               <div
                 key={plan.id}
-                className={`relative rounded-2xl sm:rounded-[36px] p-5 min-[420px]:p-7 sm:p-12 flex flex-col justify-between transition-all duration-300 min-w-0 ${
+                className={`relative rounded-2xl sm:rounded-[36px] p-5 min-[420px]:p-7 sm:p-10 lg:p-12 2xl:p-14 flex flex-col justify-between transition-all duration-300 min-w-0 ${
                   plan.highlighted
                     ? 'bg-[#0C1016] text-white border-2 border-[#0071E3] shadow-2xl shadow-[#0071E3]/10'
                     : 'bg-[var(--bg-card)] text-[var(--text-primary)] border border-[var(--border-color)] shadow-lg'
@@ -763,7 +749,7 @@ export default function LandingPage({ onNavigateToLogin }) {
                 <div>
                   <div className="flex items-center justify-between gap-2 mb-4 sm:mb-6 flex-wrap">
                     <span
-                      className={`text-[10px] min-[380px]:text-[11px] font-bold px-3 py-1 rounded-full uppercase tracking-wider ${
+                      className={`text-[10px] min-[380px]:text-[11px] sm:text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider ${
                         plan.highlighted
                           ? 'bg-[#0071E3] text-white'
                           : 'bg-black/10 dark:bg-white/10 text-[var(--text-primary)]'
@@ -771,13 +757,13 @@ export default function LandingPage({ onNavigateToLogin }) {
                     >
                       {plan.badge}
                     </span>
-                    <span className="text-xs font-mono opacity-60">EPCHIL ROBOT</span>
+                    <span className="text-xs sm:text-sm font-mono opacity-60">EPCHIL ROBOT</span>
                   </div>
 
-                  <h3 className="text-xl min-[420px]:text-2xl sm:text-3xl font-black tracking-tight mb-2 sm:mb-3">
+                  <h3 className="text-xl min-[420px]:text-2xl sm:text-3xl lg:text-4xl font-black tracking-tight mb-2 sm:mb-3">
                     {plan.name}
                   </h3>
-                  <p className={`text-xs min-[420px]:text-sm sm:text-base leading-relaxed mb-6 sm:mb-8 ${
+                  <p className={`text-xs min-[420px]:text-sm sm:text-base lg:text-lg leading-relaxed mb-6 sm:mb-8 ${
                     plan.highlighted ? 'text-white/70' : 'text-[var(--text-secondary)]'
                   }`}>
                     {plan.description}
@@ -786,10 +772,10 @@ export default function LandingPage({ onNavigateToLogin }) {
                   {/* Price & Period with flex-wrap and responsive typography */}
                   <div className="mb-6 sm:mb-8 pb-6 sm:pb-8 border-b border-black/10 dark:border-white/10">
                     <div className="flex flex-col min-[480px]:flex-row min-[480px]:items-baseline gap-1 min-[480px]:gap-2">
-                      <span className="text-2xl min-[360px]:text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight break-words">
+                      <span className="text-2xl min-[360px]:text-3xl sm:text-4xl lg:text-5xl 2xl:text-6xl font-black tracking-tight break-words">
                         {plan.price}
                       </span>
-                      <span className={`text-xs sm:text-sm break-words ${
+                      <span className={`text-xs sm:text-sm lg:text-base break-words ${
                         plan.highlighted ? 'text-white/60' : 'text-[var(--text-secondary)]'
                       }`}>
                         {plan.period}
@@ -808,7 +794,7 @@ export default function LandingPage({ onNavigateToLogin }) {
                             <polyline points="20 6 9 17 4 12" />
                           </svg>
                         </div>
-                        <span className={`text-xs min-[420px]:text-sm sm:text-base font-medium ${
+                        <span className={`text-xs min-[420px]:text-sm sm:text-base lg:text-lg font-medium ${
                           plan.highlighted ? 'text-white/90' : 'text-[var(--text-primary)]'
                         }`}>
                           {feat}
@@ -823,7 +809,7 @@ export default function LandingPage({ onNavigateToLogin }) {
                   href={plan.ctaLink}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className={`w-full py-3.5 sm:py-4 px-4 sm:px-8 rounded-full font-bold text-center text-xs min-[380px]:text-sm sm:text-base uppercase tracking-wider transition-all duration-200 cursor-pointer shadow-md active:scale-98 flex items-center justify-center gap-2 sm:gap-3 no-underline min-h-[48px] ${
+                  className={`w-full py-3.5 sm:py-4 lg:py-5 px-4 sm:px-8 rounded-full font-bold text-center text-xs min-[380px]:text-sm sm:text-base lg:text-lg uppercase tracking-wider transition-all duration-200 cursor-pointer shadow-md active:scale-98 flex items-center justify-center gap-2 sm:gap-3 no-underline min-h-[48px] sm:min-h-[54px] lg:min-h-[60px] ${
                     plan.highlighted
                       ? 'bg-[#0071E3] text-white hover:bg-[#0077ED]'
                       : 'bg-[#0C1016] text-white hover:bg-[#1E242C] dark:bg-white dark:text-[#0C1016] dark:hover:bg-[#EBEBEF]'
@@ -846,49 +832,49 @@ export default function LandingPage({ onNavigateToLogin }) {
       {/* 4. Hamkor Maktablar Logotiplari (Partners - Tipografik Dizayn) */}
       <section
         id="partners-section"
-        className="relative w-full border-t border-[var(--border-color)] bg-[var(--bg-primary)] py-12 sm:py-18 lg:py-20 overflow-hidden"
+        className="relative w-full border-t border-[var(--border-color)] bg-[var(--bg-primary)] py-12 sm:py-18 lg:py-24 overflow-hidden"
       >
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-12">
+        <div className="max-w-7xl 2xl:max-w-[1440px] mx-auto px-4 sm:px-8 lg:px-12 2xl:px-16">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 sm:gap-6 mb-8 sm:mb-12">
             <div>
-              <span className="text-xs font-bold tracking-widest text-[#0071E3] uppercase mb-1.5 block">
+              <span className="text-xs sm:text-sm lg:text-base font-bold tracking-widest text-[#0071E3] uppercase mb-1.5 block">
                 HAMKORLARIMIZ
               </span>
-              <h3 className="text-xl min-[360px]:text-2xl sm:text-3xl font-black tracking-tight text-[var(--text-primary)]">
+              <h3 className="text-xl min-[360px]:text-2xl sm:text-3xl lg:text-4xl 2xl:text-5xl font-black tracking-tight text-[var(--text-primary)]">
                 Bizga ishonch bildirgan ta'lim dargohlari
               </h3>
             </div>
-            <p className="text-xs sm:text-sm text-[var(--text-secondary)] max-w-md">
+            <p className="text-xs sm:text-sm lg:text-base text-[var(--text-secondary)] max-w-md">
               O'quvchilarda darsga havasni uyg'otib, ta'lim sifatini yangi bosqichga ko'targan yetakchi markazlar.
             </p>
           </div>
 
           {/* Partners Grid (Mobile 1 col, xs 2 cols, md 4 cols) */}
-          <div className="grid grid-cols-1 xs:grid-cols-2 md:grid-cols-4 gap-3 sm:gap-6">
+          <div className="grid grid-cols-1 xs:grid-cols-2 md:grid-cols-4 gap-3 sm:gap-6 lg:gap-8">
             {PARTNERS.map((partner) => (
               <div
                 key={partner.id}
-                className="p-4 sm:p-8 rounded-xl sm:rounded-[24px] bg-[var(--bg-card)] border border-[var(--border-color)] hover:border-[#0071E3]/50 transition-all duration-300 flex flex-col items-center justify-center text-center group cursor-default shadow-sm min-w-0"
+                className="p-4 sm:p-8 lg:p-10 2xl:p-12 rounded-xl sm:rounded-[24px] bg-[var(--bg-card)] border border-[var(--border-color)] hover:border-[#0071E3]/50 transition-all duration-300 flex flex-col items-center justify-center text-center group cursor-default shadow-sm min-w-0"
               >
                 {/* Logo Image Slot (kelajakda rasm qo'yish uchun tayyor) */}
                 {partner.logoSrc ? (
                   <img
                     src={partner.logoSrc}
                     alt={partner.name}
-                    className="max-w-full h-8 sm:h-10 w-auto object-contain mb-2 sm:mb-3 grayscale group-hover:grayscale-0 transition-all"
+                    className="max-w-full h-8 sm:h-10 lg:h-12 w-auto object-contain mb-2 sm:mb-3.5 grayscale group-hover:grayscale-0 transition-all"
                   />
                 ) : (
-                  <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-black/[0.04] dark:bg-white/[0.06] border border-black/10 dark:border-white/15 flex items-center justify-center mb-2 sm:mb-3 group-hover:scale-105 transition-transform shrink-0">
-                    <span className="font-mono text-[11px] sm:text-xs font-black tracking-tighter text-[#0071E3]">
+                  <div className="w-10 h-10 sm:w-12 sm:h-12 lg:w-14 lg:h-14 rounded-xl sm:rounded-2xl bg-black/[0.04] dark:bg-white/[0.06] border border-black/10 dark:border-white/15 flex items-center justify-center mb-2 sm:mb-3.5 group-hover:scale-105 transition-transform shrink-0">
+                    <span className="font-mono text-[11px] sm:text-xs lg:text-sm font-black tracking-tighter text-[#0071E3]">
                       {partner.badgeText.slice(0, 3)}
                     </span>
                   </div>
                 )}
 
-                <h4 className="text-base sm:text-xl font-black tracking-tight text-[var(--text-primary)] group-hover:text-[#0071E3] transition-colors truncate w-full">
+                <h4 className="text-base sm:text-xl lg:text-2xl 2xl:text-3xl font-black tracking-tight text-[var(--text-primary)] group-hover:text-[#0071E3] transition-colors truncate w-full">
                   {partner.name}
                 </h4>
-                <span className="text-[10px] sm:text-xs text-[var(--text-secondary)] font-medium mt-0.5 sm:mt-1 truncate w-full">
+                <span className="text-[10px] sm:text-xs lg:text-sm text-[var(--text-secondary)] font-medium mt-0.5 sm:mt-1 truncate w-full">
                   {partner.category}
                 </span>
               </div>
@@ -900,107 +886,101 @@ export default function LandingPage({ onNavigateToLogin }) {
       {/* 5. Platform Screenshots Showcase (Native CSS Sticky Playing Card Deck) */}
       <section
         id="platform-screens"
-        className="relative w-full border-t border-[var(--border-color)] bg-[var(--bg-primary)] pt-14 sm:pt-20 lg:pt-24 pb-16 sm:pb-24 lg:pb-28 scroll-mt-20"
+        className="relative w-full border-t border-[var(--border-color)] bg-[var(--bg-primary)] pt-14 sm:pt-20 lg:pt-28 pb-16 sm:pb-24 lg:pb-32 scroll-mt-20"
       >
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 mb-10 sm:mb-16 text-center">
-          <span className="text-xs font-bold tracking-widest text-[#0071E3] uppercase mb-2 block">
+        <div className="max-w-7xl 2xl:max-w-[1440px] mx-auto px-4 sm:px-8 lg:px-12 2xl:px-16 mb-10 sm:mb-16 2xl:mb-20 text-center">
+          <span className="text-xs sm:text-sm lg:text-base font-bold tracking-widest text-[#0071E3] uppercase mb-2 block">
             INTERFEYS VITRINASI
           </span>
-          <h2 className="text-2xl min-[360px]:text-3xl sm:text-5xl font-black tracking-tight text-[var(--text-primary)]">
+          <h2 className="text-2xl min-[360px]:text-3xl sm:text-5xl lg:text-6xl 2xl:text-7xl font-black tracking-tight text-[var(--text-primary)]">
             Epchil Robot platformasi ichkaridan
           </h2>
-          <p className="text-xs sm:text-lg text-[var(--text-secondary)] max-w-2xl mx-auto mt-2 sm:mt-3">
+          <p className="text-xs sm:text-lg lg:text-xl text-[var(--text-secondary)] max-w-3xl mx-auto mt-2 sm:mt-4">
             O'qituvchi va o'quvchilar uchun maxsus yaratilgan 7 ta muhim boshqaruv ekrani.
           </p>
         </div>
 
         {/* Native CSS Sticky Stacking Playing Card Deck */}
-        <div className="stacking-cards-container max-w-6xl mx-auto px-3 min-[380px]:px-4 sm:px-6 lg:px-8 relative">
-          {SOHUB_SCREENS.map((screen, index) => {
-            const isLast = index === SOHUB_SCREENS.length - 1;
-            return (
+        <div className="stacking-cards-container max-w-7xl 2xl:max-w-[1440px] mx-auto px-3 min-[380px]:px-4 sm:px-8 lg:px-12 2xl:px-16 relative">
+          {SOHUB_SCREENS.map((screen, index) => (
+            <div
+              key={screen.id}
+              data-card-index={index}
+              className="stacking-card-item w-full"
+              style={{
+                top: `calc(var(--stack-base-top, 80px) + ${index} * var(--stack-step-y, 10px))`,
+                marginBottom: 'var(--stack-gap, 35vh)',
+                zIndex: index + 1,
+              }}
+            >
               <div
-                key={screen.id}
-                data-card-index={index}
-                className="stacking-card-item w-full"
+                className="stacking-card-frame relative w-full h-auto min-h-[350px] sm:min-h-[480px] md:min-h-[580px] lg:min-h-[700px] xl:min-h-[780px] 2xl:min-h-[840px] sm:h-[640px] md:h-[720px] lg:h-[800px] xl:h-[860px] 2xl:h-[900px] sm:max-h-[calc(100dvh-8.5rem)] rounded-2xl sm:rounded-[32px] 2xl:rounded-[36px] border border-white/[0.18] flex flex-col text-white overflow-hidden before:absolute before:inset-x-0 before:top-0 before:h-[1px] before:bg-gradient-to-r before:from-transparent before:via-white/35 before:to-transparent shadow-2xl"
                 style={{
-                  top: `calc(var(--stack-base-top, 80px) + ${index} * var(--stack-step-y, 10px))`,
-                  marginBottom: isLast ? '0px' : 'var(--stack-gap, 35vh)',
-                  zIndex: index + 1,
+                  backgroundColor: screen.bg,
                 }}
               >
-                <div
-                  className="stacking-card-frame relative w-full h-auto min-h-[350px] sm:min-h-[460px] sm:h-[640px] md:h-[720px] lg:h-[800px] sm:max-h-[calc(100dvh-10.5rem)] rounded-2xl sm:rounded-[32px] border border-white/[0.18] flex flex-col text-white overflow-hidden before:absolute before:inset-x-0 before:top-0 before:h-[1px] before:bg-gradient-to-r before:from-transparent before:via-white/35 before:to-transparent shadow-2xl"
-                  style={{
-                    backgroundColor: screen.bg,
-                  }}
-                >
-                  {/* Integrated Mac Window Top Bar */}
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-3 px-3.5 sm:px-6 py-2.5 sm:py-3.5 border-b border-white/10 bg-black/35 shrink-0">
-                    {/* Left: 3 macOS dots + Screen Number + Title */}
-                    <div className="flex items-center gap-2 sm:gap-3 min-w-0">
-                      <div className="flex items-center gap-1.5 shrink-0">
-                        <span className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-[#FF5F56]/90 shadow-sm" />
-                        <span className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-[#FFBD2E]/90 shadow-sm" />
-                        <span className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-[#27C93F]/90 shadow-sm" />
-                      </div>
-                      <div className="h-3.5 sm:h-4 w-[1px] bg-white/15 shrink-0" />
-                      <span className="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-white/10 text-white/90 font-mono text-[10px] sm:text-[11px] font-bold flex items-center justify-center shrink-0">
-                        0{screen.id}
+                {/* Integrated Mac Window Top Bar */}
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-3 px-3.5 sm:px-6 lg:px-8 py-2.5 sm:py-3.5 lg:py-4 border-b border-white/10 bg-black/35 shrink-0">
+                  {/* Left: 3 macOS dots + Screen Number + Title */}
+                  <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      <span className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-[#FF5F56]/90 shadow-sm" />
+                      <span className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-[#FFBD2E]/90 shadow-sm" />
+                      <span className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-[#27C93F]/90 shadow-sm" />
+                    </div>
+                    <div className="h-3.5 sm:h-4 w-[1px] bg-white/15 shrink-0" />
+                    <span className="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-white/10 text-white/90 font-mono text-[10px] sm:text-[11px] font-bold flex items-center justify-center shrink-0">
+                      0{screen.id}
+                    </span>
+                    <h3 className="text-xs min-[360px]:text-sm sm:text-lg md:text-xl lg:text-2xl font-bold leading-tight tracking-tight truncate">
+                      <span className="text-white">{screen.titleWhite} </span>
+                      <span className="text-white/40">{screen.titleMuted}</span>
+                    </h3>
+                  </div>
+
+                  {/* Right: Magnetic Pill Tags */}
+                  <div className="flex flex-wrap items-center gap-1 sm:gap-1.5">
+                    {screen.tags.map((tag, tIdx) => (
+                      <span
+                        key={tIdx}
+                        className="text-[9px] min-[360px]:text-[10px] sm:text-[11px] lg:text-xs font-medium px-2 py-0.5 lg:px-3 lg:py-1 rounded-full border border-white/10 text-white/90"
+                        style={{ backgroundColor: screen.tagBg }}
+                      >
+                        {tag}
                       </span>
-                      <h3 className="text-xs min-[360px]:text-sm sm:text-lg md:text-xl font-bold leading-tight tracking-tight truncate">
-                        <span className="text-white">{screen.titleWhite} </span>
-                        <span className="text-white/40">{screen.titleMuted}</span>
-                      </h3>
-                    </div>
-
-                    {/* Right: Magnetic Pill Tags */}
-                    <div className="flex flex-wrap items-center gap-1 sm:gap-1.5">
-                      {screen.tags.map((tag, tIdx) => (
-                        <span
-                          key={tIdx}
-                          className="text-[9px] min-[360px]:text-[10px] sm:text-[11px] font-medium px-2 py-0.5 rounded-full border border-white/10 text-white/90"
-                          style={{ backgroundColor: screen.tagBg }}
-                        >
-                          {tag}
-                        </span>
-                      ))}
-                    </div>
+                    ))}
                   </div>
-
-                  {/* Compact Description Line */}
-                  <div className="flex items-start sm:items-center gap-2 text-white/75 px-3.5 sm:px-6 py-2 bg-black/15 border-b border-white/[0.06] shrink-0 text-xs sm:text-sm">
-                    <div className="shrink-0 text-white/60 mt-0.5 sm:mt-0">
-                      <IconSpark size={13} />
-                    </div>
-                    <p className="font-normal text-white/80 line-clamp-2 sm:line-clamp-none">
-                      {screen.description}
-                    </p>
-                  </div>
-
-                  {/* Screenshot Container */}
-                  <div className="w-full flex-1 relative overflow-hidden bg-[#070A0E] flex items-center justify-center p-2.5 sm:p-4 rounded-b-2xl sm:rounded-b-[32px]">
-                    <img
-                      src={screen.src}
-                      alt={screen.alt}
-                      className="max-w-full h-auto object-contain border border-white/[0.14] block select-none shadow-[0_20px_50px_rgba(0,0,0,0.5)] rounded-lg sm:rounded-[20px] md:rounded-[24px] max-h-[260px] min-[420px]:max-h-[340px] sm:max-h-full"
-                      style={{ borderRadius: 'clamp(8px, 1.5vw, 24px)' }}
-                      loading="lazy"
-                    />
-                  </div>
-
                 </div>
+
+                {/* Screenshot Container (Pinned to top for optimal stacking deck visibility) */}
+                <div className="w-full flex-1 relative overflow-hidden bg-[#070A0E] flex items-start justify-center px-2.5 sm:px-4 lg:px-6 pt-1.5 sm:pt-2.5 lg:pt-3 pb-2.5 sm:pb-4 lg:pb-6 rounded-b-2xl sm:rounded-b-[32px] 2xl:rounded-b-[36px]">
+                  <img
+                    src={screen.src}
+                    alt={screen.alt}
+                    className="max-w-full h-auto sm:max-h-full sm:w-auto object-contain object-top border border-white/[0.14] block select-none shadow-[0_20px_50px_rgba(0,0,0,0.5)] rounded-lg sm:rounded-[20px] md:rounded-[24px]"
+                    style={{ borderRadius: 'clamp(8px, 1.5vw, 24px)' }}
+                    loading="lazy"
+                  />
+                </div>
+
               </div>
-            );
-          })}
+            </div>
+          ))}
+
+          {/* Desktop Runway Buffer: 7-karta 6-karta ustiga (xuddi 6-karta 5-karta ustiga o'tirganidek) 100% to'liq o'tirishini va dasta saqlanishini ta'minlaydi */}
+          <div
+            className="hidden md:block w-full pointer-events-none"
+            style={{ height: 'var(--stack-end-spacer, 50vh)' }}
+            aria-hidden="true"
+          />
         </div>
       </section>
 
       {/* 6. Core Features Section (Full-width Edge-to-Edge Line Cards) */}
       <section id="platform-features" className="relative w-full pt-16 sm:pt-28 pb-0 border-t border-[var(--border-color)] bg-[var(--bg-tertiary)] overflow-hidden">
-        <div className="w-full px-4 sm:px-6 lg:px-12 mb-10 sm:mb-20">
+        <div className="max-w-7xl 2xl:max-w-[1440px] mx-auto px-4 sm:px-8 lg:px-12 2xl:px-16 mb-10 sm:mb-20 2xl:mb-24">
           <h2
-            className="w-full text-[clamp(2rem,1.4rem+4vw,4.5rem)] lg:text-[clamp(4.5rem,2rem+4.5vw,8.5rem)] font-black tracking-[-0.03em] text-[var(--text-primary)] leading-[1.08] sm:leading-[0.90] select-none break-words"
+            className="w-full text-3xl min-[360px]:text-4xl sm:text-6xl md:text-7xl lg:text-7xl 2xl:text-[5.5rem] font-black tracking-[-0.03em] text-[var(--text-primary)] leading-[1.08] sm:leading-[0.96] select-none break-words"
           >
             Bilim olishlarini <br />
             <span className="text-[#0071E3]">"Like" bilan taqdirlang.</span>
@@ -1013,19 +993,19 @@ export default function LandingPage({ onNavigateToLogin }) {
             <div
               key={index}
               style={{ backgroundColor: item.color }}
-              className="w-full text-black px-4 sm:px-8 lg:px-12 py-8 sm:py-14 md:py-20 transition-all duration-300 border-b border-black/15 last:border-b-0 hover:brightness-95 group select-none"
+              className="w-full text-black px-4 sm:px-8 lg:px-12 2xl:px-16 py-8 sm:py-14 md:py-20 lg:py-24 transition-all duration-300 border-b border-black/15 last:border-b-0 hover:brightness-95 group select-none"
             >
-              <div className="max-w-6xl mx-auto flex flex-col md:flex-row md:items-center justify-between gap-4 md:gap-10 lg:gap-16">
+              <div className="max-w-7xl 2xl:max-w-[1440px] mx-auto flex flex-col md:flex-row md:items-center justify-between gap-4 md:gap-10 lg:gap-16">
                 <div className="w-full md:w-5/12 shrink-0 min-w-0">
-                  <span className="text-[11px] sm:text-sm font-black uppercase tracking-widest text-black/75 mb-1.5 sm:mb-2.5 block">
+                  <span className="text-[11px] sm:text-sm lg:text-base font-black uppercase tracking-widest text-black/75 mb-1.5 sm:mb-2.5 block">
                     {item.badge}
                   </span>
-                  <h3 className="text-xl sm:text-4xl lg:text-5xl font-black text-black tracking-tight leading-[1.1] break-words">
+                  <h3 className="text-xl sm:text-4xl lg:text-5xl 2xl:text-6xl font-black text-black tracking-tight leading-[1.1] break-words">
                     {item.title}
                   </h3>
                 </div>
                 <div className="w-full md:w-7/12 min-w-0">
-                  <p className="text-sm sm:text-lg lg:text-xl text-black/85 leading-relaxed font-semibold">
+                  <p className="text-sm sm:text-lg lg:text-xl 2xl:text-2xl text-black/85 leading-relaxed font-semibold">
                     {item.description}
                   </p>
                 </div>
@@ -1038,16 +1018,16 @@ export default function LandingPage({ onNavigateToLogin }) {
       {/* 7. Mijozlar Fikri (Testimonials - Vertikal chekkadan-chekkaga yopishgan Rectangles) */}
       <section
         id="testimonials"
-        className="relative w-full border-t border-[var(--border-color)] bg-[var(--bg-primary)] pt-14 sm:pt-24 pb-0 scroll-mt-20 overflow-hidden"
+        className="relative w-full border-t border-[var(--border-color)] bg-[var(--bg-primary)] pt-14 sm:pt-24 lg:pt-28 pb-0 scroll-mt-20 overflow-hidden"
       >
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-12 mb-10 sm:mb-20">
-          <span className="text-xs sm:text-sm font-bold tracking-widest text-[#0071E3] uppercase mb-2 block">
+        <div className="max-w-7xl 2xl:max-w-[1440px] mx-auto px-4 sm:px-8 lg:px-12 2xl:px-16 mb-10 sm:mb-20 2xl:mb-24">
+          <span className="text-xs sm:text-sm lg:text-base font-bold tracking-widest text-[#0071E3] uppercase mb-2 block">
             MIJOZLAR FIKRI
           </span>
-          <h2 className="text-2xl min-[360px]:text-3xl sm:text-5xl lg:text-6xl font-black tracking-tight text-[var(--text-primary)]">
+          <h2 className="text-2xl min-[360px]:text-3xl sm:text-5xl lg:text-6xl 2xl:text-7xl font-black tracking-tight text-[var(--text-primary)]">
             Ustozlar va rahbarlar nima deydi?
           </h2>
-          <p className="text-sm sm:text-lg text-[var(--text-secondary)] mt-2 sm:mt-3 max-w-2xl">
+          <p className="text-sm sm:text-lg lg:text-xl text-[var(--text-secondary)] mt-2 sm:mt-3 max-w-2xl">
             Amaliyotda Epchil Robot'dan foydalanayotgan o'qituvchi va markaz rahbarlarining samimiy fikrlari.
           </p>
         </div>
@@ -1058,9 +1038,9 @@ export default function LandingPage({ onNavigateToLogin }) {
             <div
               key={idx}
               style={{ backgroundColor: item.bg }}
-              className="w-full text-white px-4 sm:px-8 lg:px-12 py-8 sm:py-16 md:py-20 border-b border-white/10 last:border-b-0 transition-colors"
+              className="w-full text-white px-4 sm:px-8 lg:px-12 2xl:px-16 py-8 sm:py-16 md:py-20 lg:py-24 border-b border-white/10 last:border-b-0 transition-colors"
             >
-              <div className="max-w-6xl mx-auto flex flex-col md:flex-row md:items-center justify-between gap-6 md:gap-8 lg:gap-16 min-w-0">
+              <div className="max-w-7xl 2xl:max-w-[1440px] mx-auto flex flex-col md:flex-row md:items-center justify-between gap-6 md:gap-8 lg:gap-16 min-w-0">
                 
                 {/* Left: Author & Stats Info */}
                 <div className="w-full md:w-5/12 shrink-0 min-w-0">
@@ -1072,14 +1052,14 @@ export default function LandingPage({ onNavigateToLogin }) {
                     ))}
                   </div>
 
-                  <h4 className="text-xl sm:text-3xl font-black tracking-tight text-white mb-1 break-words">
+                  <h4 className="text-xl sm:text-3xl lg:text-4xl font-black tracking-tight text-white mb-1 break-words">
                     {item.author}
                   </h4>
-                  <p className="text-xs sm:text-sm font-medium text-white/60 mb-3 sm:mb-4">
+                  <p className="text-xs sm:text-sm lg:text-base font-medium text-white/60 mb-3 sm:mb-4">
                     {item.role}, <span className="text-white font-semibold">{item.school}</span>
                   </p>
 
-                  <div className="inline-flex max-w-full flex-wrap items-center gap-2 px-3 py-1.5 rounded-full bg-white/10 border border-white/15 text-[11px] sm:text-xs font-semibold text-white/90">
+                  <div className="inline-flex max-w-full flex-wrap items-center gap-2 px-3.5 py-1.5 lg:px-4 lg:py-2 rounded-full bg-white/10 border border-white/15 text-[11px] sm:text-xs lg:text-sm font-semibold text-white/90">
                     <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: item.accent }} />
                     <span className="break-words">{item.stats}</span>
                   </div>
@@ -1087,7 +1067,7 @@ export default function LandingPage({ onNavigateToLogin }) {
 
                 {/* Right: Big Quote */}
                 <div className="w-full md:w-7/12 min-w-0">
-                  <p className="text-base sm:text-2xl lg:text-2xl font-medium leading-relaxed text-white/90 italic">
+                  <p className="text-base sm:text-2xl lg:text-3xl 2xl:text-[2rem] font-medium leading-relaxed text-white/90 italic">
                     "{item.quote}"
                   </p>
                 </div>
@@ -1103,36 +1083,36 @@ export default function LandingPage({ onNavigateToLogin }) {
         id="faq"
         className="relative w-full border-t border-[var(--border-color)] bg-[var(--bg-secondary)] py-14 sm:py-24 lg:py-28 scroll-mt-20"
       >
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-12">
+        <div className="max-w-7xl 2xl:max-w-[1440px] mx-auto px-4 sm:px-8 lg:px-12 2xl:px-16">
           
           <div className="mb-10 sm:mb-20">
-            <span className="text-xs sm:text-sm font-bold tracking-widest text-[#0071E3] uppercase mb-2 block">
+            <span className="text-xs sm:text-sm lg:text-base font-bold tracking-widest text-[#0071E3] uppercase mb-2 block">
               SAVOLLAR VA JAVOBLAR
             </span>
-            <h2 className="text-2xl min-[360px]:text-3xl sm:text-5xl font-black tracking-tight text-[var(--text-primary)]">
+            <h2 className="text-2xl min-[360px]:text-3xl sm:text-5xl lg:text-6xl 2xl:text-7xl font-black tracking-tight text-[var(--text-primary)]">
               Ko'p beriladigan savollar
             </h2>
-            <p className="text-xs sm:text-lg text-[var(--text-secondary)] mt-2 sm:mt-3 max-w-2xl">
+            <p className="text-xs sm:text-lg lg:text-xl text-[var(--text-secondary)] mt-2 sm:mt-3 max-w-2xl">
               Epchil Robot platformasining ishlashi, xavfsizligi va sozlash tartibi bo'yicha eng muhim javoblar.
             </p>
           </div>
 
           {/* 2 Columns Open Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5 sm:gap-6 lg:gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5 sm:gap-6 lg:gap-8 2xl:gap-10">
             {FAQS.map((faq, fIdx) => (
               <div
                 key={fIdx}
-                className="p-4 sm:p-7 lg:p-8 rounded-2xl sm:rounded-[28px] bg-[var(--bg-card)] border border-[var(--border-color)] shadow-sm flex flex-col justify-start min-w-0"
+                className="p-4 sm:p-7 lg:p-8 2xl:p-10 rounded-2xl sm:rounded-[28px] bg-[var(--bg-card)] border border-[var(--border-color)] shadow-sm flex flex-col justify-start min-w-0"
               >
                 <div className="flex items-start gap-2.5 sm:gap-3 mb-2 sm:mb-3">
-                  <span className="w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-[#0071E3]/10 text-[#0071E3] flex items-center justify-center font-mono text-xs font-bold shrink-0 mt-0.5">
+                  <span className="w-6 h-6 sm:w-7 sm:h-7 lg:w-8 lg:h-8 rounded-full bg-[#0071E3]/10 text-[#0071E3] flex items-center justify-center font-mono text-xs sm:text-sm font-bold shrink-0 mt-0.5">
                     ?
                   </span>
-                  <h3 className="text-sm sm:text-base lg:text-lg font-bold text-[var(--text-primary)] leading-snug break-words">
+                  <h3 className="text-sm sm:text-base lg:text-lg 2xl:text-xl font-bold text-[var(--text-primary)] leading-snug break-words">
                     {faq.q}
                   </h3>
                 </div>
-                <p className="text-xs sm:text-sm lg:text-base text-[var(--text-secondary)] leading-relaxed pl-0 sm:pl-9">
+                <p className="text-xs sm:text-sm lg:text-base 2xl:text-lg text-[var(--text-secondary)] leading-relaxed pl-0 sm:pl-9 lg:pl-10 2xl:pl-11">
                   {faq.a}
                 </p>
               </div>
@@ -1143,25 +1123,25 @@ export default function LandingPage({ onNavigateToLogin }) {
       </section>
 
       {/* 9. Fullscreen Edge-to-Edge Black CTA Section */}
-      <section className="relative w-full min-h-screen min-h-[100dvh] bg-black text-white flex flex-col justify-between px-4 sm:px-12 lg:px-20 py-12 sm:py-20 lg:py-24 border-t border-white/10 overflow-hidden">
-        <div className="max-w-6xl mx-auto w-full flex-1 flex flex-col justify-center my-auto py-8 sm:py-16">
-          <h2 className="text-[clamp(2rem,1.4rem+4vw,4.5rem)] lg:text-[clamp(4.5rem,2rem+4.5vw,7.5rem)] font-black tracking-tight text-white leading-[1.08] sm:leading-[0.94] break-words max-w-full mb-6 sm:mb-10">
+      <section className="relative w-full min-h-screen min-h-[100dvh] bg-black text-white flex flex-col justify-between px-4 sm:px-8 lg:px-12 2xl:px-16 py-12 sm:py-20 lg:py-24 border-t border-white/10 overflow-hidden">
+        <div className="max-w-7xl 2xl:max-w-[1440px] mx-auto w-full flex-1 flex flex-col justify-center my-auto py-8 sm:py-16 lg:py-24">
+          <h2 className="text-3xl min-[360px]:text-4xl sm:text-6xl md:text-7xl lg:text-7xl 2xl:text-[5.5rem] font-black tracking-tight text-white leading-[1.08] sm:leading-[0.96] break-words max-w-full mb-6 sm:mb-10">
             Darslaringizni <br className="hidden sm:inline" />
             <span className="text-white">yangi bosqichga olib chiqing.</span>
           </h2>
-          <p className="text-sm min-[360px]:text-base sm:text-2xl md:text-3xl text-white/70 font-normal max-w-3xl leading-relaxed mb-6 sm:mb-12">
+          <p className="text-sm min-[360px]:text-base sm:text-2xl md:text-2xl lg:text-3xl 2xl:text-[2rem] text-white/70 font-normal max-w-3xl leading-relaxed mb-6 sm:mb-12">
             Epchil Robot platformasi orqali dars jarayonini yanada samarali, qiziqarli va intizomli qiling.
           </p>
-          <div className="flex flex-wrap items-center gap-3 sm:gap-4 w-full">
+          <div className="flex flex-wrap items-center gap-3 sm:gap-4 lg:gap-6 w-full">
             <a
               href="https://t.me/bkzd19?text=Assalomu%20alaykum!%20Epchil%20Robot%20platformasi%20bo'yicha%20demo%20so'ramoqchi%20edim."
               target="_blank"
               rel="noopener noreferrer"
-              className="group inline-flex p-2 pl-5 sm:p-3.5 sm:pl-10 pr-2.5 sm:pr-4 rounded-full bg-white text-black hover:bg-[#F5F5F7] transition-all duration-300 ease-out items-center gap-2.5 sm:gap-5 cursor-pointer shadow-2xl active:scale-95 no-underline min-h-[48px]"
+              className="group inline-flex p-2 pl-5 sm:p-3.5 sm:pl-10 lg:p-4 lg:pl-12 pr-2.5 sm:pr-4 lg:pr-5 rounded-full bg-white text-black hover:bg-[#F5F5F7] transition-all duration-300 ease-out items-center gap-2.5 sm:gap-5 cursor-pointer shadow-2xl active:scale-95 no-underline min-h-[48px] sm:min-h-[56px] lg:min-h-[64px]"
             >
-              <span className="text-xs min-[360px]:text-sm sm:text-lg md:text-xl font-bold tracking-wider uppercase">Demo olish</span>
-              <span className="w-8 h-8 sm:w-14 sm:h-14 rounded-full bg-black/10 flex items-center justify-center transition-transform duration-300 group-hover:translate-x-1.5 shrink-0">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="sm:w-5 sm:h-5">
+              <span className="text-xs min-[360px]:text-sm sm:text-lg md:text-xl lg:text-2xl font-bold tracking-wider uppercase">Demo olish</span>
+              <span className="w-8 h-8 sm:w-14 sm:h-14 lg:w-16 lg:h-16 rounded-full bg-black/10 flex items-center justify-center transition-transform duration-300 group-hover:translate-x-1.5 shrink-0">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="sm:w-5 sm:h-5 lg:w-6 lg:h-6">
                   <path d="M5 12h14" />
                   <path d="m12 5 7 7-7 7" />
                 </svg>
@@ -1171,7 +1151,7 @@ export default function LandingPage({ onNavigateToLogin }) {
             <button
               type="button"
               onClick={onNavigateToLogin}
-              className="px-5 py-3 sm:px-8 sm:py-5 rounded-full border border-white/20 hover:border-white/40 text-white font-bold text-xs sm:text-base uppercase tracking-wider transition-all duration-200 cursor-pointer active:scale-95 min-h-[48px]"
+              className="px-5 py-3 sm:px-8 sm:py-5 lg:px-10 lg:py-6 rounded-full border border-white/20 hover:border-white/40 text-white font-bold text-xs sm:text-base lg:text-lg uppercase tracking-wider transition-all duration-200 cursor-pointer active:scale-95 min-h-[48px] sm:min-h-[56px] lg:min-h-[64px]"
             >
               Tizimga kirish
             </button>
@@ -1179,27 +1159,27 @@ export default function LandingPage({ onNavigateToLogin }) {
         </div>
 
         {/* 10. 2 Qatorli Kengaytirilgan Footer */}
-        <footer className="w-full max-w-6xl mx-auto pt-10 sm:pt-12 pb-6 border-t border-white/10 text-white/70">
+        <footer className="w-full max-w-7xl 2xl:max-w-[1440px] mx-auto pt-10 sm:pt-14 pb-8 border-t border-white/10 text-white/70">
           
           {/* Qator 1: Brend, Sitemap va Kontaktlar */}
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-12 gap-8 mb-8 sm:mb-10">
             
             {/* Col 1: Brend va Maqsad */}
             <div className="sm:col-span-2 md:col-span-5 min-w-0">
-              <h3 className="font-black text-xl text-white tracking-tight mb-2 sm:mb-3">
+              <h3 className="font-black text-xl lg:text-2xl text-white tracking-tight mb-2 sm:mb-3">
                 EPCHIL <span className="text-[#0071E3]">ROBOT</span>
               </h3>
-              <p className="text-xs sm:text-sm text-white/60 leading-relaxed max-w-sm mb-4">
+              <p className="text-xs sm:text-sm lg:text-base text-white/60 leading-relaxed max-w-sm mb-4">
                 O'quvchilar bilimini jonli "Like"lar bilan rag'batlantirish, guruhlararo sog'lom raqobat va oylik shaffof davomat platformasi.
               </p>
             </div>
 
             {/* Col 2: Sitemap (Tezkor Bo'limlar) */}
             <div className="md:col-span-3 min-w-0">
-              <h4 className="text-xs font-bold uppercase tracking-widest text-white mb-3 sm:mb-4">
+              <h4 className="text-xs sm:text-sm lg:text-base font-bold uppercase tracking-widest text-white mb-3 sm:mb-4">
                 Bo'limlar
               </h4>
-              <ul className="space-y-1 text-xs sm:text-sm text-white/60">
+              <ul className="space-y-1 text-xs sm:text-sm lg:text-base text-white/60">
                 <li>
                   <button
                     type="button"
@@ -1259,15 +1239,15 @@ export default function LandingPage({ onNavigateToLogin }) {
 
             {/* Col 3: Kontaktlar va Ijtimoiy Tarmoqlar */}
             <div className="md:col-span-4 min-w-0">
-              <h4 className="text-xs font-bold uppercase tracking-widest text-white mb-3 sm:mb-4">
+              <h4 className="text-xs sm:text-sm lg:text-base font-bold uppercase tracking-widest text-white mb-3 sm:mb-4">
                 Aloqa va Tarmoqlar
               </h4>
-              <div className="space-y-2 text-xs sm:text-sm text-white/70">
+              <div className="space-y-2 text-xs sm:text-sm lg:text-base text-white/70">
                 <a
                   href="tel:+998332220301"
                   className="flex items-center gap-2.5 hover:text-white transition-colors no-underline py-2 min-h-[40px]"
                 >
-                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[#0071E3] shrink-0">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[#0071E3] shrink-0">
                     <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
                   </svg>
                   <span className="truncate">+998 (33) 222-03-01</span>
@@ -1279,7 +1259,7 @@ export default function LandingPage({ onNavigateToLogin }) {
                   rel="noopener noreferrer"
                   className="flex items-center gap-2.5 hover:text-white transition-colors no-underline py-2 min-h-[40px]"
                 >
-                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[#0071E3] shrink-0">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[#0071E3] shrink-0">
                     <line x1="22" y1="2" x2="11" y2="13" />
                     <polygon points="22 2 15 22 11 13 2 9 22 2" />
                   </svg>
@@ -1292,7 +1272,7 @@ export default function LandingPage({ onNavigateToLogin }) {
                   rel="noopener noreferrer"
                   className="flex items-center gap-2.5 hover:text-white transition-colors no-underline py-2 min-h-[40px]"
                 >
-                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[#0071E3] shrink-0">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[#0071E3] shrink-0">
                     <rect x="2" y="2" width="20" height="20" rx="5" ry="5" />
                     <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" />
                     <line x1="17.5" y1="6.5" x2="17.51" y2="6.5" />
@@ -1306,7 +1286,7 @@ export default function LandingPage({ onNavigateToLogin }) {
                   rel="noopener noreferrer"
                   className="flex items-center gap-2.5 hover:text-white transition-colors no-underline py-2 min-h-[40px]"
                 >
-                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[#0071E3] shrink-0">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[#0071E3] shrink-0">
                     <rect x="2" y="2" width="20" height="20" rx="5" ry="5" />
                     <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" />
                     <line x1="17.5" y1="6.5" x2="17.51" y2="6.5" />
@@ -1319,13 +1299,13 @@ export default function LandingPage({ onNavigateToLogin }) {
           </div>
 
           {/* Qator 2: Copyright va Versiya */}
-          <div className="pt-6 border-t border-white/10 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-white/50 text-center sm:text-left">
+          <div className="pt-6 border-t border-white/10 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs sm:text-sm text-white/50 text-center sm:text-left">
             <div className="flex flex-wrap items-center justify-center sm:justify-start gap-1.5 sm:gap-2">
               <span className="font-bold text-white tracking-tight">EPCHIL ROBOT</span>
               <span>•</span>
               <span>© {new Date().getFullYear()} Barcha huquqlar himoyalangan.</span>
             </div>
-            <div className="flex flex-wrap items-center justify-center sm:justify-end gap-2 sm:gap-4 font-mono text-[11px] text-white/40">
+            <div className="flex flex-wrap items-center justify-center sm:justify-end gap-2 sm:gap-4 font-mono text-[11px] sm:text-xs text-white/40">
               <span>V2.0.0</span>
               <span>•</span>
               <span>Designed with Apple Minimalism</span>
