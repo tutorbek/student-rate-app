@@ -460,7 +460,9 @@ const Leaderboard = ({
                   timeframe === 'lastMonth' ? "O'tgan oy" :
                   'Kurs davomida'
                 }</span>
-                <span className="dropdown-arrow">▼</span>
+                <span className="dropdown-arrow">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+                </span>
               </button>
               {isTimeframeDropdownOpen && (
                 <>
@@ -499,7 +501,9 @@ const Leaderboard = ({
                 onClick={() => setIsHistoryStudentDropdownOpen(!isHistoryStudentDropdownOpen)}
               >
                 <span>{selectedHistoryStudentId === 'all' ? 'Barcha talabalar' : (students.find(s => s.id === selectedHistoryStudentId)?.name || 'Talabasiz')}</span>
-                <span className="dropdown-arrow">▼</span>
+                <span className="dropdown-arrow">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+                </span>
               </button>
               {isHistoryStudentDropdownOpen && (
                 <>
@@ -1023,8 +1027,12 @@ const Leaderboard = ({
         }
 
         .dropdown-arrow {
-          font-size: 0.65rem;
-          margin-left: 6px;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          margin-left: 8px;
+          flex-shrink: 0;
+          color: var(--text-secondary);
         }
 
         .custom-dropdown-list {
@@ -1743,23 +1751,27 @@ const Leaderboard = ({
           .filters-toolbar {
             flex-direction: column;
             align-items: stretch;
-            gap: 10px;
+            gap: 12px;
+            padding: 14px;
           }
 
           .filter-item {
             width: 100%;
-            min-width: 100%;
+            min-width: 0;
             max-width: 100%;
+            flex: none;
           }
 
           .filter-right-item {
             width: 100%;
             margin-left: 0;
+            flex: none;
           }
 
           .student-scope-filter-item {
             width: 100%;
             max-width: 100%;
+            flex: none;
           }
 
           .student-scope-toggle {

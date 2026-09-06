@@ -346,13 +346,13 @@ export default function LandingPage({ onNavigateToLogin }) {
           
           {/* Logo Brand */}
           <div
-            className="navbar-brand-section scale-active cursor-pointer shrink-0 min-h-[44px] flex items-center"
+            className="navbar-brand-section scale-active cursor-pointer shrink-0 min-h-[44px] flex items-center select-none"
             onClick={() => {
               setIsMobileMenuOpen(false);
               window.scrollTo({ top: 0, behavior: 'smooth' });
             }}
           >
-            <h1 className="navbar-logo-text text-lg min-[360px]:text-xl sm:text-2xl font-bold tracking-tight">
+            <h1 className="navbar-logo-text text-lg min-[360px]:text-xl sm:text-2xl font-bold tracking-tight text-[var(--text-primary)]">
               EPCHIL <span className="logo-badge">ROBOT</span>
             </h1>
           </div>
@@ -426,24 +426,24 @@ export default function LandingPage({ onNavigateToLogin }) {
             {/* Mobile Hamburger Toggle Button (min 44x44px touch area) */}
             <button
               type="button"
-              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-              className="md:hidden flex items-center justify-center w-11 h-11 min-w-[44px] min-h-[44px] rounded-full border border-black/10 dark:border-white/15 bg-black/[0.04] dark:bg-white/[0.06] text-[var(--text-primary)] hover:bg-black/[0.08] dark:hover:bg-white/[0.1] transition-colors cursor-pointer active:scale-95"
+              onClick={() => setIsMobileMenuOpen((prev) => !prev)}
+              className="md:hidden flex items-center justify-center w-11 h-11 min-w-[44px] min-h-[44px] shrink-0 rounded-full border border-black/10 dark:border-white/15 bg-black/[0.04] dark:bg-white/[0.06] text-[var(--text-primary)] hover:bg-black/[0.08] dark:hover:bg-white/[0.1] transition-colors cursor-pointer active:scale-95"
               aria-label={isMobileMenuOpen ? "Menyuni yopish" : "Menyuni ochish"}
               aria-expanded={isMobileMenuOpen}
             >
-              <div className="w-4 h-3.5 relative flex flex-col justify-between items-center">
+              <div className="w-4 h-3.5 relative flex flex-col justify-between items-center pointer-events-none">
                 <span
-                  className={`w-4 h-0.5 bg-current rounded-full transition-transform duration-300 origin-center ${
+                  className={`w-4 h-0.5 bg-current rounded-full transition-transform duration-300 origin-center pointer-events-none ${
                     isMobileMenuOpen ? 'rotate-45 translate-y-[6px]' : ''
                   }`}
                 />
                 <span
-                  className={`w-4 h-0.5 bg-current rounded-full transition-opacity duration-200 ${
+                  className={`w-4 h-0.5 bg-current rounded-full transition-opacity duration-200 pointer-events-none ${
                     isMobileMenuOpen ? 'opacity-0' : 'opacity-100'
                   }`}
                 />
                 <span
-                  className={`w-4 h-0.5 bg-current rounded-full transition-transform duration-300 origin-center ${
+                  className={`w-4 h-0.5 bg-current rounded-full transition-transform duration-300 origin-center pointer-events-none ${
                     isMobileMenuOpen ? '-rotate-45 -translate-y-[6px]' : ''
                   }`}
                 />
@@ -452,145 +452,164 @@ export default function LandingPage({ onNavigateToLogin }) {
           </div>
         </div>
 
-        {/* Mobile Navigation Dropdown Drawer mounted directly to document.body via portal */}
+        {/* Full-Screen Mobile Navigation Menu mounted directly to document.body via portal */}
         {isMobileMenuOpen && typeof document !== 'undefined' && createPortal(
-          <div className="fixed inset-0 z-[999999] md:hidden flex flex-col justify-start">
-            {/* Backdrop Blur Overlay */}
-            <div
-              className="fixed inset-0 bg-black/60 backdrop-blur-md animate-fade-in"
-              onClick={() => setIsMobileMenuOpen(false)}
-              aria-hidden="true"
-            />
+          <div
+            className="mobile-menu-overlay fixed inset-0 w-full h-full min-h-screen min-h-[100dvh] z-[9999999] md:hidden flex flex-col bg-[var(--bg-primary)] dark:bg-[#202124] text-[var(--text-primary)] font-sans antialiased animate-fade-in"
+            style={{
+              position: 'fixed',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              width: '100%',
+              height: '100dvh',
+              zIndex: 9999999
+            }}
+          >
+            
+            {/* Full-Screen Menu Top Header Bar (1:1 identical alignment and styling with Navbar) */}
+            <div className="w-full bg-[var(--bg-primary)] dark:bg-[#202124] border-b border-[var(--border-color)] pt-[env(safe-area-inset-top,0px)] shrink-0 transition-colors">
+              <div className="max-w-7xl mx-auto px-4 sm:px-8 lg:px-12 flex items-center justify-between h-16 sm:h-20 gap-2 min-w-0">
+                <div
+                  className="navbar-brand-section scale-active cursor-pointer shrink-0 min-h-[44px] flex items-center select-none"
+                  onClick={() => {
+                    setIsMobileMenuOpen(false);
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }}
+                >
+                  <h1 className="navbar-logo-text text-lg min-[360px]:text-xl sm:text-2xl font-bold tracking-tight text-[var(--text-primary)]">
+                    EPCHIL <span className="logo-badge">ROBOT</span>
+                  </h1>
+                </div>
 
-            {/* Top Bar inside Portal for seamless header sync and instant close */}
-            <div className="relative z-10 w-full bg-[var(--bg-primary)] dark:bg-[#202124] border-b border-[var(--border-color)] px-4 sm:px-8 flex items-center justify-between h-16 sm:h-20 pt-[env(safe-area-inset-top,0px)]">
-              <div
-                className="navbar-brand-section cursor-pointer min-h-[44px] flex items-center"
-                onClick={() => {
-                  setIsMobileMenuOpen(false);
-                  window.scrollTo({ top: 0, behavior: 'smooth' });
-                }}
-              >
-                <h1 className="navbar-logo-text text-lg min-[360px]:text-xl sm:text-2xl font-bold tracking-tight text-[var(--text-primary)]">
-                  EPCHIL <span className="logo-badge">ROBOT</span>
-                </h1>
+                <button
+                  type="button"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className="flex items-center justify-center w-11 h-11 min-w-[44px] min-h-[44px] rounded-full border border-black/10 dark:border-white/15 bg-black/[0.04] dark:bg-white/[0.06] text-[var(--text-primary)] hover:bg-black/[0.08] dark:hover:bg-white/[0.1] transition-colors cursor-pointer active:scale-95"
+                  aria-label="Menyuni yopish"
+                >
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <line x1="18" y1="6" x2="6" y2="18" />
+                    <line x1="6" y1="6" x2="18" y2="18" />
+                  </svg>
+                </button>
               </div>
-
-              <button
-                type="button"
-                onClick={() => setIsMobileMenuOpen(false)}
-                className="flex items-center justify-center w-11 h-11 min-w-[44px] min-h-[44px] rounded-full border border-black/10 dark:border-white/15 bg-black/[0.04] dark:bg-white/[0.06] text-[var(--text-primary)] hover:bg-black/[0.08] dark:hover:bg-white/[0.1] transition-colors cursor-pointer active:scale-95"
-                aria-label="Menyuni yopish"
-              >
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <line x1="18" y1="6" x2="6" y2="18" />
-                  <line x1="6" y1="6" x2="18" y2="18" />
-                </svg>
-              </button>
             </div>
 
-            {/* Drawer Content */}
-            <div className="relative z-10 w-full max-h-[calc(100dvh-4rem-env(safe-area-inset-top,0px))] overflow-y-auto bg-[var(--bg-primary)] dark:bg-[#202124] border-b border-[var(--border-color)] shadow-2xl px-4 py-5 flex flex-col gap-4 animate-drawer-down">
-              <nav className="flex flex-col space-y-1">
+            {/* Full-Screen Scrollable Content */}
+            <div className="flex-1 w-full overflow-y-auto px-5 py-6 flex flex-col justify-between gap-8 pb-[calc(env(safe-area-inset-bottom,0px)+24px)]">
+              
+              {/* Navigation Items (Apple Minimalist Full-Width List) */}
+              <nav className="flex flex-col space-y-1.5">
                 <button
                   type="button"
                   onClick={() => handleNavClick('pricing-section')}
-                  className="flex items-center justify-between w-full px-4 py-3 rounded-xl text-left font-semibold text-sm text-[var(--text-primary)] hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer min-h-[44px]"
+                  className="flex items-center justify-between w-full px-4 py-3.5 rounded-2xl text-left font-semibold text-base text-[var(--text-primary)] hover:bg-black/5 dark:hover:bg-white/5 active:bg-black/10 dark:active:bg-white/10 transition-colors cursor-pointer min-h-[50px]"
                 >
                   <span>Narxlar va Statistika</span>
-                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[var(--text-secondary)]">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[var(--text-secondary)]">
                     <polyline points="9 18 15 12 9 6" />
                   </svg>
                 </button>
                 <button
                   type="button"
                   onClick={() => handleNavClick('platform-screens')}
-                  className="flex items-center justify-between w-full px-4 py-3 rounded-xl text-left font-semibold text-sm text-[var(--text-primary)] hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer min-h-[44px]"
+                  className="flex items-center justify-between w-full px-4 py-3.5 rounded-2xl text-left font-semibold text-base text-[var(--text-primary)] hover:bg-black/5 dark:hover:bg-white/5 active:bg-black/10 dark:active:bg-white/10 transition-colors cursor-pointer min-h-[50px]"
                 >
                   <span>Skrinshotlar (7 ta modul)</span>
-                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[var(--text-secondary)]">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[var(--text-secondary)]">
                     <polyline points="9 18 15 12 9 6" />
                   </svg>
                 </button>
                 <button
                   type="button"
                   onClick={() => handleNavClick('platform-features')}
-                  className="flex items-center justify-between w-full px-4 py-3 rounded-xl text-left font-semibold text-sm text-[var(--text-primary)] hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer min-h-[44px]"
+                  className="flex items-center justify-between w-full px-4 py-3.5 rounded-2xl text-left font-semibold text-base text-[var(--text-primary)] hover:bg-black/5 dark:hover:bg-white/5 active:bg-black/10 dark:active:bg-white/10 transition-colors cursor-pointer min-h-[50px]"
                 >
                   <span>Imkoniyatlar</span>
-                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[var(--text-secondary)]">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[var(--text-secondary)]">
                     <polyline points="9 18 15 12 9 6" />
                   </svg>
                 </button>
                 <button
                   type="button"
                   onClick={() => handleNavClick('testimonials')}
-                  className="flex items-center justify-between w-full px-4 py-3 rounded-xl text-left font-semibold text-sm text-[var(--text-primary)] hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer min-h-[44px]"
+                  className="flex items-center justify-between w-full px-4 py-3.5 rounded-2xl text-left font-semibold text-base text-[var(--text-primary)] hover:bg-black/5 dark:hover:bg-white/5 active:bg-black/10 dark:active:bg-white/10 transition-colors cursor-pointer min-h-[50px]"
                 >
                   <span>Mijozlar fikri</span>
-                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[var(--text-secondary)]">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[var(--text-secondary)]">
                     <polyline points="9 18 15 12 9 6" />
                   </svg>
                 </button>
                 <button
                   type="button"
                   onClick={() => handleNavClick('faq')}
-                  className="flex items-center justify-between w-full px-4 py-3 rounded-xl text-left font-semibold text-sm text-[var(--text-primary)] hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer min-h-[44px]"
+                  className="flex items-center justify-between w-full px-4 py-3.5 rounded-2xl text-left font-semibold text-base text-[var(--text-primary)] hover:bg-black/5 dark:hover:bg-white/5 active:bg-black/10 dark:active:bg-white/10 transition-colors cursor-pointer min-h-[50px]"
                 >
                   <span>Ko'p beriladigan savollar (FAQ)</span>
-                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[var(--text-secondary)]">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[var(--text-secondary)]">
                     <polyline points="9 18 15 12 9 6" />
                   </svg>
                 </button>
               </nav>
 
-              {/* Action Buttons inside Drawer */}
-              <div className="h-[1px] w-full bg-[var(--border-color)] my-1" />
+              {/* Bottom Actions & Contacts */}
+              <div className="flex flex-col gap-5 pt-4">
+                <div className="flex flex-col gap-3">
+                  <a
+                    href="https://t.me/bkzd19?text=Assalomu%20alaykum!%20Epchil%20Robot%20platformasi%20bo'yicha%20demo%20so'ramoqchi%20edim."
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className="w-full min-h-[48px] py-3.5 px-6 rounded-2xl border border-black/10 dark:border-white/15 bg-black/[0.04] dark:bg-white/[0.06] hover:bg-black/[0.08] text-[var(--text-primary)] flex items-center justify-center text-xs font-semibold tracking-wide uppercase cursor-pointer no-underline active:scale-98"
+                  >
+                    Demo olish (Telegram)
+                  </a>
 
-              <div className="flex flex-col gap-2.5">
-                <a
-                  href="https://t.me/bkzd19?text=Assalomu%20alaykum!%20Epchil%20Robot%20platformasi%20bo'yicha%20demo%20so'ramoqchi%20edim."
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  onClick={() => setIsMobileMenuOpen(false)}
-                  className="w-full min-h-[44px] py-3 rounded-full border border-black/10 dark:border-white/15 bg-black/[0.04] dark:bg-white/[0.06] hover:bg-black/[0.08] text-[var(--text-primary)] flex items-center justify-center text-xs font-semibold tracking-wide uppercase cursor-pointer no-underline active:scale-98"
-                >
-                  Demo olish (Telegram)
-                </a>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsMobileMenuOpen(false);
+                      onNavigateToLogin();
+                    }}
+                    className="w-full min-h-[48px] py-3.5 px-6 rounded-2xl bg-[#0C1016] text-white hover:bg-[#1E242C] dark:bg-white dark:text-[#0C1016] dark:hover:bg-[#EBEBEF] flex items-center justify-center gap-2 text-xs font-semibold tracking-wide uppercase cursor-pointer shadow-md active:scale-98"
+                  >
+                    <span>Tizimga kirish</span>
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M5 12h14" />
+                      <path d="m12 5 7 7-7 7" />
+                    </svg>
+                  </button>
+                </div>
 
-                <button
-                  type="button"
-                  onClick={() => {
-                    setIsMobileMenuOpen(false);
-                    onNavigateToLogin();
-                  }}
-                  className="w-full min-h-[44px] py-3 rounded-full bg-[#0C1016] text-white hover:bg-[#1E242C] dark:bg-white dark:text-[#0C1016] dark:hover:bg-[#EBEBEF] flex items-center justify-center gap-2 text-xs font-semibold tracking-wide uppercase cursor-pointer shadow-md active:scale-98"
-                >
-                  <span>Tizimga kirish</span>
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M5 12h14" />
-                    <path d="m12 5 7 7-7 7" />
-                  </svg>
-                </button>
+                {/* Contact shortcuts */}
+                <div className="pt-4 border-t border-black/[0.06] dark:border-white/[0.08] flex flex-col gap-2.5 text-xs text-[var(--text-secondary)]">
+                  <div className="flex items-center justify-between">
+                    <a href="tel:+998332220301" className="hover:text-[var(--text-primary)] transition-colors no-underline flex items-center gap-2 py-1">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[#0071E3]">
+                        <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
+                      </svg>
+                      <span>+998 (33) 222-03-01</span>
+                    </a>
+                    <a href="https://t.me/bkzd19" target="_blank" rel="noopener noreferrer" className="hover:text-[var(--text-primary)] transition-colors no-underline flex items-center gap-2 py-1">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[#0071E3]">
+                        <line x1="22" y1="2" x2="11" y2="13" />
+                        <polygon points="22 2 15 22 11 13 2 9 22 2" />
+                      </svg>
+                      <span>Telegram: @bkzd19</span>
+                    </a>
+                  </div>
+                  <div className="flex items-center justify-between pt-1 text-[11px] text-[var(--text-tertiary)]">
+                    <span>Epchil Robot © {new Date().getFullYear()}</span>
+                    <span>V2.0.0</span>
+                  </div>
+                </div>
+
               </div>
 
-              {/* Contact shortcuts */}
-              <div className="pt-3 border-t border-[var(--border-color)] flex items-center justify-between text-xs text-[var(--text-secondary)]">
-                <a href="tel:+998332220301" className="hover:text-[var(--text-primary)] transition-colors no-underline flex items-center gap-1.5 py-1">
-                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[#0071E3]">
-                    <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
-                  </svg>
-                  <span>+998 (33) 222-03-01</span>
-                </a>
-                <a href="https://t.me/bkzd19" target="_blank" rel="noopener noreferrer" className="hover:text-[var(--text-primary)] transition-colors no-underline flex items-center gap-1.5 py-1">
-                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[#0071E3]">
-                    <line x1="22" y1="2" x2="11" y2="13" />
-                    <polygon points="22 2 15 22 11 13 2 9 22 2" />
-                  </svg>
-                  <span>@bkzd19</span>
-                </a>
-              </div>
             </div>
+
           </div>,
           document.body
         )}

@@ -104,26 +104,6 @@ const IconLogOut = ({ size = 16, strokeWidth = 2.2 }) => (
   </svg>
 );
 
-const IconSun = ({ size = 15, strokeWidth = 2.2 }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round">
-    <circle cx="12" cy="12" r="5" />
-    <line x1="12" y1="1" x2="12" y2="3" />
-    <line x1="12" y1="21" x2="12" y2="23" />
-    <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" />
-    <line x1="18.36" y1="18.36" x2="19.78" y2="19.78" />
-    <line x1="1" y1="12" x2="3" y2="12" />
-    <line x1="21" y1="12" x2="23" y2="12" />
-    <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" />
-    <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
-  </svg>
-);
-
-const IconMoon = ({ size = 15, strokeWidth = 2.2 }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round">
-    <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
-  </svg>
-);
-
 const POINT_PRESETS = [85, 50, 20, 10, -10, -20, -30, -40];
 
 const Settings = ({
@@ -147,8 +127,8 @@ const Settings = ({
   onLogout,
   syncStatus = 'saved',
   isSyncing = false,
-  theme,
-  setTheme
+  theme: _theme,
+  setTheme: _setTheme
 }) => {
   // Tabs: 'tags', 'trash', 'backup', 'danger'
   const [activeTab, setActiveTab] = useState('tags');
@@ -426,7 +406,6 @@ const Settings = ({
             className={`tab-btn-brutalist ${activeTab === 'tags' ? 'active' : ''}`}
             onClick={() => setActiveTab('tags')}
           >
-            <IconTag size={15} />
             <span>Izohlar</span>
             <span className="tab-count-badge">{normalizedTags.length}</span>
           </button>
@@ -435,7 +414,6 @@ const Settings = ({
             className={`tab-btn-brutalist ${activeTab === 'trash' ? 'active' : ''}`}
             onClick={() => setActiveTab('trash')}
           >
-            <IconTrash size={15} />
             <span>Savat</span>
             {totalTrashCount > 0 && <span className="tab-count-badge badge-red">{totalTrashCount}</span>}
           </button>
@@ -444,7 +422,6 @@ const Settings = ({
             className={`tab-btn-brutalist ${activeTab === 'backup' ? 'active' : ''}`}
             onClick={() => setActiveTab('backup')}
           >
-            <IconCloud size={15} />
             <span className="tab-label-desktop">Zaxira & Bulut</span>
             <span className="tab-label-mobile">Zaxira</span>
           </button>
@@ -453,7 +430,6 @@ const Settings = ({
             className={`tab-btn-brutalist ${activeTab === 'danger' ? 'active' : ''}`}
             onClick={() => setActiveTab('danger')}
           >
-            <IconShield size={15} />
             <span>Xavfsizlik</span>
           </button>
         </div>
@@ -488,18 +464,6 @@ const Settings = ({
               </strong>
             </div>
           </div>
-
-          {theme && setTheme && (
-            <button
-              type="button"
-              className="btn btn-secondary scale-active settings-theme-toggle"
-              onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-              title="Mavzuni o'zgartirish"
-            >
-              {theme === 'dark' ? <IconSun size={15} /> : <IconMoon size={15} />}
-              <span>{theme === 'dark' ? 'Kunduzgi' : 'Tungi'}</span>
-            </button>
-          )}
 
           <button
             type="button"
@@ -1320,16 +1284,6 @@ const Settings = ({
           background: var(--apple-red);
         }
 
-        .settings-theme-toggle {
-          display: inline-flex;
-          align-items: center;
-          gap: 6px;
-          padding: 8px 14px;
-          font-size: 0.82rem;
-          font-weight: 600;
-          border-radius: var(--radius-md);
-        }
-
         .hero-logout-btn {
           display: inline-flex;
           align-items: center;
@@ -2034,6 +1988,13 @@ const Settings = ({
             gap: 12px;
           }
 
+          .profile-role-row {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 4px;
+            margin-bottom: 0;
+          }
+
           .hero-right-actions {
             flex-direction: column;
             align-items: stretch;
@@ -2044,7 +2005,6 @@ const Settings = ({
             justify-content: center;
           }
 
-          .settings-theme-toggle,
           .hero-logout-btn {
             width: 100%;
             justify-content: center;

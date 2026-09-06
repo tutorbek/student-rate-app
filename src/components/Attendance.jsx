@@ -785,11 +785,6 @@ const Attendance = ({ groups = [], students = [], attendance = [], onSaveAttenda
                     <div className="cell-top-bar">
                       <span className="cell-day-num">{d.day}</span>
                       {isToday && <span className="cell-today-pill">Bugun</span>}
-                      {session && (
-                        <span className={`cell-rate-pill ${session.rate >= 90 ? 'good' : session.rate >= 70 ? 'avg' : 'bad'}`}>
-                          {session.rate}%
-                        </span>
-                      )}
                     </div>
 
                     {session ? (
