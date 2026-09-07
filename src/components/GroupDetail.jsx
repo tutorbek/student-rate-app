@@ -1059,22 +1059,22 @@ const GroupDetail = ({ group, allGroups = [], students, transactions, quickTags,
         .students-vertical-list {
           display: flex;
           flex-direction: column;
-          gap: 12px;
+          gap: 8px;
         }
 
         .student-list-item {
-          padding: 14px 18px;
+          padding: 8px 14px;
           display: flex;
           align-items: center;
           justify-content: space-between;
-          gap: 16px;
+          gap: 12px;
           background: #FFFFFF;
           border: 1px solid rgba(0, 0, 0, 0.06);
-          border-radius: var(--radius-lg);
+          border-radius: var(--radius-md);
           box-shadow: var(--shadow-sm);
           transition: box-shadow var(--transition-fast);
           content-visibility: auto;
-          contain-intrinsic-size: 0 72px;
+          contain-intrinsic-size: 0 54px;
         }
 
         @media (hover: hover) and (pointer: fine) {
@@ -1087,7 +1087,7 @@ const GroupDetail = ({ group, allGroups = [], students, transactions, quickTags,
           display: flex;
           align-items: center;
           justify-content: space-between;
-          gap: 14px;
+          gap: 12px;
           flex: 1;
           min-width: 0;
         }
@@ -1095,17 +1095,17 @@ const GroupDetail = ({ group, allGroups = [], students, transactions, quickTags,
         .student-item-main {
           display: flex;
           align-items: center;
-          gap: 14px;
+          gap: 12px;
           min-width: 0;
           flex: 1;
           cursor: pointer;
         }
 
         .student-avatar {
-          width: 44px;
-          height: 44px;
-          font-size: 1.4rem;
-          border-radius: var(--radius-md);
+          width: 38px;
+          height: 38px;
+          font-size: 1.2rem;
+          border-radius: 9px;
           border: 1px solid rgba(0, 0, 0, 0.06);
           display: flex;
           align-items: center;
@@ -1117,14 +1117,15 @@ const GroupDetail = ({ group, allGroups = [], students, transactions, quickTags,
           display: flex;
           flex-direction: column;
           align-items: flex-start;
-          gap: 4px;
+          gap: 2px;
           min-width: 0;
           flex: 1;
         }
 
         .student-name {
-          font-size: 1.02rem;
+          font-size: 0.94rem;
           font-weight: 700;
+          line-height: 1.2;
           color: var(--text-primary);
           letter-spacing: -0.01em;
           margin: 0;
@@ -1136,23 +1137,23 @@ const GroupDetail = ({ group, allGroups = [], students, transactions, quickTags,
         .student-score-badge {
           display: inline-flex;
           align-items: center;
-          gap: 4px;
+          gap: 3px;
           background: #F5F5F7;
-          padding: 2px 8px;
+          padding: 1px 7px;
           border-radius: var(--radius-full);
           border: 1px solid rgba(0, 0, 0, 0.06);
           white-space: nowrap;
         }
 
         .score-num {
-          font-size: 0.82rem;
+          font-size: 0.78rem;
           font-weight: 700;
           color: var(--text-primary);
           font-variant-numeric: tabular-nums;
         }
 
         .score-label {
-          font-size: 0.68rem;
+          font-size: 0.65rem;
           color: var(--text-secondary);
           font-weight: 600;
         }
@@ -1160,25 +1161,29 @@ const GroupDetail = ({ group, allGroups = [], students, transactions, quickTags,
         .student-item-manage-btns {
           display: flex;
           align-items: center;
-          gap: 6px;
+          gap: 5px;
           flex-shrink: 0;
           margin-left: auto;
         }
 
         .btn-icon-only {
-          padding: 6px 8px;
-          font-size: 0.85rem;
-          height: 36px;
-          min-width: 36px;
-          border-radius: var(--radius-sm);
+          padding: 0;
+          font-size: 0.8rem;
+          height: 32px;
+          min-width: 32px;
+          border-radius: 7px;
           display: flex;
           align-items: center;
           justify-content: center;
         }
 
         @media (max-width: 768px) {
+          .students-vertical-list {
+            gap: 7px;
+          }
+
           .student-list-item {
-            padding: 12px 14px;
+            padding: 7px 11px;
             gap: 10px;
           }
 
@@ -1191,13 +1196,14 @@ const GroupDetail = ({ group, allGroups = [], students, transactions, quickTags,
           }
 
           .student-avatar {
-            width: 40px;
-            height: 40px;
-            font-size: 1.25rem;
+            width: 36px;
+            height: 36px;
+            font-size: 1.15rem;
+            border-radius: 8px;
           }
 
           .student-name {
-            font-size: 0.95rem;
+            font-size: 0.9rem;
           }
 
           .student-item-manage-btns {
@@ -1205,9 +1211,10 @@ const GroupDetail = ({ group, allGroups = [], students, transactions, quickTags,
           }
 
           .btn-icon-only {
-            height: 34px;
-            min-width: 34px;
+            height: 30px;
+            min-width: 30px;
             padding: 0;
+            border-radius: 6px;
           }
         }
 
