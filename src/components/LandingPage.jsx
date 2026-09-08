@@ -154,11 +154,11 @@ const STATS = [
 const PRICING_PLANS = [
   {
     id: "trial",
-    name: "Demo / Bepul Sinov",
-    badge: "14 KUN BEPUL",
-    price: "0 so'm",
+    name: "14 Kunlik Demo",
+    badge: "14 KUNLIK DEMO",
+    price: "12 000 so'm",
     period: "/ 14 kun davomida",
-    description: "Platformaning barcha imkoniyatlarini o'z darslaringizda bepul va hech qanday cheklovlarsiz sinab ko'ring.",
+    description: "Platformaning barcha imkoniyatlarini o'z darslaringizda 14 kun davomida hech qanday cheklovlarsiz sinab ko'ring.",
     features: [
       "Barcha 7 ta modulga 100% to'liq kirish",
       "Cheksiz o'quvchilar va guruhlar",
@@ -167,16 +167,16 @@ const PRICING_PLANS = [
       "Tezkor o'rnatish va texnik qo'llab-quvvatlash"
     ],
     ctaText: "Demo olish",
-    ctaLink: "https://t.me/bkzd19?text=Assalomu%20alaykum!%20Epchil%20Robot%20bepul%20demo%20sinovini%20boshlamoqchi%20edim.",
+    ctaLink: "https://t.me/bkzd19?text=Assalomu%20alaykum!%20Epchil%20Robot%2014%20kunlik%20demo%20sinovini%20boshlamoqchi%20edim.",
     highlighted: false
   },
   {
     id: "pro",
-    name: "Maktablar & O'quv Markazlari",
-    badge: "ENG OMMABOP",
-    price: "Kelishuv asosida",
-    period: "o'quvchilar hajmiga moslashtirilgan",
-    description: "Katta o'quv markazlari va xususiy maktablar uchun doimiy to'liq litsenziya, shaxsiy menejer va qo'llab-quvvatlash.",
+    name: "Loyiha (To'liq Litsenziya)",
+    badge: "ENG OMMABOP — YAGONA NARX",
+    price: "99 000 so'm",
+    period: "/ yagona to'lov (doimiy litsenziya)",
+    description: "O'quv markazlari, maktablar va repetitorlar uchun barcha modullarni o'z ichiga olgan to'liq va doimiy loyiha litsenziyasi.",
     features: [
       "Barcha imkoniyatlar va yangilanishlar muddatsiz",
       "Shaxsiy menejer va o'qituvchilar uchun amaliy trening",
@@ -184,8 +184,8 @@ const PRICING_PLANS = [
       "Guruhlararo musobaqalar va maxsus brending",
       "24/7 ustuvor texnik yordam xizmati"
     ],
-    ctaText: "Bog'lanish va narxni bilish",
-    ctaLink: "https://t.me/bkzd19?text=Assalomu%20alaykum!%20Maktabimiz%20uchun%20Epchil%20Robot%20litsenziyasi%20narxi%20bo'yicha%20ma'lumot%20olmoqchi%20edim.",
+    ctaText: "Loyihani xarid qilish",
+    ctaLink: "https://t.me/bkzd19?text=Assalomu%20alaykum!%20Epchil%20Robot%20loyihasini%2099%20000%20so'mlik%20yagona%20narxda%20xarid%20qilmoqchi%20edim.",
     highlighted: true
   }
 ];
@@ -272,8 +272,8 @@ const FAQS = [
     a: "Barcha ma'lumotlar xalqaro darajada shifrlangan xavfsiz bulutli serverlarda (PostgreSQL) saqlanadi. Har bir guruh uchun alohida kirish paroli o'rnatiladi va muntazam zaxira nusxasi olinadi."
   },
   {
-    q: "14 kunlik bepul sinov davrida qanday imkoniyatlar mavjud?",
-    a: "Sinov davrida barcha modullar (Guruhlar, Jonli Reyting, Tezkor Davomat, Oylik Taqvim, Foizlar jurnali) 100% to'liq va hech qanday cheklovlarsiz ishlaydi."
+    q: "14 kunlik demo davrida qanday imkoniyatlar mavjud?",
+    a: "Demo davrida barcha modullar (Guruhlar, Jonli Reyting, Tezkor Davomat, Oylik Taqvim, Foizlar jurnali) 100% to'liq va hech qanday cheklovlarsiz ishlaydi."
   },
   {
     q: "Tizimni maktabimizga sozlashda yordam berasizlarmi?",
@@ -703,7 +703,7 @@ export default function LandingPage({ onNavigateToLogin }) {
             </span>
             <h2 className="text-2xl min-[360px]:text-3xl sm:text-5xl lg:text-6xl 2xl:text-7xl font-black tracking-tight leading-[1.08] text-[var(--text-primary)]">
               Darslaringizni bugunoq <br className="hidden sm:inline" />
-              <span className="text-[#0071E3]">bepul sinab ko'ring.</span>
+              <span className="text-[#0071E3]">qulay narxda sinab ko'ring.</span>
             </h2>
             <p className="text-sm sm:text-xl lg:text-2xl text-[var(--text-secondary)] mt-3 sm:mt-4 max-w-3xl font-normal leading-relaxed">
               O'quv markazingiz yoki maktabingiz uchun eng qulay shartlar. Hech qanday murakkab shartnomalarsiz to'g'ridan-to'g'ri boshlang.

@@ -124,6 +124,8 @@ const Attendance = ({ groups = [], students = [], attendance = [], onSaveAttenda
 
   const [journalYear, setJournalYear] = useState(() => new Date().getFullYear());
   const [journalMonth, setJournalMonth] = useState(() => new Date().getMonth());
+  const [isMonthPickerOpen, setIsMonthPickerOpen] = useState(false);
+  const [monthPickerYear, setMonthPickerYear] = useState(() => new Date().getFullYear());
 
   useEffect(() => {
     if (groups.length > 0 && (!selectedGroupId || !groups.find((g) => g.id === selectedGroupId))) {
@@ -136,6 +138,7 @@ const Attendance = ({ groups = [], students = [], attendance = [], onSaveAttenda
       if (e.key === 'Escape') {
         setIsGroupDropdownOpen(false);
         setIsDatePickerOpen(false);
+        setIsMonthPickerOpen(false);
         setConfirmDeleteDate(null);
         setSelectedDayDetail(null);
         setSelectedStudentHistoryModal(null);
@@ -222,18 +225,22 @@ const Attendance = ({ groups = [], students = [], attendance = [], onSaveAttenda
   }, [journalYear, journalMonth]);
 
   const handleJournalPrevMonth = () => {
+    setTimeframe('month');
     if (journalMonth === 0) {
       setJournalMonth(11);
       setJournalYear((y) => y - 1);
+      setMonthPickerYear((y) => y - 1);
     } else {
       setJournalMonth((m) => m - 1);
     }
   };
 
   const handleJournalNextMonth = () => {
+    setTimeframe('month');
     if (journalMonth === 11) {
       setJournalMonth(0);
       setJournalYear((y) => y + 1);
+      setMonthPickerYear((y) => y + 1);
     } else {
       setJournalMonth((m) => m + 1);
     }
@@ -243,7 +250,51 @@ const Attendance = ({ groups = [], students = [], attendance = [], onSaveAttenda
     const now = new Date();
     setJournalYear(now.getFullYear());
     setJournalMonth(now.getMonth());
+    setMonthPickerYear(now.getFullYear());
+    setTimeframe('month');
+    setIsMonthPickerOpen(false);
   };
+
+  const handleSelectCurrentMonth = () => {
+    handleJournalToday();
+  };
+
+  const handleSelectMonthFromPicker = (monthIndex) => {
+    setJournalYear(monthPickerYear);
+    setJournalMonth(monthIndex);
+    setTimeframe('month');
+    setIsMonthPickerOpen(false);
+  };
+
+  const handlePickerPrevYear = (e) => {
+    e.stopPropagation();
+    setMonthPickerYear((y) => y - 1);
+  };
+
+  const handlePickerNextYear = (e) => {
+    e.stopPropagation();
+    setMonthPickerYear((y) => y + 1);
+  };
+
+  const isCurrentMonthSelected = useMemo(() => {
+    const now = new Date();
+    return journalYear === now.getFullYear() && journalMonth === now.getMonth();
+  }, [journalYear, journalMonth]);
+
+  const recordedMonthsSet = useMemo(() => {
+    const set = new Set();
+    attendance
+      .filter((r) => r.groupId === selectedGroupId)
+      .forEach((r) => {
+        if (r.date) {
+          const parts = r.date.split('-');
+          if (parts.length >= 2) {
+            set.add(`${parseInt(parts[0], 10)}-${parseInt(parts[1], 10) - 1}`);
+          }
+        }
+      });
+    return set;
+  }, [attendance, selectedGroupId]);
 
   const handlePrevMonth = () => {
     if (calendarViewMonth === 0) { setCalendarViewMonth(11); setCalendarViewYear((y) => y - 1); }
@@ -352,26 +403,21 @@ const Attendance = ({ groups = [], students = [], attendance = [], onSaveAttenda
     return groupStudents.filter((s) => s.name.toLowerCase().includes(q));
   }, [groupStudents, studentSearchQuery]);
 
-  const isDateInCurrentMonth = (dateStr) => {
-    const recordDate = new Date(dateStr + 'T00:00:00');
-    const now = new Date();
-    return recordDate.getFullYear() === now.getFullYear() && recordDate.getMonth() === now.getMonth();
-  };
-
-  const isDateInLastMonth = (dateStr) => {
-    const recordDate = new Date(dateStr + 'T00:00:00');
-    const now = new Date();
-    const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-    return recordDate.getFullYear() === lastMonth.getFullYear() && recordDate.getMonth() === lastMonth.getMonth();
-  };
+  const isDateInJournalMonth = useCallback((dateStr) => {
+    if (!dateStr) return false;
+    const parts = dateStr.split('-');
+    if (parts.length < 2) return false;
+    const y = parseInt(parts[0], 10);
+    const m = parseInt(parts[1], 10) - 1;
+    return y === journalYear && m === journalMonth;
+  }, [journalYear, journalMonth]);
 
   const filteredAttendanceRecords = useMemo(() => {
     if (activeTab !== 'journal' && !selectedStudentHistoryModal) return [];
     const groupRecords = attendance.filter((r) => r.groupId === selectedGroupId);
-    if (timeframe === 'month') return groupRecords.filter((r) => isDateInCurrentMonth(r.date));
-    if (timeframe === 'lastMonth') return groupRecords.filter((r) => isDateInLastMonth(r.date));
-    return groupRecords;
-  }, [activeTab, selectedStudentHistoryModal, attendance, selectedGroupId, timeframe]);
+    if (timeframe === 'all') return groupRecords;
+    return groupRecords.filter((r) => isDateInJournalMonth(r.date));
+  }, [activeTab, selectedStudentHistoryModal, attendance, selectedGroupId, timeframe, isDateInJournalMonth]);
 
   // Indexed attendance map for Journal Calendar
   const journalRecordsByDate = useMemo(() => {
@@ -481,7 +527,7 @@ const Attendance = ({ groups = [], students = [], attendance = [], onSaveAttenda
         else if (status === 'late') lateCount++;
       });
       const calculatedPresents = presentCount + lateCount * 0.5;
-      const rate = totalLessons > 0 ? Math.round((calculatedPresents / totalLessons) * 100) : 100;
+      const rate = totalLessons > 0 ? Math.round((calculatedPresents / totalLessons) * 100) : 0;
       return { student, presentCount, absentCount, lateCount, totalLessons, rate };
     }).sort((a, b) => b.rate - a.rate);
   }, [activeTab, groupStudents, filteredAttendanceRecords]);
@@ -491,7 +537,9 @@ const Attendance = ({ groups = [], students = [], attendance = [], onSaveAttenda
     let totalLessonsCount = filteredAttendanceRecords.length;
     let totalAbsents = 0, totalLates = 0;
     studentStats.forEach((s) => { totalAbsents += s.absentCount; totalLates += s.lateCount; });
-    if (studentStats.length === 0) return { avgRate: 100, totalLessons: totalLessonsCount, totalAbsents: 0, totalLates: 0 };
+    if (studentStats.length === 0 || totalLessonsCount === 0) {
+      return { avgRate: totalLessonsCount === 0 ? 0 : 100, totalLessons: totalLessonsCount, totalAbsents: 0, totalLates: 0 };
+    }
     const avgRate = Math.round(studentStats.reduce((sum, s) => sum + s.rate, 0) / studentStats.length);
     return { avgRate, totalLessons: totalLessonsCount, totalAbsents, totalLates };
   }, [activeTab, studentStats, filteredAttendanceRecords]);
@@ -809,13 +857,116 @@ const Attendance = ({ groups = [], students = [], attendance = [], onSaveAttenda
             <div className="stats-section-header">
               <h3 className="section-title">O'quvchilar Davomat Ko'rsatkichlari</h3>
               <div className="timeframe-filter-wrap">
-                <div className="segmented-control">
-                  <button type="button" className={`seg-btn ${timeframe === 'month' ? 'active' : ''}`} onClick={() => setTimeframe('month')}>Bu oy</button>
-                  <button type="button" className={`seg-btn ${timeframe === 'lastMonth' ? 'active' : ''}`} onClick={() => setTimeframe('lastMonth')}>O'tgan oy</button>
-                  <button type="button" className={`seg-btn ${timeframe === 'all' ? 'active' : ''}`} onClick={() => setTimeframe('all')}>Kurs davomida</button>
+                <div className="month-jump-toolbar">
+                  {/* Month Switcher Nav */}
+                  <div className="month-jump-nav">
+                    <button 
+                      type="button" 
+                      className="month-nav-arrow-btn scale-active" 
+                      onClick={handleJournalPrevMonth}
+                      title="Oldingi oy"
+                    >
+                      <IconChevronLeft size={16} />
+                    </button>
+
+                    <div className="month-picker-wrapper">
+                      <button 
+                        type="button" 
+                        className={`month-picker-trigger scale-active ${timeframe === 'month' ? 'active' : ''}`}
+                        onClick={() => {
+                          setMonthPickerYear(journalYear);
+                          setIsMonthPickerOpen((prev) => !prev);
+                        }}
+                        title="Oyni tanlash"
+                      >
+                        <IconCalendar size={14} />
+                        <span className="month-picker-label">{UZBEK_MONTHS[journalMonth]} {journalYear}</span>
+                        <IconChevronDown size={12} className={`month-picker-chevron ${isMonthPickerOpen ? 'open' : ''}`} />
+                      </button>
+
+                      {isMonthPickerOpen && (
+                        <>
+                          <div className="custom-select-overlay" onClick={() => setIsMonthPickerOpen(false)} />
+                          <div className="stats-month-picker-popup glass-card">
+                            <div className="month-picker-header">
+                              <button type="button" className="cal-nav-btn scale-active" onClick={handlePickerPrevYear}>
+                                <IconChevronLeft />
+                              </button>
+                              <span className="month-picker-year-title">{monthPickerYear}-yil</span>
+                              <button type="button" className="cal-nav-btn scale-active" onClick={handlePickerNextYear}>
+                                <IconChevronRight />
+                              </button>
+                            </div>
+
+                            <div className="month-picker-grid">
+                              {UZBEK_MONTHS.map((mName, mIdx) => {
+                                const isSelected = journalYear === monthPickerYear && journalMonth === mIdx && timeframe === 'month';
+                                const now = new Date();
+                                const isCurrent = now.getFullYear() === monthPickerYear && now.getMonth() === mIdx;
+                                const hasData = recordedMonthsSet.has(`${monthPickerYear}-${mIdx}`);
+
+                                return (
+                                  <button
+                                    key={mIdx}
+                                    type="button"
+                                    className={`month-picker-cell ${isSelected ? 'selected' : ''} ${isCurrent ? 'current-month' : ''}`}
+                                    onClick={() => handleSelectMonthFromPicker(mIdx)}
+                                  >
+                                    <span className="month-cell-name">{mName.slice(0, 3)}</span>
+                                    {hasData && <span className="month-has-data-dot" title="Dars davomati mavjud" />}
+                                  </button>
+                                );
+                              })}
+                            </div>
+
+                            <div className="month-picker-footer">
+                              <button type="button" className="month-picker-today-btn" onClick={handleSelectCurrentMonth}>
+                                Joriy oyga o'tish
+                              </button>
+                            </div>
+                          </div>
+                        </>
+                      )}
+                    </div>
+
+                    <button 
+                      type="button" 
+                      className="month-nav-arrow-btn scale-active" 
+                      onClick={handleJournalNextMonth}
+                      title="Keyingi oy"
+                    >
+                      <IconChevronRight size={16} />
+                    </button>
+                  </div>
+
+                  {/* Mode Buttons: Bu oy & Kurs davomida */}
+                  <div className="segmented-control stats-timeframe-control">
+                    <button 
+                      type="button" 
+                      className={`seg-btn ${timeframe === 'month' && isCurrentMonthSelected ? 'active' : ''}`} 
+                      onClick={handleSelectCurrentMonth}
+                    >
+                      Bu oy
+                    </button>
+                    <button 
+                      type="button" 
+                      className={`seg-btn ${timeframe === 'all' ? 'active' : ''}`} 
+                      onClick={() => setTimeframe('all')}
+                    >
+                      Kurs davomida
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
+
+            {/* Empty notice if no lessons in selected month */}
+            {timeframe === 'month' && filteredAttendanceRecords.length === 0 && (
+              <div className="month-empty-banner">
+                <IconCalendar size={15} />
+                <span>Tanlangan oyda ({UZBEK_MONTHS[journalMonth]} {journalYear}) dars davomati yozuvlari topilmadi.</span>
+              </div>
+            )}
 
             {/* KPI Cards inside the stats card */}
             <div className="stats-kpi-grid inside-section">
@@ -974,7 +1125,7 @@ const Attendance = ({ groups = [], students = [], attendance = [], onSaveAttenda
               <div className="student-modal-info">
                 <h3 className="student-modal-title">{studentHistoryDetails.student.name}</h3>
                 <p className="student-modal-subtitle">
-                  {selectedGroup?.name || 'Guruh'} • Davr: {timeframe === 'month' ? 'Bu oy' : timeframe === 'lastMonth' ? "O'tgan oy" : 'Kurs davomida'}
+                  {selectedGroup?.name || 'Guruh'} • Davr: {timeframe === 'all' ? 'Kurs davomida' : `${UZBEK_MONTHS[journalMonth]} ${journalYear}`}
                 </p>
               </div>
             </div>
@@ -2365,6 +2516,200 @@ const Attendance = ({ groups = [], students = [], attendance = [], onSaveAttenda
           margin: 0;
         }
 
+        /* Month Jump Toolbar & Popover */
+        .month-jump-toolbar {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          flex-wrap: wrap;
+        }
+
+        .month-jump-nav {
+          display: inline-flex;
+          align-items: center;
+          background: #F5F5F7;
+          border-radius: var(--radius-md);
+          padding: 3px;
+          border: 1px solid rgba(0, 0, 0, 0.04);
+          gap: 2px;
+        }
+
+        .month-nav-arrow-btn {
+          background: transparent;
+          border: none;
+          border-radius: var(--radius-sm);
+          width: 30px;
+          height: 32px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
+          color: var(--text-secondary);
+          transition: background-color var(--transition-fast), color var(--transition-fast);
+          touch-action: manipulation;
+        }
+
+        .month-nav-arrow-btn:hover {
+          background: rgba(0, 0, 0, 0.06);
+          color: var(--text-primary);
+        }
+
+        .month-picker-wrapper {
+          position: relative;
+        }
+
+        .month-picker-trigger {
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          padding: 6px 12px;
+          border-radius: var(--radius-sm);
+          border: none;
+          background: transparent;
+          font-family: var(--font-family);
+          font-size: 0.82rem;
+          font-weight: 600;
+          color: var(--text-secondary);
+          cursor: pointer;
+          transition: background-color var(--transition-fast), color var(--transition-fast), box-shadow var(--transition-fast);
+          touch-action: manipulation;
+          white-space: nowrap;
+        }
+
+        .month-picker-trigger:hover {
+          color: var(--text-primary);
+        }
+
+        .month-picker-trigger.active {
+          background: #FFFFFF;
+          color: var(--text-primary);
+          box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+        }
+
+        .month-picker-chevron {
+          transition: transform 0.2s ease;
+          color: var(--text-secondary);
+        }
+
+        .month-picker-chevron.open {
+          transform: rotate(180deg);
+        }
+
+        .stats-month-picker-popup {
+          position: absolute;
+          top: calc(100% + 6px);
+          right: 0;
+          width: 270px;
+          background: #FFFFFF;
+          border: 1px solid rgba(0, 0, 0, 0.08);
+          border-radius: var(--radius-lg);
+          box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+          z-index: 1000;
+          padding: 14px;
+        }
+
+        .month-picker-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          font-weight: 700;
+          font-size: 0.88rem;
+          margin-bottom: 12px;
+        }
+
+        .month-picker-year-title {
+          font-size: 0.95rem;
+          font-weight: 700;
+          color: var(--text-primary);
+        }
+
+        .month-picker-grid {
+          display: grid;
+          grid-template-columns: repeat(3, 1fr);
+          gap: 6px;
+          margin-bottom: 12px;
+        }
+
+        .month-picker-cell {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          position: relative;
+          padding: 8px 4px;
+          border: 1px solid rgba(0, 0, 0, 0.04);
+          background: #F8F9FA;
+          border-radius: var(--radius-sm);
+          font-size: 0.8rem;
+          font-weight: 600;
+          cursor: pointer;
+          color: var(--text-secondary);
+          transition: all var(--transition-fast);
+        }
+
+        .month-picker-cell:hover {
+          background: #EAEAEA;
+          color: var(--text-primary);
+        }
+
+        .month-picker-cell.selected {
+          background: #1D1D1F !important;
+          color: #FFFFFF !important;
+          border-color: #1D1D1F !important;
+        }
+
+        .month-picker-cell.current-month:not(.selected) {
+          border-color: #2563EB;
+          color: #2563EB;
+          font-weight: 700;
+        }
+
+        .month-has-data-dot {
+          position: absolute;
+          bottom: 3px;
+          width: 5px;
+          height: 5px;
+          border-radius: 50%;
+          background: #10B981;
+        }
+
+        .month-picker-footer {
+          display: flex;
+          justify-content: center;
+          padding-top: 8px;
+          border-top: 1px solid var(--border-color);
+        }
+
+        .month-picker-today-btn {
+          background: transparent;
+          border: none;
+          font-size: 0.8rem;
+          font-weight: 600;
+          color: #2563EB;
+          cursor: pointer;
+          padding: 4px 8px;
+          border-radius: var(--radius-sm);
+          transition: background-color var(--transition-fast);
+        }
+
+        .month-picker-today-btn:hover {
+          background: rgba(37, 99, 235, 0.08);
+          text-decoration: underline;
+        }
+
+        .month-empty-banner {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          padding: 10px 14px;
+          background: #F8FAFC;
+          border: 1px dashed rgba(0, 0, 0, 0.12);
+          border-radius: var(--radius-md);
+          margin-bottom: 16px;
+          font-size: 0.83rem;
+          color: var(--text-secondary);
+        }
+
         .stats-kpi-grid {
           display: grid;
           grid-template-columns: repeat(4, 1fr);
@@ -3221,6 +3566,42 @@ const Attendance = ({ groups = [], students = [], attendance = [], onSaveAttenda
             width: 100%;
           }
 
+          .month-jump-toolbar {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+          }
+
+          .month-jump-nav {
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+          }
+
+          .month-picker-wrapper {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+          }
+
+          .month-picker-trigger {
+            width: 100%;
+            justify-content: center;
+          }
+
+          .stats-timeframe-control {
+            width: 100%;
+          }
+
+          .stats-month-picker-popup {
+            right: auto;
+            left: 50%;
+            transform: translateX(-50%);
+            width: calc(100vw - 32px);
+            max-width: 280px;
+          }
+
           .segmented-control {
             width: 100%;
             display: flex;
@@ -3820,6 +4201,84 @@ const Attendance = ({ groups = [], students = [], attendance = [], onSaveAttenda
 
         [data-theme="dark"] .cal-nav-action-btn:hover {
           background: #303134 !important;
+        }
+
+        [data-theme="dark"] .month-jump-nav {
+          background: #202124 !important;
+          border-color: #3C4043 !important;
+        }
+
+        [data-theme="dark"] .month-nav-arrow-btn {
+          color: #9AA0A6 !important;
+        }
+
+        [data-theme="dark"] .month-nav-arrow-btn:hover {
+          background: #303134 !important;
+          color: #E8EAED !important;
+        }
+
+        [data-theme="dark"] .month-picker-trigger {
+          color: #9AA0A6 !important;
+        }
+
+        [data-theme="dark"] .month-picker-trigger:hover {
+          color: #E8EAED !important;
+        }
+
+        [data-theme="dark"] .month-picker-trigger.active {
+          background: #303134 !important;
+          color: #E8EAED !important;
+          box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4) !important;
+        }
+
+        [data-theme="dark"] .month-picker-chevron {
+          color: #9AA0A6 !important;
+        }
+
+        [data-theme="dark"] .stats-month-picker-popup {
+          background: #202124 !important;
+          border-color: #3C4043 !important;
+          box-shadow: 0 12px 32px rgba(0, 0, 0, 0.55) !important;
+        }
+
+        [data-theme="dark"] .month-picker-year-title {
+          color: #E8EAED !important;
+        }
+
+        [data-theme="dark"] .month-picker-cell {
+          background: #2A2B2E !important;
+          border-color: #3C4043 !important;
+          color: #9AA0A6 !important;
+        }
+
+        [data-theme="dark"] .month-picker-cell:hover {
+          background: #35363A !important;
+          color: #E8EAED !important;
+        }
+
+        [data-theme="dark"] .month-picker-cell.selected {
+          background: #E8EAED !important;
+          color: #1D1D1F !important;
+          border-color: #E8EAED !important;
+        }
+
+        [data-theme="dark"] .month-picker-cell.current-month:not(.selected) {
+          border-color: #8AB4F8 !important;
+          color: #8AB4F8 !important;
+        }
+
+        [data-theme="dark"] .month-has-data-dot {
+          background: #81C995 !important;
+        }
+
+        [data-theme="dark"] .month-picker-today-btn {
+          color: #8AB4F8 !important;
+        }
+
+        [data-theme="dark"] .month-empty-banner {
+          background: rgba(255, 255, 255, 0.04) !important;
+          border-color: rgba(255, 255, 255, 0.1) !important;
+          color: #9AA0A6 !important;
         }
 
         [data-theme="dark"] .segmented-control {
