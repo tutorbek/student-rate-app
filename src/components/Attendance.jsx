@@ -125,6 +125,7 @@ const Attendance = ({ groups = [], students = [], attendance = [], onSaveAttenda
   const [journalYear, setJournalYear] = useState(() => new Date().getFullYear());
   const [journalMonth, setJournalMonth] = useState(() => new Date().getMonth());
   const [isMonthPickerOpen, setIsMonthPickerOpen] = useState(false);
+  const [isCalMonthPickerOpen, setIsCalMonthPickerOpen] = useState(false);
   const [monthPickerYear, setMonthPickerYear] = useState(() => new Date().getFullYear());
 
   useEffect(() => {
@@ -139,6 +140,7 @@ const Attendance = ({ groups = [], students = [], attendance = [], onSaveAttenda
         setIsGroupDropdownOpen(false);
         setIsDatePickerOpen(false);
         setIsMonthPickerOpen(false);
+        setIsCalMonthPickerOpen(false);
         setConfirmDeleteDate(null);
         setSelectedDayDetail(null);
         setSelectedStudentHistoryModal(null);
@@ -253,6 +255,7 @@ const Attendance = ({ groups = [], students = [], attendance = [], onSaveAttenda
     setMonthPickerYear(now.getFullYear());
     setTimeframe('month');
     setIsMonthPickerOpen(false);
+    setIsCalMonthPickerOpen(false);
   };
 
   const handleSelectCurrentMonth = () => {
@@ -264,6 +267,7 @@ const Attendance = ({ groups = [], students = [], attendance = [], onSaveAttenda
     setJournalMonth(monthIndex);
     setTimeframe('month');
     setIsMonthPickerOpen(false);
+    setIsCalMonthPickerOpen(false);
   };
 
   const handlePickerPrevYear = (e) => {
@@ -773,22 +777,115 @@ const Attendance = ({ groups = [], students = [], attendance = [], onSaveAttenda
             <div className="journal-cal-toolbar">
               <div className="journal-cal-heading-group">
                 <h3 className="journal-cal-title">
-                  {UZBEK_MONTHS[journalMonth]} {journalYear}
+                  Darslar Kalendari
                 </h3>
                 <span className="journal-cal-stats-badge">
                   Ushbu oyda o'tilgan: <strong>{journalMonthLessonCount} ta dars</strong>
                 </span>
               </div>
-              <div className="journal-cal-nav-buttons">
-                <button type="button" className="cal-nav-action-btn scale-active" onClick={handleJournalPrevMonth}>
-                  <IconChevronLeft />
-                </button>
-                <button type="button" className="cal-nav-action-btn scale-active" onClick={handleJournalToday}>
-                  Bugun
-                </button>
-                <button type="button" className="cal-nav-action-btn scale-active" onClick={handleJournalNextMonth}>
-                  <IconChevronRight />
-                </button>
+
+              <div className="month-jump-toolbar">
+                {/* Month Switcher Nav */}
+                <div className="month-jump-nav">
+                  <button 
+                    type="button" 
+                    className="month-nav-arrow-btn scale-active" 
+                    onClick={handleJournalPrevMonth}
+                    title="Oldingi oy"
+                  >
+                    <IconChevronLeft size={16} />
+                  </button>
+
+                  <div className="month-picker-wrapper">
+                    <button 
+                      type="button" 
+                      className="month-picker-trigger active scale-active"
+                      onClick={() => {
+                        setMonthPickerYear(journalYear);
+                        setIsCalMonthPickerOpen((prev) => !prev);
+                      }}
+                      title="Oyni tanlash"
+                    >
+                      <IconCalendar size={14} />
+                      <span className="month-picker-label">{UZBEK_MONTHS[journalMonth]} {journalYear}</span>
+                      <IconChevronDown size={12} className={`month-picker-chevron ${isCalMonthPickerOpen ? 'open' : ''}`} />
+                    </button>
+
+                    {isCalMonthPickerOpen && (
+                      <>
+                        <div className="custom-select-overlay" onClick={() => setIsCalMonthPickerOpen(false)} />
+                        <div className="stats-month-picker-popup glass-card">
+                          <div className="month-picker-header">
+                            <button type="button" className="cal-nav-btn scale-active" onClick={handlePickerPrevYear}>
+                              <IconChevronLeft />
+                            </button>
+                            <span className="month-picker-year-title">{monthPickerYear}-yil</span>
+                            <button type="button" className="cal-nav-btn scale-active" onClick={handlePickerNextYear}>
+                              <IconChevronRight />
+                            </button>
+                          </div>
+
+                          <div className="month-picker-grid">
+                            {UZBEK_MONTHS.map((mName, mIdx) => {
+                              const isSelected = journalYear === monthPickerYear && journalMonth === mIdx;
+                              const now = new Date();
+                              const isCurrent = now.getFullYear() === monthPickerYear && now.getMonth() === mIdx;
+                              const hasData = recordedMonthsSet.has(`${monthPickerYear}-${mIdx}`);
+
+                              return (
+                                <button
+                                  key={mIdx}
+                                  type="button"
+                                  className={`month-picker-cell ${isSelected ? 'selected' : ''} ${isCurrent ? 'current-month' : ''}`}
+                                  onClick={() => {
+                                    handleSelectMonthFromPicker(mIdx);
+                                    setIsCalMonthPickerOpen(false);
+                                  }}
+                                >
+                                  <span className="month-cell-name">{mName.slice(0, 3)}</span>
+                                  {hasData && <span className="month-has-data-dot" title="Dars davomati mavjud" />}
+                                </button>
+                              );
+                            })}
+                          </div>
+
+                          <div className="month-picker-footer">
+                            <button 
+                              type="button" 
+                              className="month-picker-today-btn" 
+                              onClick={() => {
+                                handleSelectCurrentMonth();
+                                setIsCalMonthPickerOpen(false);
+                              }}
+                            >
+                              Joriy oyga o'tish
+                            </button>
+                          </div>
+                        </div>
+                      </>
+                    )}
+                  </div>
+
+                  <button 
+                    type="button" 
+                    className="month-nav-arrow-btn scale-active" 
+                    onClick={handleJournalNextMonth}
+                    title="Keyingi oy"
+                  >
+                    <IconChevronRight size={16} />
+                  </button>
+                </div>
+
+                {/* Bu oy button */}
+                <div className="segmented-control stats-timeframe-control" style={{ width: 'auto' }}>
+                  <button 
+                    type="button" 
+                    className={`seg-btn ${isCurrentMonthSelected ? 'active' : ''}`} 
+                    onClick={handleSelectCurrentMonth}
+                  >
+                    Bu oy
+                  </button>
+                </div>
               </div>
             </div>
 
