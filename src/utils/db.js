@@ -119,29 +119,31 @@ export const getEndOfLastMonth = () => {
 };
 
 // --- Groups API ---
-export const addGroup = (groups, name, icon, password, color) => {
+export const addGroup = (groups, name, icon, password, color, schedule = null) => {
   const newGroup = {
     id: generateId(),
     name: name.trim(),
     icon: normalizeIconUrl(icon || 'folder'),
     password: password ? password.trim().toLowerCase() : '',
     color: color || '#FFFFFF',
+    schedule: schedule || null,
     createdAt: new Date().toISOString(),
   };
   const updatedGroups = [...groups, newGroup];
   return { newGroup, updatedGroups };
 };
 
-export const updateGroup = (groups, groupId, newName, newIcon, newPassword, newColor) => {
+export const updateGroup = (groups, groupId, newName, newIcon, newPassword, newColor, newSchedule) => {
   let updatedGroup = null;
   const updatedGroups = groups.map((g) => {
     if (g.id === groupId) {
       updatedGroup = {
         ...g,
-        name: newName.trim(),
-        icon: normalizeIconUrl(newIcon || g.icon || 'folder'),
+        name: newName !== undefined ? newName.trim() : g.name,
+        icon: newIcon !== undefined ? normalizeIconUrl(newIcon || g.icon || 'folder') : g.icon,
         password: newPassword !== undefined ? newPassword.trim().toLowerCase() : g.password,
         color: newColor !== undefined ? newColor : (g.color || '#FFFFFF'),
+        schedule: newSchedule !== undefined ? newSchedule : (g.schedule || null),
       };
       return updatedGroup;
     }

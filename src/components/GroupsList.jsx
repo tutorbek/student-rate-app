@@ -3,8 +3,120 @@ import { createPortal } from 'react-dom';
 import { generateUniqueGroupPassword } from '../utils/db';
 import { GROUP_SVG_ICONS, GROUP_COLOR_OPTIONS, renderGroupIcon } from '../utils/groupIcons';
 import { AVATAR_GALLERY_IMAGES, isGalleryImage, compressUploadedImage } from '../utils/avatarGallery';
+import ScheduleView from './ScheduleView';
+import Time24Input from './Time24Input';
 
-const GroupsList = ({ groups, students, onSelectGroup, onAddGroup, onUpdateGroup, onDeleteGroup, showToast, teacherId }) => {
+const SCHEDULE_WEEKDAYS = [
+  { key: 'mon', name: 'Dushanba', short: 'Du' },
+  { key: 'tue', name: 'Seshanba', short: 'Se' },
+  { key: 'wed', name: 'Chorshanba', short: 'Cho' },
+  { key: 'thu', name: 'Payshanba', short: 'Pa' },
+  { key: 'fri', name: 'Juma', short: 'Ju' },
+  { key: 'sat', name: 'Shanba', short: 'Sha' },
+  { key: 'sun', name: 'Yakshanba', short: 'Ya' },
+];
+
+const SCHEDULE_DAY_LABELS = {
+  mon: 'Du',
+  tue: 'Se',
+  wed: 'Cho',
+  thu: 'Pa',
+  fri: 'Ju',
+  sat: 'Sha',
+  sun: 'Ya',
+};
+
+const SCHEDULE_DAY_FULL_NAMES = {
+  mon: 'Dushanba',
+  tue: 'Seshanba',
+  wed: 'Chorshanba',
+  thu: 'Payshanba',
+  fri: 'Juma',
+  sat: 'Shanba',
+  sun: 'Yakshanba',
+};
+
+const guessScheduleFromName = (groupName) => {
+  const lower = (groupName || '').toLowerCase();
+  let days = [];
+  if (lower.includes('dushanba')) days = ['mon'];
+  else if (lower.includes('seshanba')) days = ['tue'];
+  else if (lower.includes('chorshanba')) days = ['wed'];
+  else if (lower.includes('payshanba')) days = ['thu'];
+  else if (lower.includes('juma')) days = ['fri'];
+  else if (lower.includes('shanba')) days = ['sat'];
+  else if (lower.includes('yakshanba')) days = ['sun'];
+
+  let start = '';
+  let end = '';
+  const timeMatch = groupName.match(/(\d{1,2})[:.](\d{2})/);
+  if (timeMatch) {
+    const h = parseInt(timeMatch[1], 10);
+    const m = timeMatch[2];
+    const startHStr = String(h).padStart(2, '0');
+    start = `${startHStr}:${m}`;
+    const totalMinutes = h * 60 + parseInt(m, 10) + 90;
+    const endH = Math.floor(totalMinutes / 60) % 24;
+    const endM = totalMinutes % 60;
+    end = `${String(endH).padStart(2, '0')}:${String(endM).padStart(2, '0')}`;
+  }
+
+  // Suggest clean name without time and day
+  const cleanName = groupName
+    .replace(/\b(dushanba|seshanba|chorshanba|payshanba|juma|shanba|yakshanba)\b/gi, '')
+    .replace(/(\d{1,2})[:.](\d{2})/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  return { days, startTime: start, endTime: end, suggestedCleanName: cleanName };
+};
+
+const formatGroupScheduleBadge = (schedule, onBadgeClick) => {
+  if (!schedule || !schedule.startTime) return null;
+  const days = schedule.days || [];
+  let daysText = '';
+  if (days.length === 1) {
+    daysText = SCHEDULE_DAY_FULL_NAMES[days[0]] || days[0];
+  } else if (days.length > 1) {
+    daysText = days.map(d => SCHEDULE_DAY_LABELS[d] || d).join(', ');
+  }
+  const timeText = schedule.endTime 
+    ? `${schedule.startTime} - ${schedule.endTime}` 
+    : schedule.startTime;
+
+  return (
+    <span
+      className="group-schedule-pill scale-active"
+      onClick={(e) => {
+        e.stopPropagation();
+        if (onBadgeClick) onBadgeClick();
+      }}
+      title="Dars vaqtini belgilash uchun bosing"
+    >
+      {daysText ? `${daysText} • ${timeText}` : timeText}
+    </span>
+  );
+};
+
+const GroupsList = ({
+  groups,
+  students,
+  onSelectGroup,
+  onAddGroup,
+  onUpdateGroup,
+  onUpdateGroupSchedule,
+  onDeleteGroup,
+  showToast,
+  teacherId,
+}) => {
+  const [showScheduleModal, setShowScheduleModal] = useState(false);
+  const [scheduleTargetGroupId, setScheduleTargetGroupId] = useState(null);
+
+  const handleOpenScheduleForGroup = (groupId) => {
+    setScheduleTargetGroupId(groupId);
+    setShowScheduleModal(true);
+  };
+
   const [newGroupName, setNewGroupName] = useState('');
   const [showAddModal, setShowAddModal] = useState(false);
   const [confirmDeleteId, setConfirmDeleteId] = useState(null);
@@ -21,6 +133,18 @@ const GroupsList = ({ groups, students, onSelectGroup, onAddGroup, onUpdateGroup
   const [editGroupPassword, setEditGroupPassword] = useState('');
   const [isGeneratingPassword, setIsGeneratingPassword] = useState(false);
 
+  // Schedule fields for Add modal
+  const [newGroupDays, setNewGroupDays] = useState([]);
+  const [newGroupStartTime, setNewGroupStartTime] = useState('');
+  const [newGroupEndTime, setNewGroupEndTime] = useState('');
+  const [newGroupRoom, setNewGroupRoom] = useState('');
+
+  // Schedule fields for Edit modal
+  const [editGroupDays, setEditGroupDays] = useState([]);
+  const [editGroupStartTime, setEditGroupStartTime] = useState('');
+  const [editGroupEndTime, setEditGroupEndTime] = useState('');
+  const [editGroupRoom, setEditGroupRoom] = useState('');
+
   useEffect(() => {
     if (showAddModal) {
       setNewGroupPassword('Yuklanmoqda...');
@@ -29,12 +153,30 @@ const GroupsList = ({ groups, students, onSelectGroup, onAddGroup, onUpdateGroup
         setNewGroupPassword(pwd);
         setIsGeneratingPassword(false);
       });
+      setNewGroupDays([]);
+      setNewGroupStartTime('');
+      setNewGroupEndTime('');
+      setNewGroupRoom('');
     }
   }, [showAddModal]);
 
   useEffect(() => {
     if (editingGroup) {
       setEditGroupPassword(editingGroup.password || '');
+      if (editingGroup.schedule && editingGroup.schedule.startTime) {
+        setEditGroupName(editingGroup.name);
+        setEditGroupDays(editingGroup.schedule?.days || []);
+        setEditGroupStartTime(editingGroup.schedule?.startTime || '');
+        setEditGroupEndTime(editingGroup.schedule?.endTime || '');
+        setEditGroupRoom(editingGroup.schedule?.room || '');
+      } else {
+        const guessed = guessScheduleFromName(editingGroup.name);
+        setEditGroupName(guessed.suggestedCleanName || editingGroup.name);
+        setEditGroupDays(guessed.days);
+        setEditGroupStartTime(guessed.startTime);
+        setEditGroupEndTime(guessed.endTime);
+        setEditGroupRoom('');
+      }
     }
   }, [editingGroup]);
 
@@ -44,6 +186,8 @@ const GroupsList = ({ groups, students, onSelectGroup, onAddGroup, onUpdateGroup
         setShowAddModal(false);
         setConfirmDeleteId(null);
         setEditingGroup(null);
+        setShowScheduleModal(false);
+        setScheduleTargetGroupId(null);
       }
     };
     window.addEventListener('keydown', handleKeyDown);
@@ -60,12 +204,24 @@ const GroupsList = ({ groups, students, onSelectGroup, onAddGroup, onUpdateGroup
       showToast("Guruh parolini kiriting!", "error");
       return;
     }
-    const success = await onAddGroup(newGroupName, newGroupIcon, newGroupPassword, newGroupColor);
+
+    const schedule = (newGroupDays.length > 0 && newGroupStartTime) ? {
+      days: newGroupDays,
+      startTime: newGroupStartTime,
+      endTime: newGroupEndTime,
+      room: newGroupRoom.trim(),
+    } : null;
+
+    const success = await onAddGroup(newGroupName, newGroupIcon, newGroupPassword, newGroupColor, schedule);
     if (success) {
       setNewGroupName('');
       setNewGroupIcon(GROUP_SVG_ICONS[0].id);
       setNewGroupColor(GROUP_COLOR_OPTIONS[0].value);
       setNewGroupPassword('');
+      setNewGroupDays([]);
+      setNewGroupStartTime('');
+      setNewGroupEndTime('');
+      setNewGroupRoom('');
       setShowAddModal(false);
       showToast("Yangi guruh muvaffaqiyatli qo'shildi!", "success");
     }
@@ -87,14 +243,26 @@ const GroupsList = ({ groups, students, onSelectGroup, onAddGroup, onUpdateGroup
       showToast("Guruh parolini kiriting!", "error");
       return;
     }
-    const success = await onUpdateGroup(editingGroup.id, editGroupName, editGroupIcon, editGroupPassword, editGroupColor);
+
+    const schedule = (editGroupDays.length > 0 && editGroupStartTime) ? {
+      days: editGroupDays,
+      startTime: editGroupStartTime,
+      endTime: editGroupEndTime,
+      room: editGroupRoom.trim(),
+    } : null;
+
+    const success = await onUpdateGroup(editingGroup.id, editGroupName, editGroupIcon, editGroupPassword, editGroupColor, schedule);
     if (success) {
       setEditingGroup(null);
       setEditGroupName('');
       setEditGroupIcon(GROUP_SVG_ICONS[0].id);
       setEditGroupColor(GROUP_COLOR_OPTIONS[0].value);
       setEditGroupPassword('');
-      showToast("Guruh nomi, rangi va paroli yangilandi!", "success");
+      setEditGroupDays([]);
+      setEditGroupStartTime('');
+      setEditGroupEndTime('');
+      setEditGroupRoom('');
+      showToast("Guruh ma'lumotlari yangilandi!", "success");
     }
   };
 
@@ -135,10 +303,27 @@ const GroupsList = ({ groups, students, onSelectGroup, onAddGroup, onUpdateGroup
                     {renderGroupIcon(group.icon, 22)}
                   </div>
                   <div className="group-item-info">
-                    <h3 className="group-item-title">{group.name}</h3>
-                    <p className="group-item-date">
-                      Tashkil etilgan: {new Date(group.createdAt).toLocaleDateString()}
-                    </p>
+                    <div className="group-title-schedule-row">
+                      <h3 className="group-item-title">{group.name}</h3>
+                      {formatGroupScheduleBadge(group.schedule, () => handleOpenScheduleForGroup(group.id))}
+                    </div>
+                    <div className="group-item-meta-row">
+                      <span className="group-item-date">
+                        Tashkil etilgan: {new Date(group.createdAt).toLocaleDateString()}
+                      </span>
+                      {group.schedule?.room && (
+                        <span
+                          className="group-room-tag scale-active"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleOpenScheduleForGroup(group.id);
+                          }}
+                          title="Dars vaqtini belgilash uchun bosing"
+                        >
+                          {group.schedule.room}
+                        </span>
+                      )}
+                    </div>
                   </div>
                 </div>
 
@@ -155,7 +340,6 @@ const GroupsList = ({ groups, students, onSelectGroup, onAddGroup, onUpdateGroup
                       className="btn btn-secondary scale-active btn-sm btn-icon-only"
                       onClick={() => {
                         setEditingGroup(group);
-                        setEditGroupName(group.name);
                         setEditGroupIcon(group.icon || AVATAR_GALLERY_IMAGES[0].path);
                         setEditGroupColor(group.color || GROUP_COLOR_OPTIONS[0].value);
                         const icon = group.icon || '';
@@ -201,6 +385,21 @@ const GroupsList = ({ groups, students, onSelectGroup, onAddGroup, onUpdateGroup
         </div>
       )}
 
+      {/* Standalone Schedule Modal for when opened from group cards in Groups tab */}
+      <ScheduleView
+        groups={groups}
+        students={students}
+        onUpdateGroupSchedule={onUpdateGroupSchedule}
+        showToast={showToast}
+        showModal={showScheduleModal}
+        setShowModal={(open) => {
+          setShowScheduleModal(open);
+          if (!open) setScheduleTargetGroupId(null);
+        }}
+        initialGroupId={scheduleTargetGroupId}
+        modalOnly={true}
+      />
+
       {/* Add Group Modal */}
       {showAddModal && createPortal(
         <div className="modal-overlay" onClick={() => setShowAddModal(false)}>
@@ -222,11 +421,128 @@ const GroupsList = ({ groups, students, onSelectGroup, onAddGroup, onUpdateGroup
                 <input
                   type="text"
                   className="form-input"
-                  placeholder="Masalan: Frontend Boot camp 11"
+                  placeholder="Masalan: G1 yoki Frontend 11"
                   value={newGroupName}
                   onChange={(e) => setNewGroupName(e.target.value)}
                   autoFocus
                 />
+              </div>
+
+              {/* Schedule Section */}
+              <div className="form-group modal-schedule-section">
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px', flexWrap: 'wrap', gap: '6px' }}>
+                  <label className="form-label" style={{ margin: 0, fontWeight: 700 }}>
+                    Dars kunlari va soati
+                  </label>
+                  <div className="schedule-presets-wrap">
+                    <button
+                      type="button"
+                      className="preset-btn"
+                      onClick={() => setNewGroupDays(['mon', 'wed', 'fri'])}
+                    >
+                      Du-Cho-Ju
+                    </button>
+                    <button
+                      type="button"
+                      className="preset-btn"
+                      onClick={() => setNewGroupDays(['tue', 'thu', 'sat'])}
+                    >
+                      Se-Pa-Sha
+                    </button>
+                    <button
+                      type="button"
+                      className="preset-btn"
+                      onClick={() => setNewGroupDays(['mon', 'tue', 'wed', 'thu', 'fri', 'sat'])}
+                    >
+                      Har kuni
+                    </button>
+                  </div>
+                </div>
+
+                <div className="days-chip-grid">
+                  {SCHEDULE_WEEKDAYS.map((day) => {
+                    const isSelected = newGroupDays.includes(day.key);
+                    return (
+                      <button
+                        key={day.key}
+                        type="button"
+                        className={`day-chip-btn ${isSelected ? 'selected' : ''}`}
+                        onClick={() => {
+                          setNewGroupDays((prev) =>
+                            prev.includes(day.key) ? prev.filter((d) => d !== day.key) : [...prev, day.key]
+                          );
+                        }}
+                      >
+                        <span className="day-chip-short">{day.short}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+
+                <div className="schedule-time-row" style={{ marginTop: '10px' }}>
+                  <div style={{ flex: 1 }}>
+                    <label className="form-label" style={{ fontSize: '0.75rem', marginBottom: '4px' }}>Boshlanish vaqti</label>
+                    <Time24Input
+                      value={newGroupStartTime}
+                      placeholder="15:30"
+                      onChange={(val) => {
+                        setNewGroupStartTime(val);
+                        if (val && val.includes(':') && (!newGroupEndTime || newGroupEndTime <= val)) {
+                          const [h, m] = val.split(':').map(Number);
+                          if (!isNaN(h) && !isNaN(m)) {
+                            const total = h * 60 + m + 90;
+                            const newH = Math.floor(total / 60) % 24;
+                            const newM = total % 60;
+                            setNewGroupEndTime(`${String(newH).padStart(2, '0')}:${String(newM).padStart(2, '0')}`);
+                          }
+                        }
+                      }}
+                    />
+                  </div>
+
+                  <div style={{ flex: 1 }}>
+                    <label className="form-label" style={{ fontSize: '0.75rem', marginBottom: '4px' }}>Tugash vaqti</label>
+                    <Time24Input
+                      value={newGroupEndTime}
+                      placeholder="17:00"
+                      onChange={(val) => setNewGroupEndTime(val)}
+                    />
+                  </div>
+
+                  <div style={{ flex: 1.2 }}>
+                    <label className="form-label" style={{ fontSize: '0.75rem', marginBottom: '4px' }}>Xona <span style={{ opacity: 0.6, fontWeight: 400 }}>(ixtiyoriy)</span></label>
+                    <input
+                      type="text"
+                      className="form-input"
+                      placeholder="204-xona"
+                      value={newGroupRoom}
+                      onChange={(e) => setNewGroupRoom(e.target.value)}
+                    />
+                  </div>
+                </div>
+
+                <div className="time-presets-bar" style={{ marginTop: '6px', marginBottom: '4px' }}>
+                  <span className="time-presets-label">Tezkor:</span>
+                  <div className="time-presets-chips">
+                    {['08:00', '09:30', '11:00', '14:00', '15:30', '17:00', '18:30'].map((timeStr) => (
+                      <button
+                        key={timeStr}
+                        type="button"
+                        className={`time-preset-chip ${newGroupStartTime === timeStr ? 'active' : ''}`}
+                        onClick={() => {
+                          setNewGroupStartTime(timeStr);
+                          const [h, m] = timeStr.split(':').map(Number);
+                          const total = h * 60 + m + 90;
+                          const newH = Math.floor(total / 60) % 24;
+                          const newM = total % 60;
+                          setNewGroupEndTime(`${String(newH).padStart(2, '0')}:${String(newM).padStart(2, '0')}`);
+                        }}
+                      >
+                        {timeStr}
+                      </button>
+                    ))}
+                  </div>
+                </div>
               </div>
 
               <div className="form-group">
@@ -436,6 +752,123 @@ const GroupsList = ({ groups, students, onSelectGroup, onAddGroup, onUpdateGroup
                 />
               </div>
 
+              {/* Schedule Section */}
+              <div className="form-group modal-schedule-section">
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px', flexWrap: 'wrap', gap: '6px' }}>
+                  <label className="form-label" style={{ margin: 0, fontWeight: 700 }}>
+                    Dars kunlari va soati
+                  </label>
+                  <div className="schedule-presets-wrap">
+                    <button
+                      type="button"
+                      className="preset-btn"
+                      onClick={() => setEditGroupDays(['mon', 'wed', 'fri'])}
+                    >
+                      Du-Cho-Ju
+                    </button>
+                    <button
+                      type="button"
+                      className="preset-btn"
+                      onClick={() => setEditGroupDays(['tue', 'thu', 'sat'])}
+                    >
+                      Se-Pa-Sha
+                    </button>
+                    <button
+                      type="button"
+                      className="preset-btn"
+                      onClick={() => setEditGroupDays(['mon', 'tue', 'wed', 'thu', 'fri', 'sat'])}
+                    >
+                      Har kuni
+                    </button>
+                  </div>
+                </div>
+
+                <div className="days-chip-grid">
+                  {SCHEDULE_WEEKDAYS.map((day) => {
+                    const isSelected = editGroupDays.includes(day.key);
+                    return (
+                      <button
+                        key={day.key}
+                        type="button"
+                        className={`day-chip-btn ${isSelected ? 'selected' : ''}`}
+                        onClick={() => {
+                          setEditGroupDays((prev) =>
+                            prev.includes(day.key) ? prev.filter((d) => d !== day.key) : [...prev, day.key]
+                          );
+                        }}
+                      >
+                        <span className="day-chip-short">{day.short}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+
+                <div className="schedule-time-row" style={{ marginTop: '10px' }}>
+                  <div style={{ flex: 1 }}>
+                    <label className="form-label" style={{ fontSize: '0.75rem', marginBottom: '4px' }}>Boshlanish vaqti</label>
+                    <Time24Input
+                      value={editGroupStartTime}
+                      placeholder="15:30"
+                      onChange={(val) => {
+                        setEditGroupStartTime(val);
+                        if (val && val.includes(':') && (!editGroupEndTime || editGroupEndTime <= val)) {
+                          const [h, m] = val.split(':').map(Number);
+                          if (!isNaN(h) && !isNaN(m)) {
+                            const total = h * 60 + m + 90;
+                            const newH = Math.floor(total / 60) % 24;
+                            const newM = total % 60;
+                            setEditGroupEndTime(`${String(newH).padStart(2, '0')}:${String(newM).padStart(2, '0')}`);
+                          }
+                        }
+                      }}
+                    />
+                  </div>
+
+                  <div style={{ flex: 1 }}>
+                    <label className="form-label" style={{ fontSize: '0.75rem', marginBottom: '4px' }}>Tugash vaqti</label>
+                    <Time24Input
+                      value={editGroupEndTime}
+                      placeholder="17:00"
+                      onChange={(val) => setEditGroupEndTime(val)}
+                    />
+                  </div>
+
+                  <div style={{ flex: 1.2 }}>
+                    <label className="form-label" style={{ fontSize: '0.75rem', marginBottom: '4px' }}>Xona <span style={{ opacity: 0.6, fontWeight: 400 }}>(ixtiyoriy)</span></label>
+                    <input
+                      type="text"
+                      className="form-input"
+                      placeholder="204-xona"
+                      value={editGroupRoom}
+                      onChange={(e) => setEditGroupRoom(e.target.value)}
+                    />
+                  </div>
+                </div>
+
+                <div className="time-presets-bar" style={{ marginTop: '6px', marginBottom: '4px' }}>
+                  <span className="time-presets-label">Tezkor:</span>
+                  <div className="time-presets-chips">
+                    {['08:00', '09:30', '11:00', '14:00', '15:30', '17:00', '18:30'].map((timeStr) => (
+                      <button
+                        key={timeStr}
+                        type="button"
+                        className={`time-preset-chip ${editGroupStartTime === timeStr ? 'active' : ''}`}
+                        onClick={() => {
+                          setEditGroupStartTime(timeStr);
+                          const [h, m] = timeStr.split(':').map(Number);
+                          const total = h * 60 + m + 90;
+                          const newH = Math.floor(total / 60) % 24;
+                          const newM = total % 60;
+                          setEditGroupEndTime(`${String(newH).padStart(2, '0')}:${String(newM).padStart(2, '0')}`);
+                        }}
+                      >
+                        {timeStr}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
               <div className="form-group">
                 <label className="form-label">Guruh paroli (o'quvchilar uchun)</label>
                 <div style={{ display: 'flex', gap: '8px' }}>
@@ -583,6 +1016,310 @@ const GroupsList = ({ groups, students, onSelectGroup, onAddGroup, onUpdateGroup
           display: flex;
           flex-direction: column;
           gap: 20px;
+        }
+
+        /* Apple-style Segmented Control */
+        .section-segmented-control {
+          display: inline-flex;
+          align-items: center;
+          background: #E8E8ED;
+          padding: 3px;
+          border-radius: var(--radius-md);
+          border: 1px solid rgba(0, 0, 0, 0.04);
+          gap: 2px;
+        }
+
+        [data-theme="dark"] .section-segmented-control {
+          background: #202124;
+          border-color: #3C4043;
+        }
+
+        .segmented-btn {
+          padding: 8px 18px;
+          border: none;
+          background: transparent;
+          border-radius: 8px;
+          font-family: var(--font-family);
+          font-size: 0.92rem;
+          font-weight: 600;
+          color: var(--text-secondary);
+          cursor: pointer;
+          transition: all var(--transition-fast);
+          white-space: nowrap;
+        }
+
+        .segmented-btn:hover {
+          color: var(--text-primary);
+        }
+
+        .segmented-btn.active {
+          background: #FFFFFF;
+          color: var(--text-primary);
+          font-weight: 700;
+          box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+        }
+
+        [data-theme="dark"] .segmented-btn.active {
+          background: #35363A;
+          color: #FFFFFF;
+          box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
+        }
+
+        .group-title-schedule-row {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          flex-wrap: wrap;
+        }
+
+        .group-schedule-pill {
+          display: inline-flex;
+          align-items: center;
+          font-size: 0.82rem;
+          font-weight: 700;
+          color: var(--apple-blue);
+          background: rgba(0, 113, 227, 0.08);
+          border: 1px solid rgba(0, 113, 227, 0.2);
+          padding: 3px 10px;
+          border-radius: var(--radius-full);
+          letter-spacing: -0.01em;
+          font-variant-numeric: tabular-nums;
+          white-space: nowrap;
+          cursor: pointer;
+          transition: all var(--transition-fast);
+          user-select: none;
+        }
+
+        .group-schedule-pill:hover {
+          background: var(--apple-blue);
+          color: #FFFFFF;
+          border-color: var(--apple-blue);
+          box-shadow: 0 2px 8px rgba(0, 113, 227, 0.25);
+          transform: translateY(-1px);
+        }
+
+        .group-schedule-pill:active {
+          transform: scale(0.97);
+        }
+
+        [data-theme="dark"] .group-schedule-pill {
+          color: var(--apple-blue);
+          background: rgba(138, 180, 248, 0.12);
+          border-color: rgba(138, 180, 248, 0.25);
+        }
+
+        [data-theme="dark"] .group-schedule-pill:hover {
+          background: var(--apple-blue);
+          color: #202124;
+          border-color: var(--apple-blue);
+          box-shadow: 0 2px 8px rgba(138, 180, 248, 0.3);
+        }
+
+        .group-item-meta-row {
+          display: flex;
+          align-items: center;
+          flex-wrap: wrap;
+          gap: 8px;
+          margin-top: 3px;
+        }
+
+        .group-room-tag {
+          font-size: 0.72rem;
+          font-weight: 600;
+          color: var(--text-secondary);
+          background: rgba(0, 0, 0, 0.05);
+          padding: 1px 7px;
+          border-radius: 4px;
+          cursor: pointer;
+          transition: all var(--transition-fast);
+        }
+
+        .group-room-tag:hover {
+          background: rgba(0, 113, 227, 0.1);
+          color: var(--apple-blue);
+        }
+
+        [data-theme="dark"] .group-room-tag {
+          background: rgba(255, 255, 255, 0.08);
+        }
+
+        [data-theme="dark"] .group-room-tag:hover {
+          background: rgba(138, 180, 248, 0.15);
+          color: #8AB4F8;
+        }
+
+        .group-schedule-tag {
+          font-size: 0.74rem;
+          font-weight: 600;
+          color: var(--apple-blue);
+          background: rgba(0, 113, 227, 0.08);
+          padding: 2px 8px;
+          border-radius: 6px;
+          font-variant-numeric: tabular-nums;
+        }
+
+        [data-theme="dark"] .group-schedule-tag {
+          background: rgba(138, 180, 248, 0.12);
+        }
+
+        /* Modal Schedule Section */
+        .modal-schedule-section {
+          background: rgba(0, 0, 0, 0.02);
+          border: 1px solid rgba(0, 0, 0, 0.06);
+          border-radius: var(--radius-md);
+          padding: 12px;
+        }
+
+        [data-theme="dark"] .modal-schedule-section {
+          background: rgba(255, 255, 255, 0.02);
+          border-color: rgba(255, 255, 255, 0.06);
+        }
+
+        .schedule-presets-wrap {
+          display: flex;
+          align-items: center;
+          gap: 4px;
+        }
+
+        .preset-btn {
+          font-size: 0.72rem;
+          font-weight: 600;
+          padding: 3px 8px;
+          border-radius: 6px;
+          background: #F5F5F7;
+          border: 1px solid rgba(0, 0, 0, 0.06);
+          color: var(--text-secondary);
+          cursor: pointer;
+          transition: all var(--transition-fast);
+        }
+
+        [data-theme="dark"] .preset-btn {
+          background: #202124;
+          border-color: #3C4043;
+          color: var(--text-secondary);
+        }
+
+        .preset-btn:hover {
+          background: var(--apple-blue);
+          color: #FFFFFF;
+          border-color: var(--apple-blue);
+        }
+
+        .days-chip-grid {
+          display: grid;
+          grid-template-columns: repeat(7, 1fr);
+          gap: 6px;
+        }
+
+        .day-chip-btn {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: 7px 2px;
+          border-radius: var(--radius-sm);
+          background: #FFFFFF;
+          border: 1px solid rgba(0, 0, 0, 0.1);
+          cursor: pointer;
+          transition: all var(--transition-fast);
+        }
+
+        [data-theme="dark"] .day-chip-btn {
+          background: #202124;
+          border-color: #3C4043;
+        }
+
+        .day-chip-short {
+          font-size: 0.78rem;
+          font-weight: 700;
+          color: var(--text-primary);
+        }
+
+        .day-chip-btn.selected {
+          background: #1D1D1F;
+          border-color: #1D1D1F;
+        }
+
+        .day-chip-btn.selected .day-chip-short {
+          color: #FFFFFF;
+        }
+
+        [data-theme="dark"] .day-chip-btn.selected {
+          background: var(--apple-blue);
+          border-color: var(--apple-blue);
+        }
+
+        [data-theme="dark"] .day-chip-btn.selected .day-chip-short {
+          color: #1D1D1F;
+        }
+
+        .schedule-time-row {
+          display: flex;
+          gap: 8px;
+        }
+
+        .time-presets-bar {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          margin-top: 4px;
+          margin-bottom: 6px;
+          flex-wrap: wrap;
+        }
+
+        .time-presets-label {
+          font-size: 0.72rem;
+          font-weight: 600;
+          color: var(--text-tertiary, #86868B);
+        }
+
+        .time-presets-chips {
+          display: flex;
+          align-items: center;
+          gap: 4px;
+          flex-wrap: wrap;
+        }
+
+        .time-preset-chip {
+          padding: 2px 7px;
+          font-size: 0.72rem;
+          font-weight: 600;
+          font-variant-numeric: tabular-nums;
+          background: rgba(0, 0, 0, 0.04);
+          border: 1px solid rgba(0, 0, 0, 0.06);
+          border-radius: 5px;
+          color: var(--text-secondary);
+          cursor: pointer;
+          transition: all var(--transition-fast);
+        }
+
+        .time-preset-chip:hover {
+          background: rgba(0, 113, 227, 0.08);
+          color: var(--apple-blue);
+          border-color: var(--apple-blue);
+        }
+
+        .time-preset-chip.active {
+          background: var(--apple-blue);
+          color: #FFFFFF;
+          border-color: var(--apple-blue);
+        }
+
+        [data-theme="dark"] .time-preset-chip {
+          background: #202124;
+          border-color: #3C4043;
+          color: var(--text-secondary);
+        }
+
+        [data-theme="dark"] .time-preset-chip:hover {
+          background: #35363A;
+          color: #8AB4F8;
+          border-color: #8AB4F8;
+        }
+
+        [data-theme="dark"] .time-preset-chip.active {
+          background: var(--apple-blue);
+          color: #FFFFFF;
+          border-color: var(--apple-blue);
         }
 
         .groups-vertical-list {

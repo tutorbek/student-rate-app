@@ -153,40 +153,76 @@ const STATS = [
 // 2. Pricing Plans
 const PRICING_PLANS = [
   {
-    id: "trial",
+    id: "demo",
     name: "14 Kunlik Demo",
     badge: "14 KUNLIK DEMO",
-    price: "12 000 so'm",
+    price: "33 000 so'm",
     period: "/ 14 kun davomida",
-    description: "Platformaning barcha imkoniyatlarini o'z darslaringizda 14 kun davomida hech qanday cheklovlarsiz sinab ko'ring.",
+    description: "Platformaning barcha imkoniyatlarini o'z darslaringizda 14 kun davomida to'liq sinab ko'ring.",
     features: [
       "Barcha 7 ta modulga 100% to'liq kirish",
       "Cheksiz o'quvchilar va guruhlar",
       "Jonli oylik reyting va Top-3 shohsupasi",
-      "1-soniyali tezkor davomat va oylik taqvim",
-      "Tezkor o'rnatish va texnik qo'llab-quvvatlash"
+      "1-soniyali tezkor davomat va taqvim",
+      "Tezkor o'rnatish va texnik ko'mak"
     ],
     ctaText: "Demo olish",
-    ctaLink: "https://t.me/bkzd19?text=Assalomu%20alaykum!%20Epchil%20Robot%2014%20kunlik%20demo%20sinovini%20boshlamoqchi%20edim.",
+    ctaLink: "https://t.me/bkzd19?text=Assalomu%20alaykum!%20Epchil%20Robot%2014%20kunlik%20demo%20sinovini%20(33%20000%20so'm)%20boshlamoqchi%20edim.",
     highlighted: false
   },
   {
-    id: "pro",
-    name: "Loyiha (To'liq Litsenziya)",
-    badge: "ENG OMMABOP — YAGONA NARX",
-    price: "99 000 so'm",
-    period: "/ yagona to'lov (doimiy litsenziya)",
-    description: "O'quv markazlari, maktablar va repetitorlar uchun barcha modullarni o'z ichiga olgan to'liq va doimiy loyiha litsenziyasi.",
+    id: "tier_100",
+    name: "100 tagacha o'quvchi",
+    badge: "START",
+    price: "100 000 so'm",
+    period: "/ 100 tagacha o'quvchilar uchun",
+    description: "Kichik o'quv markazlari, repetitorlar va yangi boshlagan o'quv guruhlari uchun qulay tarif.",
     features: [
-      "Barcha imkoniyatlar va yangilanishlar muddatsiz",
-      "Shaxsiy menejer va o'qituvchilar uchun amaliy trening",
-      "Ma'lumotlar xavfsizligi va kunlik avtomatik zaxira",
-      "Guruhlararo musobaqalar va maxsus brending",
-      "24/7 ustuvor texnik yordam xizmati"
+      "100 tagacha faol o'quvchilar",
+      "Barcha 7 ta moduldan to'liq foydalanish",
+      "Cheksiz guruhlar yaratish imkoniyati",
+      "Oylik foizlar va davomat jurnali",
+      "Standart texnik qo'llab-quvvatlash"
     ],
-    ctaText: "Loyihani xarid qilish",
-    ctaLink: "https://t.me/bkzd19?text=Assalomu%20alaykum!%20Epchil%20Robot%20loyihasini%2099%20000%20so'mlik%20yagona%20narxda%20xarid%20qilmoqchi%20edim.",
+    ctaText: "Tanlash",
+    ctaLink: "https://t.me/bkzd19?text=Assalomu%20alaykum!%20Epchil%20Robot%20100%20tagacha%20o'quvchi%20tarifini%20(100%20000%20so'm)%20tanlamoqchi%20edim.",
+    highlighted: false
+  },
+  {
+    id: "tier_300",
+    name: "300 tagacha o'quvchi",
+    badge: "ENG OMMABOP",
+    price: "250 000 so'm",
+    period: "/ 300 tagacha o'quvchilar uchun",
+    description: "O'rta hajmdagi o'quv markazlari va faol rivojlanayotgan ta'lim dargohlari uchun eng ommabop tanlov.",
+    features: [
+      "300 tagacha faol o'quvchilar",
+      "Barcha mavjud va yangi modullar",
+      "O'qituvchilar uchun amaliy trening",
+      "Kunlik avtomatik ma'lumotlar zaxirasi",
+      "Ustuvor tezkor texnik yordam"
+    ],
+    ctaText: "Tanlash",
+    ctaLink: "https://t.me/bkzd19?text=Assalomu%20alaykum!%20Epchil%20Robot%20300%20tagacha%20o'quvchi%20tarifini%20(250%20000%20so'm)%20tanlamoqchi%20edim.",
     highlighted: true
+  },
+  {
+    id: "tier_500",
+    name: "500 tagacha o'quvchi",
+    badge: "PREMIUM",
+    price: "400 000 so'm",
+    period: "/ 500 tagacha o'quvchilar uchun",
+    description: "Katta o'quv markazlari, bir nechta filiallar va xususiy maktablar uchun to'liq kengaytirilgan tarif.",
+    features: [
+      "500 tagacha faol o'quvchilar",
+      "Filiallar va cheksiz guruhlar boshqaruvi",
+      "Shaxsiy menejer va to'liq joriy qilish",
+      "Guruhlararo musobaqalar va brending",
+      "24/7 VIP darajadagi texnik xizmat"
+    ],
+    ctaText: "Tanlash",
+    ctaLink: "https://t.me/bkzd19?text=Assalomu%20alaykum!%20Epchil%20Robot%20500%20tagacha%20o'quvchi%20tarifini%20(400%20000%20so'm)%20tanlamoqchi%20edim.",
+    highlighted: false
   }
 ];
 
@@ -273,7 +309,11 @@ const FAQS = [
   },
   {
     q: "14 kunlik demo davrida qanday imkoniyatlar mavjud?",
-    a: "Demo davrida barcha modullar (Guruhlar, Jonli Reyting, Tezkor Davomat, Oylik Taqvim, Foizlar jurnali) 100% to'liq va hech qanday cheklovlarsiz ishlaydi."
+    a: "Demo davrida barcha modullar (Guruhlar, Jonli Reyting, Tezkor Davomat, Oylik Taqvim, Foizlar jurnali) 100% to'liq va hech qanday cheklovlarsiz ishlaydi. Narxi atigi 33 ming so'm."
+  },
+  {
+    q: "O'quvchilar soni bo'yicha qaysi tarifni tanlash kerak?",
+    a: "O'quv markazingizdagi o'quvchilar hajmiga qarab tanlashingiz mumkin: 100 tagacha (100 ming so'm), 300 tagacha (250 ming so'm) yoki 500 tagacha (400 ming so'm). 500 dan ortiq o'quvchilar uchun individual kelishiladi."
   },
   {
     q: "Tizimni maktabimizga sozlashda yordam berasizlarmi?",
@@ -735,21 +775,21 @@ export default function LandingPage({ onNavigateToLogin }) {
             ))}
           </div>
 
-          {/* Pricing Plans Grid (2 Cards: Trial & Pro) */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8 lg:gap-10 items-stretch">
+          {/* Pricing Plans Grid (4 Cards: Demo, 100, 300, 500) */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-5 lg:gap-6 items-stretch">
             {PRICING_PLANS.map((plan) => (
               <div
                 key={plan.id}
-                className={`relative rounded-2xl sm:rounded-[36px] p-5 min-[420px]:p-7 sm:p-10 lg:p-12 2xl:p-14 flex flex-col justify-between transition-all duration-300 min-w-0 ${
+                className={`relative rounded-2xl sm:rounded-[32px] p-5 sm:p-6 lg:p-7 xl:p-6 2xl:p-7 flex flex-col justify-between transition-all duration-300 min-w-0 ${
                   plan.highlighted
-                    ? 'bg-[#0C1016] text-white border-2 border-[#0071E3] shadow-2xl shadow-[#0071E3]/10'
-                    : 'bg-[var(--bg-card)] text-[var(--text-primary)] border border-[var(--border-color)] shadow-lg'
+                    ? 'bg-[#0C1016] text-white border-2 border-[#0071E3] shadow-2xl shadow-[#0071E3]/20 xl:-translate-y-2'
+                    : 'bg-[var(--bg-card)] text-[var(--text-primary)] border border-[var(--border-color)] shadow-md hover:shadow-lg'
                 }`}
               >
                 <div>
-                  <div className="flex items-center justify-between gap-2 mb-4 sm:mb-6 flex-wrap">
+                  <div className="flex items-center justify-between gap-2 mb-3.5 sm:mb-4 flex-wrap">
                     <span
-                      className={`text-[10px] min-[380px]:text-[11px] sm:text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider ${
+                      className={`text-[10px] min-[380px]:text-[11px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wider ${
                         plan.highlighted
                           ? 'bg-[#0071E3] text-white'
                           : 'bg-black/10 dark:bg-white/10 text-[var(--text-primary)]'
@@ -757,25 +797,25 @@ export default function LandingPage({ onNavigateToLogin }) {
                     >
                       {plan.badge}
                     </span>
-                    <span className="text-xs sm:text-sm font-mono opacity-60">EPCHIL ROBOT</span>
+                    <span className="text-[11px] sm:text-xs font-mono opacity-50">EPCHIL ROBOT</span>
                   </div>
 
-                  <h3 className="text-xl min-[420px]:text-2xl sm:text-3xl lg:text-4xl font-black tracking-tight mb-2 sm:mb-3">
+                  <h3 className="text-xl sm:text-2xl font-black tracking-tight mb-2">
                     {plan.name}
                   </h3>
-                  <p className={`text-xs min-[420px]:text-sm sm:text-base lg:text-lg leading-relaxed mb-6 sm:mb-8 ${
+                  <p className={`text-xs min-[420px]:text-sm leading-relaxed mb-4 sm:mb-6 min-h-[38px] ${
                     plan.highlighted ? 'text-white/70' : 'text-[var(--text-secondary)]'
                   }`}>
                     {plan.description}
                   </p>
 
                   {/* Price & Period with flex-wrap and responsive typography */}
-                  <div className="mb-6 sm:mb-8 pb-6 sm:pb-8 border-b border-black/10 dark:border-white/10">
-                    <div className="flex flex-col min-[480px]:flex-row min-[480px]:items-baseline gap-1 min-[480px]:gap-2">
-                      <span className="text-2xl min-[360px]:text-3xl sm:text-4xl lg:text-5xl 2xl:text-6xl font-black tracking-tight break-words">
+                  <div className="mb-5 sm:mb-6 pb-5 sm:pb-6 border-b border-black/10 dark:border-white/10">
+                    <div className="flex flex-col gap-0.5">
+                      <span className="text-2xl min-[360px]:text-3xl sm:text-3xl xl:text-2xl 2xl:text-3xl font-black tracking-tight break-words">
                         {plan.price}
                       </span>
-                      <span className={`text-xs sm:text-sm lg:text-base break-words ${
+                      <span className={`text-xs break-words ${
                         plan.highlighted ? 'text-white/60' : 'text-[var(--text-secondary)]'
                       }`}>
                         {plan.period}
@@ -784,17 +824,17 @@ export default function LandingPage({ onNavigateToLogin }) {
                   </div>
 
                   {/* Features List */}
-                  <div className="space-y-3 sm:space-y-4 mb-8 sm:mb-10">
+                  <div className="space-y-2.5 sm:space-y-3 mb-6 sm:mb-8">
                     {plan.features.map((feat, fIdx) => (
-                      <div key={fIdx} className="flex items-start gap-2.5 sm:gap-3">
-                        <div className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 mt-0.5 ${
+                      <div key={fIdx} className="flex items-start gap-2.5">
+                        <div className={`w-4 h-4 rounded-full flex items-center justify-center shrink-0 mt-0.5 ${
                           plan.highlighted ? 'bg-[#0071E3] text-white' : 'bg-green-500/20 text-green-600 dark:text-green-400'
                         }`}>
-                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
                             <polyline points="20 6 9 17 4 12" />
                           </svg>
                         </div>
-                        <span className={`text-xs min-[420px]:text-sm sm:text-base lg:text-lg font-medium ${
+                        <span className={`text-xs sm:text-sm font-medium leading-snug ${
                           plan.highlighted ? 'text-white/90' : 'text-[var(--text-primary)]'
                         }`}>
                           {feat}
@@ -809,14 +849,14 @@ export default function LandingPage({ onNavigateToLogin }) {
                   href={plan.ctaLink}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className={`w-full py-3.5 sm:py-4 lg:py-5 px-4 sm:px-8 rounded-full font-bold text-center text-xs min-[380px]:text-sm sm:text-base lg:text-lg uppercase tracking-wider transition-all duration-200 cursor-pointer shadow-md active:scale-98 flex items-center justify-center gap-2 sm:gap-3 no-underline min-h-[48px] sm:min-h-[54px] lg:min-h-[60px] ${
+                  className={`w-full py-3 sm:py-3.5 px-4 rounded-full font-bold text-center text-xs sm:text-sm uppercase tracking-wider transition-all duration-200 cursor-pointer shadow-md active:scale-98 flex items-center justify-center gap-2 no-underline min-h-[44px] sm:min-h-[48px] ${
                     plan.highlighted
                       ? 'bg-[#0071E3] text-white hover:bg-[#0077ED]'
                       : 'bg-[#0C1016] text-white hover:bg-[#1E242C] dark:bg-white dark:text-[#0C1016] dark:hover:bg-[#EBEBEF]'
                   }`}
                 >
                   <span className="truncate">{plan.ctaText}</span>
-                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
                     <path d="M5 12h14" />
                     <path d="m12 5 7 7-7 7" />
                   </svg>
@@ -824,6 +864,30 @@ export default function LandingPage({ onNavigateToLogin }) {
 
               </div>
             ))}
+          </div>
+
+          {/* Custom / 500+ Enterprise Note */}
+          <div className="mt-8 sm:mt-12 p-5 sm:p-7 rounded-2xl sm:rounded-3xl bg-[var(--bg-card)] border border-[var(--border-color)] flex flex-col sm:flex-row items-center justify-between gap-4 text-center sm:text-left shadow-sm">
+            <div>
+              <h4 className="text-sm sm:text-base lg:text-lg font-bold text-[var(--text-primary)] mb-1">
+                500 dan ortiq o'quvchingiz yoki maxsus talablaringiz bormi?
+              </h4>
+              <p className="text-xs sm:text-sm text-[var(--text-secondary)]">
+                Katta ta'lim tarmoqlari va bir nechta filiallar uchun shaxsiy shartlar asosida individual taklif tayyorlab beramiz.
+              </p>
+            </div>
+            <a
+              href="https://t.me/bkzd19?text=Assalomu%20alaykum!%20500%2B%20o'quvchilar%20uchun%20maxsus%20korporativ%20tarif%20bo'yicha%20bog'lanayotgan%20edim."
+              target="_blank"
+              rel="noopener noreferrer"
+              className="shrink-0 px-6 py-3 rounded-full bg-[#0071E3] hover:bg-[#0077ED] text-white font-semibold text-xs sm:text-sm transition-colors cursor-pointer no-underline flex items-center gap-2 shadow-sm"
+            >
+              <span>Bog'lanish</span>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M5 12h14" />
+                <path d="m12 5 7 7-7 7" />
+              </svg>
+            </a>
           </div>
 
         </div>

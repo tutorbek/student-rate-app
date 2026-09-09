@@ -7,6 +7,7 @@ import GroupDetail from './components/GroupDetail';
 import Leaderboard from './components/Leaderboard';
 import Settings from './components/Settings';
 import Attendance from './components/Attendance';
+import ScheduleView from './components/ScheduleView';
 import AdminDashboard from './components/admin/AdminDashboard';
 import AdminGroups from './components/admin/AdminGroups';
 import AdminAttendance from './components/admin/AdminAttendance';
@@ -50,12 +51,16 @@ function App() {
   const [activeTab, setActiveTab] = useState(() => {
     const savedRole = localStorage.getItem('rsa_role');
     const isStudent = savedRole === 'student';
-    const savedTab = localStorage.getItem('rsa_active_tab') || 'groups';
-    // Students can only access leaderboard and history
-    if (isStudent && savedTab !== 'leaderboard' && savedTab !== 'history') {
-      return 'leaderboard';
+    if (isStudent) {
+      const savedTab = localStorage.getItem('rsa_active_tab') || 'leaderboard';
+      return (savedTab === 'leaderboard' || savedTab === 'history') ? savedTab : 'leaderboard';
     }
-    return savedTab;
+    // When entering the project as teacher/admin, open Dars Jadvalim ('schedule') first
+    const sessionTab = sessionStorage.getItem('rsa_active_tab');
+    if (sessionTab) {
+      return sessionTab;
+    }
+    return 'schedule';
   });
   const [selectedGroupId, setSelectedGroupId] = useState(() => {
     const saved = localStorage.getItem('rsa_selected_group_id');
@@ -63,6 +68,7 @@ function App() {
   });
 
   useEffect(() => {
+    sessionStorage.setItem('rsa_active_tab', activeTab);
     localStorage.setItem('rsa_active_tab', activeTab);
   }, [activeTab]);
 
@@ -204,7 +210,7 @@ function App() {
       } else if (match.role === 'admin') {
         setActiveTab('dashboard');
       } else {
-        setActiveTab('groups');
+        setActiveTab('schedule');
       }
       showToast(match.role === 'admin' ? "Admin paneliga muvaffaqiyatli kirdingiz!" : "Muvaffaqiyatli kirdingiz!", "success");
       setLoginLoading(false);
@@ -666,9 +672,9 @@ function App() {
     return updatedRecord;
   };
 
-  const handleAddGroup = async (name, icon, password, color) => {
+  const handleAddGroup = async (name, icon, password, color, schedule = null) => {
     const cleanPwd = password.trim().toLowerCase();
-    const { newGroup, updatedGroups } = addGroup(groups, name, icon, cleanPwd, color);
+    const { newGroup, updatedGroups } = addGroup(groups, name, icon, cleanPwd, color, schedule);
 
     // Register password globally in Supabase registry
     const success = await registerGroupPassword(cleanPwd, teacherId, newGroup.id);
@@ -717,12 +723,12 @@ function App() {
     setTransactions(updatedTransactions);
   };
 
-  const handleUpdateGroup = async (id, name, icon, password, color) => {
+  const handleUpdateGroup = async (id, name, icon, password, color, schedule) => {
     const group = groups.find((g) => g.id === id);
     const oldPassword = group ? group.password : '';
-    const cleanNewPassword = password.trim().toLowerCase();
+    const cleanNewPassword = password !== undefined ? password.trim().toLowerCase() : oldPassword;
 
-    if (cleanNewPassword !== oldPassword) {
+    if (cleanNewPassword && cleanNewPassword !== oldPassword) {
       const success = await registerGroupPassword(cleanNewPassword, teacherId, id);
       if (!success) {
         showToast("Ushbu parol band qilingan. Boshqa parol kiriting!", "error");
@@ -733,7 +739,13 @@ function App() {
       }
     }
 
-    const { updatedGroup, updatedGroups } = updateGroup(groups, id, name, icon, cleanNewPassword, color);
+    const { updatedGroup, updatedGroups } = updateGroup(groups, id, name, icon, cleanNewPassword, color, schedule);
+    setGroups(updatedGroups);
+    return true;
+  };
+
+  const handleUpdateGroupSchedule = (groupId, schedule) => {
+    const { updatedGroup, updatedGroups } = updateGroup(groups, groupId, undefined, undefined, undefined, undefined, schedule);
     setGroups(updatedGroups);
     return true;
   };
@@ -821,6 +833,10 @@ function App() {
     }
   };
 
+  const handleOpenSchedule = () => {
+    handleTabChange('schedule');
+  };
+
   // Logout handler state and function
   const [showLogoutConfirmModal, setShowLogoutConfirmModal] = useState(false);
 
@@ -833,6 +849,7 @@ function App() {
     localStorage.removeItem('rsa_role');
     localStorage.removeItem('rsa_teacher_id');
     localStorage.removeItem('rsa_active_tab');
+    sessionStorage.removeItem('rsa_active_tab');
     localStorage.removeItem('rsa_student_group_id');
 
     // Clear localized caches to prevent cross-teacher leakage
@@ -851,7 +868,7 @@ function App() {
     setTeacherId(null);
     setStudentGroupId(null);
     setUserRole('student');
-    setActiveTab('dashboard');
+    setActiveTab('schedule');
     setLoginPassword('');
     setLoginError('');
   };
@@ -936,7 +953,17 @@ function App() {
 
     switch (activeTab) {
       case 'dashboard':
-        return <Dashboard setActiveTab={handleTabChange} onSelectGroup={handleSelectGroup} groups={filteredGroups} students={filteredStudents} transactions={filteredTransactions} attendance={attendance} />;
+        return (
+          <Dashboard
+            setActiveTab={handleTabChange}
+            onOpenSchedule={handleOpenSchedule}
+            onSelectGroup={handleSelectGroup}
+            groups={filteredGroups}
+            students={filteredStudents}
+            transactions={filteredTransactions}
+            attendance={attendance}
+          />
+        );
       case 'groups':
         if (selectedGroupId) {
           const group = filteredGroups.find((g) => g.id === selectedGroupId);
@@ -970,9 +997,20 @@ function App() {
             onSelectGroup={handleSelectGroup}
             onAddGroup={handleAddGroup}
             onUpdateGroup={handleUpdateGroup}
+            onUpdateGroupSchedule={handleUpdateGroupSchedule}
             onDeleteGroup={handleDeleteGroup}
             showToast={showToast}
             teacherId={teacherId}
+          />
+        );
+      case 'schedule':
+        return (
+          <ScheduleView
+            groups={filteredGroups}
+            students={filteredStudents}
+            onSelectGroup={handleSelectGroup}
+            onUpdateGroupSchedule={handleUpdateGroupSchedule}
+            showToast={showToast}
           />
         );
       case 'leaderboard':
@@ -1028,7 +1066,15 @@ function App() {
           />
         );
       default:
-        return <Dashboard setActiveTab={handleTabChange} onSelectGroup={handleSelectGroup} groups={filteredGroups} students={filteredStudents} transactions={filteredTransactions} attendance={attendance} />;
+        return (
+          <ScheduleView
+            groups={filteredGroups}
+            students={filteredStudents}
+            onSelectGroup={handleSelectGroup}
+            onUpdateGroupSchedule={handleUpdateGroupSchedule}
+            showToast={showToast}
+          />
+        );
     }
   };
 

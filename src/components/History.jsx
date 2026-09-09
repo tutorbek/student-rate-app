@@ -198,7 +198,7 @@ const History = ({ groups = [], students = [], transactions = [], onDeleteTransa
               {processedTransactions.map((tx) => {
                 const date = new Date(tx.timestamp);
                 const formattedDate = date.toLocaleDateString();
-                const formattedTime = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                const formattedTime = date.toLocaleTimeString('uz-UZ', { hour: '2-digit', minute: '2-digit', hour12: false });
 
                 return (
                   <div key={tx.id} className="history-row" style={gridStyle}>
