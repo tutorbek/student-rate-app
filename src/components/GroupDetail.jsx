@@ -41,6 +41,62 @@ const IconEyeOff = ({ size = 14, strokeWidth = 2 }) => (
   </svg>
 );
 
+const IconCalendar = ({ size = 14, strokeWidth = 2 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round">
+    <rect width="18" height="18" x="3" y="4" rx="2" ry="2" />
+    <line x1="16" y1="2" x2="16" y2="6" />
+    <line x1="8" y1="2" x2="8" y2="6" />
+    <line x1="3" y1="10" x2="21" y2="10" />
+  </svg>
+);
+
+const WEEKDAY_ORDER = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
+
+const SCHEDULE_DAY_LABELS = {
+  mon: 'Du',
+  tue: 'Se',
+  wed: 'Cho',
+  thu: 'Pa',
+  fri: 'Ju',
+  sat: 'Sha',
+  sun: 'Ya',
+};
+
+const SCHEDULE_DAY_FULL_NAMES = {
+  mon: 'Dushanba',
+  tue: 'Seshanba',
+  wed: 'Chorshanba',
+  thu: 'Payshanba',
+  fri: 'Juma',
+  sat: 'Shanba',
+  sun: 'Yakshanba',
+};
+
+const formatScheduleText = (schedule) => {
+  if (!schedule) return null;
+  const rawDays = Array.isArray(schedule.days) ? schedule.days : [];
+  const days = [...rawDays].sort((a, b) => WEEKDAY_ORDER.indexOf(a) - WEEKDAY_ORDER.indexOf(b));
+
+  let daysText = '';
+  if (days.length === 1) {
+    daysText = SCHEDULE_DAY_FULL_NAMES[days[0]] || days[0];
+  } else if (days.length > 1) {
+    daysText = days.map((d) => SCHEDULE_DAY_LABELS[d] || d).join(', ');
+  }
+
+  let timeText = '';
+  if (schedule.startTime && schedule.endTime) {
+    timeText = `${schedule.startTime} - ${schedule.endTime}`;
+  } else if (schedule.startTime) {
+    timeText = schedule.startTime;
+  }
+
+  if (daysText && timeText) {
+    return `${daysText} • ${timeText}`;
+  }
+  return daysText || timeText || null;
+};
+
 const GroupDetail = ({ group, allGroups = [], students, transactions, quickTags, onBack, onAddStudent, onUpdateStudent, onTransferStudent, onDeleteStudent, onAwardPoints, onDeleteTransaction, showToast, userRole }) => {
   const [profileStudent, setProfileStudent] = useState(null);
   const [showPassword, setShowPassword] = useState(false);
@@ -57,6 +113,10 @@ const GroupDetail = ({ group, allGroups = [], students, transactions, quickTags,
   const otherGroups = useMemo(() => {
     return (allGroups || []).filter(g => !g.deleted && g.id !== group.id);
   }, [allGroups, group.id]);
+
+  const scheduleText = useMemo(() => {
+    return formatScheduleText(group?.schedule);
+  }, [group?.schedule]);
 
   useEffect(() => {
     const handleKeyDown = (e) => {
@@ -264,6 +324,38 @@ const GroupDetail = ({ group, allGroups = [], students, transactions, quickTags,
                     </div>
                   </>
                 )}
+
+                <span className="meta-separator" style={{ color: 'var(--border-color)', fontSize: '0.85rem', userSelect: 'none' }}>•</span>
+                <div 
+                  className="group-meta-item group-schedule-badge" 
+                  style={{ 
+                    display: 'inline-flex', 
+                    alignItems: 'center', 
+                    gap: '6px', 
+                    fontSize: '0.85rem', 
+                    color: 'var(--text-secondary)',
+                    userSelect: 'none'
+                  }}
+                >
+                  <IconCalendar size={14} />
+                  <span>Dars vaqti: <strong style={{ color: scheduleText ? 'var(--text-primary)' : 'var(--text-tertiary)' }}>{scheduleText || "Belgilanmagan"}</strong></span>
+                  {group?.schedule?.room && (
+                    <span 
+                      style={{ 
+                        fontSize: '0.75rem', 
+                        padding: '1px 6px', 
+                        borderRadius: '4px', 
+                        background: 'var(--bg-segment, rgba(0,0,0,0.05))', 
+                        border: '1px solid var(--border-color)',
+                        color: 'var(--text-secondary)', 
+                        fontWeight: 600, 
+                        marginLeft: '2px' 
+                      }}
+                    >
+                      {group.schedule.room}
+                    </span>
+                  )}
+                </div>
               </div>
             </div>
           </div>
