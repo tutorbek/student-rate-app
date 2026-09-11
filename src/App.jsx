@@ -43,7 +43,8 @@ import {
   permanentlyDeleteGroup,
   permanentlyDeleteStudent,
   exportDatabase,
-  importDatabase
+  importDatabase,
+  sanitizeAttendanceList
 } from './utils/db';
 import { normalizeIconUrl } from './utils/avatarGallery';
 
@@ -403,7 +404,7 @@ function App() {
         }));
         const loadedTransactions = data.transactions || [];
         const loadedQuickTags = normalizeQuickTags(data.quickTags);
-        const loadedAttendance = data.attendance || [];
+        const loadedAttendance = sanitizeAttendanceList(data.attendance || []);
 
         setGroups(loadedGroups);
         setStudents(loadedStudents);
@@ -649,7 +650,7 @@ function App() {
         setStudents(db.students);
         setTransactions(db.transactions);
         setQuickTags(db.quickTags);
-        setAttendance(db.attendance || []);
+        setAttendance(sanitizeAttendanceList(db.attendance || []));
         lastSavedDataRef.current = JSON.stringify(db);
         showToast("Ma'lumotlar muvaffaqiyatli tiklandi!", "success");
         return true;
@@ -667,6 +668,12 @@ function App() {
 
   // Actions
   const handleSaveAttendance = (groupId, date, records) => {
+    const today = new Date();
+    const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+    if (date > todayStr) {
+      showToast("Bo'lajak sanalar uchun davomat saqlash taqiqlangan!", "warning");
+      return null;
+    }
     const { updatedRecord, updatedAttendance } = saveAttendance(attendance, groupId, date, records);
     setAttendance(updatedAttendance);
     return updatedRecord;
@@ -796,7 +803,7 @@ function App() {
       setStudents(snapshotData.students || []);
       setTransactions(snapshotData.transactions || []);
       setQuickTags(snapshotData.quickTags || []);
-      setAttendance(snapshotData.attendance || []);
+      setAttendance(sanitizeAttendanceList(snapshotData.attendance || []));
       lastSavedDataRef.current = JSON.stringify(snapshotData);
       showToast("Tizim oldingi holatga qaytarildi!", "success");
     } else {

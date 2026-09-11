@@ -182,13 +182,15 @@ export const deleteGroup = (groups, students, transactions, groupId) => {
 
 // --- Students API ---
 export const addStudent = (students, name, groupId, emoji, color) => {
+  const now = new Date().toISOString();
   const newStudent = {
     id: generateId(),
     name: name.trim(),
     groupId,
     emoji: normalizeIconUrl(emoji || 'lion'),
     color: color || '#007AFF', // Default Apple blue
-    createdAt: new Date().toISOString(),
+    createdAt: now,
+    joinedGroupAt: now,
   };
   const updatedStudents = [...students, newStudent];
   return { newStudent, updatedStudents };
@@ -214,11 +216,20 @@ export const updateStudent = (students, studentId, newName, newEmoji, newColor, 
 
 export const transferStudent = (students, studentId, targetGroupId) => {
   let updatedStudent = null;
+  const now = new Date().toISOString();
   const updatedStudents = students.map((s) => {
     if (s.id === studentId) {
+      const history = Array.isArray(s.groupHistory) ? s.groupHistory : [];
+      const previousEntry = {
+        groupId: s.groupId,
+        joinedAt: s.joinedGroupAt || s.createdAt || now,
+        leftAt: now,
+      };
       updatedStudent = {
         ...s,
         groupId: targetGroupId,
+        joinedGroupAt: now,
+        groupHistory: [...history, previousEntry],
       };
       return updatedStudent;
     }
@@ -270,15 +281,63 @@ export const deleteTransaction = (transactions, txId) => {
 };
 
 // --- Attendance API ---
+export const sanitizeAttendanceDate = (dateStr) => {
+  if (!dateStr || typeof dateStr !== 'string') return dateStr;
+  const parts = dateStr.split('-');
+  if (parts.length !== 3) return dateStr;
+  let [year, month, day] = parts;
+  if (month === '00' || month === '0') {
+    month = '12';
+    return `${year}-${month}-${day}`;
+  }
+  if (month === '13') {
+    month = '01';
+    return `${year}-${month}-${day}`;
+  }
+  return dateStr;
+};
+
+export const sanitizeAttendanceList = (attendance = []) => {
+  if (!Array.isArray(attendance)) return [];
+  const map = new Map();
+  attendance.forEach((rec) => {
+    if (!rec || !rec.date) return;
+    const cleanDate = sanitizeAttendanceDate(rec.date);
+    const key = `${rec.groupId}_${cleanDate}`;
+    if (map.has(key)) {
+      const existing = map.get(key);
+      map.set(key, {
+        ...existing,
+        ...rec,
+        id: existing.id || rec.id,
+        date: cleanDate,
+        records: { ...(existing.records || {}), ...(rec.records || {}) },
+        updatedAt: rec.updatedAt || existing.updatedAt || new Date().toISOString(),
+      });
+    } else {
+      map.set(key, cleanDate === rec.date ? rec : { ...rec, date: cleanDate });
+    }
+  });
+  return Array.from(map.values());
+};
+
 export const saveAttendance = (attendance = [], groupId, date, records) => {
+  const cleanDate = sanitizeAttendanceDate(date);
+  const now = new Date();
+  const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+  if (cleanDate > todayStr) {
+    console.warn(`[saveAttendance] Blocked saving attendance for future date: ${cleanDate}`);
+    return { updatedRecord: null, updatedAttendance: attendance, error: 'FUTURE_DATE_BLOCKED' };
+  }
+
   // records is an object: { [studentId]: 'present' | 'absent' | 'late' }
   const existingRecordIndex = attendance.findIndex(
-    (a) => a.groupId === groupId && a.date === date
+    (a) => a.groupId === groupId && sanitizeAttendanceDate(a.date) === cleanDate
   );
 
   const updatedRecord = {
     groupId,
-    date,
+    date: cleanDate,
     records,
     updatedAt: new Date().toISOString(),
   };
@@ -299,8 +358,9 @@ export const saveAttendance = (attendance = [], groupId, date, records) => {
 };
 
 export const deleteAttendanceRecord = (attendance = [], groupId, date, studentId = null) => {
+  const cleanDate = sanitizeAttendanceDate(date);
   const existingRecordIndex = attendance.findIndex(
-    (a) => a.groupId === groupId && a.date === date
+    (a) => a.groupId === groupId && sanitizeAttendanceDate(a.date) === cleanDate
   );
 
   if (existingRecordIndex === -1) {
@@ -308,7 +368,7 @@ export const deleteAttendanceRecord = (attendance = [], groupId, date, studentId
   }
 
   const updatedAttendance = [...attendance];
-  const targetRecord = { ...updatedAttendance[existingRecordIndex] };
+  const targetRecord = { ...updatedAttendance[existingRecordIndex], date: cleanDate };
 
   if (studentId) {
     // Delete individual student record

@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { renderAvatar } from '../../utils/studentAvatars';
 import { renderGroupIcon } from '../../utils/groupIcons';
+import { calculateStudentAttendanceStats } from '../../utils/attendanceUtils';
 
 const TEACHER_IDS = ['teacher1', 'teacher2', 'teacher3', 'teacher4'];
 const TEACHER_LABELS = {
@@ -76,34 +77,33 @@ const AdminGroups = ({
   // Group Details View
   if (selectedGroup) {
     const tData = allTeachersData[selectedGroup.teacherId] || {};
-    const students = (tData.students || []).filter(s => s.groupId === selectedGroup.id && !s.deleted);
+    const currentStudents = (tData.students || []).filter(s => s.groupId === selectedGroup.id && !s.deleted);
     const attendance = tData.attendance || [];
 
-    // Calculate attendance metrics for each student in this group
-    const sortedStudents = [...students].map(s => {
-      let present = 0;
-      let absent = 0;
-      let late = 0;
-      let total = 0;
+    // Include current group students + any transferred students who have attendance in this group
+    const currentStudentIds = new Set(currentStudents.map(s => s.id));
+    const allTeacherStudents = tData.students || [];
+    const historicalStudents = allTeacherStudents.filter(s =>
+      !currentStudentIds.has(s.id) &&
+      attendance.some(att => att.groupId === selectedGroup.id && att.records?.[s.id] !== undefined)
+    );
+    const combinedStudents = [
+      ...currentStudents.map(s => ({ ...s, isTransferred: false })),
+      ...historicalStudents.map(s => ({ ...s, isTransferred: true }))
+    ];
 
-      attendance.forEach(att => {
-        if (att.groupId === selectedGroup.id && att.records && att.records[s.id]) {
-          total++;
-          const st = att.records[s.id];
-          if (st === 'present') present++;
-          else if (st === 'absent') absent++;
-          else if (st === 'late') late++;
-        }
-      });
-
-      const rate = total > 0 ? Math.round(((present + late * 0.5) / total) * 100) : 100;
+    // Calculate attendance metrics for each student in this group using unified calculator
+    const sortedStudents = combinedStudents.map(s => {
+      const stats = calculateStudentAttendanceStats(s, attendance, selectedGroup.id);
       return {
         ...s,
-        present,
-        absent,
-        late,
-        totalSessions: total,
-        rate
+        present: stats.presentCount,
+        absent: stats.absentCount,
+        late: stats.lateCount,
+        excused: stats.excusedCount,
+        totalSessions: stats.totalLessons,
+        rate: stats.rate,
+        isTransferred: s.isTransferred
       };
     }).sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: 'base' }));
 
@@ -166,10 +166,28 @@ const AdminGroups = ({
                       {renderAvatar(student.emoji)}
                     </div>
                     <div>
-                      <h4 className="admin-student-name">{student.name}</h4>
+                      <h4 className="admin-student-name">
+                        {student.name}
+                        {student.isTransferred && (
+                          <span style={{
+                            fontSize: '0.68rem',
+                            fontWeight: '600',
+                            padding: '2px 7px',
+                            borderRadius: 'var(--radius-full)',
+                            background: '#F3F4F6',
+                            color: '#6B7280',
+                            marginLeft: '8px',
+                            border: '1px solid rgba(0, 0, 0, 0.08)',
+                            display: 'inline-flex',
+                            verticalAlign: 'middle'
+                          }}>
+                            Ko'chirilgan
+                          </span>
+                        )}
+                      </h4>
                       <span className="admin-student-sub">
                         {student.totalSessions > 0
-                          ? `${student.totalSessions} ta darsdan ${student.present} tasiga qatnashgan`
+                          ? `${student.totalSessions} ta darsdan ${student.present} tasiga qatnashgan${student.excused > 0 ? ` (${student.excused} ta sababli)` : ''}`
                           : "Hali dars o'tilmagan"}
                       </span>
                     </div>

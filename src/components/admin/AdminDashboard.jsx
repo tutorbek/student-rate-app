@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { renderAvatar } from '../../utils/studentAvatars';
 import { renderGroupIcon } from '../../utils/groupIcons';
+import { calculateSessionAttendance, calculateAttendanceRate } from '../../utils/attendanceUtils';
 
 const UZBEK_MONTHS = [
   'Yanvar', 'Fevral', 'Mart', 'Aprel', 'May', 'Iyun',
@@ -156,20 +157,15 @@ const AdminDashboard = ({
           }
         }
 
-        if (rec.records) {
-          Object.values(rec.records).forEach(status => {
-            totalAttendanceRecordsCount++;
-            if (status === 'present') {
-              presentCount++;
-              if (isCurrentMonth) monthlyPresent++;
-            } else if (status === 'absent') {
-              absentCount++;
-              if (isCurrentMonth) monthlyAbsent++;
-            } else if (status === 'late') {
-              lateCount++;
-              if (isCurrentMonth) monthlyLate++;
-            }
-          });
+        const breakdown = calculateSessionAttendance(rec, students);
+        totalAttendanceRecordsCount += breakdown.totalMarked;
+        presentCount += breakdown.present;
+        absentCount += breakdown.absent;
+        lateCount += breakdown.late;
+        if (isCurrentMonth) {
+          monthlyPresent += breakdown.present;
+          monthlyAbsent += breakdown.absent;
+          monthlyLate += breakdown.late;
         }
       });
     });
@@ -249,20 +245,19 @@ const AdminDashboard = ({
       let teacherAbsent = 0;
       let teacherLate = 0;
 
+      let teacherExcused = 0;
+
       attendance.forEach(rec => {
-        if (rec.records) {
-          Object.values(rec.records).forEach(status => {
-            if (status === 'present') teacherPresent++;
-            else if (status === 'absent') teacherAbsent++;
-            else if (status === 'late') teacherLate++;
-          });
-        }
+        const breakdown = calculateSessionAttendance(rec, students);
+        teacherPresent += breakdown.present;
+        teacherAbsent += breakdown.absent;
+        teacherLate += breakdown.late;
+        teacherExcused += breakdown.excused;
       });
 
-      const totalMarked = teacherPresent + teacherAbsent + teacherLate;
-      const attRate = totalMarked > 0
-        ? Math.round(((teacherPresent + teacherLate * 0.5) / totalMarked) * 100)
-        : (attendance.length > 0 ? 100 : 0);
+      const totalAccountable = teacherPresent + teacherAbsent + teacherLate;
+      const totalMarked = totalAccountable + teacherExcused;
+      const attRate = calculateAttendanceRate(teacherPresent, teacherAbsent, teacherLate, totalMarked, teacherExcused);
 
       // Find last attendance activity timestamp
       let lastActivity = null;

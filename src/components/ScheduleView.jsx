@@ -699,7 +699,7 @@ const ScheduleView = ({
             {/* Student List (Numbered, Non-clickable, Optimized Grid/List) */}
             <div className="student-list-modal-body">
               {displayedStudents.length > 0 ? (
-                <div className={`compact-students-container ${selectedGroupStudents.length > 6 ? 'two-cols' : 'single-col'}`}>
+                <div className="compact-students-container">
                   {displayedStudents.map((student, idx) => (
                     <div
                       key={student.id}
@@ -1645,18 +1645,18 @@ const ScheduleView = ({
 
         /* Roster Students List Modal */
         .student-list-modal-box {
-          max-width: 580px;
+          max-width: 480px;
           width: 92%;
-          padding: 26px 28px;
+          padding: 22px 24px;
           display: flex;
           flex-direction: column;
-          gap: 16px;
+          gap: 14px;
           border-radius: var(--radius-lg);
           box-shadow: 0 24px 60px rgba(0, 0, 0, 0.2);
           position: relative;
           background: var(--bg-card);
           border: 1px solid var(--border-color);
-          max-height: 86vh;
+          max-height: 85vh;
         }
 
         [data-theme="dark"] .student-list-modal-box {
@@ -1848,12 +1848,14 @@ const ScheduleView = ({
         }
 
         .student-list-modal-body {
-          max-height: 420px;
+          max-height: 275px;
           overflow-y: auto;
+          overflow-x: hidden;
           padding-right: 4px;
           display: flex;
           flex-direction: column;
-          gap: 10px;
+          gap: 8px;
+          overscroll-behavior: contain;
         }
 
         .student-list-modal-body::-webkit-scrollbar {
@@ -1861,57 +1863,63 @@ const ScheduleView = ({
         }
 
         .student-list-modal-body::-webkit-scrollbar-track {
-          background: transparent;
-        }
-
-        .student-list-modal-body::-webkit-scrollbar-thumb {
-          background: rgba(0, 0, 0, 0.15);
+          background: rgba(0, 0, 0, 0.03);
           border-radius: 4px;
         }
 
+        .student-list-modal-body::-webkit-scrollbar-thumb {
+          background: rgba(0, 0, 0, 0.18);
+          border-radius: 4px;
+        }
+
+        [data-theme="dark"] .student-list-modal-body::-webkit-scrollbar-track {
+          background: rgba(255, 255, 255, 0.04);
+        }
+
         [data-theme="dark"] .student-list-modal-body::-webkit-scrollbar-thumb {
-          background: rgba(255, 255, 255, 0.2);
+          background: rgba(255, 255, 255, 0.22);
         }
 
         .compact-students-container {
-          display: grid;
+          display: flex;
+          flex-direction: column;
           gap: 8px;
-        }
-
-        .compact-students-container.single-col {
-          grid-template-columns: 1fr;
-        }
-
-        .compact-students-container.two-cols {
-          grid-template-columns: repeat(2, 1fr);
-          gap: 8px 12px;
-        }
-
-        @media (max-width: 540px) {
-          .compact-students-container.two-cols {
-            grid-template-columns: 1fr;
-          }
+          width: 100%;
         }
 
         .compact-student-row {
           display: flex;
           align-items: center;
-          gap: 10px;
-          padding: 10px 14px;
+          gap: 12px;
+          height: 52px;
+          min-height: 52px;
+          padding: 0 16px;
           border-radius: var(--radius-md);
-          background: rgba(0, 0, 0, 0.02);
-          border: 1px solid rgba(0, 0, 0, 0.05);
+          background: #FFFFFF;
+          border: 1px solid rgba(0, 0, 0, 0.07);
+          box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
           cursor: default;
           user-select: text;
+          box-sizing: border-box;
+          transition: background var(--transition-fast), border-color var(--transition-fast);
+        }
+
+        .compact-student-row:hover {
+          background: #F9FAFB;
         }
 
         [data-theme="dark"] .compact-student-row {
           background: #202124;
-          border-color: rgba(255, 255, 255, 0.06);
+          border-color: rgba(255, 255, 255, 0.08);
+          box-shadow: none;
+        }
+
+        [data-theme="dark"] .compact-student-row:hover {
+          background: #28292D;
         }
 
         .compact-student-index {
-          font-size: 0.85rem;
+          font-size: 0.88rem;
           font-weight: 700;
           color: var(--text-secondary);
           min-width: 22px;
@@ -1943,7 +1951,7 @@ const ScheduleView = ({
         }
 
         .compact-student-name {
-          font-size: 0.92rem;
+          font-size: 0.94rem;
           font-weight: 600;
           color: var(--text-primary);
           white-space: nowrap;

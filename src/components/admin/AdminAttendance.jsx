@@ -1,6 +1,8 @@
 import React, { useState, useMemo } from 'react';
 import { renderAvatar } from '../../utils/studentAvatars';
 import { renderGroupIcon } from '../../utils/groupIcons';
+import { sanitizeAttendanceDate } from '../../utils/db';
+import { calculateSessionAttendance, calculateWeightedAttendanceMetrics } from '../../utils/attendanceUtils';
 
 const UZBEK_MONTHS = [
   'Yanvar', 'Fevral', 'Mart', 'Aprel', 'May', 'Iyun',
@@ -66,8 +68,10 @@ const AdminAttendance = ({
       attendance.forEach(rec => {
         if (!rec.date) return;
 
+        const cleanDate = sanitizeAttendanceDate(rec.date);
+
         // Date filtering by selected month and year
-        const parts = rec.date.split('-');
+        const parts = cleanDate.split('-');
         if (parts.length === 3) {
           const y = parseInt(parts[0], 10);
           const m = parseInt(parts[1], 10) - 1;
@@ -85,48 +89,24 @@ const AdminAttendance = ({
         const groupName = group ? group.name : 'Noma\'lum guruh';
         const groupIcon = group ? group.icon : '📁';
 
-        // Calculate session breakdown
-        let present = 0;
-        let absent = 0;
-        let late = 0;
-        const studentDetails = [];
-
-        if (rec.records) {
-          Object.entries(rec.records).forEach(([sId, status]) => {
-            const student = students.find(s => s.id === sId);
-            if (status === 'present') present++;
-            else if (status === 'absent') absent++;
-            else if (status === 'late') late++;
-
-            if (student) {
-              studentDetails.push({
-                id: sId,
-                name: student.name,
-                emoji: student.emoji,
-                color: student.color,
-                status
-              });
-            }
-          });
-        }
-
-        const total = present + absent + late;
-        const rate = total > 0 ? Math.round(((present + late * 0.5) / total) * 100) : 100;
+        // Calculate session breakdown using unified calculation
+        const breakdown = calculateSessionAttendance(rec, students);
 
         sessions.push({
-          id: `${tId}-${rec.groupId}-${rec.date}`,
+          id: `${tId}-${rec.groupId}-${cleanDate}`,
           teacherId: tId,
           teacherLabel: TEACHER_LABELS[tId],
           groupId: rec.groupId,
           groupName,
           groupIcon,
-          date: rec.date,
-          present,
-          absent,
-          late,
-          total,
-          rate,
-          students: studentDetails.sort((a, b) => a.name.localeCompare(b.name))
+          date: cleanDate,
+          present: breakdown.present,
+          absent: breakdown.absent,
+          late: breakdown.late,
+          excused: breakdown.excused,
+          total: breakdown.accountable,
+          rate: breakdown.rate,
+          students: breakdown.studentDetails
         });
       });
     });
@@ -137,28 +117,7 @@ const AdminAttendance = ({
 
   // High-level metrics for the selected view
   const metrics = useMemo(() => {
-    let totalPresent = 0;
-    let totalAbsent = 0;
-    let totalLate = 0;
-
-    attendanceSessions.forEach(s => {
-      totalPresent += s.present;
-      totalAbsent += s.absent;
-      totalLate += s.late;
-    });
-
-    const totalMarked = totalPresent + totalAbsent + totalLate;
-    const avgRate = totalMarked > 0
-      ? Math.round(((totalPresent + totalLate * 0.5) / totalMarked) * 100)
-      : 100;
-
-    return {
-      totalSessions: attendanceSessions.length,
-      avgRate,
-      totalAbsent,
-      totalLate,
-      totalPresent
-    };
+    return calculateWeightedAttendanceMetrics(attendanceSessions);
   }, [attendanceSessions]);
 
   const handlePrevMonth = () => {
@@ -181,8 +140,9 @@ const AdminAttendance = ({
 
   const formatUzbekDate = (dateStr) => {
     if (!dateStr) return '';
-    const parts = dateStr.split('-');
-    if (parts.length !== 3) return dateStr;
+    const cleanDate = sanitizeAttendanceDate(dateStr);
+    const parts = cleanDate.split('-');
+    if (parts.length !== 3) return cleanDate;
     const y = parts[0];
     const m = parseInt(parts[1], 10) - 1;
     const d = parseInt(parts[2], 10);
@@ -279,6 +239,12 @@ const AdminAttendance = ({
           </span>
         </div>
         <div className="glass-card admin-metric-card">
+          <span className="admin-metric-label">Sababli (Jami)</span>
+          <span className="admin-metric-val" style={{ color: '#2563EB' }}>
+            {metrics.totalExcused || 0}
+          </span>
+        </div>
+        <div className="glass-card admin-metric-card">
           <span className="admin-metric-label">Kelmaganlar (Sababsiz)</span>
           <span className="admin-metric-val" style={{ color: '#DC2626' }}>
             {metrics.totalAbsent}
@@ -313,6 +279,7 @@ const AdminAttendance = ({
                   <th>Ustoz</th>
                   <th>Guruh</th>
                   <th style={{ textAlign: 'center' }}>Keldi</th>
+                  <th style={{ textAlign: 'center' }}>Sababli</th>
                   <th style={{ textAlign: 'center' }}>Kelmadi</th>
                   <th style={{ textAlign: 'center' }}>Kechikdi</th>
                   <th style={{ textAlign: 'center' }}>Qatnashuv</th>
@@ -339,6 +306,11 @@ const AdminAttendance = ({
                     </td>
                     <td style={{ textAlign: 'center' }}>
                       <span className="admin-att-pill pill-present">{session.present}</span>
+                    </td>
+                    <td style={{ textAlign: 'center' }}>
+                      <span className={`admin-att-pill ${session.excused > 0 ? 'pill-excused' : 'pill-muted'}`}>
+                        {session.excused || 0}
+                      </span>
                     </td>
                     <td style={{ textAlign: 'center' }}>
                       <span className={`admin-att-pill ${session.absent > 0 ? 'pill-absent' : 'pill-muted'}`}>
@@ -421,6 +393,11 @@ const AdminAttendance = ({
                       {s.status === 'present' && (
                         <span style={{ fontSize: '0.78rem', fontWeight: '700', padding: '3px 8px', borderRadius: 'var(--radius-full)', background: '#ECFDF5', color: '#059669' }}>
                           ✓ Keldi
+                        </span>
+                      )}
+                      {s.status === 'excused' && (
+                        <span style={{ fontSize: '0.78rem', fontWeight: '700', padding: '3px 8px', borderRadius: 'var(--radius-full)', background: '#EFF6FF', color: '#2563EB' }}>
+                          ℹ Sababli
                         </span>
                       )}
                       {s.status === 'absent' && (
@@ -629,6 +606,11 @@ const AdminAttendance = ({
         .pill-present {
           background: #ECFDF5;
           color: #059669;
+        }
+
+        .pill-excused {
+          background: #EFF6FF;
+          color: #2563EB;
         }
 
         .pill-absent {

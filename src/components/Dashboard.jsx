@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { getStudentScore } from '../utils/db';
 import { renderGroupIcon, GROUP_COLOR_OPTIONS } from '../utils/groupIcons';
 import { renderAvatar } from '../utils/studentAvatars';
+import { calculateStudentAttendanceStats } from '../utils/attendanceUtils';
 
 // Clean SVG Vector Icons (Minimalist black & white)
 const IconGroups = () => (
@@ -110,20 +111,11 @@ const Dashboard = ({ setActiveTab, onSelectGroup, onOpenSchedule, groups = [], s
     if (activeStudents.length === 0) return null;
 
     const studentAbsents = activeStudents.map(student => {
-      let absentCount = 0;
-
-      attendance.forEach(rec => {
-        if (rec.groupId === student.groupId && rec.records) {
-          const status = rec.records[student.id];
-          if (status === 'absent') {
-            absentCount++;
-          }
-        }
-      });
-
+      // Calculate overall absences across all groups the student attended (preserves history if transferred)
+      const stats = calculateStudentAttendanceStats(student, attendance, null);
       return {
         ...student,
-        absentCount
+        absentCount: stats.absentCount
       };
     }).filter(s => s.absentCount > 0);
 
