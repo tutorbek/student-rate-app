@@ -646,16 +646,12 @@ export const createBotService = ({ supabase, botToken, adminChatId }) => {
       myRankFooter;
 
     const inline_keyboard = [
-      [
-        { text: timeframe === 'today' ? '• Bugun •' : 'Bugun', callback_data: 'rate_tf:today' },
-        { text: timeframe === 'month' ? '• Bu oy •' : 'Bu oy', callback_data: 'rate_tf:month' },
-        { text: timeframe === 'lastMonth' ? '• O\'tgan oy •' : 'O\'tgan oy', callback_data: 'rate_tf:lastMonth' },
-        { text: timeframe === 'all' ? '• Barchasi •' : 'Barchasi', callback_data: 'rate_tf:all' }
-      ],
-      [
-        { text: '📜 Baholar tarixi', callback_data: 'rate_history' },
-        { text: '🌐 Umumiy TOP 10', callback_data: 'rate_top10' }
-      ]
+      [{ text: timeframe === 'today' ? '• Bugun •' : 'Bugun', callback_data: 'rate_tf:today' }],
+      [{ text: timeframe === 'month' ? '• Bu oy •' : 'Bu oy', callback_data: 'rate_tf:month' }],
+      [{ text: timeframe === 'lastMonth' ? '• O\'tgan oy •' : 'O\'tgan oy', callback_data: 'rate_tf:lastMonth' }],
+      [{ text: timeframe === 'all' ? '• Barchasi •' : 'Barchasi', callback_data: 'rate_tf:all' }],
+      [{ text: '📜 Baholar tarixi', callback_data: 'rate_history' }],
+      [{ text: '🌐 Umumiy TOP 10', callback_data: 'rate_top10' }]
     ];
 
     if (messageId) {
