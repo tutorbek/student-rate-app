@@ -1,5 +1,4 @@
-import React, { useState, useEffect } from 'react';
-import { createPortal } from 'react-dom';
+import React, { useState } from 'react';
 
 // SOHub-inspired Platform Screens data with dark gradient progression & tags
 const SOHUB_SCREENS = [
@@ -349,60 +348,13 @@ const FAQS = [
 export default function LandingPage({ onNavigateToLogin }) {
   // Video tayyor bo'lguncha vaqtincha yashirilgan (tayyor bo'lganda true qilinadi)
   const SHOW_VIDEO = false;
-  const [isVideoPlaying, setIsVideoPlaying] = useState(false);
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [activePricingSegment, setActivePricingSegment] = useState('teachers');
 
-  // Lock background scroll completely when mobile drawer is open to prevent background movement
-  useEffect(() => {
-    if (!isMobileMenuOpen) return;
-
-    const scrollY = window.scrollY;
-    const originalOverflow = document.body.style.overflow;
-    const originalPosition = document.body.style.position;
-    const originalTop = document.body.style.top;
-    const originalWidth = document.body.style.width;
-
-    document.body.style.overflow = 'hidden';
-    document.body.style.position = 'fixed';
-    document.body.style.top = `-${scrollY}px`;
-    document.body.style.width = '100%';
-    document.documentElement.style.overflow = 'hidden';
-
-    return () => {
-      document.body.style.overflow = originalOverflow;
-      document.body.style.position = originalPosition;
-      document.body.style.top = originalTop;
-      document.body.style.width = originalWidth;
-      document.documentElement.style.overflow = '';
-      window.scrollTo(0, scrollY);
-    };
-  }, [isMobileMenuOpen]);
-
-  // Handle ESC key to close mobile menu
-  useEffect(() => {
-    const handleKeyDown = (e) => {
-      if (e.key === 'Escape' && isMobileMenuOpen) {
-        setIsMobileMenuOpen(false);
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isMobileMenuOpen]);
-
   const scrollToSection = (id) => {
-    setIsMobileMenuOpen(false);
     const element = document.getElementById(id);
     if (element) {
       element.scrollIntoView({ behavior: 'smooth' });
     }
-  };
-
-  const handleNavClick = (sectionId) => {
-    setIsMobileMenuOpen(false);
-    setTimeout(() => {
-      scrollToSection(sectionId);
-    }, 100);
   };
 
   return (
@@ -416,7 +368,6 @@ export default function LandingPage({ onNavigateToLogin }) {
           <div
             className="navbar-brand-section scale-active cursor-pointer shrink-0 min-h-[44px] flex items-center select-none"
             onClick={() => {
-              setIsMobileMenuOpen(false);
               window.scrollTo({ top: 0, behavior: 'smooth' });
             }}
           >
@@ -464,7 +415,7 @@ export default function LandingPage({ onNavigateToLogin }) {
             </button>
           </nav>
 
-          {/* Right Header Actions & Mobile Hamburger */}
+          {/* Right Header Actions */}
           <div className="flex items-center gap-2 sm:gap-3 xl:gap-4 shrink-0">
             {/* Demo Button (Desktop & Tablet) */}
             <a
@@ -491,263 +442,8 @@ export default function LandingPage({ onNavigateToLogin }) {
               </span>
             </button>
 
-            {/* Mobile Hamburger Toggle Button (min 44x44px touch area) */}
-            <button
-              type="button"
-              onClick={() => setIsMobileMenuOpen((prev) => !prev)}
-              className="md:hidden flex items-center justify-center w-11 h-11 min-w-[44px] min-h-[44px] shrink-0 rounded-full border border-black/10 dark:border-white/15 bg-black/[0.04] dark:bg-white/[0.06] text-[var(--text-primary)] hover:bg-black/[0.08] dark:hover:bg-white/[0.1] transition-colors cursor-pointer active:scale-95"
-              aria-label={isMobileMenuOpen ? "Menyuni yopish" : "Menyuni ochish"}
-              aria-expanded={isMobileMenuOpen}
-            >
-              <div className="w-4 h-3.5 relative flex flex-col justify-between items-center pointer-events-none">
-                <span
-                  className={`w-4 h-0.5 bg-current rounded-full transition-transform duration-300 origin-center pointer-events-none ${
-                    isMobileMenuOpen ? 'rotate-45 translate-y-[6px]' : ''
-                  }`}
-                />
-                <span
-                  className={`w-4 h-0.5 bg-current rounded-full transition-opacity duration-200 pointer-events-none ${
-                    isMobileMenuOpen ? 'opacity-0' : 'opacity-100'
-                  }`}
-                />
-                <span
-                  className={`w-4 h-0.5 bg-current rounded-full transition-transform duration-300 origin-center pointer-events-none ${
-                    isMobileMenuOpen ? '-rotate-45 -translate-y-[6px]' : ''
-                  }`}
-                />
-              </div>
-            </button>
           </div>
         </div>
-
-        {/* Right-Side Slide-in Mobile Drawer mounted directly to document.body via portal */}
-        {isMobileMenuOpen && typeof document !== 'undefined' && createPortal(
-          <div
-            className="fixed inset-0 z-[9999999] md:hidden overflow-hidden"
-            role="dialog"
-            aria-modal="true"
-            aria-label="Mobil navigatsiya menyusi"
-          >
-            {/* Backdrop Scrim (Smooth dark blur overlay) */}
-            <div
-              className="fixed inset-0 bg-black/60 backdrop-blur-sm animate-backdrop-in transition-opacity cursor-pointer"
-              onClick={() => setIsMobileMenuOpen(false)}
-              onTouchMove={(e) => e.preventDefault()}
-              aria-hidden="true"
-            />
-
-            {/* Right-Side Drawer Panel */}
-            <div
-              className="fixed top-0 right-0 bottom-0 w-[86%] max-w-[360px] h-full h-[100dvh] bg-[var(--bg-primary)] dark:bg-[#15171C] text-[var(--text-primary)] shadow-2xl border-l border-black/10 dark:border-white/10 flex flex-col z-10 animate-drawer-right select-none"
-              style={{ overscrollBehavior: 'contain' }}
-              onTouchMove={(e) => e.stopPropagation()}
-            >
-              {/* Drawer Top Header */}
-              <div className="w-full bg-[var(--bg-primary)] dark:bg-[#15171C] border-b border-black/[0.08] dark:border-white/[0.08] pt-[max(1rem,env(safe-area-inset-top,16px))] pb-3.5 px-5 flex items-center justify-between shrink-0 transition-colors">
-                <div
-                  className="scale-active cursor-pointer shrink-0 flex items-center gap-2 select-none"
-                  onClick={() => {
-                    setIsMobileMenuOpen(false);
-                    window.scrollTo({ top: 0, behavior: 'smooth' });
-                  }}
-                >
-                  <h1 className="text-lg font-bold tracking-tight text-[var(--text-primary)]">
-                    EPCHIL <span className="logo-badge">ROBOT</span>
-                  </h1>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={() => setIsMobileMenuOpen(false)}
-                  className="flex items-center justify-center w-10 h-10 min-w-[40px] min-h-[40px] rounded-full border border-black/10 dark:border-white/15 bg-black/[0.04] dark:bg-white/[0.06] text-[var(--text-primary)] hover:bg-black/[0.08] dark:hover:bg-white/[0.1] active:scale-90 transition-all cursor-pointer"
-                  aria-label="Menyuni yopish"
-                >
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                    <line x1="18" y1="6" x2="6" y2="18" />
-                    <line x1="6" y1="6" x2="18" y2="18" />
-                  </svg>
-                </button>
-              </div>
-
-              {/* Drawer Scrollable Body */}
-              <div
-                className="flex-1 w-full overflow-y-auto px-5 py-4 flex flex-col justify-between gap-6 pb-[calc(env(safe-area-inset-bottom,0px)+20px)]"
-                style={{ overscrollBehavior: 'contain' }}
-              >
-                <div className="flex flex-col gap-4">
-                  {/* #00A6ED & #FFB400 Segment Switcher Pill */}
-                  <div className="p-1 bg-black/[0.04] dark:bg-white/[0.06] rounded-xl flex items-center gap-1 border border-black/5 dark:border-white/5">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setActivePricingSegment('teachers');
-                        handleNavClick('pricing-section');
-                      }}
-                      className={`flex-1 py-2 px-3 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
-                        activePricingSegment === 'teachers'
-                          ? 'bg-[#00A6ED] text-white shadow-md shadow-[#00A6ED]/30'
-                          : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
-                      }`}
-                    >
-                      <span className="w-2 h-2 rounded-full bg-white/90" />
-                      Ustozlar
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setActivePricingSegment('centers');
-                        handleNavClick('pricing-section');
-                      }}
-                      className={`flex-1 py-2 px-3 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
-                        activePricingSegment === 'centers'
-                          ? 'bg-[#FFB400] text-black shadow-md shadow-[#FFB400]/30'
-                          : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
-                      }`}
-                    >
-                      <span className="w-2 h-2 rounded-full bg-black/80" />
-                      Markazlar
-                    </button>
-                  </div>
-
-                  {/* Navigation Links */}
-                  <nav className="flex flex-col space-y-1">
-                    <button
-                      type="button"
-                      onClick={() => handleNavClick('pricing-section')}
-                      className="flex items-center justify-between w-full px-3.5 py-3 rounded-xl text-left font-semibold text-sm text-[var(--text-primary)] hover:bg-black/5 dark:hover:bg-white/5 active:bg-black/10 dark:active:bg-white/10 transition-colors cursor-pointer group"
-                    >
-                      <span className="flex items-center gap-2.5">
-                        <span className="w-1.5 h-1.5 rounded-full bg-[#00A6ED]" />
-                        <span>Narxlar va Tariflar</span>
-                      </span>
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[var(--text-secondary)] group-hover:translate-x-0.5 transition-transform">
-                        <polyline points="9 18 15 12 9 6" />
-                      </svg>
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => handleNavClick('platform-screens')}
-                      className="flex items-center justify-between w-full px-3.5 py-3 rounded-xl text-left font-semibold text-sm text-[var(--text-primary)] hover:bg-black/5 dark:hover:bg-white/5 active:bg-black/10 dark:active:bg-white/10 transition-colors cursor-pointer group"
-                    >
-                      <span className="flex items-center gap-2.5">
-                        <span className="w-1.5 h-1.5 rounded-full bg-[#FFB400]" />
-                        <span>Skrinshotlar (7 ta modul)</span>
-                      </span>
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[var(--text-secondary)] group-hover:translate-x-0.5 transition-transform">
-                        <polyline points="9 18 15 12 9 6" />
-                      </svg>
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => handleNavClick('platform-features')}
-                      className="flex items-center justify-between w-full px-3.5 py-3 rounded-xl text-left font-semibold text-sm text-[var(--text-primary)] hover:bg-black/5 dark:hover:bg-white/5 active:bg-black/10 dark:active:bg-white/10 transition-colors cursor-pointer group"
-                    >
-                      <span className="flex items-center gap-2.5">
-                        <span className="w-1.5 h-1.5 rounded-full bg-black/30 dark:bg-white/30" />
-                        <span>Imkoniyatlar</span>
-                      </span>
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[var(--text-secondary)] group-hover:translate-x-0.5 transition-transform">
-                        <polyline points="9 18 15 12 9 6" />
-                      </svg>
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => handleNavClick('testimonials')}
-                      className="flex items-center justify-between w-full px-3.5 py-3 rounded-xl text-left font-semibold text-sm text-[var(--text-primary)] hover:bg-black/5 dark:hover:bg-white/5 active:bg-black/10 dark:active:bg-white/10 transition-colors cursor-pointer group"
-                    >
-                      <span className="flex items-center gap-2.5">
-                        <span className="w-1.5 h-1.5 rounded-full bg-black/30 dark:bg-white/30" />
-                        <span>Mijozlar fikri</span>
-                      </span>
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[var(--text-secondary)] group-hover:translate-x-0.5 transition-transform">
-                        <polyline points="9 18 15 12 9 6" />
-                      </svg>
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => handleNavClick('faq')}
-                      className="flex items-center justify-between w-full px-3.5 py-3 rounded-xl text-left font-semibold text-sm text-[var(--text-primary)] hover:bg-black/5 dark:hover:bg-white/5 active:bg-black/10 dark:active:bg-white/10 transition-colors cursor-pointer group"
-                    >
-                      <span className="flex items-center gap-2.5">
-                        <span className="w-1.5 h-1.5 rounded-full bg-black/30 dark:bg-white/30" />
-                        <span>Ko'p beriladigan savollar</span>
-                      </span>
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[var(--text-secondary)] group-hover:translate-x-0.5 transition-transform">
-                        <polyline points="9 18 15 12 9 6" />
-                      </svg>
-                    </button>
-                  </nav>
-                </div>
-
-                {/* Bottom Actions (#00A6ED & #FFB400 buttons) and Contact Info */}
-                <div className="flex flex-col gap-4 pt-2">
-                  <div className="flex flex-col gap-2.5">
-                    {/* Primary Login Button with #00A6ED */}
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setIsMobileMenuOpen(false);
-                        onNavigateToLogin();
-                      }}
-                      className="w-full min-h-[46px] py-3 px-4 rounded-xl bg-[#00A6ED] hover:bg-[#0095d6] text-white flex items-center justify-center gap-2 text-xs font-bold tracking-wider uppercase cursor-pointer shadow-lg shadow-[#00A6ED]/25 active:scale-[0.98] transition-all"
-                    >
-                      <span>Tizimga kirish</span>
-                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M5 12h14" />
-                        <path d="m12 5 7 7-7 7" />
-                      </svg>
-                    </button>
-
-                    {/* Demo Telegram Button with #FFB400 */}
-                    <a
-                      href="https://t.me/bkzd19?text=Assalomu%20alaykum!%20Epchil%20Robot%20platformasi%20bo'yicha%20demo%20so'ramoqchi%20edim."
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      onClick={() => setIsMobileMenuOpen(false)}
-                      className="w-full min-h-[46px] py-3 px-4 rounded-xl bg-[#FFB400] hover:bg-[#eab000] text-[#0C1016] flex items-center justify-center gap-2 text-xs font-bold tracking-wider uppercase cursor-pointer shadow-lg shadow-[#FFB400]/25 no-underline active:scale-[0.98] transition-all"
-                    >
-                      <span>14 Kunlik Demo (Telegram)</span>
-                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                        <line x1="22" y1="2" x2="11" y2="13" />
-                        <polygon points="22 2 15 22 11 13 2 9 22 2" />
-                      </svg>
-                    </a>
-                  </div>
-
-                  {/* Contact shortcuts */}
-                  <div className="pt-3 border-t border-black/[0.06] dark:border-white/[0.08] flex flex-col gap-2 text-xs text-[var(--text-secondary)]">
-                    <div className="flex items-center justify-between">
-                      <a href="tel:+998332220301" className="hover:text-[var(--text-primary)] transition-colors no-underline flex items-center gap-1.5 py-1">
-                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[#00A6ED]">
-                          <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
-                        </svg>
-                        <span>+998 (33) 222-03-01</span>
-                      </a>
-                      <a href="https://t.me/bkzd19" target="_blank" rel="noopener noreferrer" className="hover:text-[var(--text-primary)] transition-colors no-underline flex items-center gap-1.5 py-1">
-                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[#FFB400]">
-                          <line x1="22" y1="2" x2="11" y2="13" />
-                          <polygon points="22 2 15 22 11 13 2 9 22 2" />
-                        </svg>
-                        <span>@bkzd19</span>
-                      </a>
-                    </div>
-                    <div className="flex items-center justify-between pt-1 text-[11px] text-[var(--text-tertiary)]">
-                      <span>Epchil Robot © {new Date().getFullYear()}</span>
-                      <span className="font-mono text-[10px] px-1.5 py-0.5 rounded bg-black/5 dark:bg-white/10">v2.0</span>
-                    </div>
-                  </div>
-                </div>
-
-              </div>
-
-            </div>
-          </div>,
-          document.body
-        )}
       </header>
 
       {/* 2. Hero Section (Fluid Clamp Typography & Responsive Video Player) */}
@@ -759,7 +455,7 @@ export default function LandingPage({ onNavigateToLogin }) {
               className="w-full text-3xl min-[360px]:text-4xl sm:text-6xl md:text-7xl lg:text-7xl 2xl:text-[5.5rem] font-black tracking-[-0.03em] leading-[1.08] sm:leading-[0.96] text-[var(--text-primary)] select-none break-words [overflow-wrap:anywhere]"
             >
               O'quvchilarni rag'batlantirishning <br className="hidden sm:inline" />
-              <span className="text-[#0071E3]">zamonaviy usuli.</span>
+              zamonaviy usuli.
             </h1>
             
             <p className="text-sm min-[360px]:text-base sm:text-2xl md:text-2xl lg:text-3xl 2xl:text-[2rem] text-[var(--text-secondary)] font-normal max-w-4xl mt-1 sm:mt-3 2xl:mt-4 leading-relaxed">
@@ -849,12 +545,12 @@ export default function LandingPage({ onNavigateToLogin }) {
           
           {/* Section Header */}
           <div className="mb-10 sm:mb-14">
-            <span className="text-xs sm:text-sm lg:text-base font-bold tracking-widest text-[#0071E3] uppercase mb-2 sm:mb-3 block">
+            <span className="text-xs sm:text-sm lg:text-base font-bold tracking-widest text-[var(--text-secondary)] uppercase mb-2 sm:mb-3 block">
               ISHONCH VA QULAY SHARTLAR
             </span>
             <h2 className="text-2xl min-[360px]:text-3xl sm:text-5xl lg:text-6xl 2xl:text-7xl font-black tracking-tight leading-[1.08] text-[var(--text-primary)]">
               Darslaringizni bugunoq <br className="hidden sm:inline" />
-              <span className="text-[#0071E3]">qulay narxda sinab ko'ring.</span>
+              qulay narxda sinab ko'ring.
             </h2>
             <p className="text-sm sm:text-xl lg:text-2xl text-[var(--text-secondary)] mt-3 sm:mt-4 max-w-3xl font-normal leading-relaxed">
               Yakka repetitorlardan tortib yirik o'quv markazlarigacha moslashtirilgan 2 segmentli hamyonbop va shaffof narxlar.
@@ -862,42 +558,35 @@ export default function LandingPage({ onNavigateToLogin }) {
           </div>
 
           {/* Universal Demo Entry Point Banner */}
-          <div className="mb-10 sm:mb-14 rounded-2xl sm:rounded-[32px] p-5 sm:p-7 lg:p-8 bg-gradient-to-br from-[#0071E3]/12 via-[#0071E3]/5 to-transparent border-2 border-[#0071E3]/35 shadow-xl relative overflow-hidden">
+          <div className="mb-10 sm:mb-14 rounded-2xl sm:rounded-[32px] p-5 sm:p-7 lg:p-8 bg-black/[0.02] dark:bg-white/[0.03] border border-black/10 dark:border-white/15 shadow-sm relative overflow-hidden">
             <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
-              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6">
-                <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-[#0071E3] text-white flex items-center justify-center shrink-0 shadow-lg shadow-[#0071E3]/25">
-                  <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-                  </svg>
+              <div className="flex flex-col items-start gap-1.5">
+                <div className="flex flex-wrap items-center gap-2 mb-1">
+                  <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-black/10 dark:bg-white/15 text-[var(--text-primary)]">
+                    {DEMO_PLAN.badge}
+                  </span>
+                  <span className="text-xs sm:text-sm font-semibold text-[var(--text-secondary)]">
+                    14 Kunlik To'liq Sinov
+                  </span>
                 </div>
-                <div>
-                  <div className="flex flex-wrap items-center gap-2 mb-1.5">
-                    <span className="text-[10px] sm:text-xs font-black uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-[#0071E3] text-white">
-                      {DEMO_PLAN.badge}
-                    </span>
-                    <span className="text-xs sm:text-sm font-semibold text-[var(--text-secondary)]">
-                      14 Kunlik To'liq Sinov
-                    </span>
-                  </div>
-                  <div className="flex items-baseline gap-2 flex-wrap">
-                    <h3 className="text-2xl sm:text-3xl font-black text-[var(--text-primary)]">
-                      {DEMO_PLAN.price}
-                    </h3>
-                    <span className="text-xs sm:text-sm font-medium text-[var(--text-secondary)]">
-                      {DEMO_PLAN.period}
-                    </span>
-                  </div>
-                  <p className="text-xs sm:text-sm text-[var(--text-secondary)] mt-1.5 max-w-2xl leading-relaxed">
-                    {DEMO_PLAN.description}
-                  </p>
+                <div className="flex items-baseline gap-2 flex-wrap">
+                  <h3 className="text-2xl sm:text-3xl font-black text-[var(--text-primary)]">
+                    {DEMO_PLAN.price}
+                  </h3>
+                  <span className="text-xs sm:text-sm font-medium text-[var(--text-secondary)]">
+                    {DEMO_PLAN.period}
+                  </span>
                 </div>
+                <p className="text-xs sm:text-sm text-[var(--text-secondary)] mt-1 max-w-2xl leading-relaxed">
+                  {DEMO_PLAN.description}
+                </p>
               </div>
 
               <a
                 href={DEMO_PLAN.ctaLink}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="w-full lg:w-auto px-7 py-3.5 sm:py-4 rounded-full bg-[#0071E3] hover:bg-[#0077ED] text-white font-bold text-xs sm:text-sm uppercase tracking-wider transition-all duration-200 shadow-md hover:shadow-xl hover:scale-[1.02] active:scale-98 flex items-center justify-center gap-2.5 no-underline shrink-0"
+                className="w-full lg:w-auto px-7 py-3.5 sm:py-4 rounded-full bg-[#0B1016] hover:bg-[#1A212B] text-white font-bold text-xs sm:text-sm uppercase tracking-wider transition-all duration-200 shadow-md hover:shadow-xl hover:scale-[1.02] active:scale-98 flex items-center justify-center gap-2.5 no-underline shrink-0"
               >
                 <span>{DEMO_PLAN.ctaText}</span>
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
