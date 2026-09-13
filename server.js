@@ -217,7 +217,7 @@ app.post('/api/webhook', async (req, res) => {
         const text = update.message.text.trim();
         const chatId = String(update.message.chat.id);
 
-        if (chatId === ADMIN_CHAT_ID && text === '/backup') {
+        if (chatId === ADMIN_CHAT_ID && (text === '/backup' || text.startsWith('💾 Zaxiralash'))) {
           await sendTelegramMessage(chatId, "⏳ *Zaxiralash jarayoni boshlandi...* Iltimos kutib turing.");
           await runAllBackups();
           return res.status(200).send('OK');
@@ -314,7 +314,7 @@ const pollTelegramUpdates = async () => {
             const text = update.message.text.trim();
             const chatId = String(update.message.chat.id);
 
-            if (chatId === ADMIN_CHAT_ID && text === '/backup') {
+            if (chatId === ADMIN_CHAT_ID && (text === '/backup' || text.startsWith('💾 Zaxiralash'))) {
               await sendTelegramMessage(chatId, "⏳ *Zaxiralash jarayoni boshlandi...* Iltimos kutib turing.");
               await runAllBackups();
               continue;

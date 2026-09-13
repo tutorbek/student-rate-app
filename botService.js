@@ -43,6 +43,21 @@ const MAIN_KEYBOARD = {
 export const createBotService = ({ supabase, botToken, adminChatId }) => {
   const TELEGRAM_API = `https://api.telegram.org/bot${botToken}`;
 
+  const getKeyboardForChat = (chatId) => {
+    if (String(chatId) === String(adminChatId)) {
+      return {
+        keyboard: [
+          [{ text: '🏠 Asosiy' }, { text: '🏆 Reyting' }],
+          [{ text: '🛍 Do\'kon' }, { text: '👤 Profilni almashtirish' }],
+          [{ text: '⚙️ Admin menyusi' }]
+        ],
+        resize_keyboard: true
+      };
+    }
+    return MAIN_KEYBOARD;
+  };
+
+
   // Supabase + Local Fallback Session Handlers
   const getSession = async (chatId) => {
     try {
@@ -528,7 +543,7 @@ export const createBotService = ({ supabase, botToken, adminChatId }) => {
       });
     } else {
       await sendTelegramMessage(chatId, text, {
-        reply_markup: MAIN_KEYBOARD
+        reply_markup: getKeyboardForChat(chatId)
       });
       // Also send the inline action card
       await sendTelegramMessage(chatId, "Qo'shimcha tafsilotlar:", {
@@ -777,7 +792,7 @@ export const createBotService = ({ supabase, botToken, adminChatId }) => {
       `Darslarda faol qatnashing, like to'plang va tez orada ularni qimmatbaho sovg'alarga almashtiring! ✨`;
 
     await sendTelegramMessage(chatId, text, {
-      reply_markup: MAIN_KEYBOARD
+      reply_markup: getKeyboardForChat(chatId)
     });
   };
 
@@ -812,17 +827,53 @@ export const createBotService = ({ supabase, botToken, adminChatId }) => {
       const chatId = String(msg.chat.id);
       const text = (msg.text || '').trim();
 
-      // Admin /backup command
-      if (chatId === String(adminChatId) && text === '/backup') {
-        return; // Handled by server.js runAllBackups()
+      // Check if user is Admin
+      if (chatId === String(adminChatId)) {
+        if (text === '/backup' || text.startsWith('💾 Zaxiralash')) {
+          return; // Handled by server.js runAllBackups()
+        }
+
+        if (text === '/start' || text === '/admin' || text === '⚙️ Admin menyusi') {
+          const adminText = `👋 <b>Salom Admin!</b>\n\n` +
+            `Men epchil robot zaxiralash botiman.\n\n` +
+            `Har kuni tunda barcha o'qituvchilar bazalarini .json qilib yuborib turaman.\n\n` +
+            `Zaxiralashni hoziroq ishga tushirish uchun /backup buyrug'ini yuboring.`;
+
+          const adminKeyboard = {
+            keyboard: [
+              [{ text: '💾 Zaxiralashni boshlash (/backup)' }],
+              [{ text: '🎓 O\'quvchi rejimini tekshirish' }]
+            ],
+            resize_keyboard: true
+          };
+
+          await sendTelegramMessage(chatId, adminText, {
+            reply_markup: adminKeyboard
+          });
+          return;
+        }
+
+        if (text === '🎓 O\'quvchi rejimini tekshirish') {
+          const session = await getSession(chatId);
+          if (session) {
+            await sendTelegramMessage(chatId, `🎓 O'quvchi rejimiga o'tildi (Profil: <b>${session.studentName}</b>).`, {
+              reply_markup: getKeyboardForChat(chatId)
+            });
+            await renderHomeView(chatId);
+          } else {
+            userStates.set(chatId, 'WAITING_FOR_GROUP_PASSWORD');
+            await promptGroupPassword(chatId);
+          }
+          return;
+        }
       }
 
-      // /start command
+      // /start command (for regular students)
       if (text === '/start') {
         const session = await getSession(chatId);
         if (session) {
           await sendTelegramMessage(chatId, `👋 Xush kelibsiz, <b>${session.studentName || 'O\'quvchi'}</b>!`, {
-            reply_markup: MAIN_KEYBOARD
+            reply_markup: getKeyboardForChat(chatId)
           });
           await renderHomeView(chatId);
         } else {
@@ -878,7 +929,7 @@ export const createBotService = ({ supabase, botToken, adminChatId }) => {
       // Default fallback
       if (session) {
         await sendTelegramMessage(chatId, "Iltimos, quyidagi menyu tugmalaridan birini tanlang:", {
-          reply_markup: MAIN_KEYBOARD
+          reply_markup: getKeyboardForChat(chatId)
         });
       } else {
         await promptGroupPassword(chatId);
@@ -915,7 +966,7 @@ export const createBotService = ({ supabase, botToken, adminChatId }) => {
         });
 
         await sendTelegramMessage(chatId, `🎉 <b>Profil muvaffaqiyatli bog'landi!</b>\n\nSalom, <b>${student?.name || ''}</b>! Endi quyidagi menyu orqali dars jadvali, davomatingiz va reytingingizni kuzatib borishingiz mumkin.`, {
-          reply_markup: MAIN_KEYBOARD
+          reply_markup: getKeyboardForChat(chatId)
         });
 
         await renderHomeView(chatId);
