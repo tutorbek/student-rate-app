@@ -5,7 +5,7 @@
  * and provides print/PDF helper.
  */
 
-import { isStudentInGroupAtDate } from './attendanceUtils.js';
+import { isStudentInGroupAtDate, calculateAttendanceRate } from './attendanceUtils.js';
 
 /**
  * Escapes a field for CSV according to RFC 4180.
@@ -13,7 +13,7 @@ import { isStudentInGroupAtDate } from './attendanceUtils.js';
 function escapeCSV(val) {
   if (val === null || val === undefined) return '""';
   const str = String(val);
-  if (str.includes('"') || str.includes(',') || str.includes('\n') || str.includes('\r')) {
+  if (str.includes('"') || str.includes(';') || str.includes(',') || str.includes('\n') || str.includes('\r')) {
     return `"${str.replace(/"/g, '""')}"`;
   }
   return `"${str}"`;
@@ -84,14 +84,13 @@ export function exportAttendanceToCSV({
 
     // Status for each date
     lessonDates.forEach(dateStr => {
-      const isMember = isStudentInGroupAtDate(student, dateStr, group?.id);
+      const rec = attendanceByDate[dateStr];
+      const status = rec?.records?.[student.id];
+      const isMember = isStudentInGroupAtDate(student, dateStr, group?.id) || (status !== undefined);
       if (!isMember) {
         sRow.push(escapeCSV('—'));
         return;
       }
-
-      const rec = attendanceByDate[dateStr];
-      const status = rec?.records?.[student.id];
 
       if (status === 'present') sRow.push(escapeCSV('✔'));
       else if (status === 'absent') sRow.push(escapeCSV('❌'));
@@ -111,10 +110,22 @@ export function exportAttendanceToCSV({
     rows.push(sRow);
   });
 
-  // 4. Daily Attendance Summary Footer Row
+  // 4. Daily Attendance Summary Footer Rows
   const footerRowPresent = [
     escapeCSV(''),
-    escapeCSV('Jami Kelganlar')
+    escapeCSV('Jami Kelganlar (✔)')
+  ];
+  const footerRowExcused = [
+    escapeCSV(''),
+    escapeCSV('Sababli Qoldirilgan (S)')
+  ];
+  const footerRowAbsent = [
+    escapeCSV(''),
+    escapeCSV('Sababsiz Kelmaganlar (❌)')
+  ];
+  const footerRowLate = [
+    escapeCSV(''),
+    escapeCSV('Kechikkanlar (⏰)')
   ];
   const footerRowRate = [
     escapeCSV(''),
@@ -125,11 +136,19 @@ export function exportAttendanceToCSV({
     const rec = attendanceByDate[dateStr];
     if (!rec || !rec.records) {
       footerRowPresent.push(escapeCSV('—'));
+      footerRowExcused.push(escapeCSV('—'));
+      footerRowAbsent.push(escapeCSV('—'));
+      footerRowLate.push(escapeCSV('—'));
       footerRowRate.push(escapeCSV('—'));
       return;
     }
+
     let sessionPresent = rec.present;
+    let sessionExcused = rec.excused;
+    let sessionAbsent = rec.absent;
+    let sessionLate = rec.late;
     let sessionRate = rec.rate;
+
     if (sessionPresent === undefined || sessionRate === undefined) {
       const vals = Object.values(rec.records);
       let p = 0, a = 0, l = 0, e = 0;
@@ -140,26 +159,37 @@ export function exportAttendanceToCSV({
         else if (v === 'excused') e++;
       });
       sessionPresent = p;
-      const total = p + a + l + e;
-      const denom = (total - e) > 0 ? (total - e) : 1;
-      sessionRate = total > 0 ? Math.round(((p + l * 0.5) / denom) * 100) : 0;
+      sessionExcused = e;
+      sessionAbsent = a;
+      sessionLate = l;
+      sessionRate = calculateAttendanceRate(p, a, l, p + a + l + e, e);
     }
+
     footerRowPresent.push(escapeCSV(sessionPresent));
+    footerRowExcused.push(escapeCSV(sessionExcused || 0));
+    footerRowAbsent.push(escapeCSV(sessionAbsent || 0));
+    footerRowLate.push(escapeCSV(sessionLate || 0));
     footerRowRate.push(escapeCSV(`${sessionRate}%`));
   });
 
   // Empty cells for summary columns
   for (let i = 0; i < 6; i++) {
     footerRowPresent.push(escapeCSV(''));
+    footerRowExcused.push(escapeCSV(''));
+    footerRowAbsent.push(escapeCSV(''));
+    footerRowLate.push(escapeCSV(''));
     footerRowRate.push(escapeCSV(''));
   }
 
   rows.push([]);
   rows.push(footerRowPresent);
+  rows.push(footerRowExcused);
+  rows.push(footerRowAbsent);
+  rows.push(footerRowLate);
   rows.push(footerRowRate);
 
-  // 5. Build CSV with UTF-8 BOM
-  const csvContent = '\uFEFF' + rows.map(r => r.join(',')).join('\r\n');
+  // 5. Build CSV with UTF-8 BOM and semicolon separator
+  const csvContent = '\uFEFF' + rows.map(r => r.join(';')).join('\r\n');
 
   // 6. Trigger Browser Download (if running in browser)
   if (typeof document !== 'undefined' && typeof window !== 'undefined') {

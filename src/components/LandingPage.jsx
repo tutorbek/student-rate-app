@@ -49,36 +49,36 @@ const SOHUB_SCREENS = [
   },
   {
     id: 5,
-    titleWhite: "Oylik Davomat",
-    titleMuted: "Taqvimi",
+    titleWhite: "Haftalik Dars",
+    titleMuted: "Jadvali",
     bg: "#201B2A",
     tagBg: "#2C263B",
-    tags: ["Interaktiv kalendar", "Dars foizlari", "Bugungi dars", "Oylik qatnashuv"],
-    description: "Oylik kalendar orqali har bir kunning qatnashuv foizi va davomat statistikasini vizual kuzating.",
+    tags: ["Kunlik darslar", "Guruhlar vaqti", "Tezkor tahrirlash", "Dars qo'shish"],
+    description: "Hafta kunlari bo'yicha barcha guruhlaringiz dars jadvallari, xonalar va vaqtlarni yagona tizimda rejalashtiring.",
     src: "/screens/5.png",
-    alt: "Davomat taqvimi va foizlar"
+    alt: "Haftalik dars jadvali"
   },
   {
     id: 6,
-    titleWhite: "Batafsil Taqvim",
-    titleMuted: "Grafikasi",
+    titleWhite: "Davomat Jurnali",
+    titleMuted: "va Statistika",
     bg: "#1A2027",
     tagBg: "#252D36",
-    tags: ["Dars kunlari", "Shaffof hisobot", "To'liq oy", "Rangli indikatorlar"],
-    description: "Hafta kunlari (Du-Ya) bo'yicha barcha o'tilgan darslar xaritasi va davomat ko'rsatkichlari.",
+    tags: ["Oylik matritsa", "O'rtacha qatnashuv %", "Excel (.csv) yuklash", "PDF chop etish"],
+    description: "Oylik davomat foizlari, o'tilgan va qoldirilgan darslar, shuningdek bir bosishda Excel va PDF hisobotlar.",
     src: "/screens/6.png",
-    alt: "Oylik batafsil taqvim"
+    alt: "Davomat jurnali va statistika"
   },
   {
     id: 7,
-    titleWhite: "O'quvchilar",
-    titleMuted: "Davomat Jurnali",
+    titleWhite: "Ballar va Like'lar",
+    titleMuted: "Tarixi",
     bg: "#10161E",
     tagBg: "#1A222D",
-    tags: ["O'rtacha foiz %", "O'tilgan darslar", "Qoldirilgan darslar", "Shaxsiy hisobot"],
-    description: "Har bir o'quvchining darsga qatnashish foizi, kelgan va qoldirgan darslari bo'yicha to'liq shaffof jurnal.",
+    tags: ["To'liq shaffoflik", "Sana va vaqt", "Berilgan sabab", "Bekor qilish imkoni"],
+    description: "Har bir o'quvchiga qachon, qaysi guruhda va nima sababdan ball yoki like berilganining shaffof auditi.",
     src: "/screens/7.png",
-    alt: "O'quvchilar davomat ko'rsatkichlari"
+    alt: "Ballar va likelar tarixi auditi"
   },
 ];
 
@@ -104,188 +104,213 @@ const CORE_FEATURES = [
   },
 ];
 
-// 1. Social Proof Statistics
-const STATS = [
-  {
-    value: "50+",
-    label: "Hamkor Maktablar",
-    description: "Yetakchi o'quv markazlari va xususiy maktablar",
-    icon: (
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M3 21h18M3 7v14M21 7v14M6 7V3h12v4M10 11v2M14 11v2M10 17v2M14 17v2" />
-      </svg>
-    )
-  },
-  {
-    value: "2,300+",
-    label: "Faol O'quvchilar",
-    description: "Har kuni platformada bilimini sinovchi yoshlar",
-    icon: (
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
-        <circle cx="9" cy="7" r="4" />
-        <path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" />
-      </svg>
-    )
-  },
-  {
-    value: "95%",
-    label: "Qoniqish Darajasi",
-    description: "Ustozlar va markaz rahbarlari bergan yuksak baho",
-    icon: (
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
-      </svg>
-    )
-  },
-  {
-    value: "1 soniya",
-    label: "Baholash Tezligi",
-    description: "Darsni to'xtatmasdan 1 marta bosishda Like va davomat",
-    icon: (
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
-      </svg>
-    )
-  }
-];
 
-// 2. Pricing Plans
-const PRICING_PLANS = [
-  {
-    id: "demo",
-    name: "14 Kunlik Demo",
-    badge: "14 KUNLIK DEMO",
-    price: "33 000 so'm",
-    period: "/ 14 kun davomida",
-    description: "Platformaning barcha imkoniyatlarini o'z darslaringizda 14 kun davomida to'liq sinab ko'ring.",
-    features: [
-      "Barcha 7 ta modulga 100% to'liq kirish",
-      "Cheksiz o'quvchilar va guruhlar",
-      "Jonli oylik reyting va Top-3 shohsupasi",
-      "1-soniyali tezkor davomat va taqvim",
-      "Tezkor o'rnatish va texnik ko'mak"
-    ],
-    ctaText: "Demo olish",
-    ctaLink: "https://t.me/bkzd19?text=Assalomu%20alaykum!%20Epchil%20Robot%2014%20kunlik%20demo%20sinovini%20(33%20000%20so'm)%20boshlamoqchi%20edim.",
-    highlighted: false
-  },
-  {
-    id: "tier_100",
-    name: "100 tagacha o'quvchi",
-    badge: "START",
-    price: "100 000 so'm",
-    period: "/ 100 tagacha o'quvchilar uchun",
-    description: "Kichik o'quv markazlari, repetitorlar va yangi boshlagan o'quv guruhlari uchun qulay tarif.",
-    features: [
-      "100 tagacha faol o'quvchilar",
-      "Barcha 7 ta moduldan to'liq foydalanish",
-      "Cheksiz guruhlar yaratish imkoniyati",
-      "Oylik foizlar va davomat jurnali",
-      "Standart texnik qo'llab-quvvatlash"
-    ],
-    ctaText: "Tanlash",
-    ctaLink: "https://t.me/bkzd19?text=Assalomu%20alaykum!%20Epchil%20Robot%20100%20tagacha%20o'quvchi%20tarifini%20(100%20000%20so'm)%20tanlamoqchi%20edim.",
-    highlighted: false
-  },
-  {
-    id: "tier_300",
-    name: "300 tagacha o'quvchi",
-    badge: "ENG OMMABOP",
-    price: "250 000 so'm",
-    period: "/ 300 tagacha o'quvchilar uchun",
-    description: "O'rta hajmdagi o'quv markazlari va faol rivojlanayotgan ta'lim dargohlari uchun eng ommabop tanlov.",
-    features: [
-      "300 tagacha faol o'quvchilar",
-      "Barcha mavjud va yangi modullar",
-      "O'qituvchilar uchun amaliy trening",
-      "Kunlik avtomatik ma'lumotlar zaxirasi",
-      "Ustuvor tezkor texnik yordam"
-    ],
-    ctaText: "Tanlash",
-    ctaLink: "https://t.me/bkzd19?text=Assalomu%20alaykum!%20Epchil%20Robot%20300%20tagacha%20o'quvchi%20tarifini%20(250%20000%20so'm)%20tanlamoqchi%20edim.",
-    highlighted: true
-  },
-  {
-    id: "tier_500",
-    name: "500 tagacha o'quvchi",
-    badge: "PREMIUM",
-    price: "400 000 so'm",
-    period: "/ 500 tagacha o'quvchilar uchun",
-    description: "Katta o'quv markazlari, bir nechta filiallar va xususiy maktablar uchun to'liq kengaytirilgan tarif.",
-    features: [
-      "500 tagacha faol o'quvchilar",
-      "Filiallar va cheksiz guruhlar boshqaruvi",
-      "Shaxsiy menejer va to'liq joriy qilish",
-      "Guruhlararo musobaqalar va brending",
-      "24/7 VIP darajadagi texnik xizmat"
-    ],
-    ctaText: "Tanlash",
-    ctaLink: "https://t.me/bkzd19?text=Assalomu%20alaykum!%20Epchil%20Robot%20500%20tagacha%20o'quvchi%20tarifini%20(400%20000%20so'm)%20tanlamoqchi%20edim.",
-    highlighted: false
-  }
-];
+// 2. Demo Plan (Umumiy kirish nuqtasi)
+const DEMO_PLAN = {
+  id: "demo",
+  name: "14 Kunlik Demo",
+  badge: "UMUMIY KIRISH NUQTASI",
+  price: "33 000 so'm",
+  period: "/ 14 kun davomida",
+  description: "Platformaning barcha 7 modulini o'z darslaringizda 14 kun davomida hech qanday cheklovlarsiz to'liq sinab ko'ring.",
+  features: [
+    "Barcha 7 ta modulga 100% to'liq kirish",
+    "O'quvchilar va guruhlar bilan to'liq test",
+    "Jonli oylik reyting va Top-3 shohsupasi",
+    "1-soniyali tezkor davomat va taqvim",
+    "Tezkor o'rnatish va texnik ko'mak"
+  ],
+  ctaText: "Demo olish (33 000 so'm)",
+  ctaLink: "https://t.me/bkzd19?text=Assalomu%20alaykum!%20Epchil%20Robot%2014%20kunlik%20demo%20sinovini%20(33%20000%20so'm)%20boshlamoqchi%20edim."
+};
 
-// 3. Partners (Chiroyli tipografik logolar, rasm qo'shish uchun logoSrc sloti tayyor)
+// 2 Segmentli Narx Tizimi: Ustoz va Markaz
+const PRICING_SEGMENTS = {
+  teachers: {
+    id: "teachers",
+    title: "Ustoz Segmenti",
+    badge: "Yakka repetitorlar",
+    plans: [
+      {
+        id: "tier_ustoz",
+        name: "Ustoz",
+        badge: "USTOZ",
+        price: "45 000 so'm",
+        period: "/ oyiga",
+        capacity: "30 tagacha faol o'quvchi",
+        description: "Yakka tartibdagi repetitorlar va kichik guruh o'qituvchilari uchun eng hamyonbop boshlang'ich tarif.",
+        features: [
+          "30 tagacha faol o'quvchi",
+          "Barcha 7 modulga kirish",
+          "1 ta guruh boshqaruvi",
+          "Davomat, taqvim, oylik reyting",
+          "Standart yordam (chat/bot orqali)"
+        ],
+        ctaText: "Tanlash",
+        ctaLink: "https://t.me/bkzd19?text=Assalomu%20alaykum!%20Epchil%20Robot%20Ustoz%20tarifini%20(45%20000%20so'm/oy)%20tanlamoqchi%20edim.",
+        highlighted: false
+      },
+      {
+        id: "tier_ustoz_pro",
+        name: "Ustoz Pro",
+        badge: "TAVSIYA ETILADI",
+        price: "70 000 so'm",
+        period: "/ oyiga",
+        capacity: "60 tagacha faol o'quvchi",
+        description: "Bir nechta guruhlari bor professional repetitorlar va faol o'qituvchilar uchun eng maqbul tanlov.",
+        features: [
+          "60 tagacha faol o'quvchi",
+          "Barcha 7 modul + cheksiz guruh",
+          "To'liq reyting va Top-3 shohsupasi",
+          "Davomat, taqvim va avtomatik foizlar",
+          "Ustuvor texnik yordam"
+        ],
+        ctaText: "Tanlash",
+        ctaLink: "https://t.me/bkzd19?text=Assalomu%20alaykum!%20Epchil%20Robot%20Ustoz%20Pro%20tarifini%20(70%20000%20so'm/oy)%20tanlamoqchi%20edim.",
+        highlighted: true
+      }
+    ]
+  },
+  centers: {
+    id: "centers",
+    title: "Markaz Segmenti",
+    badge: "O'quv markazlari",
+    plans: [
+      {
+        id: "tier_start",
+        name: "Start",
+        badge: "START",
+        price: "100 000 so'm",
+        period: "/ oyiga",
+        capacity: "100 tagacha o'quvchi",
+        description: "Kichik o'quv markazlari va yangi ochilgan o'quv guruhlari uchun qulay tarif.",
+        features: [
+          "100 tagacha faol o'quvchi",
+          "Barcha 7 ta moduldan to'liq foydalanish",
+          "Cheksiz guruhlar yaratish imkoniyati",
+          "Oylik foizlar va davomat jurnali",
+          "Standart texnik qo'llab-quvvatlash"
+        ],
+        ctaText: "Tanlash",
+        ctaLink: "https://t.me/bkzd19?text=Assalomu%20alaykum!%20Epchil%20Robot%20Start%20tarifini%20(100%20000%20so'm/oy)%20tanlamoqchi%20edim.",
+        highlighted: false
+      },
+      {
+        id: "tier_ommabop",
+        name: "Ommabop",
+        badge: "ENG OMMABOP",
+        price: "250 000 so'm",
+        period: "/ oyiga",
+        capacity: "300 tagacha o'quvchi",
+        description: "O'rta hajmdagi o'quv markazlari va faol rivojlanayotgan ta'lim dargohlari uchun eng ommabop tanlov.",
+        features: [
+          "300 tagacha faol o'quvchi",
+          "Barcha mavjud va yangi modullar",
+          "O'qituvchilar uchun amaliy trening",
+          "Kunlik avtomatik ma'lumotlar zaxirasi",
+          "Ustuvor tezkor texnik yordam"
+        ],
+        ctaText: "Tanlash",
+        ctaLink: "https://t.me/bkzd19?text=Assalomu%20alaykum!%20Epchil%20Robot%20Ommabop%20tarifini%20(250%20000%20so'm/oy)%20tanlamoqchi%20edim.",
+        highlighted: true
+      },
+      {
+        id: "tier_premium",
+        name: "Premium",
+        badge: "PREMIUM",
+        price: "400 000 so'm",
+        period: "/ oyiga",
+        capacity: "500 tagacha o'quvchi",
+        description: "Katta o'quv markazlari, bir nechta filiallar va xususiy maktablar uchun to'liq kengaytirilgan tarif.",
+        features: [
+          "500 tagacha faol o'quvchi",
+          "Filiallar va cheksiz guruhlar boshqaruvi",
+          "Shaxsiy menejer va to'liq joriy qilish",
+          "Guruhlararo musobaqalar va brending",
+          "24/7 VIP darajadagi texnik xizmat"
+        ],
+        ctaText: "Tanlash",
+        ctaLink: "https://t.me/bkzd19?text=Assalomu%20alaykum!%20Epchil%20Robot%20Premium%20tarifini%20(400%20000%20so'm/oy)%20tanlamoqchi%20edim.",
+        highlighted: false
+      }
+    ]
+  }
+};
+
+// 3. Partners (Faqat nomi va tagline, edge-to-edge sof oq qirrali kartalar - #FFFFFF)
 const PARTNERS = [
   {
     id: "insight",
     name: "Insight Plus",
     category: "Xususiy Ta'lim Markazi",
-    logoSrc: null,
-    badgeText: "INSIGHT+",
   },
   {
-    id: "tamaddun",
-    name: "Tamaddun LC",
+    id: "yuksalish",
+    name: "Yuksalish LC",
     category: "O'quv Markazi",
-    logoSrc: null,
-    badgeText: "TAMADDUN",
   },
   {
     id: "ziyonur",
     name: "ZiyoNur LC",
     category: "Xalqaro Ta'lim Markazi",
-    logoSrc: null,
-    badgeText: "ZIYONUR",
   },
   {
     id: "magnit",
     name: "Magnit",
     category: "O'quv Markazi",
-    logoSrc: null,
-    badgeText: "MAGNIT",
+  },
+  {
+    id: "apex",
+    name: "Apex Academy",
+    category: "Zamonaviy Ta'lim Markazi",
+  },
+  {
+    id: "vector",
+    name: "Vector Education",
+    category: "Aniq Fanlar Markazi",
+  },
+  {
+    id: "global",
+    name: "Global Study",
+    category: "Xorijiy Tillar Markazi",
+  },
+  {
+    id: "join",
+    isCta: true,
+    title: "Siz ham bizga qo'shiling",
+    buttonText: "Qo'shilish",
+    buttonLink: "https://t.me/bkzd19?text=Assalomu%20alaykum!%20Epchil%20Robot%20platformasiga%20bizning%20ta'lim%20dargohimizni%20ham%20qo'shmoqchi%20edim."
   }
 ];
 
-// 4. Testimonials (Vertikal chap va o'ng tomonlarga yopishgan rectangle ichida)
+// 4. Testimonials (Mijozlar fikri - Edge-to-Edge 3 Ustunli To'liq Oq - #FFFFFF)
 const TESTIMONIALS = [
   {
-    quote: "Epchil Robot'ni joriy qilganimizdan so'ng o'quvchilar darsga kechikmay keladigan va savollarga javob berishga qo'l ko'tarib talashadigan bo'lib qolishdi. Top-3 shohsupasi bolalarda aqlbovar qilmas havas uyg'otdi!",
     author: "Diyorbek Rahimov",
     role: "Direktor",
     school: "ZiyoNur LC",
-    stats: "+40% darsdagi faollik oshishi",
-    bg: "#0A0D12",
+    quote: "Epchil Robot'ni joriy qilganimizdan so'ng o'quvchilar darsga kechikmay keladigan va savollarga javob berishga qo'l ko'tarib talashadigan bo'lib qolishdi. Top-3 shohsupasi bolalarda aqlbovar qilmas havas uyg'otdi!",
+    metricValue: "+40%",
+    metricLabel: "Darsdagi faollik oshishi",
+    accent: "#00A6ED"
+  },
+  {
+    author: "Dilshod Rizayev",
+    role: "Bosh o'qituvchi",
+    school: "Insight Plus",
+    quote: "Qog'oz jurnallarga ruchka bilan belgi qo'yish va oy oxirida foiz hisoblab o'tirishdan butunlay qutuldik. Bitta telefon orqali 1 soniyada Like beraman, qolgan barcha jadvallarni platformaning o'zi avtomatik tayyorlaydi.",
+    metricValue: "15 daqiqa",
+    metricLabel: "Har darsdan tejalgan vaqt",
     accent: "#0071E3"
   },
   {
-    quote: "Qog'oz jurnallarga ruchka bilan belgi qo'yish va oy oxirida foiz hisoblab o'tirishdan butunlay qutuldik. Bitta telefon orqali 1 soniyada Like beraman, qolgan barcha jadvallarni platformaning o'zi avtomatik tayyorlaydi.",
-    author: "Shahnoza Karimova",
-    role: "Bosh o'qituvchi",
-    school: "Insight Plus",
-    stats: "Har darsdan 15 daqiqa tejalgan vaqt",
-    bg: "#121720",
-    accent: "#30D158"
-  },
-  {
-    quote: "Guruhlar o'rtasidagi reyting tufayli o'quvchilar bir-biriga yordam bera boshladi — jamoaviy ruh paydo bo'ldi. Ota-onalar ham farzandining oylik natijalaridan va davomatidan juda mamnun.",
     author: "Azizbek Mansurov",
     role: "O'quv ishlari koordinatori",
-    school: "Tamaddun LC",
-    stats: "98% ota-onalar mamnuniyati",
-    bg: "#181E28",
-    accent: "#FF9F0A"
+    school: "Yuksalish School",
+    quote: "Guruhlar o'rtasidagi reyting tufayli o'quvchilar bir-biriga yordam bera boshladi — jamoaviy ruh paydo bo'ldi. Ota-onalar ham farzandining oylik natijalaridan va davomatidan juda mamnun.",
+    metricValue: "98%",
+    metricLabel: "Ota-onalar mamnuniyati",
+    accent: "#D97706"
   }
 ];
 
@@ -313,7 +338,7 @@ const FAQS = [
   },
   {
     q: "O'quvchilar soni bo'yicha qaysi tarifni tanlash kerak?",
-    a: "O'quv markazingizdagi o'quvchilar hajmiga qarab tanlashingiz mumkin: 100 tagacha (100 ming so'm), 300 tagacha (250 ming so'm) yoki 500 tagacha (400 ming so'm). 500 dan ortiq o'quvchilar uchun individual kelishiladi."
+    a: "Yakka repetitorlar uchun Ustoz (30 tagacha — 45 000 so'm) yoki Ustoz Pro (60 tagacha — 70 000 so'm) tavsiya etiladi. O'quv markazlari va maktablar uchun esa Start (100 tagacha — 100 000 so'm), Ommabop (300 tagacha — 250 000 so'm) yoki Premium (500 tagacha — 400 000 so'm) qulay. Barcha segmentlar uchun 14 kunlik to'liq demo (33 000 so'm) mavjud."
   },
   {
     q: "Tizimni maktabimizga sozlashda yordam berasizlarmi?",
@@ -322,18 +347,35 @@ const FAQS = [
 ];
 
 export default function LandingPage({ onNavigateToLogin }) {
+  // Video tayyor bo'lguncha vaqtincha yashirilgan (tayyor bo'lganda true qilinadi)
+  const SHOW_VIDEO = false;
   const [isVideoPlaying, setIsVideoPlaying] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [activePricingSegment, setActivePricingSegment] = useState('teachers');
 
-  // Lock body scroll when mobile drawer is open to prevent background jitter
+  // Lock background scroll completely when mobile drawer is open to prevent background movement
   useEffect(() => {
-    if (isMobileMenuOpen) {
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = '';
-    }
+    if (!isMobileMenuOpen) return;
+
+    const scrollY = window.scrollY;
+    const originalOverflow = document.body.style.overflow;
+    const originalPosition = document.body.style.position;
+    const originalTop = document.body.style.top;
+    const originalWidth = document.body.style.width;
+
+    document.body.style.overflow = 'hidden';
+    document.body.style.position = 'fixed';
+    document.body.style.top = `-${scrollY}px`;
+    document.body.style.width = '100%';
+    document.documentElement.style.overflow = 'hidden';
+
     return () => {
-      document.body.style.overflow = '';
+      document.body.style.overflow = originalOverflow;
+      document.body.style.position = originalPosition;
+      document.body.style.top = originalTop;
+      document.body.style.width = originalWidth;
+      document.documentElement.style.overflow = '';
+      window.scrollTo(0, scrollY);
     };
   }, [isMobileMenuOpen]);
 
@@ -478,33 +520,38 @@ export default function LandingPage({ onNavigateToLogin }) {
           </div>
         </div>
 
-        {/* Full-Screen Mobile Navigation Menu mounted directly to document.body via portal */}
+        {/* Right-Side Slide-in Mobile Drawer mounted directly to document.body via portal */}
         {isMobileMenuOpen && typeof document !== 'undefined' && createPortal(
           <div
-            className="mobile-menu-overlay fixed inset-0 w-full h-full min-h-screen min-h-[100dvh] z-[9999999] md:hidden flex flex-col bg-[var(--bg-primary)] dark:bg-[#202124] text-[var(--text-primary)] font-sans antialiased animate-fade-in"
-            style={{
-              position: 'fixed',
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              width: '100%',
-              height: '100dvh',
-              zIndex: 9999999
-            }}
+            className="fixed inset-0 z-[9999999] md:hidden overflow-hidden"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Mobil navigatsiya menyusi"
           >
-            
-            {/* Full-Screen Menu Top Header Bar (1:1 identical alignment and styling with Navbar) */}
-            <div className="w-full bg-[var(--bg-primary)] dark:bg-[#202124] border-b border-[var(--border-color)] pt-[env(safe-area-inset-top,0px)] shrink-0 transition-colors">
-              <div className="max-w-7xl 2xl:max-w-[1440px] mx-auto px-4 sm:px-8 lg:px-12 2xl:px-16 flex items-center justify-between h-16 sm:h-20 xl:h-22 gap-2 min-w-0">
+            {/* Backdrop Scrim (Smooth dark blur overlay) */}
+            <div
+              className="fixed inset-0 bg-black/60 backdrop-blur-sm animate-backdrop-in transition-opacity cursor-pointer"
+              onClick={() => setIsMobileMenuOpen(false)}
+              onTouchMove={(e) => e.preventDefault()}
+              aria-hidden="true"
+            />
+
+            {/* Right-Side Drawer Panel */}
+            <div
+              className="fixed top-0 right-0 bottom-0 w-[86%] max-w-[360px] h-full h-[100dvh] bg-[var(--bg-primary)] dark:bg-[#15171C] text-[var(--text-primary)] shadow-2xl border-l border-black/10 dark:border-white/10 flex flex-col z-10 animate-drawer-right select-none"
+              style={{ overscrollBehavior: 'contain' }}
+              onTouchMove={(e) => e.stopPropagation()}
+            >
+              {/* Drawer Top Header */}
+              <div className="w-full bg-[var(--bg-primary)] dark:bg-[#15171C] border-b border-black/[0.08] dark:border-white/[0.08] pt-[max(1rem,env(safe-area-inset-top,16px))] pb-3.5 px-5 flex items-center justify-between shrink-0 transition-colors">
                 <div
-                  className="navbar-brand-section scale-active cursor-pointer shrink-0 min-h-[44px] flex items-center select-none"
+                  className="scale-active cursor-pointer shrink-0 flex items-center gap-2 select-none"
                   onClick={() => {
                     setIsMobileMenuOpen(false);
                     window.scrollTo({ top: 0, behavior: 'smooth' });
                   }}
                 >
-                  <h1 className="navbar-logo-text text-lg min-[360px]:text-xl sm:text-2xl 2xl:text-3xl font-bold tracking-tight text-[var(--text-primary)]">
+                  <h1 className="text-lg font-bold tracking-tight text-[var(--text-primary)]">
                     EPCHIL <span className="logo-badge">ROBOT</span>
                   </h1>
                 </div>
@@ -512,130 +559,192 @@ export default function LandingPage({ onNavigateToLogin }) {
                 <button
                   type="button"
                   onClick={() => setIsMobileMenuOpen(false)}
-                  className="flex items-center justify-center w-11 h-11 min-w-[44px] min-h-[44px] rounded-full border border-black/10 dark:border-white/15 bg-black/[0.04] dark:bg-white/[0.06] text-[var(--text-primary)] hover:bg-black/[0.08] dark:hover:bg-white/[0.1] transition-colors cursor-pointer active:scale-95"
+                  className="flex items-center justify-center w-10 h-10 min-w-[40px] min-h-[40px] rounded-full border border-black/10 dark:border-white/15 bg-black/[0.04] dark:bg-white/[0.06] text-[var(--text-primary)] hover:bg-black/[0.08] dark:hover:bg-white/[0.1] active:scale-90 transition-all cursor-pointer"
                   aria-label="Menyuni yopish"
                 >
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                     <line x1="18" y1="6" x2="6" y2="18" />
                     <line x1="6" y1="6" x2="18" y2="18" />
                   </svg>
                 </button>
               </div>
-            </div>
 
-            {/* Full-Screen Scrollable Content */}
-            <div className="flex-1 w-full overflow-y-auto px-5 py-6 flex flex-col justify-between gap-8 pb-[calc(env(safe-area-inset-bottom,0px)+24px)]">
-              
-              {/* Navigation Items (Apple Minimalist Full-Width List) */}
-              <nav className="flex flex-col space-y-1.5">
-                <button
-                  type="button"
-                  onClick={() => handleNavClick('pricing-section')}
-                  className="flex items-center justify-between w-full px-4 py-3.5 rounded-2xl text-left font-semibold text-base text-[var(--text-primary)] hover:bg-black/5 dark:hover:bg-white/5 active:bg-black/10 dark:active:bg-white/10 transition-colors cursor-pointer min-h-[50px]"
-                >
-                  <span>Narxlar va Statistika</span>
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[var(--text-secondary)]">
-                    <polyline points="9 18 15 12 9 6" />
-                  </svg>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleNavClick('platform-screens')}
-                  className="flex items-center justify-between w-full px-4 py-3.5 rounded-2xl text-left font-semibold text-base text-[var(--text-primary)] hover:bg-black/5 dark:hover:bg-white/5 active:bg-black/10 dark:active:bg-white/10 transition-colors cursor-pointer min-h-[50px]"
-                >
-                  <span>Skrinshotlar (7 ta modul)</span>
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[var(--text-secondary)]">
-                    <polyline points="9 18 15 12 9 6" />
-                  </svg>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleNavClick('platform-features')}
-                  className="flex items-center justify-between w-full px-4 py-3.5 rounded-2xl text-left font-semibold text-base text-[var(--text-primary)] hover:bg-black/5 dark:hover:bg-white/5 active:bg-black/10 dark:active:bg-white/10 transition-colors cursor-pointer min-h-[50px]"
-                >
-                  <span>Imkoniyatlar</span>
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[var(--text-secondary)]">
-                    <polyline points="9 18 15 12 9 6" />
-                  </svg>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleNavClick('testimonials')}
-                  className="flex items-center justify-between w-full px-4 py-3.5 rounded-2xl text-left font-semibold text-base text-[var(--text-primary)] hover:bg-black/5 dark:hover:bg-white/5 active:bg-black/10 dark:active:bg-white/10 transition-colors cursor-pointer min-h-[50px]"
-                >
-                  <span>Mijozlar fikri</span>
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[var(--text-secondary)]">
-                    <polyline points="9 18 15 12 9 6" />
-                  </svg>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleNavClick('faq')}
-                  className="flex items-center justify-between w-full px-4 py-3.5 rounded-2xl text-left font-semibold text-base text-[var(--text-primary)] hover:bg-black/5 dark:hover:bg-white/5 active:bg-black/10 dark:active:bg-white/10 transition-colors cursor-pointer min-h-[50px]"
-                >
-                  <span>Ko'p beriladigan savollar (FAQ)</span>
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[var(--text-secondary)]">
-                    <polyline points="9 18 15 12 9 6" />
-                  </svg>
-                </button>
-              </nav>
+              {/* Drawer Scrollable Body */}
+              <div
+                className="flex-1 w-full overflow-y-auto px-5 py-4 flex flex-col justify-between gap-6 pb-[calc(env(safe-area-inset-bottom,0px)+20px)]"
+                style={{ overscrollBehavior: 'contain' }}
+              >
+                <div className="flex flex-col gap-4">
+                  {/* #00A6ED & #FFB400 Segment Switcher Pill */}
+                  <div className="p-1 bg-black/[0.04] dark:bg-white/[0.06] rounded-xl flex items-center gap-1 border border-black/5 dark:border-white/5">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setActivePricingSegment('teachers');
+                        handleNavClick('pricing-section');
+                      }}
+                      className={`flex-1 py-2 px-3 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                        activePricingSegment === 'teachers'
+                          ? 'bg-[#00A6ED] text-white shadow-md shadow-[#00A6ED]/30'
+                          : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+                      }`}
+                    >
+                      <span className="w-2 h-2 rounded-full bg-white/90" />
+                      Ustozlar
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setActivePricingSegment('centers');
+                        handleNavClick('pricing-section');
+                      }}
+                      className={`flex-1 py-2 px-3 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                        activePricingSegment === 'centers'
+                          ? 'bg-[#FFB400] text-black shadow-md shadow-[#FFB400]/30'
+                          : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+                      }`}
+                    >
+                      <span className="w-2 h-2 rounded-full bg-black/80" />
+                      Markazlar
+                    </button>
+                  </div>
 
-              {/* Bottom Actions & Contacts */}
-              <div className="flex flex-col gap-5 pt-4">
-                <div className="flex flex-col gap-3">
-                  <a
-                    href="https://t.me/bkzd19?text=Assalomu%20alaykum!%20Epchil%20Robot%20platformasi%20bo'yicha%20demo%20so'ramoqchi%20edim."
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    onClick={() => setIsMobileMenuOpen(false)}
-                    className="w-full min-h-[48px] py-3.5 px-6 rounded-2xl border border-black/10 dark:border-white/15 bg-black/[0.04] dark:bg-white/[0.06] hover:bg-black/[0.08] text-[var(--text-primary)] flex items-center justify-center text-xs font-semibold tracking-wide uppercase cursor-pointer no-underline active:scale-98"
-                  >
-                    Demo olish (Telegram)
-                  </a>
+                  {/* Navigation Links */}
+                  <nav className="flex flex-col space-y-1">
+                    <button
+                      type="button"
+                      onClick={() => handleNavClick('pricing-section')}
+                      className="flex items-center justify-between w-full px-3.5 py-3 rounded-xl text-left font-semibold text-sm text-[var(--text-primary)] hover:bg-black/5 dark:hover:bg-white/5 active:bg-black/10 dark:active:bg-white/10 transition-colors cursor-pointer group"
+                    >
+                      <span className="flex items-center gap-2.5">
+                        <span className="w-1.5 h-1.5 rounded-full bg-[#00A6ED]" />
+                        <span>Narxlar va Tariflar</span>
+                      </span>
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[var(--text-secondary)] group-hover:translate-x-0.5 transition-transform">
+                        <polyline points="9 18 15 12 9 6" />
+                      </svg>
+                    </button>
 
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setIsMobileMenuOpen(false);
-                      onNavigateToLogin();
-                    }}
-                    className="w-full min-h-[48px] py-3.5 px-6 rounded-2xl bg-[#0C1016] text-white hover:bg-[#1E242C] dark:bg-white dark:text-[#0C1016] dark:hover:bg-[#EBEBEF] flex items-center justify-center gap-2 text-xs font-semibold tracking-wide uppercase cursor-pointer shadow-md active:scale-98"
-                  >
-                    <span>Tizimga kirish</span>
-                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M5 12h14" />
-                      <path d="m12 5 7 7-7 7" />
-                    </svg>
-                  </button>
+                    <button
+                      type="button"
+                      onClick={() => handleNavClick('platform-screens')}
+                      className="flex items-center justify-between w-full px-3.5 py-3 rounded-xl text-left font-semibold text-sm text-[var(--text-primary)] hover:bg-black/5 dark:hover:bg-white/5 active:bg-black/10 dark:active:bg-white/10 transition-colors cursor-pointer group"
+                    >
+                      <span className="flex items-center gap-2.5">
+                        <span className="w-1.5 h-1.5 rounded-full bg-[#FFB400]" />
+                        <span>Skrinshotlar (7 ta modul)</span>
+                      </span>
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[var(--text-secondary)] group-hover:translate-x-0.5 transition-transform">
+                        <polyline points="9 18 15 12 9 6" />
+                      </svg>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => handleNavClick('platform-features')}
+                      className="flex items-center justify-between w-full px-3.5 py-3 rounded-xl text-left font-semibold text-sm text-[var(--text-primary)] hover:bg-black/5 dark:hover:bg-white/5 active:bg-black/10 dark:active:bg-white/10 transition-colors cursor-pointer group"
+                    >
+                      <span className="flex items-center gap-2.5">
+                        <span className="w-1.5 h-1.5 rounded-full bg-black/30 dark:bg-white/30" />
+                        <span>Imkoniyatlar</span>
+                      </span>
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[var(--text-secondary)] group-hover:translate-x-0.5 transition-transform">
+                        <polyline points="9 18 15 12 9 6" />
+                      </svg>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => handleNavClick('testimonials')}
+                      className="flex items-center justify-between w-full px-3.5 py-3 rounded-xl text-left font-semibold text-sm text-[var(--text-primary)] hover:bg-black/5 dark:hover:bg-white/5 active:bg-black/10 dark:active:bg-white/10 transition-colors cursor-pointer group"
+                    >
+                      <span className="flex items-center gap-2.5">
+                        <span className="w-1.5 h-1.5 rounded-full bg-black/30 dark:bg-white/30" />
+                        <span>Mijozlar fikri</span>
+                      </span>
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[var(--text-secondary)] group-hover:translate-x-0.5 transition-transform">
+                        <polyline points="9 18 15 12 9 6" />
+                      </svg>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => handleNavClick('faq')}
+                      className="flex items-center justify-between w-full px-3.5 py-3 rounded-xl text-left font-semibold text-sm text-[var(--text-primary)] hover:bg-black/5 dark:hover:bg-white/5 active:bg-black/10 dark:active:bg-white/10 transition-colors cursor-pointer group"
+                    >
+                      <span className="flex items-center gap-2.5">
+                        <span className="w-1.5 h-1.5 rounded-full bg-black/30 dark:bg-white/30" />
+                        <span>Ko'p beriladigan savollar</span>
+                      </span>
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[var(--text-secondary)] group-hover:translate-x-0.5 transition-transform">
+                        <polyline points="9 18 15 12 9 6" />
+                      </svg>
+                    </button>
+                  </nav>
                 </div>
 
-                {/* Contact shortcuts */}
-                <div className="pt-4 border-t border-black/[0.06] dark:border-white/[0.08] flex flex-col gap-2.5 text-xs text-[var(--text-secondary)]">
-                  <div className="flex items-center justify-between">
-                    <a href="tel:+998332220301" className="hover:text-[var(--text-primary)] transition-colors no-underline flex items-center gap-2 py-1">
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[#0071E3]">
-                        <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
+                {/* Bottom Actions (#00A6ED & #FFB400 buttons) and Contact Info */}
+                <div className="flex flex-col gap-4 pt-2">
+                  <div className="flex flex-col gap-2.5">
+                    {/* Primary Login Button with #00A6ED */}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsMobileMenuOpen(false);
+                        onNavigateToLogin();
+                      }}
+                      className="w-full min-h-[46px] py-3 px-4 rounded-xl bg-[#00A6ED] hover:bg-[#0095d6] text-white flex items-center justify-center gap-2 text-xs font-bold tracking-wider uppercase cursor-pointer shadow-lg shadow-[#00A6ED]/25 active:scale-[0.98] transition-all"
+                    >
+                      <span>Tizimga kirish</span>
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M5 12h14" />
+                        <path d="m12 5 7 7-7 7" />
                       </svg>
-                      <span>+998 (33) 222-03-01</span>
-                    </a>
-                    <a href="https://t.me/bkzd19" target="_blank" rel="noopener noreferrer" className="hover:text-[var(--text-primary)] transition-colors no-underline flex items-center gap-2 py-1">
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[#0071E3]">
+                    </button>
+
+                    {/* Demo Telegram Button with #FFB400 */}
+                    <a
+                      href="https://t.me/bkzd19?text=Assalomu%20alaykum!%20Epchil%20Robot%20platformasi%20bo'yicha%20demo%20so'ramoqchi%20edim."
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                      className="w-full min-h-[46px] py-3 px-4 rounded-xl bg-[#FFB400] hover:bg-[#eab000] text-[#0C1016] flex items-center justify-center gap-2 text-xs font-bold tracking-wider uppercase cursor-pointer shadow-lg shadow-[#FFB400]/25 no-underline active:scale-[0.98] transition-all"
+                    >
+                      <span>14 Kunlik Demo (Telegram)</span>
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                         <line x1="22" y1="2" x2="11" y2="13" />
                         <polygon points="22 2 15 22 11 13 2 9 22 2" />
                       </svg>
-                      <span>Telegram: @bkzd19</span>
                     </a>
                   </div>
-                  <div className="flex items-center justify-between pt-1 text-[11px] text-[var(--text-tertiary)]">
-                    <span>Epchil Robot © {new Date().getFullYear()}</span>
-                    <span>V2.0.0</span>
+
+                  {/* Contact shortcuts */}
+                  <div className="pt-3 border-t border-black/[0.06] dark:border-white/[0.08] flex flex-col gap-2 text-xs text-[var(--text-secondary)]">
+                    <div className="flex items-center justify-between">
+                      <a href="tel:+998332220301" className="hover:text-[var(--text-primary)] transition-colors no-underline flex items-center gap-1.5 py-1">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[#00A6ED]">
+                          <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
+                        </svg>
+                        <span>+998 (33) 222-03-01</span>
+                      </a>
+                      <a href="https://t.me/bkzd19" target="_blank" rel="noopener noreferrer" className="hover:text-[var(--text-primary)] transition-colors no-underline flex items-center gap-1.5 py-1">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[#FFB400]">
+                          <line x1="22" y1="2" x2="11" y2="13" />
+                          <polygon points="22 2 15 22 11 13 2 9 22 2" />
+                        </svg>
+                        <span>@bkzd19</span>
+                      </a>
+                    </div>
+                    <div className="flex items-center justify-between pt-1 text-[11px] text-[var(--text-tertiary)]">
+                      <span>Epchil Robot © {new Date().getFullYear()}</span>
+                      <span className="font-mono text-[10px] px-1.5 py-0.5 rounded bg-black/5 dark:bg-white/10">v2.0</span>
+                    </div>
                   </div>
                 </div>
 
               </div>
 
             </div>
-
           </div>,
           document.body
         )}
@@ -643,7 +752,7 @@ export default function LandingPage({ onNavigateToLogin }) {
 
       {/* 2. Hero Section (Fluid Clamp Typography & Responsive Video Player) */}
       <section className="relative w-full pt-12 pb-16 sm:pt-24 sm:pb-28 overflow-hidden">
-        <div className="max-w-7xl 2xl:max-w-[1440px] mx-auto px-4 sm:px-8 lg:px-12 2xl:px-16 mb-12 sm:mb-20 2xl:mb-24">
+        <div className={`max-w-7xl 2xl:max-w-[1440px] mx-auto px-4 sm:px-8 lg:px-12 2xl:px-16 ${SHOW_VIDEO ? 'mb-12 sm:mb-20 2xl:mb-24' : ''}`}>
           <div className="flex flex-col items-start gap-3 sm:gap-6">
             
             <h1
@@ -685,51 +794,53 @@ export default function LandingPage({ onNavigateToLogin }) {
         </div>
 
         {/* Video Showcase Card */}
-        <div className="max-w-7xl 2xl:max-w-[1440px] mx-auto px-4 sm:px-8 lg:px-12 2xl:px-16">
-          <div className="rounded-2xl sm:rounded-3xl lg:rounded-[3rem] bg-[#0C1016] shadow-[0_30px_70px_rgba(0,0,0,0.3)] border border-white/10 aspect-video relative overflow-hidden flex items-center justify-center group">
-          {isVideoPlaying ? (
-            <iframe
-              className="w-full h-full border-0 pointer-events-auto rounded-[inherit] relative z-10"
-              style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-              src="https://www.youtube-nocookie.com/embed/g7xkVEWrX8E?autoplay=1&controls=1&rel=0&modestbranding=1"
-              title="Epchil Robot Showcase"
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-              referrerPolicy="strict-origin-when-cross-origin"
-              allowFullScreen
-            />
-          ) : (
-            <div
-              className="w-full h-full relative cursor-pointer flex items-center justify-center"
-              onClick={() => setIsVideoPlaying(true)}
-            >
-              <img
-                src="https://img.youtube.com/vi/g7xkVEWrX8E/maxresdefault.jpg"
-                alt="Epchil Robot Video Sharhi"
-                className="absolute inset-0 w-full h-full object-cover rounded-[inherit] group-hover:scale-[1.02] transition-transform duration-500"
-                loading="eager"
+        {SHOW_VIDEO && (
+          <div className="max-w-7xl 2xl:max-w-[1440px] mx-auto px-4 sm:px-8 lg:px-12 2xl:px-16">
+            <div className="rounded-2xl sm:rounded-3xl lg:rounded-[3rem] bg-[#0C1016] shadow-[0_30px_70px_rgba(0,0,0,0.3)] border border-white/10 aspect-video relative overflow-hidden flex items-center justify-center group">
+            {isVideoPlaying ? (
+              <iframe
+                className="w-full h-full border-0 pointer-events-auto rounded-[inherit] relative z-10"
+                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                src="https://www.youtube-nocookie.com/embed/g7xkVEWrX8E?autoplay=1&controls=1&rel=0&modestbranding=1"
+                title="Epchil Robot Showcase"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                referrerPolicy="strict-origin-when-cross-origin"
+                allowFullScreen
               />
-              <div className="absolute inset-0 bg-black/35 group-hover:bg-black/45 transition-colors duration-300 rounded-[inherit]" />
-              
-              <button
-                type="button"
-                className="relative z-20 w-14 h-14 min-[420px]:w-16 min-[420px]:h-16 sm:w-20 sm:h-20 rounded-full bg-white/95 backdrop-blur-xl shadow-[0_15px_50px_rgba(0,0,0,0.4)] border border-white/60 flex items-center justify-center text-[#0C1016] group-hover:scale-110 group-active:scale-95 transition-all duration-300 cursor-pointer"
-                aria-label="Videoni ijro etish"
+            ) : (
+              <div
+                className="w-full h-full relative cursor-pointer flex items-center justify-center"
+                onClick={() => setIsVideoPlaying(true)}
               >
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" className="ml-1 text-[#0C1016] sm:w-7 sm:h-7">
-                  <polygon points="6 3 20 12 6 21 6 3" />
-                </svg>
-              </button>
-              
-              <div className="absolute bottom-3 left-3 sm:bottom-8 sm:left-8 z-20 flex items-center bg-black/70 backdrop-blur-md px-3 py-1.5 sm:px-5 sm:py-2.5 rounded-full text-white text-[11px] sm:text-sm font-medium border border-white/10 max-w-[85%]">
-                <span className="truncate">Epchil Robot Video Sharhi</span>
+                <img
+                  src="https://img.youtube.com/vi/g7xkVEWrX8E/maxresdefault.jpg"
+                  alt="Epchil Robot Video Sharhi"
+                  className="absolute inset-0 w-full h-full object-cover rounded-[inherit] group-hover:scale-[1.02] transition-transform duration-500"
+                  loading="eager"
+                />
+                <div className="absolute inset-0 bg-black/35 group-hover:bg-black/45 transition-colors duration-300 rounded-[inherit]" />
+                
+                <button
+                  type="button"
+                  className="relative z-20 w-14 h-14 min-[420px]:w-16 min-[420px]:h-16 sm:w-20 sm:h-20 rounded-full bg-white/95 backdrop-blur-xl shadow-[0_15px_50px_rgba(0,0,0,0.4)] border border-white/60 flex items-center justify-center text-[#0C1016] group-hover:scale-110 group-active:scale-95 transition-all duration-300 cursor-pointer"
+                  aria-label="Videoni ijro etish"
+                >
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" className="ml-1 text-[#0C1016] sm:w-7 sm:h-7">
+                    <polygon points="6 3 20 12 6 21 6 3" />
+                  </svg>
+                </button>
+                
+                <div className="absolute bottom-3 left-3 sm:bottom-8 sm:left-8 z-20 flex items-center bg-black/70 backdrop-blur-md px-3 py-1.5 sm:px-5 sm:py-2.5 rounded-full text-white text-[11px] sm:text-sm font-medium border border-white/10 max-w-[85%]">
+                  <span className="truncate">Epchil Robot Video Sharhi</span>
+                </div>
               </div>
+            )}
             </div>
-          )}
           </div>
-        </div>
+        )}
       </section>
 
-      {/* 3. Tezkor Sotuv Oqimi: Narxlar & Statistika (Pricing & Social Proof Stats) */}
+      {/* 3. Tezkor Sotuv Oqimi: 2 Segmentli Narxlar & Demo */}
       <section
         id="pricing-section"
         className="relative w-full border-t border-[var(--border-color)] bg-[var(--bg-secondary)] py-14 sm:py-24 lg:py-28 scroll-mt-20"
@@ -737,7 +848,7 @@ export default function LandingPage({ onNavigateToLogin }) {
         <div className="max-w-7xl 2xl:max-w-[1440px] mx-auto px-4 sm:px-8 lg:px-12 2xl:px-16">
           
           {/* Section Header */}
-          <div className="mb-10 sm:mb-20">
+          <div className="mb-10 sm:mb-14">
             <span className="text-xs sm:text-sm lg:text-base font-bold tracking-widest text-[#0071E3] uppercase mb-2 sm:mb-3 block">
               ISHONCH VA QULAY SHARTLAR
             </span>
@@ -746,43 +857,143 @@ export default function LandingPage({ onNavigateToLogin }) {
               <span className="text-[#0071E3]">qulay narxda sinab ko'ring.</span>
             </h2>
             <p className="text-sm sm:text-xl lg:text-2xl text-[var(--text-secondary)] mt-3 sm:mt-4 max-w-3xl font-normal leading-relaxed">
-              O'quv markazingiz yoki maktabingiz uchun eng qulay shartlar. Hech qanday murakkab shartnomalarsiz to'g'ridan-to'g'ri boshlang.
+              Yakka repetitorlardan tortib yirik o'quv markazlarigacha moslashtirilgan 2 segmentli hamyonbop va shaffof narxlar.
             </p>
           </div>
 
-          {/* Social Proof Stats Grid (Mobile 1 col, xs 2 cols, lg 4 cols) */}
-          <div className="grid grid-cols-1 xs:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6 lg:gap-8 mb-12 sm:mb-20">
-            {STATS.map((stat, idx) => (
-              <div
-                key={idx}
-                className="p-4 sm:p-7 lg:p-8 2xl:p-9 rounded-2xl sm:rounded-[28px] bg-[var(--bg-card)] border border-[var(--border-color)] shadow-sm hover:shadow-md transition-all duration-300 flex flex-col justify-between group min-w-0"
-              >
-                <div className="w-10 h-10 sm:w-11 sm:h-11 lg:w-12 lg:h-12 2xl:w-14 2xl:h-14 rounded-xl sm:rounded-2xl bg-[#0071E3]/10 text-[#0071E3] flex items-center justify-center mb-3 sm:mb-6 group-hover:scale-110 transition-transform shrink-0">
-                  {stat.icon}
+          {/* Universal Demo Entry Point Banner */}
+          <div className="mb-10 sm:mb-14 rounded-2xl sm:rounded-[32px] p-5 sm:p-7 lg:p-8 bg-gradient-to-br from-[#0071E3]/12 via-[#0071E3]/5 to-transparent border-2 border-[#0071E3]/35 shadow-xl relative overflow-hidden">
+            <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6">
+                <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-[#0071E3] text-white flex items-center justify-center shrink-0 shadow-lg shadow-[#0071E3]/25">
+                  <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+                  </svg>
                 </div>
-                <div className="min-w-0">
-                  <div className="text-2xl sm:text-4xl lg:text-5xl 2xl:text-6xl font-black tracking-tight text-[var(--text-primary)] mb-1 truncate">
-                    {stat.value}
+                <div>
+                  <div className="flex flex-wrap items-center gap-2 mb-1.5">
+                    <span className="text-[10px] sm:text-xs font-black uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-[#0071E3] text-white">
+                      {DEMO_PLAN.badge}
+                    </span>
+                    <span className="text-xs sm:text-sm font-semibold text-[var(--text-secondary)]">
+                      14 Kunlik To'liq Sinov
+                    </span>
                   </div>
-                  <div className="text-sm sm:text-base lg:text-lg font-bold text-[var(--text-primary)] mb-1 break-words">
-                    {stat.label}
+                  <div className="flex items-baseline gap-2 flex-wrap">
+                    <h3 className="text-2xl sm:text-3xl font-black text-[var(--text-primary)]">
+                      {DEMO_PLAN.price}
+                    </h3>
+                    <span className="text-xs sm:text-sm font-medium text-[var(--text-secondary)]">
+                      {DEMO_PLAN.period}
+                    </span>
                   </div>
-                  <p className="text-xs sm:text-sm lg:text-base text-[var(--text-secondary)] leading-relaxed">
-                    {stat.description}
+                  <p className="text-xs sm:text-sm text-[var(--text-secondary)] mt-1.5 max-w-2xl leading-relaxed">
+                    {DEMO_PLAN.description}
                   </p>
                 </div>
               </div>
-            ))}
-          </div>
 
-          {/* Pricing Plans Grid (4 Cards: Demo, 100, 300, 500) */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-5 lg:gap-6 items-stretch">
-            {PRICING_PLANS.map((plan) => (
+              <a
+                href={DEMO_PLAN.ctaLink}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-full lg:w-auto px-7 py-3.5 sm:py-4 rounded-full bg-[#0071E3] hover:bg-[#0077ED] text-white font-bold text-xs sm:text-sm uppercase tracking-wider transition-all duration-200 shadow-md hover:shadow-xl hover:scale-[1.02] active:scale-98 flex items-center justify-center gap-2.5 no-underline shrink-0"
+              >
+                <span>{DEMO_PLAN.ctaText}</span>
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M5 12h14" />
+                  <path d="m12 5 7 7-7 7" />
+                </svg>
+              </a>
+            </div>
+          </div>
+        </div>
+
+        {/* Edge-to-Edge Full Width Sharp Rectangular Segment Switcher (#00A6ED & #FFB400 - Pure Solid Colors) */}
+        <div className="w-full border-y border-black/20 dark:border-white/20 my-8 sm:my-12 relative">
+          <div className="w-full grid grid-cols-2">
+            
+            {/* Ustoz Segmenti Button (#00A6ED) */}
+            <button
+              type="button"
+              onClick={() => setActivePricingSegment('teachers')}
+              aria-pressed={activePricingSegment === 'teachers'}
+              style={{ backgroundColor: '#00A6ED' }}
+              className="relative w-full py-5 sm:py-7 lg:py-8 px-3 sm:px-6 text-center cursor-pointer flex flex-col items-center justify-center border-r border-black/20 dark:border-white/20 select-none rounded-none text-white transition-all duration-75 active:scale-[0.99] active:brightness-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60 focus-visible:ring-inset"
+            >
+              <span className="text-sm min-[380px]:text-base sm:text-2xl lg:text-3xl font-black tracking-tight leading-tight">
+                Ustoz Segmenti
+              </span>
+              <span className="text-[11px] min-[380px]:text-xs sm:text-sm lg:text-base font-semibold mt-0.5 sm:mt-1 text-white/95">
+                (Yakka repetitorlar)
+              </span>
+
+              {/* Active Pointer ▼ (pointing down to tariffs) */}
+              {activePricingSegment === 'teachers' && (
+                <div 
+                  className="absolute top-full left-1/2 -translate-x-1/2 z-20 pointer-events-none -mt-[1px]"
+                  aria-hidden="true"
+                >
+                  <svg 
+                    viewBox="0 0 28 14" 
+                    className="w-7 h-3.5 sm:w-9 sm:h-4.5 block filter drop-shadow-[0_2px_4px_rgba(0,0,0,0.15)]"
+                  >
+                    <polygon points="0,0 28,0 14,14" fill="#00A6ED" />
+                  </svg>
+                </div>
+              )}
+            </button>
+
+            {/* Markaz Segmenti Button (#FFB400) */}
+            <button
+              type="button"
+              onClick={() => setActivePricingSegment('centers')}
+              aria-pressed={activePricingSegment === 'centers'}
+              style={{ backgroundColor: '#FFB400' }}
+              className="relative w-full py-5 sm:py-7 lg:py-8 px-3 sm:px-6 text-center cursor-pointer flex flex-col items-center justify-center select-none rounded-none text-[#0C1016] transition-all duration-75 active:scale-[0.99] active:brightness-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/40 focus-visible:ring-inset"
+            >
+              <span className="text-sm min-[380px]:text-base sm:text-2xl lg:text-3xl font-black tracking-tight leading-tight">
+                Markaz Segmenti
+              </span>
+              <span className="text-[11px] min-[380px]:text-xs sm:text-sm lg:text-base font-semibold mt-0.5 sm:mt-1 text-[#0C1016]/95">
+                (O'quv markazlari)
+              </span>
+
+              {/* Active Pointer ▼ (pointing down to tariffs) */}
+              {activePricingSegment === 'centers' && (
+                <div 
+                  className="absolute top-full left-1/2 -translate-x-1/2 z-20 pointer-events-none -mt-[1px]"
+                  aria-hidden="true"
+                >
+                  <svg 
+                    viewBox="0 0 28 14" 
+                    className="w-7 h-3.5 sm:w-9 sm:h-4.5 block filter drop-shadow-[0_2px_4px_rgba(0,0,0,0.15)]"
+                  >
+                    <polygon points="0,0 28,0 14,14" fill="#FFB400" />
+                  </svg>
+                </div>
+              )}
+            </button>
+
+          </div>
+        </div>
+
+        {/* Pricing Cards Container */}
+        <div className="max-w-7xl 2xl:max-w-[1440px] mx-auto px-4 sm:px-8 lg:px-12 2xl:px-16">
+          {/* Pricing Plans Grid (Dynamic layout based on segment) */}
+          <div
+            className={`gap-6 items-stretch ${
+              activePricingSegment === 'teachers'
+                ? 'max-w-4xl mx-auto grid grid-cols-1 md:grid-cols-2'
+                : 'grid grid-cols-1 lg:grid-cols-3'
+            }`}
+          >
+            {PRICING_SEGMENTS[activePricingSegment].plans.map((plan) => (
               <div
                 key={plan.id}
-                className={`relative rounded-2xl sm:rounded-[32px] p-5 sm:p-6 lg:p-7 xl:p-6 2xl:p-7 flex flex-col justify-between transition-all duration-300 min-w-0 ${
+                className={`relative rounded-2xl sm:rounded-[32px] p-6 sm:p-7 lg:p-8 flex flex-col justify-between transition-all duration-300 min-w-0 ${
                   plan.highlighted
-                    ? 'bg-[#0C1016] text-white border-2 border-[#0071E3] shadow-2xl shadow-[#0071E3]/20 xl:-translate-y-2'
+                    ? 'bg-[#0C1016] text-white border-2 border-[#0071E3] shadow-2xl shadow-[#0071E3]/20 md:-translate-y-2'
                     : 'bg-[var(--bg-card)] text-[var(--text-primary)] border border-[var(--border-color)] shadow-md hover:shadow-lg'
                 }`}
               >
@@ -797,7 +1008,13 @@ export default function LandingPage({ onNavigateToLogin }) {
                     >
                       {plan.badge}
                     </span>
-                    <span className="text-[11px] sm:text-xs font-mono opacity-50">EPCHIL ROBOT</span>
+                    <span className={`text-[11px] sm:text-xs font-semibold px-2.5 py-0.5 rounded-full border ${
+                      plan.highlighted
+                        ? 'border-white/20 text-white/90 bg-white/10'
+                        : 'border-[var(--border-color)] text-[var(--text-secondary)] bg-[var(--bg-secondary)]'
+                    }`}>
+                      {plan.capacity}
+                    </span>
                   </div>
 
                   <h3 className="text-xl sm:text-2xl font-black tracking-tight mb-2">
@@ -812,7 +1029,7 @@ export default function LandingPage({ onNavigateToLogin }) {
                   {/* Price & Period with flex-wrap and responsive typography */}
                   <div className="mb-5 sm:mb-6 pb-5 sm:pb-6 border-b border-black/10 dark:border-white/10">
                     <div className="flex flex-col gap-0.5">
-                      <span className="text-2xl min-[360px]:text-3xl sm:text-3xl xl:text-2xl 2xl:text-3xl font-black tracking-tight break-words">
+                      <span className="text-2xl min-[360px]:text-3xl sm:text-3xl xl:text-4xl font-black tracking-tight break-words">
                         {plan.price}
                       </span>
                       <span className={`text-xs break-words ${
@@ -893,13 +1110,13 @@ export default function LandingPage({ onNavigateToLogin }) {
         </div>
       </section>
 
-      {/* 4. Hamkor Maktablar Logotiplari (Partners - Tipografik Dizayn) */}
+      {/* 4. Hamkor Maktablar Logotiplari (Partners - Edge-to-Edge Rang-barang Qirrali Kartalar) */}
       <section
         id="partners-section"
-        className="relative w-full border-t border-[var(--border-color)] bg-[var(--bg-primary)] py-12 sm:py-18 lg:py-24 overflow-hidden"
+        className="relative w-full border-t border-[var(--border-color)] bg-[var(--bg-primary)] pt-12 sm:pt-18 lg:pt-24 pb-0 overflow-hidden"
       >
-        <div className="max-w-7xl 2xl:max-w-[1440px] mx-auto px-4 sm:px-8 lg:px-12 2xl:px-16">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 sm:gap-6 mb-8 sm:mb-12">
+        <div className="max-w-7xl 2xl:max-w-[1440px] mx-auto px-4 sm:px-8 lg:px-12 2xl:px-16 mb-8 sm:mb-12">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 sm:gap-6">
             <div>
               <span className="text-xs sm:text-sm lg:text-base font-bold tracking-widest text-[#0071E3] uppercase mb-1.5 block">
                 HAMKORLARIMIZ
@@ -912,38 +1129,44 @@ export default function LandingPage({ onNavigateToLogin }) {
               O'quvchilarda darsga havasni uyg'otib, ta'lim sifatini yangi bosqichga ko'targan yetakchi markazlar.
             </p>
           </div>
+        </div>
 
-          {/* Partners Grid (Mobile 1 col, xs 2 cols, md 4 cols) */}
-          <div className="grid grid-cols-1 xs:grid-cols-2 md:grid-cols-4 gap-3 sm:gap-6 lg:gap-8">
-            {PARTNERS.map((partner) => (
+        {/* Edge-to-Edge Full Width Sharp Rectangular Partners Grid (Faqat Nomi va Tagline - #FFFFFF) */}
+        <div className="w-full border-y border-black/20 dark:border-white/20 bg-black/15 dark:bg-black/30 grid grid-cols-2 md:grid-cols-4 gap-[1px]">
+          {PARTNERS.map((partner) => (
+            partner.isCta ? (
               <div
                 key={partner.id}
-                className="p-4 sm:p-8 lg:p-10 2xl:p-12 rounded-xl sm:rounded-[24px] bg-[var(--bg-card)] border border-[var(--border-color)] hover:border-[#0071E3]/50 transition-all duration-300 flex flex-col items-center justify-center text-center group cursor-default shadow-sm min-w-0"
+                style={{ backgroundColor: '#FFFFFF' }}
+                className="w-full py-6 sm:py-8 lg:py-10 px-3 sm:px-6 flex flex-col items-center justify-center text-center select-none rounded-none min-w-0 group transition-all duration-150 text-[#0C1016]"
               >
-                {/* Logo Image Slot (kelajakda rasm qo'yish uchun tayyor) */}
-                {partner.logoSrc ? (
-                  <img
-                    src={partner.logoSrc}
-                    alt={partner.name}
-                    className="max-w-full h-8 sm:h-10 lg:h-12 w-auto object-contain mb-2 sm:mb-3.5 grayscale group-hover:grayscale-0 transition-all"
-                  />
-                ) : (
-                  <div className="w-10 h-10 sm:w-12 sm:h-12 lg:w-14 lg:h-14 rounded-xl sm:rounded-2xl bg-black/[0.04] dark:bg-white/[0.06] border border-black/10 dark:border-white/15 flex items-center justify-center mb-2 sm:mb-3.5 group-hover:scale-105 transition-transform shrink-0">
-                    <span className="font-mono text-[11px] sm:text-xs lg:text-sm font-black tracking-tighter text-[#0071E3]">
-                      {partner.badgeText.slice(0, 3)}
-                    </span>
-                  </div>
-                )}
-
-                <h4 className="text-base sm:text-xl lg:text-2xl 2xl:text-3xl font-black tracking-tight text-[var(--text-primary)] group-hover:text-[#0071E3] transition-colors truncate w-full">
+                <h4 className="text-sm min-[380px]:text-base sm:text-lg lg:text-xl 2xl:text-2xl font-black tracking-tight leading-snug w-full text-[#0C1016]">
+                  {partner.title}
+                </h4>
+                <a
+                  href={partner.buttonLink}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="mt-2.5 sm:mt-3.5 px-5 sm:px-6 py-2 sm:py-2.5 rounded-full bg-[#0C1016] hover:bg-[#1E242C] text-white text-xs sm:text-sm font-semibold tracking-wide uppercase inline-flex items-center justify-center shadow-md transition-all duration-200 active:scale-95 no-underline cursor-pointer min-h-[38px] sm:min-h-[42px]"
+                >
+                  {partner.buttonText}
+                </a>
+              </div>
+            ) : (
+              <div
+                key={partner.id}
+                style={{ backgroundColor: '#FFFFFF' }}
+                className="w-full py-7 sm:py-9 lg:py-12 px-3 sm:px-6 flex flex-col items-center justify-center text-center select-none rounded-none min-w-0 group cursor-default transition-all duration-150 text-[#0C1016]"
+              >
+                <h4 className="text-base min-[380px]:text-lg sm:text-xl lg:text-2xl 2xl:text-3xl font-black tracking-tight leading-tight w-full truncate text-[#0C1016]">
                   {partner.name}
                 </h4>
-                <span className="text-[10px] sm:text-xs lg:text-sm text-[var(--text-secondary)] font-medium mt-0.5 sm:mt-1 truncate w-full">
+                <span className="text-[11px] min-[380px]:text-xs sm:text-sm lg:text-base font-semibold mt-1 sm:mt-1.5 text-[#0C1016]/75 w-full truncate">
                   {partner.category}
                 </span>
               </div>
-            ))}
-          </div>
+            )
+          ))}
         </div>
       </section>
 
@@ -1079,12 +1302,12 @@ export default function LandingPage({ onNavigateToLogin }) {
         </div>
       </section>
 
-      {/* 7. Mijozlar Fikri (Testimonials - Vertikal chekkadan-chekkaga yopishgan Rectangles) */}
+      {/* 7. Mijozlar Fikri (Testimonials - Edge-to-Edge 3 Ustunli Qirrali Arxitekturaviy Blok) */}
       <section
         id="testimonials"
         className="relative w-full border-t border-[var(--border-color)] bg-[var(--bg-primary)] pt-14 sm:pt-24 lg:pt-28 pb-0 scroll-mt-20 overflow-hidden"
       >
-        <div className="max-w-7xl 2xl:max-w-[1440px] mx-auto px-4 sm:px-8 lg:px-12 2xl:px-16 mb-10 sm:mb-20 2xl:mb-24">
+        <div className="max-w-7xl 2xl:max-w-[1440px] mx-auto px-4 sm:px-8 lg:px-12 2xl:px-16 mb-10 sm:mb-16 2xl:mb-20">
           <span className="text-xs sm:text-sm lg:text-base font-bold tracking-widest text-[#0071E3] uppercase mb-2 block">
             MIJOZLAR FIKRI
           </span>
@@ -1096,46 +1319,49 @@ export default function LandingPage({ onNavigateToLogin }) {
           </p>
         </div>
 
-        {/* Edge-to-Edge Full Width Vertical Rectangles */}
-        <div className="w-full border-t border-b border-black/10 dark:border-white/10">
+        {/* Edge-to-Edge 3-Column Minimalist Architectural Testimonials Grid (To'liq White Mode - #FFFFFF) */}
+        <div className="w-full border-t border-b border-black/15 dark:border-white/20 grid grid-cols-1 lg:grid-cols-3 divide-y lg:divide-y-0 lg:divide-x divide-black/15 dark:divide-white/20">
           {TESTIMONIALS.map((item, idx) => (
             <div
               key={idx}
-              style={{ backgroundColor: item.bg }}
-              className="w-full text-white px-4 sm:px-8 lg:px-12 2xl:px-16 py-8 sm:py-16 md:py-20 lg:py-24 border-b border-white/10 last:border-b-0 transition-colors"
+              className="flex flex-col justify-between p-6 sm:p-9 lg:p-10 2xl:p-12 text-[#0C1016] min-h-[380px] sm:min-h-[440px]"
+              style={{ backgroundColor: '#FFFFFF' }}
             >
-              <div className="max-w-7xl 2xl:max-w-[1440px] mx-auto flex flex-col md:flex-row md:items-center justify-between gap-6 md:gap-8 lg:gap-16 min-w-0">
-                
-                {/* Left: Author & Stats Info */}
-                <div className="w-full md:w-5/12 shrink-0 min-w-0">
-                  <div className="flex items-center gap-1.5 text-amber-400 mb-3 sm:mb-4">
-                    {[...Array(5)].map((_, sIdx) => (
-                      <svg key={sIdx} width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-                        <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-                      </svg>
-                    ))}
+              <div className="flex flex-col">
+                {/* Header: School Tag (01 / 03 olib tashlandi) */}
+                <div className="flex items-center justify-start mb-6 sm:mb-8">
+                  <span className="font-mono text-[11px] sm:text-xs font-semibold uppercase tracking-wider px-2.5 py-1 rounded border border-black/10 bg-black/[0.04] text-[#0C1016]">
+                    {item.school}
+                  </span>
+                </div>
+
+                {/* Hero Metric Stat Block */}
+                <div className="mb-6 sm:mb-8 pb-6 sm:pb-8 border-b border-black/10">
+                  <div
+                    className="text-4xl sm:text-5xl 2xl:text-6xl font-black font-mono tracking-tight"
+                    style={{ color: item.accent }}
+                  >
+                    {item.metricValue}
                   </div>
-
-                  <h4 className="text-xl sm:text-3xl lg:text-4xl font-black tracking-tight text-white mb-1 break-words">
-                    {item.author}
-                  </h4>
-                  <p className="text-xs sm:text-sm lg:text-base font-medium text-white/60 mb-3 sm:mb-4">
-                    {item.role}, <span className="text-white font-semibold">{item.school}</span>
-                  </p>
-
-                  <div className="inline-flex max-w-full flex-wrap items-center gap-2 px-3.5 py-1.5 lg:px-4 lg:py-2 rounded-full bg-white/10 border border-white/15 text-[11px] sm:text-xs lg:text-sm font-semibold text-white/90">
-                    <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: item.accent }} />
-                    <span className="break-words">{item.stats}</span>
+                  <div className="text-xs sm:text-sm font-semibold uppercase tracking-wider text-[#0C1016]/60 mt-2">
+                    {item.metricLabel}
                   </div>
                 </div>
 
-                {/* Right: Big Quote */}
-                <div className="w-full md:w-7/12 min-w-0">
-                  <p className="text-base sm:text-2xl lg:text-3xl 2xl:text-[2rem] font-medium leading-relaxed text-white/90 italic">
-                    "{item.quote}"
-                  </p>
-                </div>
+                {/* Big Quotation */}
+                <p className="text-base sm:text-lg 2xl:text-xl font-medium leading-relaxed text-[#0C1016]/90 italic">
+                  “{item.quote}”
+                </p>
+              </div>
 
+              {/* Author & Role Footer */}
+              <div className="pt-6 sm:pt-8 mt-8 sm:mt-10 border-t border-black/10 flex flex-col">
+                <h4 className="text-lg sm:text-xl font-bold tracking-tight text-[#0C1016] mb-0.5">
+                  {item.author}
+                </h4>
+                <p className="text-xs sm:text-sm font-medium text-[#0C1016]/60">
+                  {item.role}, <span className="text-[#0C1016] font-semibold">{item.school}</span>
+                </p>
               </div>
             </div>
           ))}

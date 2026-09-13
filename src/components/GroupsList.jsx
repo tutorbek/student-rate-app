@@ -705,9 +705,9 @@ const GroupsList = ({
                 <line x1="6" y1="6" x2="18" y2="18" />
               </svg>
             </button>
-            <h3 className="modal-title text-red">⚠️ Diqqat! Guruhni o'chirish</h3>
+            <h3 className="modal-title text-red">Guruhni o'chirish</h3>
             <p className="modal-warning-text">
-              Ushbu guruhni o'chirsangiz, uning ichidagi barcha talabalar va ularga tegishli baholar (likelar) ham butunlay o'chib ketadi!
+              Ushbu guruhni o'chirishni tasdiqlaysizmi? Xavotir olmang, uni istalgan vaqt Sozlamalar &gt; Savat bo'limidan qayta tiklashingiz mumkin.
             </p>
             <div className="modal-actions">
               <button className="btn btn-secondary scale-active" onClick={() => setConfirmDeleteId(null)}>
@@ -717,7 +717,7 @@ const GroupsList = ({
                 className="btn btn-danger scale-active"
                 onClick={() => handleDelete(confirmDeleteId)}
               >
-                Ha, Butunlay O'chirilsin
+                O'chirish
               </button>
             </div>
           </div>

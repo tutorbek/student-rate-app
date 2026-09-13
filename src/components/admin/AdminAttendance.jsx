@@ -138,6 +138,42 @@ const AdminAttendance = ({
     }
   };
 
+  const handleExportCSV = () => {
+    if (attendanceSessions.length === 0) {
+      alert("Tanlangan davrda eksport qilish uchun darslar mavjud emas!");
+      return;
+    }
+
+    const rows = [];
+    rows.push(['Sana', 'Ustoz', 'Guruh', 'Keldi', 'Sababli', 'Kelmadi', 'Kechikdi', 'Jami', 'Qatnashuv %'].join(';'));
+
+    attendanceSessions.forEach(s => {
+      const row = [
+        `"${s.date}"`,
+        `"${s.teacherLabel.replace(/"/g, '""')}"`,
+        `"${s.groupName.replace(/"/g, '""')}"`,
+        s.present,
+        s.excused || 0,
+        s.absent,
+        s.late,
+        s.total,
+        `${s.rate}%`
+      ];
+      rows.push(row.join(';'));
+    });
+
+    const csvContent = '\uFEFF' + rows.join('\r\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `Epchil_Robot_Admin_Davomad_${selectedYear}_${selectedMonth + 1}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
   const formatUzbekDate = (dateStr) => {
     if (!dateStr) return '';
     const cleanDate = sanitizeAttendanceDate(dateStr);
@@ -151,6 +187,16 @@ const AdminAttendance = ({
 
   return (
     <div className="admin-attendance-container">
+      {/* Printable Header */}
+      <div className="print-header-banner admin-print-header">
+        <h1 className="print-school-title">
+          Epchil Robot — Markaziy Davomad Jurnali
+        </h1>
+        <p className="print-meta-info">
+          Davr: <strong>{UZBEK_MONTHS[selectedMonth]} {selectedYear}-yil</strong> • Ustoz: <strong>{activeTeacherFilter === 'all' ? 'Barcha Ustozlar' : TEACHER_LABELS[activeTeacherFilter]}</strong> • Jami darslar: <strong>{attendanceSessions.length} ta</strong> • Chop etildi: {new Date().toLocaleDateString('uz-UZ')}
+        </p>
+      </div>
+
       {/* Page Header */}
       <div className="page-header">
         <div>
@@ -185,7 +231,7 @@ const AdminAttendance = ({
           </div>
         </div>
 
-        {/* Group Selector & Month Navigator */}
+        {/* Group Selector, Month Navigator & Action Buttons */}
         <div className="admin-att-controls-row">
           <div className="admin-filter-item">
             <label className="form-label">Guruh</label>
@@ -217,6 +263,36 @@ const AdminAttendance = ({
               </button>
             </div>
           </div>
+
+          <div className="admin-att-actions-group">
+            <button
+              type="button"
+              className="btn btn-secondary btn-sm scale-active admin-btn-action"
+              onClick={handleExportCSV}
+              title="Tanlangan oylik davomatni Excel (.csv) formatida yuklab olish"
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                <polyline points="7 10 12 15 17 10" />
+                <line x1="12" y1="15" x2="12" y2="3" />
+              </svg>
+              <span>Excel (.csv)</span>
+            </button>
+
+            <button
+              type="button"
+              className="btn btn-secondary btn-sm scale-active admin-btn-action"
+              onClick={() => window.print()}
+              title="Davomat hisobotini chop etish yoki PDF qilib saqlash"
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="6 9 6 2 18 2 18 9" />
+                <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" />
+                <rect x="6" y="14" width="12" height="8" />
+              </svg>
+              <span>Chop etish / PDF</span>
+            </button>
+          </div>
         </div>
       </div>
 
@@ -228,8 +304,8 @@ const AdminAttendance = ({
         </div>
         <div className="glass-card admin-metric-card">
           <span className="admin-metric-label">O'rtacha qatnashuv</span>
-          <span className="admin-metric-val" style={{ color: metrics.avgRate >= 85 ? '#059669' : '#D97706' }}>
-            {metrics.avgRate}%
+          <span className="admin-metric-val" style={{ color: metrics.totalSessions === 0 ? 'var(--text-tertiary)' : (metrics.avgRate >= 85 ? '#059669' : '#D97706') }}>
+            {metrics.totalSessions === 0 ? '—' : `${metrics.avgRate}%`}
           </span>
         </div>
         <div className="glass-card admin-metric-card">
@@ -477,6 +553,26 @@ const AdminAttendance = ({
           text-align: center;
         }
 
+        .admin-att-actions-group {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          margin-left: auto;
+        }
+
+        .admin-btn-action {
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          padding: 6px 12px;
+          font-weight: 600;
+          font-size: 0.8rem;
+        }
+
+        .admin-print-header {
+          display: none;
+        }
+
         .admin-att-metrics-grid {
           display: grid;
           grid-template-columns: repeat(5, 1fr);
@@ -677,6 +773,74 @@ const AdminAttendance = ({
         [data-theme="dark"] .pill-muted {
           background: #3C4043;
           color: #9AA0A6;
+        }
+
+        /* Print Media Styles */
+        @media print {
+          @page {
+            size: landscape;
+            margin: 10mm;
+          }
+
+          nav, header, aside, .sidebar, .sidebar-container, .navbar,
+          .page-header, .admin-att-filters-card, .btn, button {
+            display: none !important;
+          }
+
+          body, #root, .app-container, .main-layout, .main-content,
+          .admin-attendance-container, .admin-sessions-card {
+            background: #FFFFFF !important;
+            color: #000000 !important;
+            padding: 0 !important;
+            margin: 0 !important;
+            border: none !important;
+            box-shadow: none !important;
+            width: 100% !important;
+          }
+
+          .admin-print-header {
+            display: block !important;
+            margin-bottom: 14px;
+            padding-bottom: 8px;
+            border-bottom: 2px solid #000;
+          }
+
+          .print-school-title {
+            font-size: 16pt;
+            font-weight: bold;
+            margin: 0 0 4px 0;
+            color: #000;
+          }
+
+          .print-meta-info {
+            font-size: 9pt;
+            color: #444;
+          }
+
+          .admin-att-metrics-grid {
+            display: grid !important;
+            grid-template-columns: repeat(6, 1fr) !important;
+            gap: 8px !important;
+            margin-bottom: 14px !important;
+          }
+
+          .admin-metric-card {
+            border: 1px solid #666 !important;
+            padding: 8px !important;
+            background: #FAFAFA !important;
+          }
+
+          .admin-sessions-table th,
+          .admin-sessions-table td {
+            border: 1px solid #666 !important;
+            padding: 4px 6px !important;
+            color: #000 !important;
+          }
+
+          .admin-sessions-table th:last-child,
+          .admin-sessions-table td:last-child {
+            display: none !important;
+          }
         }
       `}</style>
     </div>

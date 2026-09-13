@@ -122,7 +122,6 @@ const Settings = ({
   onPermanentlyDeleteStudent,
   snapshots = [],
   onRollback,
-  triggerSilentBackupDownload,
   userRole,
   onLogout,
   syncStatus = 'saved',
@@ -880,8 +879,7 @@ const Settings = ({
               <div className="danger-notice-box">
                 <IconAlert size={18} />
                 <p>
-                  <strong>Diqqat!</strong> Ushbu amal bazadagi barcha ma'lumotlarni o'chiradi va tizimni boshlang'ich holatiga qaytaradi.
-                  Xavfsizlik uchun tozalashdan avval joriy holat avtomatik ravishda JSON zaxira fayl ko'rinishida yuklab beriladi.
+                  <strong>Diqqat!</strong> Ushbu amal hisobingizdagi barcha ma'lumotlarni tozalaydi va tizimni boshlang'ich holatiga qaytaradi.
                 </p>
               </div>
 
@@ -889,7 +887,6 @@ const Settings = ({
                 type="button"
                 className="btn btn-danger scale-active danger-action-btn"
                 onClick={() => {
-                  triggerSilentBackupDownload();
                   setShowResetConfirm(true);
                 }}
               >

@@ -898,6 +898,15 @@ export const renderStudentAvatar = (avatarKey, size = 24) => {
   // Check if it's a legacy emoji
   const mappedId = EMOJI_TO_AVATAR_MAP[normalizedKey] || normalizedKey;
 
+  if (mappedId === '👤' || mappedId === 'user' || mappedId === 'unknown') {
+    return (
+      <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ width: size, height: size, display: 'block', margin: 'auto' }}>
+        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+        <circle cx="12" cy="7" r="4" />
+      </svg>
+    );
+  }
+
   const found = STUDENT_AVATARS.find((item) => item.id === mappedId);
   if (found) {
     return found.svg(size);

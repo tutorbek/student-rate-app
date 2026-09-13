@@ -23,49 +23,75 @@ export function getStudentJoinDate(student) {
  * @returns {boolean}
  */
 export function isStudentInGroupAtDate(student, lessonDateStr, groupId = null) {
-  if (!lessonDateStr || !student) return true;
-  const cleanDate = lessonDateStr.slice(0, 10);
+  if (!student) return false;
+
+  const cleanDate = (lessonDateStr || '').slice(0, 10);
   const currentGroupId = student.groupId;
-  const currentJoinDate = (student.joinedGroupAt || student.createdAt || '').slice(0, 10);
-  const studentCreatedAt = (student.createdAt || '').slice(0, 10);
+  const targetGroupId = groupId || currentGroupId;
 
-  // If no specific groupId is specified, or groupId matches student's current group:
-  if (!groupId || groupId === currentGroupId) {
-    // If student was created after this date, they couldn't be in the school
-    if (studentCreatedAt && cleanDate < studentCreatedAt) {
-      return false;
-    }
-    // Must be on or after they joined this current group
-    if (currentJoinDate && cleanDate < currentJoinDate) {
-      return false;
-    }
-    return true;
+  // If checking for a different group than student's current group, student is not in it
+  if (targetGroupId !== currentGroupId) {
+    return false;
   }
 
-  // The lesson is for a DIFFERENT group (student may have been in groupId before transferring)
-  // 1. Check groupHistory if available
+  // Determine earliest enrollment date in school
+  let earliestDate = (student.createdAt || '').slice(0, 10);
   if (Array.isArray(student.groupHistory) && student.groupHistory.length > 0) {
-    const historyEntry = student.groupHistory.find(h => h.groupId === groupId);
-    if (historyEntry) {
-      const joinStr = (historyEntry.joinedAt || '').slice(0, 10);
-      const leftStr = (historyEntry.leftAt || '').slice(0, 10);
-      if (joinStr && cleanDate < joinStr) return false;
-      if (leftStr && cleanDate > leftStr) return false;
-      return true;
-    }
+    student.groupHistory.forEach((h) => {
+      const hJoin = (h.joinedAt || '').slice(0, 10);
+      if (hJoin && (!earliestDate || hJoin < earliestDate)) {
+        earliestDate = hJoin;
+      }
+    });
   }
 
-  // 2. Fallback for legacy transferred students without groupHistory:
-  // If the lesson date is before they joined their current group,
-  // and on or after their creation date, they were in their previous group.
-  if (currentJoinDate && cleanDate < currentJoinDate) {
-    if (studentCreatedAt && cleanDate < studentCreatedAt) {
-      return false;
-    }
-    return true;
+  // Before student joined the school -> false
+  if (earliestDate && cleanDate < earliestDate) {
+    return false;
   }
 
-  return false;
+  // If student was soft deleted and lesson date is after deletion -> false
+  if (student.deleted && student.deletedAt && cleanDate > student.deletedAt.slice(0, 10)) {
+    return false;
+  }
+
+  return true;
+}
+
+/**
+ * Checks if a student was enrolled in a group during a specified calendar month.
+ * Useful for monthly journals to prevent future students from cluttering past registers.
+ * 
+ * @param {Object} student
+ * @param {string} groupId
+ * @param {number} year
+ * @param {number} month - 0-indexed month (0 = January, 11 = December)
+ * @returns {boolean}
+ */
+export function wasStudentInGroupDuringMonth(student, groupId, year, month) {
+  if (!student || !groupId) return false;
+  if (student.groupId !== groupId) return false;
+
+  const m = String(month + 1).padStart(2, '0');
+  const lastDay = new Date(year, month + 1, 0).getDate();
+  const monthEnd = `${year}-${m}-${String(lastDay).padStart(2, '0')}`;
+
+  let earliestDate = (student.createdAt || '').slice(0, 10);
+  if (Array.isArray(student.groupHistory) && student.groupHistory.length > 0) {
+    student.groupHistory.forEach((h) => {
+      const hJoin = (h.joinedAt || '').slice(0, 10);
+      if (hJoin && (!earliestDate || hJoin < earliestDate)) {
+        earliestDate = hJoin;
+      }
+    });
+  }
+
+  // If student was only created in a future month (relative to monthEnd):
+  if (earliestDate && earliestDate > monthEnd) {
+    return false;
+  }
+
+  return true;
 }
 
 /**
@@ -107,16 +133,15 @@ export function calculateSessionAttendance(rec, students = [], groupStudents = [
     };
   }
 
-  const cleanDate = (rec.date || '').slice(0, 10);
   const recordedIds = Object.keys(rec.records);
 
   // Student lookup map
   const studentMap = new Map();
   (students || []).forEach(s => {
-    if (s && s.id) studentMap.set(s.id, s);
+    if (s && s.id !== undefined && s.id !== null) studentMap.set(String(s.id), s);
   });
   (groupStudents || []).forEach(s => {
-    if (s && s.id) studentMap.set(s.id, s);
+    if (s && s.id !== undefined && s.id !== null) studentMap.set(String(s.id), s);
   });
 
   let present = 0;
@@ -133,12 +158,14 @@ export function calculateSessionAttendance(rec, students = [], groupStudents = [
       return;
     }
 
-    const student = studentMap.get(sId);
-    if (student) {
-      // If lesson took place before student joined group, ignore completely
-      if (!isStudentInGroupAtDate(student, cleanDate, rec.groupId)) {
-        return;
-      }
+    const student = studentMap.get(String(sId));
+    // If student does not exist, is deleted, or was not in this group on this date:
+    // Exclude from this group's session!
+    if (!student || student.deleted) {
+      return;
+    }
+    if (!isStudentInGroupAtDate(student, rec.date, rec.groupId)) {
+      return;
     }
 
     effectiveRecords[sId] = status;
@@ -147,16 +174,15 @@ export function calculateSessionAttendance(rec, students = [], groupStudents = [
     else if (status === 'late') late++;
     else if (status === 'excused') excused++;
 
-    const studentObj = student || { id: sId, name: 'Noma\'lum o\'quvchi', emoji: '👤', color: '#9CA3AF' };
-    studentsList.push(studentObj);
+    studentsList.push(student);
 
     studentDetails.push({
       id: sId,
-      name: studentObj.name,
-      emoji: studentObj.emoji,
-      color: studentObj.color,
+      name: student.name,
+      emoji: student.emoji,
+      color: student.color,
       status,
-      student: studentObj
+      student
     });
   });
 
@@ -184,6 +210,20 @@ export function calculateSessionAttendance(rec, students = [], groupStudents = [
  * If groupId is null, aggregates across all groups the student was a member of.
  */
 export function calculateStudentAttendanceStats(student, attendanceRecords = [], groupId = null) {
+  if (!student) {
+    return {
+      student: null,
+      presentCount: 0,
+      absentCount: 0,
+      lateCount: 0,
+      excusedCount: 0,
+      totalLessons: 0,
+      accountableLessons: 0,
+      rate: 0,
+      fairScore: 0
+    };
+  }
+
   let presentCount = 0;
   let absentCount = 0;
   let lateCount = 0;

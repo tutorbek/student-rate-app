@@ -1,5 +1,5 @@
-import { getGroupPasswordsRegistry } from './supabase';
-import { normalizeIconUrl } from './avatarGallery';
+import { getGroupPasswordsRegistry } from './supabase.js';
+import { normalizeIconUrl } from './avatarGallery.js';
 
 const UZBEK_WORDS = [
   'olma', 'anor', 'uzum', 'anjir', 'orik', 'shaftoli', 'behi', 'tarvuz', 'qovun', 'bodring',
@@ -196,29 +196,171 @@ export const addStudent = (students, name, groupId, emoji, color) => {
   return { newStudent, updatedStudents };
 };
 
-export const updateStudent = (students, studentId, newName, newEmoji, newColor, newGroupId = null) => {
+export const migrateStudentAttendance = (attendance = [], studentId, oldGroupId, targetGroupId) => {
+  if (!Array.isArray(attendance) || attendance.length === 0 || !studentId || !oldGroupId || !targetGroupId) {
+    return attendance;
+  }
+  if (oldGroupId === targetGroupId) return attendance;
+
+  const sIdStr = String(studentId);
+  const now = new Date().toISOString();
+
+  // 1. Collect records for student in oldGroupId
+  const studentOldMarksByDate = new Map();
+
+  let updatedList = attendance.map((att) => {
+    if (att.groupId === oldGroupId && att.records && att.records[sIdStr] !== undefined) {
+      const cleanDate = sanitizeAttendanceDate(att.date);
+      studentOldMarksByDate.set(cleanDate, att.records[sIdStr]);
+
+      const { [sIdStr]: _, ...remainingRecords } = att.records;
+      return {
+        ...att,
+        records: remainingRecords,
+      };
+    }
+    return att;
+  });
+
+  if (studentOldMarksByDate.size === 0) {
+    return attendance;
+  }
+
+  // 2. Remove any old sessions that became completely empty
+  updatedList = updatedList.filter(
+    (att) => att.groupId !== oldGroupId || Object.keys(att.records || {}).length > 0
+  );
+
+  // 3. Add or merge marks into targetGroupId
+  const targetSessionsByDate = new Map();
+  updatedList.forEach((att, idx) => {
+    if (att.groupId === targetGroupId) {
+      const cleanDate = sanitizeAttendanceDate(att.date);
+      targetSessionsByDate.set(cleanDate, idx);
+    }
+  });
+
+  studentOldMarksByDate.forEach((status, cleanDate) => {
+    if (targetSessionsByDate.has(cleanDate)) {
+      const idx = targetSessionsByDate.get(cleanDate);
+      const existing = updatedList[idx];
+      updatedList[idx] = {
+        ...existing,
+        records: {
+          ...existing.records,
+          [sIdStr]: status,
+        },
+      };
+    } else {
+      const newSession = {
+        id: generateId(),
+        groupId: targetGroupId,
+        date: cleanDate,
+        records: {
+          [sIdStr]: status,
+        },
+        createdAt: now,
+      };
+      updatedList.push(newSession);
+      targetSessionsByDate.set(cleanDate, updatedList.length - 1);
+    }
+  });
+
+  return updatedList;
+};
+
+export const syncTransferredStudentsAttendance = (students = [], attendance = []) => {
+  if (!Array.isArray(students) || !Array.isArray(attendance) || attendance.length === 0) {
+    return { updatedAttendance: attendance, hasChanges: false };
+  }
+
+  let currentAttendance = [...attendance];
+  let hasChanges = false;
+
+  students.forEach((student) => {
+    if (!student || student.deleted || !student.groupId) return;
+    const currentGroupId = student.groupId;
+    const sIdStr = String(student.id);
+
+    // Check if this student has attendance records in other groups
+    const mismatchedGroups = new Set();
+    currentAttendance.forEach((att) => {
+      if (att && att.groupId && att.groupId !== currentGroupId && att.records && att.records[sIdStr] !== undefined) {
+        mismatchedGroups.add(att.groupId);
+      }
+    });
+
+    if (mismatchedGroups.size > 0) {
+      mismatchedGroups.forEach((oldGroupId) => {
+        currentAttendance = migrateStudentAttendance(currentAttendance, student.id, oldGroupId, currentGroupId);
+        hasChanges = true;
+      });
+    }
+  });
+
+  return { updatedAttendance: currentAttendance, hasChanges };
+};
+
+export const updateStudent = (students, studentId, newName, newEmoji, newColor, newGroupId = null, attendance = []) => {
   let updatedStudent = null;
+  const now = new Date().toISOString();
+  const sIdStr = String(studentId);
+  let oldGroupId = null;
+  let isGroupChanged = false;
+
   const updatedStudents = students.map((s) => {
-    if (s.id === studentId) {
+    if (String(s.id) === sIdStr) {
+      isGroupChanged = newGroupId && newGroupId !== s.groupId;
+      const history = Array.isArray(s.groupHistory) ? s.groupHistory : [];
+      let updatedHistory = history;
+      let newJoinedGroupAt = s.joinedGroupAt;
+
+      if (isGroupChanged) {
+        oldGroupId = s.groupId;
+        const previousEntry = {
+          groupId: s.groupId,
+          joinedAt: s.joinedGroupAt || s.createdAt || now,
+          leftAt: now,
+        };
+        updatedHistory = [...history, previousEntry];
+        newJoinedGroupAt = now;
+      }
+
       updatedStudent = {
         ...s,
         name: newName !== undefined && newName !== null ? newName.trim() : s.name,
         emoji: normalizeIconUrl(newEmoji || s.emoji),
         color: newColor || s.color,
         groupId: newGroupId || s.groupId,
+        joinedGroupAt: newJoinedGroupAt,
+        groupHistory: updatedHistory,
       };
       return updatedStudent;
     }
     return s;
   });
-  return { updatedStudent, updatedStudents };
+
+  let updatedAttendance = attendance;
+  if (isGroupChanged && oldGroupId && newGroupId && Array.isArray(attendance) && attendance.length > 0) {
+    updatedAttendance = migrateStudentAttendance(attendance, studentId, oldGroupId, newGroupId);
+  }
+
+  return { updatedStudent, updatedStudents, updatedAttendance };
 };
 
-export const transferStudent = (students, studentId, targetGroupId) => {
+export const transferStudent = (students, studentId, targetGroupId, attendance = []) => {
   let updatedStudent = null;
   const now = new Date().toISOString();
+  const sIdStr = String(studentId);
+  let oldGroupId = null;
+
   const updatedStudents = students.map((s) => {
-    if (s.id === studentId) {
+    if (String(s.id) === sIdStr) {
+      if (s.groupId === targetGroupId) {
+        updatedStudent = s;
+        return s;
+      }
+      oldGroupId = s.groupId;
       const history = Array.isArray(s.groupHistory) ? s.groupHistory : [];
       const previousEntry = {
         groupId: s.groupId,
@@ -235,7 +377,13 @@ export const transferStudent = (students, studentId, targetGroupId) => {
     }
     return s;
   });
-  return { updatedStudent, updatedStudents };
+
+  let updatedAttendance = attendance;
+  if (oldGroupId && oldGroupId !== targetGroupId && Array.isArray(attendance) && attendance.length > 0) {
+    updatedAttendance = migrateStudentAttendance(attendance, studentId, oldGroupId, targetGroupId);
+  }
+
+  return { updatedStudent, updatedStudents, updatedAttendance };
 };
 
 export const deleteStudent = (students, transactions, studentId) => {
@@ -287,7 +435,7 @@ export const sanitizeAttendanceDate = (dateStr) => {
   if (parts.length !== 3) return dateStr;
   let [year, month, day] = parts;
   if (month === '00' || month === '0') {
-    month = '12';
+    month = '01';
     return `${year}-${month}-${day}`;
   }
   if (month === '13') {
@@ -533,16 +681,28 @@ export const restoreStudent = (groups, students, transactions, studentId) => {
   return { updatedGroups, updatedStudents, updatedTransactions };
 };
 
-export const permanentlyDeleteGroup = (groups, students, transactions, groupId) => {
+export const permanentlyDeleteGroup = (groups, students, transactions, groupId, attendance = []) => {
   const updatedGroups = groups.filter((g) => g.id !== groupId);
   const updatedStudents = students.filter((s) => s.groupId !== groupId);
   const remainingStudentIds = updatedStudents.map((s) => s.id);
   const updatedTransactions = transactions.filter((t) => remainingStudentIds.includes(t.studentId));
-  return { updatedGroups, updatedStudents, updatedTransactions };
+  const updatedAttendance = Array.isArray(attendance) ? attendance.filter((a) => a.groupId !== groupId) : [];
+  return { updatedGroups, updatedStudents, updatedTransactions, updatedAttendance };
 };
 
-export const permanentlyDeleteStudent = (students, transactions, studentId) => {
+export const permanentlyDeleteStudent = (students, transactions, studentId, attendance = []) => {
   const updatedStudents = students.filter((s) => s.id !== studentId);
   const updatedTransactions = transactions.filter((t) => t.studentId !== studentId);
-  return { updatedStudents, updatedTransactions };
+  const sIdStr = String(studentId);
+  const updatedAttendance = Array.isArray(attendance)
+    ? attendance.map((att) => {
+        if (!att || !att.records || !att.records[sIdStr]) return att;
+        const { [sIdStr]: _, ...remainingRecords } = att.records;
+        return {
+          ...att,
+          records: remainingRecords,
+        };
+      })
+    : [];
+  return { updatedStudents, updatedTransactions, updatedAttendance };
 };

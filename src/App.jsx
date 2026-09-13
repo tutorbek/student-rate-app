@@ -42,9 +42,9 @@ import {
   restoreStudent,
   permanentlyDeleteGroup,
   permanentlyDeleteStudent,
-  exportDatabase,
   importDatabase,
-  sanitizeAttendanceList
+  sanitizeAttendanceList,
+  syncTransferredStudentsAttendance
 } from './utils/db';
 import { normalizeIconUrl } from './utils/avatarGallery';
 
@@ -99,7 +99,6 @@ function App() {
   });
   const [syncStatus, setSyncStatus] = useState('saved'); // 'saved', 'saving', 'offline'
   const [snapshots, setSnapshots] = useState([]);
-  const [showWeeklyBackupBanner, setShowWeeklyBackupBanner] = useState(false);
 
   const [loginPassword, setLoginPassword] = useState('');
   const [loginError, setLoginError] = useState('');
@@ -316,24 +315,6 @@ function App() {
     setToast({ id, message, type });
   };
 
-  // Weekly Backup Banner effect (Check if a week has passed since last backup download)
-  useEffect(() => {
-    if (isAuthenticated && userRole === 'teacher') {
-      const lastPrompt = localStorage.getItem('rsa_last_backup_prompt_date');
-      const now = Date.now();
-      if (!lastPrompt) {
-        localStorage.setItem('rsa_last_backup_prompt_date', String(now));
-      } else {
-        const daysPassed = (now - Number(lastPrompt)) / (1000 * 60 * 60 * 24);
-        if (daysPassed >= 7) {
-          setShowWeeklyBackupBanner(true);
-        }
-      }
-    } else {
-      setShowWeeklyBackupBanner(false);
-    }
-  }, [isAuthenticated, userRole]);
-
   // Load database from Supabase when authenticated and teacherId is ready
   useEffect(() => {
     if (!isAuthenticated || !teacherId) {
@@ -405,12 +386,13 @@ function App() {
         const loadedTransactions = data.transactions || [];
         const loadedQuickTags = normalizeQuickTags(data.quickTags);
         const loadedAttendance = sanitizeAttendanceList(data.attendance || []);
+        const { updatedAttendance: syncedAttendance } = syncTransferredStudentsAttendance(loadedStudents, loadedAttendance);
 
         setGroups(loadedGroups);
         setStudents(loadedStudents);
         setTransactions(loadedTransactions);
         setQuickTags(loadedQuickTags);
-        setAttendance(loadedAttendance);
+        setAttendance(syncedAttendance);
 
         // Update the ref so we don't accidentally re-save on mount
         const dbState = {
@@ -418,7 +400,7 @@ function App() {
           students: loadedStudents,
           transactions: loadedTransactions,
           quickTags: loadedQuickTags,
-          attendance: loadedAttendance
+          attendance: syncedAttendance
         };
         lastSavedDataRef.current = JSON.stringify(dbState);
 
@@ -450,6 +432,15 @@ function App() {
     };
     load();
   }, [isAuthenticated, teacherId, userRole, reloadTrigger]);
+
+  // Auto-sync attendance for transferred students (e.g. cleans up old group attendance remnants)
+  useEffect(() => {
+    if (!isLoaded || students.length === 0 || attendance.length === 0) return;
+    const { updatedAttendance, hasChanges } = syncTransferredStudentsAttendance(students, attendance);
+    if (hasChanges) {
+      setAttendance(updatedAttendance);
+    }
+  }, [isLoaded, students, attendance]);
 
   //  Natural sorting function for group names (e.g. G1, G2, G3, G4, G10...)
   const sortGroupsNaturally = (list) => {
@@ -576,46 +567,7 @@ function App() {
 
 
 
-  // Trigger a background download of the JSON database
-  const triggerSilentBackupDownload = () => {
-    try {
-      const dataStr = exportDatabase(groups, students, transactions, quickTags, attendance);
-      const dataUri = 'data:application/json;charset=utf-8,' + encodeURIComponent(dataStr);
-      const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-      const exportFileDefaultName = `rate_student_auto_backup_${timestamp}.json`;
-
-      const linkElement = document.createElement('a');
-      linkElement.setAttribute('href', dataUri);
-      linkElement.setAttribute('download', exportFileDefaultName);
-      linkElement.click();
-      console.log('[Auto Backup] Silent backup downloaded successfully.');
-    } catch (err) {
-      console.error('[Auto Backup] Failed to trigger silent download:', err);
-    }
-  };
-
-  const handleTriggerManualBackup = () => {
-    try {
-      const dataStr = exportDatabase(groups, students, transactions, quickTags, attendance);
-      const dataUri = 'data:application/json;charset=utf-8,' + encodeURIComponent(dataStr);
-      const timestamp = new Date().toISOString().slice(0, 10);
-      const exportFileDefaultName = `rate_student_weekly_backup_${timestamp}.json`;
-
-      const linkElement = document.createElement('a');
-      linkElement.setAttribute('href', dataUri);
-      linkElement.setAttribute('download', exportFileDefaultName);
-      linkElement.click();
-
-      localStorage.setItem('rsa_last_backup_prompt_date', String(Date.now()));
-      setShowWeeklyBackupBanner(false);
-      showToast("Zaxira nusxasi yuklab olindi!", "success");
-    } catch (e) {
-      showToast("Zaxiralashda xatolik yuz berdi: " + e.message, "error");
-    }
-  };
-
   const handleResetDatabase = async () => {
-    triggerSilentBackupDownload(); // backup first
     setIsSyncing(true);
     const defaultDb = {
       groups: [],
@@ -694,7 +646,6 @@ function App() {
   };
 
   const handleDeleteGroup = async (id) => {
-    triggerSilentBackupDownload(); // auto-save JSON download before deletion
     const group = groups.find((g) => g.id === id);
     if (group && group.password) {
       await deregisterGroupPassword(group.password);
@@ -714,17 +665,18 @@ function App() {
   };
 
   const handleUpdateStudent = (id, name, emoji, color, groupId = null) => {
-    const { updatedStudent, updatedStudents } = updateStudent(students, id, name, emoji, color, groupId);
+    const { updatedStudents, updatedAttendance } = updateStudent(students, id, name, emoji, color, groupId, attendance);
     setStudents(updatedStudents);
+    if (updatedAttendance) setAttendance(updatedAttendance);
   };
 
   const handleTransferStudent = (studentId, targetGroupId) => {
-    const { updatedStudent, updatedStudents } = transferStudent(students, studentId, targetGroupId);
+    const { updatedStudents, updatedAttendance } = transferStudent(students, studentId, targetGroupId, attendance);
     setStudents(updatedStudents);
+    if (updatedAttendance) setAttendance(updatedAttendance);
   };
 
   const handleDeleteStudent = (id) => {
-    triggerSilentBackupDownload(); // auto-save JSON download before deletion
     const { updatedStudents, updatedTransactions } = deleteStudent(students, transactions, id);
     setStudents(updatedStudents);
     setTransactions(updatedTransactions);
@@ -775,26 +727,25 @@ function App() {
   };
 
   const handlePermanentlyDeleteGroup = (id) => {
-    triggerSilentBackupDownload(); // backup before permanent wipeout
-    const { updatedGroups, updatedStudents, updatedTransactions } = permanentlyDeleteGroup(groups, students, transactions, id);
+    const { updatedGroups, updatedStudents, updatedTransactions, updatedAttendance } = permanentlyDeleteGroup(groups, students, transactions, id, attendance);
     setGroups(updatedGroups);
     setStudents(updatedStudents);
     setTransactions(updatedTransactions);
+    if (updatedAttendance) setAttendance(updatedAttendance);
     showToast("Guruh butunlay o'chirildi!", "info");
   };
 
   const handlePermanentlyDeleteStudent = (id) => {
-    triggerSilentBackupDownload(); // backup before permanent wipeout
-    const { updatedStudents, updatedTransactions } = permanentlyDeleteStudent(students, transactions, id);
+    const { updatedStudents, updatedTransactions, updatedAttendance } = permanentlyDeleteStudent(students, transactions, id, attendance);
     setStudents(updatedStudents);
     setTransactions(updatedTransactions);
+    if (updatedAttendance) setAttendance(updatedAttendance);
     showToast("O'quvchi butunlay o'chirildi!", "info");
   };
 
   // Rollback database snapshot handler
   const handleRollback = async (snapshotData) => {
     if (!snapshotData || !teacherId) return;
-    triggerSilentBackupDownload(); // backup current state first
     setIsSyncing(true);
 
     const success = await saveToFirestore(teacherId, snapshotData);
@@ -1063,7 +1014,6 @@ function App() {
             onPermanentlyDeleteStudent={handlePermanentlyDeleteStudent}
             snapshots={snapshots}
             onRollback={handleRollback}
-            triggerSilentBackupDownload={triggerSilentBackupDownload}
             userRole={userRole}
             onLogout={handleLogout}
             syncStatus={syncStatus}
@@ -1157,26 +1107,6 @@ function App() {
 
   return (
     <div className="app-container">
-      {showWeeklyBackupBanner && (
-        <div className="weekly-backup-banner animate-slide-down glass" style={{ position: 'fixed', top: 0, left: 0, right: 0, padding: '14px 24px', zIndex: 9999, display: 'flex', justifyContent: 'space-between', alignItems: 'center', boxShadow: 'var(--shadow-md)' }}>
-          <div style={{ color: 'var(--text-primary)', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.88rem' }}>
-            <span>⚠️</span>
-            <span><strong>Zaxira eslatmasi:</strong> Ma'lumotlaringiz yo'qolib ketmasligi uchun zaxira nusxasini (Backup JSON) yuklab olishni tavsiya qilamiz.</span>
-          </div>
-          <div style={{ display: 'flex', gap: '8px' }}>
-            <button className="btn btn-primary scale-active btn-sm" onClick={handleTriggerManualBackup}>
-              Yuklab olish
-            </button>
-            <button className="btn btn-secondary scale-active btn-sm" onClick={() => {
-              localStorage.setItem('rsa_last_backup_prompt_date', String(Date.now()));
-              setShowWeeklyBackupBanner(false);
-            }}>
-              Keyinroq
-            </button>
-          </div>
-        </div>
-      )}
-
       {/* Sidebar Navigation */}
       <Sidebar activeTab={activeTab} setActiveTab={handleTabChange} userRole={userRole} onLogout={handleLogout} syncStatus={syncStatus} isSyncing={isSyncing} theme={theme} toggleTheme={toggleTheme} />
 

@@ -729,9 +729,9 @@ const GroupDetail = ({ group, allGroups = [], students, transactions, quickTags,
                 <line x1="6" y1="6" x2="18" y2="18" />
               </svg>
             </button>
-            <h3 className="modal-title text-red">⚠️ Talabani o'chirish</h3>
+            <h3 className="modal-title text-red">O'quvchini o'chirish</h3>
             <p className="modal-warning-text">
-              Ushbu talabani o'chirsangiz, uning barcha likelari va like berish tarixi butunlay o'chib ketadi!
+              Ushbu o'quvchini o'chirishni tasdiqlaysizmi? Xavotir olmang, uni istalgan vaqt Sozlamalar &gt; Savat bo'limidan qayta tiklashingiz mumkin.
             </p>
             <div className="modal-actions">
               <button className="btn btn-secondary scale-active" onClick={() => setConfirmDeleteId(null)}>
@@ -741,7 +741,7 @@ const GroupDetail = ({ group, allGroups = [], students, transactions, quickTags,
                 className="btn btn-danger scale-active" 
                 onClick={() => handleDeleteStudent(confirmDeleteId)}
               >
-                Ha, O'chirilsin
+                O'chirish
               </button>
             </div>
           </div>

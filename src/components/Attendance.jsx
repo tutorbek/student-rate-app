@@ -133,6 +133,11 @@ const StudentAttendanceRow = React.memo(({ student, status, wasAbsentLastLesson,
               O'tgan darsda kelmagan
             </span>
           )}
+          {student.isTransferred && (
+            <span className="prev-absent-tag transferred-tag" title="O'quvchi boshqa guruhga ko'chirilgan">
+              Ko'chirilgan
+            </span>
+          )}
           {isFutureJoin && (
             <span className="prev-absent-tag future-join-tag" title="Talaba ushbu sanadan keyin guruhga qo'shilgan">
               Keyin qo'shilgan
@@ -192,6 +197,9 @@ const Attendance = ({ groups = [], students = [], attendance = [], onSaveAttenda
   const [confirmDeleteDate, setConfirmDeleteDate] = useState(null); // date string
   const [selectedDayDetail, setSelectedDayDetail] = useState(null); // date object with records
   const [selectedStudentHistoryModal, setSelectedStudentHistoryModal] = useState(null); // student object
+  const [studentModalTimeframe, setStudentModalTimeframe] = useState('month'); // 'month' | 'all'
+  const [draftRecords, setDraftRecords] = useState(null); // in-memory draft buffer { [studentId]: 'present' | ... }
+  const [pendingNavigation, setPendingNavigation] = useState(null); // callback function when user confirms leaving unsaved changes
 
   const [journalYear, setJournalYear] = useState(() => new Date().getFullYear());
   const [journalMonth, setJournalMonth] = useState(() => new Date().getMonth());
@@ -226,6 +234,7 @@ const Attendance = ({ groups = [], students = [], attendance = [], onSaveAttenda
         setConfirmDeleteDate(null);
         setSelectedDayDetail(null);
         setSelectedStudentHistoryModal(null);
+        setPendingNavigation(null);
       }
     };
     window.addEventListener('keydown', handleKeyDown);
@@ -403,17 +412,106 @@ const Attendance = ({ groups = [], students = [], attendance = [], onSaveAttenda
     else { setCalendarViewMonth((m) => m + 1); }
   };
 
+  const currentGroupStudents = useMemo(() => students.filter((s) => s.groupId === selectedGroupId && !s.deleted), [students, selectedGroupId]);
+  const currentRecord = useMemo(() => attendance.find((r) => r.groupId === selectedGroupId && r.date === selectedDate), [attendance, selectedGroupId, selectedDate]);
+  const isDateExplicitlyMarked = !!(currentRecord && currentRecord.records && Object.keys(currentRecord.records).length > 0);
+
+  // Return only explicitly saved records for this session from DB
+  const currentSavedRecords = useMemo(() => {
+    if (currentRecord && currentRecord.records) {
+      return { ...currentRecord.records };
+    }
+    return {};
+  }, [currentRecord]);
+
+  // Group students for the current session (Belgilash tab)
+  const groupStudents = useMemo(() => {
+    if (!selectedGroupId) return [];
+    return currentGroupStudents;
+  }, [selectedGroupId, currentGroupStudents]);
+
+  // If user is editing in draft mode, use draft; otherwise use saved DB records
+  const effectiveRecordsMap = draftRecords !== null ? draftRecords : currentSavedRecords;
+
+  const hasUnsavedChanges = useMemo(() => {
+    if (draftRecords === null) return false;
+    const currentKeys = Object.keys(currentSavedRecords).filter(k => 
+      currentSavedRecords[k] === 'present' || currentSavedRecords[k] === 'absent' || 
+      currentSavedRecords[k] === 'late' || currentSavedRecords[k] === 'excused'
+    );
+    const draftKeys = Object.keys(draftRecords).filter(k => 
+      draftRecords[k] === 'present' || draftRecords[k] === 'absent' || 
+      draftRecords[k] === 'late' || draftRecords[k] === 'excused'
+    );
+    if (currentKeys.length !== draftKeys.length) return true;
+    for (const k of draftKeys) {
+      if (draftRecords[k] !== currentSavedRecords[k]) return true;
+    }
+    return false;
+  }, [draftRecords, currentSavedRecords]);
+
+  const requestSafeNavigation = useCallback((action) => {
+    if (activeTab === 'mark' && hasUnsavedChanges) {
+      setPendingNavigation(() => action);
+    } else {
+      setDraftRecords(null);
+      action();
+    }
+  }, [activeTab, hasUnsavedChanges]);
+
+  const handleConfirmSaveAndNavigate = () => {
+    if (!selectedGroupId || !selectedDate) {
+      setPendingNavigation(null);
+      return;
+    }
+    const cleanRecords = {};
+    Object.entries(effectiveRecordsMap).forEach(([sId, st]) => {
+      if (st === 'present' || st === 'absent' || st === 'late' || st === 'excused') {
+        cleanRecords[sId] = st;
+      }
+    });
+
+    if (Object.keys(cleanRecords).length > 0) {
+      onSaveAttendance(selectedGroupId, selectedDate, cleanRecords);
+      showToast("Davomat saqlandi!", "success");
+    } else if (currentRecord && onDeleteAttendance) {
+      onDeleteAttendance(selectedGroupId, selectedDate);
+    }
+
+    const nav = pendingNavigation;
+    setPendingNavigation(null);
+    setDraftRecords(null);
+    if (typeof nav === 'function') {
+      nav();
+    }
+  };
+
+  const handleDiscardAndNavigate = () => {
+    const nav = pendingNavigation;
+    setPendingNavigation(null);
+    setDraftRecords(null);
+    if (typeof nav === 'function') {
+      nav();
+    }
+  };
+
+  const handleCancelNavigation = () => {
+    setPendingNavigation(null);
+  };
+
   const handleSelectCalendarDate = (d) => {
     const formattedMonth = String(d.month + 1).padStart(2, '0');
     const formattedDay = String(d.day).padStart(2, '0');
     const fullDate = `${d.year}-${formattedMonth}-${formattedDay}`;
-    setSelectedDate(fullDate);
-    setCalendarViewYear(d.year);
-    setCalendarViewMonth(d.month);
-    setIsDatePickerOpen(false);
-    if (fullDate > getTodayDateString()) {
-      showToast("Kelgusi sana tanlandi. Davomat belgilash cheklangan!", "warning");
-    }
+    requestSafeNavigation(() => {
+      setSelectedDate(fullDate);
+      setCalendarViewYear(d.year);
+      setCalendarViewMonth(d.month);
+      setIsDatePickerOpen(false);
+      if (fullDate > getTodayDateString()) {
+        showToast("Kelgusi sana tanlandi. Davomat belgilash cheklangan!", "warning");
+      }
+    });
   };
 
   const syncCalendarViewWithDate = useCallback((dateStr) => {
@@ -442,22 +540,26 @@ const Attendance = ({ groups = [], students = [], attendance = [], onSaveAttenda
   };
 
   const handleSelectToday = () => {
-    const todayStr = getTodayDateString();
-    setSelectedDate(todayStr);
-    const today = new Date();
-    setCalendarViewYear(today.getFullYear());
-    setCalendarViewMonth(today.getMonth());
-    setIsDatePickerOpen(false);
+    requestSafeNavigation(() => {
+      const todayStr = getTodayDateString();
+      setSelectedDate(todayStr);
+      const today = new Date();
+      setCalendarViewYear(today.getFullYear());
+      setCalendarViewMonth(today.getMonth());
+      setIsDatePickerOpen(false);
+    });
   };
 
   const handleStepDay = (delta) => {
-    const current = new Date(selectedDate + 'T00:00:00');
-    current.setDate(current.getDate() + delta);
-    const m = String(current.getMonth() + 1).padStart(2, '0');
-    const d = String(current.getDate()).padStart(2, '0');
-    setSelectedDate(`${current.getFullYear()}-${m}-${d}`);
-    setCalendarViewYear(current.getFullYear());
-    setCalendarViewMonth(current.getMonth());
+    requestSafeNavigation(() => {
+      const current = new Date(selectedDate + 'T00:00:00');
+      current.setDate(current.getDate() + delta);
+      const m = String(current.getMonth() + 1).padStart(2, '0');
+      const d = String(current.getDate()).padStart(2, '0');
+      setSelectedDate(`${current.getFullYear()}-${m}-${d}`);
+      setCalendarViewYear(current.getFullYear());
+      setCalendarViewMonth(current.getMonth());
+    });
   };
 
   const [studentSearchQuery, setStudentSearchQuery] = useState('');
@@ -465,29 +567,6 @@ const Attendance = ({ groups = [], students = [], attendance = [], onSaveAttenda
   useEffect(() => {
     setStudentSearchQuery('');
   }, [selectedGroupId, selectedDate]);
-
-  const groupStudents = useMemo(() => students.filter((s) => s.groupId === selectedGroupId && !s.deleted), [students, selectedGroupId]);
-  const currentRecord = useMemo(() => attendance.find((r) => r.groupId === selectedGroupId && r.date === selectedDate), [attendance, selectedGroupId, selectedDate]);
-  const isDateExplicitlyMarked = !!currentRecord;
-
-  // Default to 'present' for new/unmarked sessions on or after student's join date so UI & backend require 0 extra clicks
-  const effectiveRecordsMap = useMemo(() => {
-    if (currentRecord && currentRecord.records) {
-      // For an already recorded session, do not auto-fill missing students with 'present'
-      return { ...currentRecord.records };
-    }
-    if (selectedDate > getTodayDateString()) {
-      return {};
-    }
-    const defaultMap = {};
-    groupStudents.forEach((student) => {
-      // Only default to 'present' if the student was already a member by selectedDate
-      if (isStudentInGroupAtDate(student, selectedDate)) {
-        defaultMap[student.id] = 'present';
-      }
-    });
-    return defaultMap;
-  }, [currentRecord, groupStudents, selectedDate]);
 
   const currentDateStats = useMemo(() => {
     let present = 0, absent = 0, late = 0, excused = 0;
@@ -501,6 +580,18 @@ const Attendance = ({ groups = [], students = [], attendance = [], onSaveAttenda
     return { present, absent, late, excused, totalMarked: present + absent + late + excused };
   }, [effectiveRecordsMap, groupStudents]);
 
+  const eligibleGroupStudents = useMemo(() => {
+    return groupStudents.filter((student) => 
+      isStudentInGroupAtDate(student, selectedDate, selectedGroupId) || 
+      currentRecord?.records?.[student.id] !== undefined
+    );
+  }, [groupStudents, selectedDate, selectedGroupId, currentRecord]);
+
+  const areAllMarkedPresent = useMemo(() => {
+    if (eligibleGroupStudents.length === 0) return false;
+    return eligibleGroupStudents.every((student) => effectiveRecordsMap[student.id] === 'present');
+  }, [eligibleGroupStudents, effectiveRecordsMap]);
+
   // Insight: find students who were absent in the previous lesson for this group
   const previousLessonAbsentStudentIds = useMemo(() => {
     if (!selectedGroupId || !selectedDate) return new Set();
@@ -511,7 +602,7 @@ const Attendance = ({ groups = [], students = [], attendance = [], onSaveAttenda
     // Find the most recent session with real attendance recorded
     const lastSession = groupRecords.find((rec) => {
       const statuses = Object.values(rec.records || {});
-      return statuses.length > 0 && statuses.some((st) => st === 'present' || st === 'late' || st === 'excused');
+      return statuses.length > 0 && statuses.some((st) => st === 'present' || st === 'absent' || st === 'late' || st === 'excused');
     });
 
     if (!lastSession) return new Set();
@@ -585,15 +676,8 @@ const Attendance = ({ groups = [], students = [], attendance = [], onSaveAttenda
     } else {
       updatedMap[studentId] = newStatus;
     }
-
-    const cleanRecords = {};
-    Object.entries(updatedMap).forEach(([sId, st]) => {
-      if (st === 'present' || st === 'absent' || st === 'late' || st === 'excused') {
-        cleanRecords[sId] = st;
-      }
-    });
-    onSaveAttendance(selectedGroupId, selectedDate, cleanRecords);
-  }, [selectedGroupId, selectedDate, effectiveRecordsMap, onSaveAttendance, showToast]);
+    setDraftRecords(updatedMap);
+  }, [selectedGroupId, selectedDate, effectiveRecordsMap, showToast]);
 
   const handleSaveExplicitly = () => {
     if (!selectedGroupId || !selectedDate) {
@@ -614,58 +698,48 @@ const Attendance = ({ groups = [], students = [], attendance = [], onSaveAttenda
         cleanRecords[sId] = st;
       }
     });
+    if (Object.keys(cleanRecords).length === 0) {
+      if (currentRecord && onDeleteAttendance) {
+        onDeleteAttendance(selectedGroupId, selectedDate);
+        setDraftRecords(null);
+        return;
+      }
+      showToast("Davomat saqlash uchun kamida bir o'quvchi holatini belgilang yoki 'Barchasini belgilash' tugmasini bosing!", "warning");
+      return;
+    }
     onSaveAttendance(selectedGroupId, selectedDate, cleanRecords);
+    setDraftRecords(null);
     showToast("Davomat muvaffaqiyatli saqlandi!", "success");
   };
 
-  const handleMarkAllPresent = () => {
+  const handleMarkAll = () => {
     if (selectedDate > getTodayDateString()) {
       showToast("Bo'lajak sanalar uchun davomat belgilab bo'lmaydi!", "warning");
       return;
     }
     if (groupStudents.length === 0) { showToast("Bu guruhda o'quvchilar mavjud emas!", "warning"); return; }
-    const updatedMap = { ...effectiveRecordsMap };
-    groupStudents.forEach((student) => {
-      if (isStudentInGroupAtDate(student, selectedDate)) {
-        updatedMap[student.id] = 'present';
-      }
-    });
-    const cleanRecords = {};
-    Object.entries(updatedMap).forEach(([sId, st]) => {
-      if (st === 'present' || st === 'absent' || st === 'late' || st === 'excused') {
-        cleanRecords[sId] = st;
-      }
-    });
-    onSaveAttendance(selectedGroupId, selectedDate, cleanRecords);
-    showToast("Barcha o'quvchilar 'Keldi' deb belgilandi!", "success");
-  };
+    if (eligibleGroupStudents.length === 0) { showToast("Ushbu sana uchun guruhda faol o'quvchilar mavjud emas!", "warning"); return; }
 
-  const handleMarkAllAbsent = () => {
-    if (selectedDate > getTodayDateString()) {
-      showToast("Bo'lajak sanalar uchun davomat belgilab bo'lmaydi!", "warning");
-      return;
-    }
-    if (groupStudents.length === 0) { showToast("Bu guruhda o'quvchilar mavjud emas!", "warning"); return; }
     const updatedMap = { ...effectiveRecordsMap };
-    groupStudents.forEach((student) => {
-      if (isStudentInGroupAtDate(student, selectedDate)) {
-        updatedMap[student.id] = 'absent';
-      }
-    });
-    const cleanRecords = {};
-    Object.entries(updatedMap).forEach(([sId, st]) => {
-      if (st === 'present' || st === 'absent' || st === 'late' || st === 'excused') {
-        cleanRecords[sId] = st;
-      }
-    });
-    onSaveAttendance(selectedGroupId, selectedDate, cleanRecords);
-    showToast("Barcha o'quvchilar 'Kelmadi' deb belgilandi!", "info");
+
+    if (areAllMarkedPresent) {
+      // Qayta bosilganda barchasi belgilanmagan holatga qaytadi
+      eligibleGroupStudents.forEach((student) => {
+        delete updatedMap[student.id];
+      });
+      setDraftRecords(updatedMap);
+    } else {
+      // Barcha faol o'quvchilarni "Keldi" deb belgilash
+      eligibleGroupStudents.forEach((student) => {
+        updatedMap[student.id] = 'present';
+      });
+      setDraftRecords(updatedMap);
+    }
   };
 
   const handleClearCurrentDate = () => {
-    if (onDeleteAttendance && selectedGroupId && selectedDate) {
-      onDeleteAttendance(selectedGroupId, selectedDate);
-      showToast("Ushbu kundagi davomad tozalandi!", "info");
+    if (selectedGroupId && selectedDate) {
+      setConfirmDeleteDate(selectedDate);
     }
   };
 
@@ -675,8 +749,10 @@ const Attendance = ({ groups = [], students = [], attendance = [], onSaveAttenda
       if (selectedDayDetail && selectedDayDetail.date === confirmDeleteDate) {
         setSelectedDayDetail(null);
       }
+      if (confirmDeleteDate === selectedDate) {
+        setDraftRecords(null);
+      }
       setConfirmDeleteDate(null);
-      showToast("Davomad yozuvi o'chirildi!", "success");
     }
   };
 
@@ -694,7 +770,7 @@ const Attendance = ({ groups = [], students = [], attendance = [], onSaveAttenda
       year: journalYear,
       month: journalMonth,
       lessonDates: monthLessonDates,
-      studentsWithStats: filteredAndSortedMatrixStudents,
+      studentsWithStats: sortedMatrixStudents,
       attendanceByDate: journalRecordsByDate,
       uzbekMonths: UZBEK_MONTHS
     });
@@ -710,27 +786,8 @@ const Attendance = ({ groups = [], students = [], attendance = [], onSaveAttenda
   };
 
   const journalGroupStudents = useMemo(() => {
-    if (activeTab !== 'journal') return groupStudents;
-
-    const studentMap = new Map();
-    // 1. Current active students in this group
-    groupStudents.forEach((s) => studentMap.set(s.id, { ...s, isTransferred: false }));
-
-    // 2. Any students who were transferred or have recorded attendance in this group
-    (students || []).forEach((s) => {
-      if (studentMap.has(s.id)) return;
-      // Check if student has any recorded attendance in this group for the current filtered period
-      const hasAttendance = filteredAttendanceRecords.some((rec) => rec?.records?.[s.id] !== undefined);
-      if (hasAttendance) {
-        studentMap.set(s.id, {
-          ...s,
-          isTransferred: true,
-        });
-      }
-    });
-
-    return Array.from(studentMap.values());
-  }, [activeTab, groupStudents, students, filteredAttendanceRecords]);
+    return currentGroupStudents;
+  }, [currentGroupStudents]);
 
   const studentStats = useMemo(() => {
     if (activeTab !== 'journal' || journalGroupStudents.length === 0) return [];
@@ -777,12 +834,8 @@ const Attendance = ({ groups = [], students = [], attendance = [], onSaveAttenda
     return Array.from(datesSet).sort((a, b) => a.localeCompare(b));
   }, [activeTab, attendance, selectedGroupId, isDateInJournalMonth]);
 
-  const filteredAndSortedMatrixStudents = useMemo(() => {
+  const sortedMatrixStudents = useMemo(() => {
     let list = [...studentStats];
-    if (matrixSearchQuery.trim()) {
-      const q = matrixSearchQuery.toLowerCase().trim();
-      list = list.filter((item) => item.student.name.toLowerCase().includes(q));
-    }
 
     list.sort((a, b) => {
       let cmp = 0;
@@ -804,13 +857,13 @@ const Attendance = ({ groups = [], students = [], attendance = [], onSaveAttenda
         cmp = a.totalLessons - b.totalLessons;
         if (cmp === 0) cmp = a.fairScore - b.fairScore;
       } else {
-        // Default: 'rating' (Adolatli davomat reytingi - fairScore)
+        // Default: 'rating' (Davomat % ustuni - rate bo'yicha saralash, teng bo'lsa adolatli fairScore)
         if (a.totalLessons === 0 && b.totalLessons === 0) cmp = 0;
         else if (a.totalLessons === 0) return matrixSortDirection === 'desc' ? 1 : -1;
         else if (b.totalLessons === 0) return matrixSortDirection === 'desc' ? -1 : 1;
         else {
-          cmp = a.fairScore - b.fairScore;
-          if (cmp === 0) cmp = a.rate - b.rate;
+          cmp = a.rate - b.rate;
+          if (cmp === 0) cmp = a.fairScore - b.fairScore;
           if (cmp === 0) cmp = a.presentCount - b.presentCount;
         }
       }
@@ -823,7 +876,13 @@ const Attendance = ({ groups = [], students = [], attendance = [], onSaveAttenda
     });
 
     return list;
-  }, [studentStats, matrixSearchQuery, matrixSortField, matrixSortDirection]);
+  }, [studentStats, matrixSortField, matrixSortDirection]);
+
+  const filteredAndSortedMatrixStudents = useMemo(() => {
+    if (!matrixSearchQuery.trim()) return sortedMatrixStudents;
+    const q = matrixSearchQuery.toLowerCase().trim();
+    return sortedMatrixStudents.filter((item) => item.student.name.toLowerCase().includes(q));
+  }, [sortedMatrixStudents, matrixSearchQuery]);
 
   const overallGroupStats = useMemo(() => {
     if (activeTab !== 'journal') return { avgRate: 0, totalLessons: 0, totalAbsents: 0, totalLates: 0, totalExcused: 0 };
@@ -859,15 +918,24 @@ const Attendance = ({ groups = [], students = [], attendance = [], onSaveAttenda
     const student = selectedStudentHistoryModal;
     const studentId = student.id;
 
-    const historyList = filteredAttendanceRecords
+    const candidateRecords = attendance.filter((r) => {
+      if (!r || !r.records) return false;
+      if (studentModalTimeframe === 'month') {
+        if (r.groupId !== selectedGroupId) return false;
+        return isDateInJournalMonth(r.date);
+      }
+      return true;
+    });
+
+    const historyList = candidateRecords
       .filter((record) => {
-        // If lesson took place before student joined, ignore
         if (!isStudentInGroupAtDate(student, record.date, record.groupId)) return false;
         const status = record.records?.[studentId];
         return status === 'present' || status === 'absent' || status === 'late' || status === 'excused';
       })
       .map((record) => ({
         date: record.date,
+        groupId: record.groupId,
         status: record.records[studentId],
       }))
       .sort((a, b) => b.date.localeCompare(a.date));
@@ -890,7 +958,7 @@ const Attendance = ({ groups = [], students = [], attendance = [], onSaveAttenda
       total,
       rate,
     };
-  }, [selectedStudentHistoryModal, filteredAttendanceRecords]);
+  }, [selectedStudentHistoryModal, attendance, selectedGroupId, studentModalTimeframe, isDateInJournalMonth]);
 
   return (
     <div className="attendance-container">
@@ -899,11 +967,11 @@ const Attendance = ({ groups = [], students = [], attendance = [], onSaveAttenda
           <h2 className="page-title">Davomad</h2>
         </div>
         <div className="tab-control-brutalist">
-          <button type="button" className={`tab-btn-brutalist ${activeTab === 'mark' ? 'active' : ''}`} onClick={() => setActiveTab('mark')}>
+          <button type="button" className={`tab-btn-brutalist ${activeTab === 'mark' ? 'active' : ''}`} onClick={() => requestSafeNavigation(() => setActiveTab('mark'))}>
             <IconEdit size={15} />
             <span>Belgilash</span>
           </button>
-          <button type="button" className={`tab-btn-brutalist ${activeTab === 'journal' ? 'active' : ''}`} onClick={() => setActiveTab('journal')}>
+          <button type="button" className={`tab-btn-brutalist ${activeTab === 'journal' ? 'active' : ''}`} onClick={() => requestSafeNavigation(() => setActiveTab('journal'))}>
             <IconCalendar size={15} />
             <span>Jurnal & Statistika</span>
           </button>
@@ -925,7 +993,7 @@ const Attendance = ({ groups = [], students = [], attendance = [], onSaveAttenda
                     <div className="custom-select-overlay" onClick={() => setIsGroupDropdownOpen(false)} />
                     <div className="custom-dropdown-list glass">
                       {groups.map((g) => (
-                        <div key={g.id} className={`custom-dropdown-item ${g.id === selectedGroupId ? 'active' : ''}`} onClick={() => { setSelectedGroupId(g.id); setIsGroupDropdownOpen(false); }}>{g.name}</div>
+                        <div key={g.id} className={`custom-dropdown-item ${g.id === selectedGroupId ? 'active' : ''}`} onClick={() => { requestSafeNavigation(() => { setSelectedGroupId(g.id); setIsGroupDropdownOpen(false); }); }}>{g.name}</div>
                       ))}
                     </div>
                   </>
@@ -1069,44 +1137,70 @@ const Attendance = ({ groups = [], students = [], attendance = [], onSaveAttenda
           )}
 
           <div className="quick-actions-bar glass-card">
-            <div className="quick-actions-btns">
-              <button
-                className="btn btn-secondary scale-active btn-sm"
-                onClick={handleMarkAllPresent}
-                disabled={isFutureDate}
-                title={isFutureDate ? "Bo'lajak sana uchun davomat belgilab bo'lmaydi" : undefined}
-              >
-                Barchasi Keldi
-              </button>
-              <button
-                className="btn btn-secondary scale-active btn-sm"
-                onClick={handleMarkAllAbsent}
-                disabled={isFutureDate}
-                title={isFutureDate ? "Bo'lajak sana uchun davomat belgilab bo'lmaydi" : undefined}
-              >
-                Barchasi Kelmadi
-              </button>
-              {isDateExplicitlyMarked && (
-                <button className="btn btn-danger scale-active btn-sm" onClick={handleClearCurrentDate}>
-                  <IconTrash size={14} /> Tozalash
+            <div className="quick-actions-main-row">
+              <div className="quick-actions-summary">
+                {hasUnsavedChanges && (
+                  <span className="summary-pill pill-unsaved" title="O'zgarishlar kiritildi, saqlash tugmasini bosing">
+                    ● Saqlanmagan
+                  </span>
+                )}
+                {isDateExplicitlyMarked || currentDateStats.totalMarked > 0 ? (
+                  <>
+                    <span className="summary-pill pill-present">Keldi: <strong>{currentDateStats.present}</strong></span>
+                    {currentDateStats.excused > 0 && <span className="summary-pill pill-excused">Sababli: <strong>{currentDateStats.excused}</strong></span>}
+                    <span className="summary-pill pill-absent">Kelmadi: <strong>{currentDateStats.absent}</strong></span>
+                    {currentDateStats.late > 0 && <span className="summary-pill pill-late">Kechikdi: <strong>{currentDateStats.late}</strong></span>}
+                  </>
+                ) : (
+                  <span className="summary-pill pill-unmarked">Davomat olinmagan</span>
+                )}
+              </div>
+
+              <div className="quick-actions-btns">
+                <button
+                  type="button"
+                  className={`btn scale-active btn-sm mark-all-btn ${areAllMarkedPresent ? 'active' : 'btn-secondary'}`}
+                  onClick={handleMarkAll}
+                  disabled={isFutureDate}
+                  title={
+                    isFutureDate
+                      ? "Bo'lajak sana uchun davomat belgilab bo'lmaydi"
+                      : areAllMarkedPresent
+                      ? "Barcha belgilashni bekor qilish (belgilanmagan holatga qaytarish)"
+                      : "Barcha o'quvchilarni 'Keldi' deb belgilash"
+                  }
+                >
+                  <IconCheck size={14} strokeWidth={2.6} /> Barchasini belgilash
                 </button>
-              )}
+                {isDateExplicitlyMarked && (
+                  <button
+                    type="button"
+                    className="btn btn-danger scale-active btn-sm quick-clear-btn"
+                    onClick={handleClearCurrentDate}
+                    title="Ushbu kundagi davomatni tozalash"
+                  >
+                    <IconTrash size={14} /> Tozalash
+                  </button>
+                )}
+                <button
+                  type="button"
+                  className={`btn scale-active btn-sm save-att-btn ${hasUnsavedChanges ? 'has-changes btn-primary' : 'btn-secondary'}`}
+                  onClick={handleSaveExplicitly}
+                  disabled={isFutureDate || (!hasUnsavedChanges && !isDateExplicitlyMarked)}
+                  title={isFutureDate ? "Bo'lajak sana uchun davomat saqlab bo'lmaydi" : hasUnsavedChanges ? "O'zgarishlarni bazaga saqlash" : (isDateExplicitlyMarked ? "O'zgarishlar saqlangan" : "Saqlash uchun davomat belgilang")}
+                >
+                  <IconCheck size={14} strokeWidth={2.8} /> {hasUnsavedChanges ? "Saqlash" : (isDateExplicitlyMarked ? "Saqlangan" : "Saqlash")}
+                </button>
+              </div>
             </div>
-            <div className="quick-actions-summary">
-              <span className="summary-pill pill-present">Keldi: <strong>{currentDateStats.present}</strong></span>
-              {currentDateStats.excused > 0 && <span className="summary-pill pill-excused">Sababli: <strong>{currentDateStats.excused}</strong></span>}
-              <span className="summary-pill pill-absent">Kelmadi: <strong>{currentDateStats.absent}</strong></span>
-              {currentDateStats.late > 0 && <span className="summary-pill pill-late">Kechikdi: <strong>{currentDateStats.late}</strong></span>}
-            </div>
-            <div className="quick-actions-save-wrapper">
-              <button
-                className="btn btn-primary scale-active btn-sm save-att-btn"
-                onClick={handleSaveExplicitly}
-                disabled={isFutureDate}
-                title={isFutureDate ? "Bo'lajak sana uchun davomat saqlab bo'lmaydi" : undefined}
-              >
-                <IconCheck size={14} strokeWidth={2.8} /> Saqlash
-              </button>
+
+            <div className="attendance-workflow-hint">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="hint-icon">
+                <circle cx="12" cy="12" r="10" />
+                <line x1="12" y1="16" x2="12" y2="12" />
+                <line x1="12" y1="8" x2="12.01" y2="8" />
+              </svg>
+              <span>Kelmaganlarni belgilab keyin saqlashni bosing.</span>
             </div>
           </div>
 
@@ -1114,7 +1208,7 @@ const Attendance = ({ groups = [], students = [], attendance = [], onSaveAttenda
             filteredGroupStudents.length > 0 ? (
               <div className="students-attendance-list">
                 {filteredGroupStudents.map((student) => {
-                  const isFutureJoin = !isStudentInGroupAtDate(student, selectedDate);
+                  const isFutureJoin = !isStudentInGroupAtDate(student, selectedDate, selectedGroupId) && currentRecord?.records?.[student.id] === undefined;
                   return (
                     <StudentAttendanceRow
                       key={student.id}
@@ -1148,7 +1242,7 @@ const Attendance = ({ groups = [], students = [], attendance = [], onSaveAttenda
               {selectedGroup?.name || 'Guruh'} — Oylik Davomat Jurnali
             </h1>
             <p className="print-meta-info">
-              Davr: <strong>{UZBEK_MONTHS[journalMonth]} {journalYear}-yil</strong> • O'tilgan darslar: <strong>{monthLessonDates.length} ta</strong> • O'quvchilar: <strong>{journalGroupStudents.length} ta</strong> • Chop etildi: {new Date().toLocaleDateString('uz-UZ')}
+              Davr: <strong>{UZBEK_MONTHS[journalMonth]} {journalYear}-yil</strong> • O'quvchilar: <strong>{sortedMatrixStudents.length} ta</strong> • Chop etildi: {new Date().toLocaleDateString('uz-UZ')}
             </p>
           </div>
 
@@ -1355,7 +1449,7 @@ const Attendance = ({ groups = [], students = [], attendance = [], onSaveAttenda
           <div className="stats-kpi-grid unified-kpi-grid">
             <div className="stats-kpi-card">
               <span className="kpi-label">O'rtacha Davomad</span>
-              <span className="kpi-value">{overallGroupStats.avgRate}%</span>
+              <span className="kpi-value">{overallGroupStats.totalLessons === 0 ? '—' : `${overallGroupStats.avgRate}%`}</span>
             </div>
             <div className="stats-kpi-card">
               <span className="kpi-label">O'tilgan Darslar</span>
@@ -1376,67 +1470,68 @@ const Attendance = ({ groups = [], students = [], attendance = [], onSaveAttenda
           </div>
 
           {/* 3. VIEW MODE A: KLASSIK DAVOMAT JURNALI (MATRIX GRID) */}
-          {journalViewMode === 'matrix' && (
-            <div className="glass-card section-container matrix-journal-card">
-              {/* Search & Legend Toolbar */}
-              <div className="matrix-top-toolbar">
-                <div className="matrix-search-box">
-                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="search-icon">
-                    <circle cx="11" cy="11" r="8" />
-                    <line x1="21" y1="21" x2="16.65" y2="16.65" />
-                  </svg>
-                  <input
-                    type="text"
-                    className="matrix-search-input"
-                    placeholder="O'quvchi ismini qidirish..."
-                    value={matrixSearchQuery}
-                    onChange={(e) => setMatrixSearchQuery(e.target.value)}
-                  />
-                  {matrixSearchQuery && (
-                    <button
-                      type="button"
-                      className="matrix-search-clear-btn"
-                      onClick={() => setMatrixSearchQuery('')}
-                      title="Qidiruvni tozalash"
-                    >
-                      ✕
-                    </button>
-                  )}
-                </div>
-
-                <div className="matrix-legend">
-                  <span className="legend-item"><span className="matrix-badge present"><MinimalCheck /></span> Keldi</span>
-                  <span className="legend-item"><span className="matrix-badge excused">S</span> Sababli</span>
-                  <span className="legend-item"><span className="matrix-badge absent"><MinimalCross /></span> Kelmadi</span>
-                  <span className="legend-item"><span className="matrix-badge late"><MinimalClock /></span> Kechikdi</span>
-                  <span className="legend-item"><span className="matrix-badge not-member">—</span> Darsi yo'q</span>
-                </div>
-              </div>
-
-              {monthLessonDates.length === 0 ? (
-                <div className="month-empty-banner" style={{ margin: '16px 0' }}>
-                  <IconCalendar size={18} />
-                  <div>
-                    <strong>Tanlangan oyda ({UZBEK_MONTHS[journalMonth]} {journalYear}) dars davomati yozuvlari topilmadi.</strong>
-                    <p style={{ margin: '4px 0 0 0', fontSize: '0.8rem', color: 'var(--text-tertiary)' }}>
-                      Yangi dars davomatini belgilash uchun "Davomat olish" bo'limiga o'ting.
-                    </p>
-                  </div>
+          <div className={`glass-card section-container matrix-journal-card ${journalViewMode !== 'matrix' ? 'matrix-screen-hidden' : ''}`}>
+            {/* Search & Legend Toolbar */}
+            <div className="matrix-top-toolbar">
+              <div className="matrix-search-box">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="search-icon">
+                  <circle cx="11" cy="11" r="8" />
+                  <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                </svg>
+                <input
+                  type="text"
+                  className="matrix-search-input"
+                  placeholder="O'quvchi ismini qidirish..."
+                  value={matrixSearchQuery}
+                  onChange={(e) => setMatrixSearchQuery(e.target.value)}
+                />
+                {matrixSearchQuery && (
                   <button
                     type="button"
-                    className="btn btn-primary scale-active btn-sm"
-                    style={{ marginLeft: 'auto' }}
-                    onClick={() => setActiveTab('mark')}
+                    className="matrix-search-clear-btn"
+                    onClick={() => setMatrixSearchQuery('')}
+                    title="Qidiruvni tozalash"
                   >
-                    Davomat olishga o'tish
+                    ✕
                   </button>
+                )}
+              </div>
+
+              <div className="matrix-legend">
+                <span className="legend-item"><span className="matrix-badge present"><MinimalCheck /></span> Keldi</span>
+                <span className="legend-item"><span className="matrix-badge excused">S</span> Sababli</span>
+                <span className="legend-item"><span className="matrix-badge absent"><MinimalCross /></span> Kelmadi</span>
+                <span className="legend-item"><span className="matrix-badge late"><MinimalClock /></span> Kechikdi</span>
+                <span className="legend-item"><span className="matrix-badge not-member">—</span> Darsi yo'q</span>
+              </div>
+            </div>
+
+            {monthLessonDates.length === 0 ? (
+              <div className="month-empty-banner" style={{ margin: '16px 0' }}>
+                <IconCalendar size={18} />
+                <div>
+                  <strong>Tanlangan oyda ({UZBEK_MONTHS[journalMonth]} {journalYear}) dars davomati yozuvlari topilmadi.</strong>
+                  <p style={{ margin: '4px 0 0 0', fontSize: '0.8rem', color: 'var(--text-tertiary)' }}>
+                    Yangi dars davomatini belgilash uchun "Davomat olish" bo'limiga o'ting.
+                  </p>
                 </div>
-              ) : filteredAndSortedMatrixStudents.length === 0 ? (
-                <div className="empty-state glass-card" style={{ margin: '16px 0' }}>
-                  <p>Qidiruv bo'yicha hech qanday o'quvchi topilmadi.</p>
-                </div>
-              ) : (
-                <div className="matrix-table-scroll-container">
+                <button
+                  type="button"
+                  className="btn btn-primary scale-active btn-sm"
+                  style={{ marginLeft: 'auto' }}
+                  onClick={() => setActiveTab('mark')}
+                >
+                  Davomat olishga o'tish
+                </button>
+              </div>
+            ) : (
+              <>
+                {matrixSearchQuery.trim() && filteredAndSortedMatrixStudents.length === 0 && (
+                  <div className="empty-state glass-card hide-on-print" style={{ margin: '16px 0' }}>
+                    <p>Qidiruv bo'yicha hech qanday o'quvchi topilmadi.</p>
+                  </div>
+                )}
+                <div className={`matrix-table-scroll-container ${matrixSearchQuery.trim() && filteredAndSortedMatrixStudents.length === 0 ? 'matrix-scroll-screen-hidden' : ''}`}>
                   <table className="matrix-table">
                     <thead>
                       <tr>
@@ -1509,17 +1604,17 @@ const Attendance = ({ groups = [], students = [], attendance = [], onSaveAttenda
                         <th
                           className={`matrix-summary-th sortable-th ${matrixSortField === 'late' ? 'active-sort' : ''}`}
                           onClick={() => handleMatrixSort('late')}
-                          title="Kechikishlar bo'yicha saralash"
+                          title="Kechikilgan darslar soni bo'yicha saralash"
                         >
                           <div className="th-sort-content">
-                            <span>Kechikkan</span>
+                            <span>Kechikdi</span>
                             <MinimalSortIcon active={matrixSortField === 'late'} direction={matrixSortDirection} />
                           </div>
                         </th>
                         <th
                           className={`matrix-summary-th sortable-th ${matrixSortField === 'total' ? 'active-sort' : ''}`}
                           onClick={() => handleMatrixSort('total')}
-                          title="Jami darslar bo'yicha saralash"
+                          title="O'tilgan umumiy darslar soni"
                         >
                           <div className="th-sort-content">
                             <span>Jami</span>
@@ -1539,160 +1634,118 @@ const Attendance = ({ groups = [], students = [], attendance = [], onSaveAttenda
                       </tr>
                     </thead>
                     <tbody>
-                      {filteredAndSortedMatrixStudents.map((s, idx) => (
-                        <tr key={s.student.id} className="matrix-row">
-                          <td className="sticky-col-rank font-mono">#{idx + 1}</td>
-                          <td
-                            className="sticky-col-name clickable-cell"
-                            onClick={() => setSelectedStudentHistoryModal(s.student)}
-                            title="O'quvchi davomat tarixini ko'rish"
-                          >
-                            <div className="matrix-student-cell">
-                              <span className="student-name-text">{s.student.name}</span>
-                              {s.isTransferred && (
-                                <span className="transferred-student-tag" title="Boshqa guruhga o'tkazilgan">
-                                  Ko'chirilgan
-                                </span>
-                              )}
-                            </div>
-                          </td>
+                      {sortedMatrixStudents.map((s, idx) => {
+                        const isSearchMatch = !matrixSearchQuery.trim() || s.student.name.toLowerCase().includes(matrixSearchQuery.toLowerCase().trim());
+                        return (
+                          <tr key={s.student.id} className={`matrix-row ${!isSearchMatch ? 'matrix-row-search-hidden' : ''}`}>
+                            <td className="sticky-col-rank font-mono">#{idx + 1}</td>
+                            <td
+                              className="sticky-col-name clickable-cell"
+                              onClick={() => setSelectedStudentHistoryModal(s.student)}
+                              title="O'quvchi davomat tarixini ko'rish"
+                            >
+                              <div className="matrix-student-cell">
+                                <span className="student-name-text">{s.student.name}</span>
+                              </div>
+                            </td>
 
-                          {/* Date status cells */}
-                          {monthLessonDates.map((dateStr) => {
-                            const isMember = isStudentInGroupAtDate(s.student, dateStr, selectedGroupId);
-                            if (!isMember) {
+                            {/* Date status cells */}
+                            {monthLessonDates.map((dateStr) => {
+                              const rec = journalRecordsByDate[dateStr];
+                              const status = rec?.records?.[s.student.id];
+                              const isMember = isStudentInGroupAtDate(s.student, dateStr, selectedGroupId) || (status !== undefined);
+                              if (!isMember) {
+                                return (
+                                  <td key={dateStr} className="matrix-cell not-member-cell" title={`${s.student.name}: Guruh a'zosi bo'lmagan`}>
+                                    <span className="matrix-badge not-member">—</span>
+                                  </td>
+                                );
+                              }
+
                               return (
-                                <td key={dateStr} className="matrix-cell not-member-cell" title={`${s.student.name}: Guruh a'zosi bo'lmagan`}>
-                                  <span className="matrix-badge not-member">—</span>
+                                <td
+                                  key={dateStr}
+                                  className={`matrix-cell status-cell ${status || 'unmarked'}`}
+                                  onClick={() => {
+                                    if (rec) setSelectedDayDetail(rec);
+                                  }}
+                                  title={`${s.student.name} • ${dateStr}: ${
+                                    status === 'present' ? 'Keldi' :
+                                    status === 'absent' ? 'Kelmadi' :
+                                    status === 'late' ? 'Kechikdi' :
+                                    status === 'excused' ? 'Sababli' : 'Belgilanmagan'
+                                  }`}
+                                >
+                                  {status === 'present' ? (
+                                    <span className="matrix-badge present" title="Keldi">
+                                      <MinimalCheck />
+                                    </span>
+                                  ) : status === 'absent' ? (
+                                    <span className="matrix-badge absent" title="Kelmadi">
+                                      <MinimalCross />
+                                    </span>
+                                  ) : status === 'late' ? (
+                                    <span className="matrix-badge late" title="Kechikdi">
+                                      <MinimalClock />
+                                    </span>
+                                  ) : status === 'excused' ? (
+                                    <span className="matrix-badge excused" title="Sababli">S</span>
+                                  ) : (
+                                    <span className="matrix-badge unmarked">·</span>
+                                  )}
                                 </td>
                               );
-                            }
+                            })}
 
-                            const rec = journalRecordsByDate[dateStr];
-                            const status = rec?.records?.[s.student.id];
-
-                            return (
-                              <td
-                                key={dateStr}
-                                className={`matrix-cell status-cell ${status || 'unmarked'}`}
-                                onClick={() => {
-                                  if (rec) setSelectedDayDetail(rec);
-                                }}
-                                title={`${s.student.name} • ${dateStr}: ${
-                                  status === 'present' ? 'Keldi' :
-                                  status === 'absent' ? 'Kelmadi' :
-                                  status === 'late' ? 'Kechikdi' :
-                                  status === 'excused' ? 'Sababli' : 'Belgilanmagan'
-                                }`}
-                              >
-                                {status === 'present' ? (
-                                  <span className="matrix-badge present" title="Keldi">
-                                    <MinimalCheck />
-                                  </span>
-                                ) : status === 'absent' ? (
-                                  <span className="matrix-badge absent" title="Kelmadi">
-                                    <MinimalCross />
-                                  </span>
-                                ) : status === 'late' ? (
-                                  <span className="matrix-badge late" title="Kechikdi">
-                                    <MinimalClock />
-                                  </span>
-                                ) : status === 'excused' ? (
-                                  <span className="matrix-badge excused" title="Sababli">S</span>
-                                ) : (
-                                  <span className="matrix-badge unmarked">·</span>
-                                )}
-                              </td>
-                            );
-                          })}
-
-                          {/* Summary numbers */}
-                          <td className="matrix-summary-cell">
-                            {s.presentCount > 0 ? (
-                              <span className="matrix-num num-present">{s.presentCount}</span>
-                            ) : (
-                              <span className="matrix-num-zero">0</span>
-                            )}
-                          </td>
-                          <td className="matrix-summary-cell">
-                            {s.excusedCount > 0 ? (
-                              <span className="matrix-num num-excused">{s.excusedCount}</span>
-                            ) : (
-                              <span className="matrix-num-zero">0</span>
-                            )}
-                          </td>
-                          <td className="matrix-summary-cell">
-                            {s.absentCount > 0 ? (
-                              <span className="matrix-num num-absent">{s.absentCount}</span>
-                            ) : (
-                              <span className="matrix-num-zero">0</span>
-                            )}
-                          </td>
-                          <td className="matrix-summary-cell">
-                            {s.lateCount > 0 ? (
-                              <span className="matrix-num num-late">{s.lateCount}</span>
-                            ) : (
-                              <span className="matrix-num-zero">0</span>
-                            )}
-                          </td>
-                          <td className="matrix-summary-cell">
-                            <span className="matrix-num-total">{s.totalLessons}</span>
-                          </td>
-                          <td className="matrix-summary-cell">
-                            <span 
-                              className={`rate-pill-minimal ${s.totalLessons === 0 ? 'empty' : s.rate >= 90 ? 'good' : s.rate >= 70 ? 'avg' : 'bad'}`}
-                              title={s.totalLessons > 0 ? `Davomat foizi: ${s.rate}%, Reyting balli: ${s.fairScore}` : undefined}
-                            >
-                              {s.totalLessons === 0 ? '—' : `${s.rate}%`}
-                            </span>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-
-                    {/* Matrix Footer: Daily Summary */}
-                    <tfoot>
-                      <tr className="matrix-footer-row row-presents">
-                        <td className="sticky-col-rank font-bold" colSpan={2}>
-                          Jami kelganlar (har darsda)
-                        </td>
-                        {monthLessonDates.map((dateStr) => {
-                          const rec = journalRecordsByDate[dateStr];
-                          const present = rec?.present || 0;
-                          const total = rec?.totalMarked || 0;
-                          return (
-                            <td key={dateStr} className="matrix-footer-cell" title={`${dateStr}: ${present}/${total} talaba kelgan`}>
-                              <span className="footer-present-num">{present}</span>
-                              <span className="footer-total-sub">/{total}</span>
+                            {/* Summary numbers */}
+                            <td className="matrix-summary-cell">
+                              {s.presentCount > 0 ? (
+                                <span className="matrix-num num-present">{s.presentCount}</span>
+                              ) : (
+                                <span className="matrix-num-zero">0</span>
+                              )}
                             </td>
-                          );
-                        })}
-                        <td colSpan={6} className="matrix-footer-blank" />
-                      </tr>
-
-                      <tr className="matrix-footer-row row-rates">
-                        <td className="sticky-col-rank font-bold" colSpan={2}>
-                          Kunlik davomat foizi
-                        </td>
-                        {monthLessonDates.map((dateStr) => {
-                          const rec = journalRecordsByDate[dateStr];
-                          const rate = rec?.rate || 0;
-                          return (
-                            <td key={dateStr} className="matrix-footer-cell" title={`${dateStr}: ${rate}% davomat`}>
-                              <span className={`footer-rate-pill ${rate >= 90 ? 'good' : rate >= 70 ? 'avg' : 'bad'}`}>
-                                {rate}%
+                            <td className="matrix-summary-cell">
+                              {s.excusedCount > 0 ? (
+                                <span className="matrix-num num-excused">{s.excusedCount}</span>
+                              ) : (
+                                <span className="matrix-num-zero">0</span>
+                              )}
+                            </td>
+                            <td className="matrix-summary-cell">
+                              {s.absentCount > 0 ? (
+                                <span className="matrix-num num-absent">{s.absentCount}</span>
+                              ) : (
+                                <span className="matrix-num-zero">0</span>
+                              )}
+                            </td>
+                            <td className="matrix-summary-cell">
+                              {s.lateCount > 0 ? (
+                                <span className="matrix-num num-late">{s.lateCount}</span>
+                              ) : (
+                                <span className="matrix-num-zero">0</span>
+                              )}
+                            </td>
+                            <td className="matrix-summary-cell">
+                              <span className="matrix-num-total">{s.totalLessons}</span>
+                            </td>
+                            <td className="matrix-summary-cell">
+                              <span 
+                                className={`rate-pill-minimal ${s.totalLessons === 0 ? 'empty' : s.rate >= 90 ? 'good' : s.rate >= 70 ? 'avg' : 'bad'}`}
+                                title={s.totalLessons > 0 ? `Davomat foizi: ${s.rate}%, Reyting balli: ${s.fairScore}` : undefined}
+                              >
+                                {s.totalLessons === 0 ? '—' : `${s.rate}%`}
                               </span>
                             </td>
-                          );
-                        })}
-                        <td colSpan={6} className="matrix-footer-blank" />
-                      </tr>
-                    </tfoot>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
                   </table>
                 </div>
-              )}
-            </div>
-          )}
+              </>
+            )}
+          </div>
 
           {/* 4. VIEW MODE B: OYLIK KALENDAR KO'RINISHI */}
           {journalViewMode === 'calendar' && (
@@ -1803,8 +1856,24 @@ const Attendance = ({ groups = [], students = [], attendance = [], onSaveAttenda
               <div className="student-modal-info">
                 <h3 className="student-modal-title">{studentHistoryDetails.student.name}</h3>
                 <p className="student-modal-subtitle">
-                  {selectedGroup?.name || 'Guruh'} • Davr: {timeframe === 'all' ? 'Kurs davomida' : `${UZBEK_MONTHS[journalMonth]} ${journalYear}`}
+                  {selectedGroup?.name || 'Guruh'} • Davr: <strong>{studentModalTimeframe === 'all' ? 'Kurs davomida' : `${UZBEK_MONTHS[journalMonth]} ${journalYear}`}</strong>
                 </p>
+                <div className="student-modal-period-tabs">
+                  <button
+                    type="button"
+                    className={`student-period-tab-btn ${studentModalTimeframe === 'month' ? 'active' : ''}`}
+                    onClick={() => setStudentModalTimeframe('month')}
+                  >
+                    {UZBEK_MONTHS[journalMonth]} {journalYear}
+                  </button>
+                  <button
+                    type="button"
+                    className={`student-period-tab-btn ${studentModalTimeframe === 'all' ? 'active' : ''}`}
+                    onClick={() => setStudentModalTimeframe('all')}
+                  >
+                    Kurs davomida
+                  </button>
+                </div>
               </div>
             </div>
 
@@ -1860,10 +1929,15 @@ const Attendance = ({ groups = [], students = [], attendance = [], onSaveAttenda
               ) : studentHistoryDetails.absentDays.length > 0 ? (
                 <div className="absent-days-list">
                   {studentHistoryDetails.absentDays.map((item) => (
-                    <div key={item.date} className="absent-day-item">
+                    <div key={`${item.groupId || ''}-${item.date}`} className="absent-day-item">
                       <div className="absent-date-left">
                         <IconCalendar size={14} />
                         <span className="date-text font-bold">{formatDisplayDate(item.date)}</span>
+                        {studentModalTimeframe === 'all' && item.groupId && item.groupId !== selectedGroupId && (
+                          <span className="other-group-badge" title="Dars o'tilgan guruh">
+                            {groups.find(g => g.id === item.groupId)?.name || 'Boshqa guruh'}
+                          </span>
+                        )}
                       </div>
                       <span className="absent-badge">
                         Darsga kelmagan
@@ -1889,10 +1963,15 @@ const Attendance = ({ groups = [], students = [], attendance = [], onSaveAttenda
                 </h4>
                 <div className="excused-days-list">
                   {studentHistoryDetails.excusedDays.map((item) => (
-                    <div key={item.date} className="excused-day-item">
+                    <div key={`${item.groupId || ''}-${item.date}`} className="excused-day-item">
                       <div className="absent-date-left">
                         <IconCalendar size={14} />
                         <span className="date-text font-bold">{formatDisplayDate(item.date)}</span>
+                        {studentModalTimeframe === 'all' && item.groupId && item.groupId !== selectedGroupId && (
+                          <span className="other-group-badge" title="Dars o'tilgan guruh">
+                            {groups.find(g => g.id === item.groupId)?.name || 'Boshqa guruh'}
+                          </span>
+                        )}
                       </div>
                       <span className="excused-badge">
                         Sababli qoldirilgan
@@ -1911,10 +1990,15 @@ const Attendance = ({ groups = [], students = [], attendance = [], onSaveAttenda
                 </h4>
                 <div className="late-days-list">
                   {studentHistoryDetails.lateDays.map((item) => (
-                    <div key={item.date} className="late-day-item">
+                    <div key={`${item.groupId || ''}-${item.date}`} className="late-day-item">
                       <div className="absent-date-left">
                         <IconCalendar size={14} />
                         <span className="date-text font-bold">{formatDisplayDate(item.date)}</span>
+                        {studentModalTimeframe === 'all' && item.groupId && item.groupId !== selectedGroupId && (
+                          <span className="other-group-badge" title="Dars o'tilgan guruh">
+                            {groups.find(g => g.id === item.groupId)?.name || 'Boshqa guruh'}
+                          </span>
+                        )}
                       </div>
                       <span className="late-badge">
                         Kechikib kelgan
@@ -2103,6 +2187,40 @@ const Attendance = ({ groups = [], students = [], attendance = [], onSaveAttenda
         document.body
       )}
 
+      {/* Unsaved Changes Confirmation Modal */}
+      {pendingNavigation && createPortal(
+        <div className="modal-overlay" onClick={handleCancelNavigation}>
+          <div className="modal-content glass" onClick={(e) => e.stopPropagation()}>
+            <button 
+              type="button" 
+              className="modal-close-btn" 
+              onClick={handleCancelNavigation}
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18" />
+                <line x1="6" y1="6" x2="18" y2="18" />
+              </svg>
+            </button>
+            <h3 className="modal-title">Saqlanmagan o'zgarishlar mavjud</h3>
+            <p className="modal-warning-text">
+              Davomatga kiritilgan o'zgarishlar hali bazaga saqlanmagan. Davom etishdan oldin saqlashni xohlaysizmi?
+            </p>
+            <div className="modal-actions modal-actions-unsaved">
+              <button className="btn btn-primary scale-active" onClick={handleConfirmSaveAndNavigate}>
+                <IconCheck size={14} strokeWidth={2.8} /> Saqlash va o'tish
+              </button>
+              <button className="btn btn-secondary scale-active" onClick={handleDiscardAndNavigate}>
+                Saqlamasdan o'tish
+              </button>
+              <button className="btn btn-secondary scale-active" onClick={handleCancelNavigation}>
+                Bekor qilish
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+
       <style>{`
         .attendance-container {
           animation: fade-in 0.4s ease-out;
@@ -2128,6 +2246,25 @@ const Attendance = ({ groups = [], students = [], attendance = [], onSaveAttenda
           background: rgba(255, 255, 255, 0.08);
           color: #9CA3AF;
           border-color: rgba(255, 255, 255, 0.12);
+        }
+
+        .other-group-badge {
+          font-size: 0.68rem;
+          font-weight: 600;
+          padding: 1px 7px;
+          border-radius: var(--radius-full);
+          background: rgba(0, 122, 255, 0.1);
+          color: #007AFF;
+          border: 1px solid rgba(0, 122, 255, 0.2);
+          margin-left: 6px;
+          display: inline-flex;
+          align-items: center;
+          vertical-align: middle;
+        }
+        [data-theme="dark"] .other-group-badge {
+          background: rgba(10, 132, 255, 0.18);
+          color: #64D2FF;
+          border-color: rgba(10, 132, 255, 0.3);
         }
 
         .tab-control-brutalist {
@@ -2648,18 +2785,48 @@ const Attendance = ({ groups = [], students = [], attendance = [], onSaveAttenda
           border-color: rgba(37, 99, 235, 0.2);
         }
 
+        .transferred-tag {
+          color: #7C3AED;
+          background: #F5F3FF;
+          border-color: rgba(124, 58, 237, 0.25);
+        }
+
         .quick-actions-bar {
-          padding: 14px 18px;
+          padding: 12px 16px;
           display: flex;
-          align-items: center;
-          justify-content: space-between;
-          gap: 14px;
+          flex-direction: column;
+          gap: 10px;
           background: #FFFFFF;
           border: 1px solid rgba(0, 0, 0, 0.06);
           border-radius: var(--radius-lg);
           box-shadow: var(--shadow-sm);
           margin-bottom: 16px;
+        }
+
+        .quick-actions-main-row {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          width: 100%;
+          gap: 14px;
           flex-wrap: wrap;
+        }
+
+        .attendance-workflow-hint {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          font-size: 0.78rem;
+          color: var(--text-secondary);
+          font-weight: 500;
+          padding-top: 8px;
+          border-top: 1px solid rgba(0, 0, 0, 0.05);
+          background: transparent;
+        }
+
+        .attendance-workflow-hint .hint-icon {
+          color: #3B82F6;
+          flex-shrink: 0;
         }
 
         .quick-actions-btns {
@@ -2667,6 +2834,41 @@ const Attendance = ({ groups = [], students = [], attendance = [], onSaveAttenda
           align-items: center;
           gap: 8px;
           flex-wrap: wrap;
+        }
+
+        .mark-all-btn {
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          height: 38px;
+          padding: 0 14px;
+          font-size: 0.84rem;
+          font-weight: 600;
+          border-radius: var(--radius-md);
+          transition: all var(--transition-fast);
+        }
+
+        .mark-all-btn.active {
+          background: #ECFDF5;
+          color: #059669;
+          border-color: #A7F3D0;
+          font-weight: 600;
+        }
+
+        .mark-all-btn.active:hover {
+          background: #D1FAE5;
+          border-color: #6EE7B7;
+        }
+
+        .quick-clear-btn {
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          height: 38px;
+          padding: 0 12px;
+          font-size: 0.84rem;
+          font-weight: 600;
+          border-radius: var(--radius-md);
         }
 
         .quick-actions-summary {
@@ -2714,34 +2916,70 @@ const Attendance = ({ groups = [], students = [], attendance = [], onSaveAttenda
           border-color: #BFDBFE;
         }
 
+        .summary-pill.pill-unmarked {
+          background: #F8FAFC;
+          color: #64748B;
+          border-color: #CBD5E1;
+          font-weight: 600;
+        }
+
+        .summary-pill.pill-unsaved {
+          background: #FEF3C7;
+          color: #B45309;
+          border-color: #FCD34D;
+          font-weight: 700;
+          display: inline-flex;
+          align-items: center;
+          gap: 4px;
+        }
+
         .save-att-btn {
           display: inline-flex;
           align-items: center;
           gap: 6px;
+          height: 38px;
+          font-size: 0.84rem;
           font-weight: 700;
-          padding: 7px 18px;
-          background: linear-gradient(135deg, #10B981 0%, #059669 100%) !important;
-          color: #FFFFFF !important;
-          border: 1px solid #059669 !important;
-          border-radius: var(--radius-sm);
-          box-shadow: 0 2px 6px rgba(16, 185, 129, 0.25);
+          padding: 0 16px;
+          border-radius: var(--radius-md);
           cursor: pointer;
           transition: all var(--transition-fast);
         }
 
-        .save-att-btn:hover {
-          background: linear-gradient(135deg, #059669 0%, #047857 100%) !important;
-          border-color: #047857 !important;
-          box-shadow: 0 4px 10px rgba(16, 185, 129, 0.35);
+        .save-att-btn.has-changes {
+          background: linear-gradient(135deg, #10B981 0%, #059669 100%) !important;
+          color: #FFFFFF !important;
+          border: 1px solid #059669 !important;
+          box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.25), 0 2px 8px rgba(16, 185, 129, 0.35) !important;
+          animation: pulse-green 2s infinite ease-in-out;
+        }
+
+        @keyframes pulse-green {
+          0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4), 0 2px 8px rgba(16, 185, 129, 0.35); }
+          70% { box-shadow: 0 0 0 6px rgba(16, 185, 129, 0), 0 2px 8px rgba(16, 185, 129, 0.35); }
+          100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0), 0 2px 8px rgba(16, 185, 129, 0.35); }
+        }
+
+        .save-att-btn:not(.has-changes) {
+          background: #FFFFFF;
+          color: var(--text-primary);
+          border: 1px solid #D2D2D7;
+        }
+
+        .save-att-btn:not(.has-changes):hover {
+          background: #F5F5F7;
         }
 
         .save-att-btn:active {
           opacity: 0.9;
         }
 
-        .quick-actions-save-wrapper {
+        .modal-actions-unsaved {
           display: flex;
           align-items: center;
+          justify-content: flex-end;
+          gap: 10px;
+          flex-wrap: wrap;
         }
 
         .students-attendance-list {
@@ -4956,84 +5194,6 @@ const Attendance = ({ groups = [], students = [], attendance = [], onSaveAttenda
           color: var(--text-tertiary);
         }
 
-        /* Footer Rows */
-        .matrix-footer-row {
-          position: sticky;
-          bottom: 0;
-          z-index: 11;
-          font-weight: 700;
-          border-top: 2px solid #CBD5E1;
-        }
-
-        .matrix-footer-row td {
-          background: #F8FAFC;
-          border-bottom: 1px solid #E2E8F0;
-          padding: 6px 4px;
-        }
-
-        .footer-label-cell {
-          position: sticky;
-          left: 0;
-          z-index: 15;
-          background: #F1F5F9 !important;
-          border-right: 2px solid #CBD5E1;
-          padding: 6px 12px;
-          font-size: 0.74rem;
-          color: #334155;
-          text-align: left;
-        }
-
-        .matrix-footer-cell {
-          text-align: center;
-          font-size: 0.75rem;
-          border-right: 1px solid #E2E8F0;
-        }
-
-        .footer-present-num {
-          font-weight: 800;
-          color: #059669;
-        }
-
-        .footer-total-sub {
-          font-size: 0.65rem;
-          color: #94A3B8;
-          margin-left: 1px;
-        }
-
-        .footer-rate-pill {
-          display: inline-block;
-          font-size: 0.68rem;
-          font-weight: 800;
-          padding: 2px 5px;
-          border-radius: var(--radius-sm);
-        }
-
-        .footer-rate-pill.good {
-          background: #DCFCE7;
-          color: #15803D;
-        }
-
-        .footer-rate-pill.avg {
-          background: #FEF3C7;
-          color: #92400E;
-        }
-
-        .footer-rate-pill.bad {
-          background: #FEE2E2;
-          color: #B91C1C;
-        }
-
-        .footer-rate-pill.empty {
-          background: #F1F5F9;
-          color: #94A3B8;
-        }
-
-        .footer-grand-sum {
-          text-align: center;
-          font-weight: 800;
-          font-size: 0.78rem;
-        }
-
         @media (max-width: 768px) {
           .attendance-container {
             gap: 12px;
@@ -5153,37 +5313,70 @@ const Attendance = ({ groups = [], students = [], attendance = [], onSaveAttenda
             margin-bottom: 12px;
           }
 
+          .quick-actions-main-row {
+            flex-direction: column;
+            align-items: stretch;
+            gap: 10px;
+            width: 100%;
+          }
+
           .quick-actions-btns {
             width: 100%;
-            display: grid;
-            grid-template-columns: 1fr 1fr;
+            display: flex;
+            align-items: center;
             gap: 8px;
           }
 
-          .quick-actions-btns .btn-danger {
-            grid-column: 1 / -1;
-          }
-
           .quick-actions-btns .btn {
-            width: 100%;
-            height: 38px;
-            padding: 0 8px;
-            font-size: 0.8rem;
-            white-space: nowrap;
+            height: 42px;
+            font-size: 0.85rem;
+            font-weight: 600;
             display: inline-flex;
             align-items: center;
             justify-content: center;
+            gap: 6px;
+            border-radius: var(--radius-md);
+            white-space: nowrap;
           }
 
-          .quick-actions-save-wrapper {
-            width: 100%;
+          .quick-actions-btns .mark-all-btn {
+            flex: 1;
+            min-width: 0;
+            height: 42px;
+            font-size: 0.84rem;
           }
 
-          .quick-actions-save-wrapper .save-att-btn {
-            width: 100%;
-            height: 40px;
-            font-size: 0.88rem;
+          .quick-actions-btns .save-att-btn {
+            flex: 1;
+            min-width: 0;
+            height: 42px;
+            font-size: 0.85rem;
+            font-weight: 700;
+          }
+
+          .quick-actions-btns .quick-clear-btn {
+            flex: 0 0 auto;
+            height: 42px;
+            min-width: 78px;
+            padding: 0 10px;
+            font-size: 0.82rem;
+          }
+
+          .quick-actions-summary {
+            display: flex;
+            align-items: center;
             justify-content: center;
+            gap: 6px;
+            flex-wrap: wrap;
+            padding: 2px 0;
+          }
+
+          .attendance-workflow-hint {
+            font-size: 0.76rem;
+            padding: 8px 4px 0;
+            justify-content: center;
+            text-align: center;
+            line-height: 1.35;
           }
 
           .students-attendance-list {
@@ -5235,19 +5428,25 @@ const Attendance = ({ groups = [], students = [], attendance = [], onSaveAttenda
             min-width: 0;
             display: grid;
             grid-template-columns: repeat(4, 1fr);
-            gap: 4px;
+            gap: 5px;
             justify-content: stretch;
           }
 
           .att-status-btn {
             width: 100%;
             min-width: 0;
-            height: 40px;
+            height: 42px;
             padding: 0 2px;
-            font-size: 0.76rem;
+            font-size: 0.78rem;
             font-weight: 700;
             text-align: center;
+            border-radius: 6px;
             touch-action: manipulation;
+            -webkit-tap-highlight-color: transparent;
+          }
+
+          .att-status-btn:active {
+            transform: scale(0.96);
           }
 
           /* TAB 2: Journal & Stats */
@@ -5743,6 +5942,12 @@ const Attendance = ({ groups = [], students = [], attendance = [], onSaveAttenda
           border-color: rgba(138, 180, 248, 0.35);
         }
 
+        [data-theme="dark"] .transferred-tag {
+          background: rgba(139, 92, 246, 0.18);
+          color: #C4B5FD;
+          border-color: rgba(167, 139, 250, 0.35);
+        }
+
         [data-theme="dark"] .quick-actions-bar {
           background: #292A2D;
           border-color: #3C4043;
@@ -5768,6 +5973,12 @@ const Attendance = ({ groups = [], students = [], attendance = [], onSaveAttenda
 
         [data-theme="dark"] .summary-pill.pill-late strong {
           color: #FDD663;
+        }
+
+        [data-theme="dark"] .summary-pill.pill-unmarked {
+          background: #303134;
+          border-color: #5F6368;
+          color: #9AA0A6;
         }
 
         [data-theme="dark"] .student-attendance-row {
@@ -6393,6 +6604,26 @@ const Attendance = ({ groups = [], students = [], attendance = [], onSaveAttenda
           color: #C2E7FF !important;
         }
 
+        [data-theme="dark"] .attendance-workflow-hint {
+          color: #9AA0A6;
+          border-top-color: rgba(255, 255, 255, 0.06);
+          background: transparent;
+        }
+
+        [data-theme="dark"] .attendance-workflow-hint .hint-icon {
+          color: #60A5FA;
+        }
+
+        [data-theme="dark"] .mark-all-btn.active {
+          background: rgba(52, 168, 83, 0.18) !important;
+          color: #81C995 !important;
+          border-color: rgba(52, 168, 83, 0.4) !important;
+        }
+
+        [data-theme="dark"] .mark-all-btn.active:hover {
+          background: rgba(52, 168, 83, 0.28) !important;
+        }
+
         [data-theme="dark"] .calendar-popover {
           background: #202124 !important;
           border-color: #3C4043 !important;
@@ -6447,16 +6678,27 @@ const Attendance = ({ groups = [], students = [], attendance = [], onSaveAttenda
           color: #8AB4F8 !important;
         }
 
-        [data-theme="dark"] .save-att-btn {
+        [data-theme="dark"] .save-att-btn.has-changes {
           background: linear-gradient(135deg, #059669 0%, #047857 100%) !important;
           border-color: #10B981 !important;
           color: #FFFFFF !important;
-          box-shadow: 0 2px 8px rgba(16, 185, 129, 0.35);
+          box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.3), 0 2px 8px rgba(16, 185, 129, 0.4) !important;
         }
 
-        [data-theme="dark"] .save-att-btn:hover {
-          background: linear-gradient(135deg, #10B981 0%, #059669 100%) !important;
-          box-shadow: 0 4px 12px rgba(16, 185, 129, 0.5);
+        [data-theme="dark"] .save-att-btn:not(.has-changes) {
+          background: #303134 !important;
+          color: #E8EAED !important;
+          border-color: #3C4043 !important;
+        }
+
+        [data-theme="dark"] .save-att-btn:not(.has-changes):hover {
+          background: #3C4043 !important;
+        }
+
+        [data-theme="dark"] .summary-pill.pill-unsaved {
+          background: rgba(245, 158, 11, 0.18);
+          border-color: rgba(245, 158, 11, 0.4);
+          color: #FBBF24;
         }
 
         /* Matrix & Unified Toolbar Dark Mode Overrides */
@@ -6717,37 +6959,241 @@ const Attendance = ({ groups = [], students = [], attendance = [], onSaveAttenda
           border-left-color: #3C4043 !important;
         }
 
+        /* Student Modal Period Tabs */
+        .student-modal-period-tabs {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          margin-top: 8px;
+        }
+
+        .student-period-tab-btn {
+          font-size: 0.76rem;
+          font-weight: 600;
+          padding: 3px 10px;
+          border-radius: var(--radius-full, 999px);
+          border: 1px solid var(--border-color, #E5E7EB);
+          background: rgba(0, 0, 0, 0.03);
+          color: var(--text-secondary, #6B7280);
+          cursor: pointer;
+          transition: all 0.15s ease;
+        }
+
+        .student-period-tab-btn:hover {
+          background: rgba(0, 0, 0, 0.06);
+          color: var(--text-primary, #111827);
+        }
+
+        .student-period-tab-btn.active {
+          background: var(--primary-color, #007AFF);
+          color: #FFFFFF;
+          border-color: var(--primary-color, #007AFF);
+          box-shadow: 0 1px 4px rgba(0, 122, 255, 0.25);
+        }
+
+        /* Matrix Table Footer Row */
+        .matrix-footer-row td {
+          background: var(--bg-card-subtle, #F9FAFB);
+          border-top: 2px solid var(--border-color, #E5E7EB);
+          border-bottom: 2px solid var(--border-color, #E5E7EB);
+          padding: 8px 4px;
+          font-size: 0.8rem;
+          vertical-align: middle;
+        }
+
+        .footer-rank-cell {
+          background: var(--bg-card-subtle, #F9FAFB) !important;
+        }
+
+        .footer-label-cell {
+          background: var(--bg-card-subtle, #F9FAFB) !important;
+          font-weight: 700;
+          color: var(--text-secondary);
+          padding-left: 12px !important;
+          white-space: nowrap;
+        }
+
+        .footer-summary-label {
+          font-size: 0.78rem;
+          text-transform: uppercase;
+          letter-spacing: 0.03em;
+        }
+
+        .matrix-footer-cell {
+          text-align: center;
+        }
+
+        .matrix-footer-cell.clickable-footer-cell {
+          cursor: pointer;
+          transition: background 0.15s ease;
+        }
+
+        .matrix-footer-cell.clickable-footer-cell:hover {
+          background: rgba(0, 122, 255, 0.08) !important;
+        }
+
+        .matrix-footer-cell-inner {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 2px;
+        }
+
+        .footer-rate-pill {
+          font-size: 0.72rem;
+          font-weight: 800;
+          padding: 1px 5px;
+          border-radius: 4px;
+          line-height: 1.2;
+        }
+
+        .footer-rate-pill.good {
+          background: #DCFCE7;
+          color: #15803D;
+        }
+
+        .footer-rate-pill.avg {
+          background: #FEF3C7;
+          color: #B45309;
+        }
+
+        .footer-rate-pill.bad {
+          background: #FEE2E2;
+          color: #B91C1C;
+        }
+
+        .footer-stat-line {
+          font-size: 0.68rem;
+          color: var(--text-tertiary);
+          font-weight: 600;
+          font-family: var(--font-mono, monospace);
+        }
+
+        .footer-empty-dash {
+          color: var(--text-tertiary);
+          font-size: 0.8rem;
+        }
+
+        .matrix-footer-summary-cell {
+          padding: 8px 12px !important;
+          background: var(--bg-card-subtle, #F9FAFB);
+        }
+
+        .matrix-overall-footer-wrap {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          font-size: 0.78rem;
+          color: var(--text-secondary);
+          white-space: nowrap;
+        }
+
+        .footer-sep {
+          color: var(--border-color);
+        }
+
+        /* Dark Mode Overrides for Footer and Tabs */
+        [data-theme="dark"] .student-period-tab-btn {
+          background: #202124;
+          border-color: #3C4043;
+          color: #9AA0A6;
+        }
+
+        [data-theme="dark"] .student-period-tab-btn:hover {
+          background: #303134;
+          color: #E8EAED;
+        }
+
+        [data-theme="dark"] .student-period-tab-btn.active {
+          background: #8AB4F8;
+          color: #202124;
+          border-color: #8AB4F8;
+        }
+
         [data-theme="dark"] .matrix-footer-row td {
           background: #282A2D !important;
           border-color: #3C4043 !important;
           color: #E8EAED !important;
         }
 
+        [data-theme="dark"] .footer-rank-cell,
         [data-theme="dark"] .footer-label-cell {
           background: #303134 !important;
           border-color: #3C4043 !important;
           color: #E8EAED !important;
         }
 
-        /* Print Media Styles */
+        [data-theme="dark"] .matrix-footer-summary-cell {
+          background: #282A2D !important;
+          color: #E8EAED !important;
+        }
+
+        .matrix-screen-hidden {
+          display: none;
+        }
+
+        .matrix-row-search-hidden {
+          display: none;
+        }
+
+        .matrix-scroll-screen-hidden {
+          display: none;
+        }
+
+        /* ========================================================= */
+        /* PRINT / PDF EXPORT STYLES (PURE WHITE MODE - MATRIX ONLY) */
+        /* ========================================================= */
         @media print {
           @page {
             size: landscape;
             margin: 8mm;
           }
 
+          /* Force light color scheme for browser renderer */
+          :root, html, body {
+            color-scheme: light !important;
+            background: #FFFFFF !important;
+            background-color: #FFFFFF !important;
+            color: #111827 !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+          }
+
+          /* Global hidden UI elements */
           nav, header, aside, .sidebar, .sidebar-container, .navbar,
           .tab-control-brutalist, .filters-toolbar, .unified-journal-toolbar,
-          .matrix-top-toolbar, .month-empty-banner, .btn-export-toolbar,
-          .btn-print-toolbar, .mobile-stats-header, .journal-cal-card,
-          .btn, button, .date-picker-row {
+          .stats-kpi-grid, .matrix-top-toolbar, .month-empty-banner,
+          .btn-export-toolbar, .btn-print-toolbar, .mobile-stats-header,
+          .journal-cal-card, .btn, button, .date-picker-row,
+          .cell-empty-hint, .empty-state, .hide-on-print,
+          .modal-overlay, .modal-content, .student-absent-history-modal,
+          .custom-toast-container, .toast {
             display: none !important;
           }
 
+          /* Force show matrix card & table even if in calendar mode or search filtered */
+          .matrix-screen-hidden {
+            display: block !important;
+          }
+
+          .matrix-scroll-screen-hidden {
+            display: block !important;
+          }
+
+          .matrix-row-search-hidden {
+            display: table-row !important;
+          }
+
+          /* Outer containers reset to pure white */
           body, #root, .app-container, .main-layout, .main-content,
-          .attendance-container, .matrix-journal-card {
+          .attendance-container, .journal-view-section, .matrix-journal-card,
+          [data-theme="dark"] body, [data-theme="dark"] #root,
+          [data-theme="dark"] .app-container, [data-theme="dark"] .main-layout,
+          [data-theme="dark"] .main-content, [data-theme="dark"] .attendance-container,
+          [data-theme="dark"] .journal-view-section, [data-theme="dark"] .matrix-journal-card {
             background: #FFFFFF !important;
-            color: #000000 !important;
+            background-color: #FFFFFF !important;
+            color: #111827 !important;
             padding: 0 !important;
             margin: 0 !important;
             border: none !important;
@@ -6756,68 +7202,313 @@ const Attendance = ({ groups = [], students = [], attendance = [], onSaveAttenda
             max-width: 100% !important;
           }
 
+          /* Print Header Banner */
           .print-header-banner {
             display: block !important;
-            margin-bottom: 12px;
-            padding-bottom: 8px;
-            border-bottom: 2px solid #000;
+            margin-bottom: 12px !important;
+            padding-bottom: 8px !important;
+            border-bottom: 2px solid #111827 !important;
+            background: #FFFFFF !important;
           }
 
-          .print-group-name {
-            font-size: 16pt;
-            font-weight: bold;
-            margin: 0 0 4px 0;
-            color: #000;
+          .print-school-title {
+            font-size: 15pt !important;
+            font-weight: 800 !important;
+            margin: 0 0 4px 0 !important;
+            color: #111827 !important;
           }
 
           .print-meta-info {
-            font-size: 9pt;
-            color: #444;
+            font-size: 9pt !important;
+            color: #4B5563 !important;
+            margin: 0 !important;
           }
 
+          .print-meta-info strong {
+            color: #111827 !important;
+          }
+
+          /* Matrix Table Scroll Container */
           .matrix-table-scroll-container {
             overflow: visible !important;
-            border: 1px solid #000 !important;
+            border: 1px solid #D1D5DB !important;
             max-height: none !important;
+            background: #FFFFFF !important;
           }
 
+          /* Matrix Table Base */
           .matrix-table {
             width: 100% !important;
             border-collapse: collapse !important;
             font-size: 8pt !important;
-          }
-
-          .matrix-table th,
-          .matrix-table td {
-            border: 1px solid #666 !important;
-            padding: 3px 2px !important;
-            color: #000 !important;
             background: #FFFFFF !important;
+            color: #111827 !important;
           }
 
-          .matrix-table thead th {
-            background: #EEEEEE !important;
+          .matrix-table thead {
+            display: table-header-group !important;
           }
 
+          .matrix-row {
+            page-break-inside: avoid !important;
+          }
+
+          /* All table cells */
+          .matrix-table th,
+          .matrix-table td,
+          [data-theme="dark"] .matrix-table th,
+          [data-theme="dark"] .matrix-table td {
+            border: 1px solid #D1D5DB !important;
+            padding: 4px 3px !important;
+            color: #111827 !important;
+            background: #FFFFFF !important;
+            background-color: #FFFFFF !important;
+            box-shadow: none !important;
+            text-shadow: none !important;
+          }
+
+          /* Table Header Cells */
+          .matrix-table thead th,
+          [data-theme="dark"] .matrix-table thead th {
+            background: #F3F4F6 !important;
+            background-color: #F3F4F6 !important;
+            color: #111827 !important;
+            font-weight: 700 !important;
+            border-bottom: 2px solid #9CA3AF !important;
+          }
+
+          /* Sticky columns converted to static in print */
           .sticky-col-rank,
           .sticky-col-name,
-          .matrix-footer-row,
-          .footer-label-cell {
+          [data-theme="dark"] .sticky-col-rank,
+          [data-theme="dark"] .sticky-col-name {
             position: static !important;
+            background: #FFFFFF !important;
+            background-color: #FFFFFF !important;
+            color: #111827 !important;
           }
 
-          .matrix-badge {
-            border: 1px solid #999 !important;
-            font-weight: bold !important;
+          .matrix-table thead th.sticky-col-rank,
+          .matrix-table thead th.sticky-col-name,
+          [data-theme="dark"] .matrix-table thead th.sticky-col-rank,
+          [data-theme="dark"] .matrix-table thead th.sticky-col-name {
+            background: #F3F4F6 !important;
+            background-color: #F3F4F6 !important;
+          }
+
+          .student-name-text,
+          [data-theme="dark"] .student-name-text {
+            color: #111827 !important;
+            font-weight: 600 !important;
+            white-space: nowrap !important;
+          }
+
+          .font-mono {
+            color: #4B5563 !important;
+          }
+
+          /* Date Columns Headers */
+          .matrix-date-th,
+          [data-theme="dark"] .matrix-date-th {
+            background: #F9FAFB !important;
+            background-color: #F9FAFB !important;
+            color: #111827 !important;
+          }
+
+          .matrix-date-th.th-sunday,
+          [data-theme="dark"] .matrix-date-th.th-sunday {
+            background: #FEF2F2 !important;
+            background-color: #FEF2F2 !important;
+            color: #991B1B !important;
+          }
+
+          .matrix-date-num {
+            font-weight: 800 !important;
+            color: #111827 !important;
+          }
+
+          .matrix-date-wd {
+            color: #6B7280 !important;
+            font-size: 6.5pt !important;
+          }
+
+          /* Summary Headers */
+          .matrix-summary-th,
+          [data-theme="dark"] .matrix-summary-th {
+            background: #F3F4F6 !important;
+            background-color: #F3F4F6 !important;
+            color: #111827 !important;
+          }
+
+          /* Attendance Badges - Light Pastel Colors */
+          .matrix-badge,
+          [data-theme="dark"] .matrix-badge {
+            display: inline-flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            width: 18px !important;
+            height: 18px !important;
+            border-radius: 4px !important;
+            font-size: 7.5pt !important;
+            font-weight: 700 !important;
             -webkit-print-color-adjust: exact !important;
             print-color-adjust: exact !important;
           }
 
-          .matrix-rate-pill {
-            border: 1px solid #999 !important;
-            font-weight: bold !important;
+          .matrix-badge.present,
+          [data-theme="dark"] .matrix-badge.present {
+            background: #DCFCE7 !important;
+            background-color: #DCFCE7 !important;
+            color: #15803D !important;
+            border: 1px solid #86EFAC !important;
+          }
+
+          .matrix-badge.present svg path,
+          [data-theme="dark"] .matrix-badge.present svg path {
+            stroke: #15803D !important;
+          }
+
+          .matrix-badge.absent,
+          [data-theme="dark"] .matrix-badge.absent {
+            background: #FEE2E2 !important;
+            background-color: #FEE2E2 !important;
+            color: #B91C1C !important;
+            border: 1px solid #FCA5A5 !important;
+          }
+
+          .matrix-badge.absent svg line,
+          [data-theme="dark"] .matrix-badge.absent svg line {
+            stroke: #B91C1C !important;
+          }
+
+          .matrix-badge.late,
+          [data-theme="dark"] .matrix-badge.late {
+            background: #FEF3C7 !important;
+            background-color: #FEF3C7 !important;
+            color: #B45309 !important;
+            border: 1px solid #FCD34D !important;
+          }
+
+          .matrix-badge.late svg path,
+          .matrix-badge.late svg polyline,
+          [data-theme="dark"] .matrix-badge.late svg path,
+          [data-theme="dark"] .matrix-badge.late svg polyline {
+            stroke: #B45309 !important;
+          }
+
+          .matrix-badge.excused,
+          [data-theme="dark"] .matrix-badge.excused {
+            background: #DBEAFE !important;
+            background-color: #DBEAFE !important;
+            color: #1D4ED8 !important;
+            border: 1px solid #93C5FD !important;
+          }
+
+          .matrix-badge.not-member,
+          [data-theme="dark"] .matrix-badge.not-member {
+            background: #F3F4F6 !important;
+            background-color: #F3F4F6 !important;
+            color: #9CA3AF !important;
+            border: 1px solid #E5E7EB !important;
+          }
+
+          .matrix-badge.unmarked,
+          [data-theme="dark"] .matrix-badge.unmarked {
+            background: transparent !important;
+            color: #9CA3AF !important;
+            border: 1px dashed #D1D5DB !important;
+          }
+
+          /* Summary Cells */
+          .matrix-summary-cell,
+          [data-theme="dark"] .matrix-summary-cell {
+            background: #F9FAFB !important;
+            background-color: #F9FAFB !important;
+            text-align: center !important;
+          }
+
+          .matrix-num,
+          .matrix-num-zero,
+          .matrix-num-total,
+          [data-theme="dark"] .matrix-num,
+          [data-theme="dark"] .matrix-num-zero,
+          [data-theme="dark"] .matrix-num-total {
+            font-weight: 700 !important;
+            font-size: 7.5pt !important;
+          }
+
+          .matrix-num.num-present,
+          [data-theme="dark"] .matrix-num.num-present {
+            color: #15803D !important;
+          }
+
+          .matrix-num.num-excused,
+          [data-theme="dark"] .matrix-num.num-excused {
+            color: #1D4ED8 !important;
+          }
+
+          .matrix-num.num-absent,
+          [data-theme="dark"] .matrix-num.num-absent {
+            color: #B91C1C !important;
+          }
+
+          .matrix-num.num-late,
+          [data-theme="dark"] .matrix-num.num-late {
+            color: #B45309 !important;
+          }
+
+          .matrix-num-zero,
+          [data-theme="dark"] .matrix-num-zero {
+            color: #9CA3AF !important;
+          }
+
+          .matrix-num-total,
+          [data-theme="dark"] .matrix-num-total {
+            color: #111827 !important;
+          }
+
+          /* Rate Pill */
+          .rate-pill-minimal,
+          [data-theme="dark"] .rate-pill-minimal {
+            font-weight: 800 !important;
+            padding: 1px 5px !important;
+            border-radius: 4px !important;
+            font-size: 7.5pt !important;
+            display: inline-block !important;
             -webkit-print-color-adjust: exact !important;
             print-color-adjust: exact !important;
+          }
+
+          .rate-pill-minimal.good,
+          [data-theme="dark"] .rate-pill-minimal.good {
+            background: #DCFCE7 !important;
+            background-color: #DCFCE7 !important;
+            color: #15803D !important;
+            border: 1px solid #86EFAC !important;
+          }
+
+          .rate-pill-minimal.avg,
+          [data-theme="dark"] .rate-pill-minimal.avg {
+            background: #FEF3C7 !important;
+            background-color: #FEF3C7 !important;
+            color: #B45309 !important;
+            border: 1px solid #FCD34D !important;
+          }
+
+          .rate-pill-minimal.bad,
+          [data-theme="dark"] .rate-pill-minimal.bad {
+            background: #FEE2E2 !important;
+            background-color: #FEE2E2 !important;
+            color: #B91C1C !important;
+            border: 1px solid #FCA5A5 !important;
+          }
+
+          .rate-pill-minimal.empty,
+          [data-theme="dark"] .rate-pill-minimal.empty {
+            background: #F3F4F6 !important;
+            background-color: #F3F4F6 !important;
+            color: #9CA3AF !important;
+            border: 1px solid #E5E7EB !important;
           }
         }
       `}</style>

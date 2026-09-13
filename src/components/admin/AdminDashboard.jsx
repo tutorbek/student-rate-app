@@ -124,6 +124,7 @@ const AdminDashboard = ({
     let presentCount = 0;
     let absentCount = 0;
     let lateCount = 0;
+    let excusedCount = 0;
     let totalSessions = 0;
 
     const currentYear = new Date().getFullYear();
@@ -132,6 +133,7 @@ const AdminDashboard = ({
     let monthlyPresent = 0;
     let monthlyAbsent = 0;
     let monthlyLate = 0;
+    let monthlyExcused = 0;
 
     TEACHER_IDS.forEach(tId => {
       const tData = allTeachersData[tId] || {};
@@ -162,22 +164,32 @@ const AdminDashboard = ({
         presentCount += breakdown.present;
         absentCount += breakdown.absent;
         lateCount += breakdown.late;
+        excusedCount += breakdown.excused;
         if (isCurrentMonth) {
           monthlyPresent += breakdown.present;
           monthlyAbsent += breakdown.absent;
           monthlyLate += breakdown.late;
+          monthlyExcused += breakdown.excused;
         }
       });
     });
 
-    const attendanceRate = totalAttendanceRecordsCount > 0
-      ? Math.round(((presentCount + lateCount * 0.5) / totalAttendanceRecordsCount) * 100)
-      : 100;
+    const attendanceRate = calculateAttendanceRate(
+      presentCount,
+      absentCount,
+      lateCount,
+      totalAttendanceRecordsCount,
+      excusedCount
+    );
 
-    const monthlyTotalMarked = monthlyPresent + monthlyAbsent + monthlyLate;
-    const monthlyRate = monthlyTotalMarked > 0
-      ? Math.round(((monthlyPresent + monthlyLate * 0.5) / monthlyTotalMarked) * 100)
-      : 100;
+    const monthlyTotalMarked = monthlyPresent + monthlyAbsent + monthlyLate + monthlyExcused;
+    const monthlyRate = calculateAttendanceRate(
+      monthlyPresent,
+      monthlyAbsent,
+      monthlyLate,
+      monthlyTotalMarked,
+      monthlyExcused
+    );
 
     return {
       totalTeachers: TEACHER_IDS.length,
@@ -188,10 +200,12 @@ const AdminDashboard = ({
       presentCount,
       absentCount,
       lateCount,
+      excusedCount,
       monthlySessions,
       monthlyPresent,
       monthlyAbsent,
       monthlyLate,
+      monthlyExcused,
       monthlyRate
     };
   }, [allTeachersData]);
@@ -482,8 +496,8 @@ const AdminDashboard = ({
           </div>
           <div className="admin-stat-info">
             <h4 className="admin-stat-label">Umumiy Davomat</h4>
-            <p className="admin-stat-value" style={{ color: aggregatedStats.attendanceRate >= 80 ? '#059669' : '#D97706' }}>
-              {aggregatedStats.attendanceRate}%
+            <p className="admin-stat-value" style={{ color: aggregatedStats.totalSessions === 0 ? 'var(--text-tertiary)' : (aggregatedStats.attendanceRate >= 80 ? '#059669' : '#D97706') }}>
+              {aggregatedStats.totalSessions === 0 ? '—' : `${aggregatedStats.attendanceRate}%`}
             </p>
           </div>
         </div>
@@ -502,7 +516,7 @@ const AdminDashboard = ({
                   Bu Oygi Markaziy Davomat Nazorati ({UZBEK_MONTHS[new Date().getMonth()]} {new Date().getFullYear()})
                 </h3>
                 <p className="admin-att-overview-subtitle">
-                  Oylik qatnashuv foizi: <strong>{aggregatedStats.monthlyRate}%</strong>
+                  Oylik qatnashuv foizi: <strong>{aggregatedStats.monthlySessions === 0 ? '—' : `${aggregatedStats.monthlyRate}%`}</strong>
                 </p>
               </div>
             </div>

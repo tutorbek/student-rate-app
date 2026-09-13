@@ -455,6 +455,69 @@ const Navbar = ({ activeTab, setActiveTab, userRole, onLogout, theme, toggleThem
             display: flex;
           }
         }
+
+        /* Dark Mode Overrides for Navbar */
+        [data-theme="dark"] .app-navbar {
+          background: rgba(32, 33, 36, 0.88);
+          border-bottom: 1px solid #3C4043;
+        }
+
+        [data-theme="dark"] .navbar-logo-text {
+          color: #E8EAED;
+        }
+
+        [data-theme="dark"] .logo-badge {
+          background: #3C4043;
+          color: #E8EAED;
+        }
+
+        [data-theme="dark"] .navbar-nav-desktop {
+          background: #202124;
+          border-color: #3C4043;
+        }
+
+        [data-theme="dark"] .nav-item-btn {
+          color: #9AA0A6;
+        }
+
+        [data-theme="dark"] .nav-item-btn:hover {
+          color: #E8EAED;
+          background: rgba(255, 255, 255, 0.06);
+        }
+
+        [data-theme="dark"] .nav-item-btn.active {
+          background: #3C4043;
+          color: #FFFFFF;
+          box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        [data-theme="dark"] .student-logout-btn {
+          background: rgba(239, 68, 68, 0.15);
+          color: #F87171;
+          border-color: rgba(239, 68, 68, 0.3);
+        }
+
+        [data-theme="dark"] .student-logout-btn:hover {
+          background: rgba(239, 68, 68, 0.25);
+          color: #FCA5A5;
+        }
+
+        [data-theme="dark"] .theme-toggle-btn {
+          background: #202124;
+          color: #FDD663;
+          border-color: #3C4043;
+        }
+
+        [data-theme="dark"] .theme-toggle-btn:hover {
+          background: #303134;
+          color: #FFE082;
+          border-color: rgba(255, 255, 255, 0.2);
+        }
+
+        [data-theme="dark"] .mobile-bottom-navbar {
+          background: rgba(32, 33, 36, 0.95);
+          border-top-color: #3C4043;
+        }
       `}</style>
     </>
   );
