@@ -56,12 +56,12 @@ function App() {
       const savedTab = localStorage.getItem('rsa_active_tab') || 'leaderboard';
       return (savedTab === 'leaderboard' || savedTab === 'history') ? savedTab : 'leaderboard';
     }
-    // When entering the project as teacher/admin, open Dars Jadvalim ('schedule') first
+    // When entering the project as teacher/admin, open Dashboard ('dashboard') first
     const sessionTab = sessionStorage.getItem('rsa_active_tab');
     if (sessionTab) {
       return sessionTab;
     }
-    return 'schedule';
+    return 'dashboard';
   });
   const [selectedGroupId, setSelectedGroupId] = useState(() => {
     const saved = localStorage.getItem('rsa_selected_group_id');
@@ -207,10 +207,8 @@ function App() {
 
       if (match.role === 'student') {
         setActiveTab('leaderboard');
-      } else if (match.role === 'admin') {
-        setActiveTab('dashboard');
       } else {
-        setActiveTab('schedule');
+        setActiveTab('dashboard');
       }
       showToast(match.role === 'admin' ? "Admin paneliga muvaffaqiyatli kirdingiz!" : "Muvaffaqiyatli kirdingiz!", "success");
       setLoginLoading(false);
@@ -826,7 +824,7 @@ function App() {
     setTeacherId(null);
     setStudentGroupId(null);
     setUserRole('student');
-    setActiveTab('schedule');
+    setActiveTab('dashboard');
     setLoginPassword('');
     setLoginError('');
   };
