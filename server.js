@@ -6,7 +6,6 @@ import { fileURLToPath } from 'url';
 import cron from 'node-cron';
 import { createClient } from '@supabase/supabase-js';
 import pg from 'pg';
-import { execSync } from 'child_process';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -15,7 +14,7 @@ const app = express();
 const PORT = 3001;
 const DB_DIR = path.join(__dirname, 'storage');
 const DB_FILE = path.join(DB_DIR, 'db.json');
-const BACKUPS_DIR = path.join(__dirname, 'backups');
+
 
 // Supabase Configuration
 const SUPABASE_URL = "https://unwonvkemmmtdsinhcnn.supabase.co";
@@ -34,6 +33,13 @@ const pgConfig = {
 
 const BOT_TOKEN = '7653301007:AAGW3Ov6qe-EfWPyqcaZKimli7CwwaFCPlk';
 const ADMIN_CHAT_ID = '7949632456';
+
+import { createBotService } from './botService.js';
+const botService = createBotService({
+  supabase,
+  botToken: BOT_TOKEN,
+  adminChatId: ADMIN_CHAT_ID
+});
 
 // Middleware
 app.use(cors());
@@ -206,22 +212,19 @@ const runAllBackups = async () => {
 app.post('/api/webhook', async (req, res) => {
   try {
     const update = req.body;
-    if (update && update.message && update.message.text) {
-      const text = update.message.text.trim();
-      const chatId = String(update.message.chat.id);
+    if (update) {
+      if (update.message && update.message.text) {
+        const text = update.message.text.trim();
+        const chatId = String(update.message.chat.id);
 
-      if (chatId === ADMIN_CHAT_ID) {
-        if (text === '/backup') {
+        if (chatId === ADMIN_CHAT_ID && text === '/backup') {
           await sendTelegramMessage(chatId, "⏳ *Zaxiralash jarayoni boshlandi...* Iltimos kutib turing.");
           await runAllBackups();
-        } else if (text === '/start') {
-          await sendTelegramMessage(chatId, "👋 *Salom Admin!*\n\nMen epchil robot zaxiralash botiman.\n\nHar kuni tunda barcha o'qituvchilar bazalarini `.json` qilib yuborib turaman.\n\nZaxiralashni hoziroq ishga tushirish uchun /backup buyrug'ini yuboring.");
-        }
-      } else {
-        if (text === '/start' || text === '/backup') {
-          await sendTelegramMessage(chatId, "⚠️ *Kechirasiz, siz ushbu bot administratori emassiz!*");
+          return res.status(200).send('OK');
         }
       }
+
+      await botService.handleTelegramUpdate(update);
     }
     res.status(200).send('OK');
   } catch (err) {
@@ -259,6 +262,26 @@ app.get('/api/set-webhook', async (req, res) => {
   }
 });
 
+app.get('/api/webhook-info', async (req, res) => {
+  try {
+    const response = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/getWebhookInfo`);
+    const result = await response.json();
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get('/api/delete-webhook', async (req, res) => {
+  try {
+    const response = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/deleteWebhook`);
+    const result = await response.json();
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 app.all('/api/run-backup', async (req, res) => {
   const isVercelCron = req.headers['x-vercel-cron'] === 'true';
   const isLocal = !process.env.VERCEL;
@@ -284,27 +307,20 @@ const pollTelegramUpdates = async () => {
     try {
       const response = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/getUpdates?offset=${lastUpdateId + 1}&timeout=30`);
       const result = await response.json();
-      if (result.ok && result.result.length > 0) {
+      if (result.ok && Array.isArray(result.result) && result.result.length > 0) {
         for (const update of result.result) {
           lastUpdateId = update.update_id;
-          const message = update.message;
-          if (message && message.text) {
-            const text = message.text.trim();
-            const chatId = String(message.chat.id);
+          if (update.message && update.message.text) {
+            const text = update.message.text.trim();
+            const chatId = String(update.message.chat.id);
 
-            if (chatId === ADMIN_CHAT_ID) {
-              if (text === '/backup') {
-                await sendTelegramMessage(chatId, "⏳ *Zaxiralash jarayoni boshlandi...* Iltimos kutib turing.");
-                await runAllBackups();
-              } else if (text === '/start') {
-                await sendTelegramMessage(chatId, "👋 *Salom Admin!*\n\nMen epchil robot zaxiralash botiman.\n\nHar kuni tunda barcha o'qituvchilar bazalarini `.json` qilib yuborib turaman.\n\nZaxiralashni hoziroq ishga tushirish uchun /backup buyrug'ini yuboring.");
-              }
-            } else {
-              if (text === '/start' || text === '/backup') {
-                await sendTelegramMessage(chatId, "⚠️ *Kechirasiz, siz ushbu bot administratori emassiz!*");
-              }
+            if (chatId === ADMIN_CHAT_ID && text === '/backup') {
+              await sendTelegramMessage(chatId, "⏳ *Zaxiralash jarayoni boshlandi...* Iltimos kutib turing.");
+              await runAllBackups();
+              continue;
             }
           }
+          await botService.handleTelegramUpdate(update);
         }
       }
     } catch (err) {
@@ -339,6 +355,16 @@ const initSupabaseSchema = async () => {
         teacher_id TEXT NOT NULL,
         data JSONB NOT NULL,
         timestamp TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+      );
+    `);
+    await pgClient.query(`
+      CREATE TABLE IF NOT EXISTS bot_sessions (
+        chat_id TEXT PRIMARY KEY,
+        teacher_id TEXT NOT NULL,
+        group_id TEXT NOT NULL,
+        student_id TEXT NOT NULL,
+        data JSONB DEFAULT '{}'::jsonb,
+        updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
       );
     `);
     console.log('[Supabase Init] Database schema initialized successfully!');

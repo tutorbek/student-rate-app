@@ -11,6 +11,7 @@ import {
   calculateFairAttendanceScore
 } from '../utils/attendanceUtils';
 import { exportAttendanceToCSV, printAttendanceJournal } from '../utils/exportAttendance';
+import { getCurrentActiveLessonGroup, isGroupLessonActive } from '../utils/scheduleUtils';
 
 const UZBEK_MONTHS = [
   'Yanvar', 'Fevral', 'Mart', 'Aprel', 'May', 'Iyun',
@@ -190,6 +191,8 @@ const StudentAttendanceRow = React.memo(({ student, status, wasAbsentLastLesson,
 const Attendance = ({ groups = [], students = [], attendance = [], onSaveAttendance, onDeleteAttendance, showToast }) => {
   const [activeTab, setActiveTab] = useState('mark'); // 'mark' | 'journal' | 'stats'
   const [selectedGroupId, setSelectedGroupId] = useState(() => {
+    const activeLesson = getCurrentActiveLessonGroup(groups);
+    if (activeLesson) return activeLesson.id;
     return groups.length > 0 ? groups[0].id : '';
   });
   const [isGroupDropdownOpen, setIsGroupDropdownOpen] = useState(false);
@@ -221,7 +224,8 @@ const Attendance = ({ groups = [], students = [], attendance = [], onSaveAttenda
 
   useEffect(() => {
     if (groups.length > 0 && (!selectedGroupId || !groups.find((g) => g.id === selectedGroupId))) {
-      setSelectedGroupId(groups[0].id);
+      const activeLesson = getCurrentActiveLessonGroup(groups);
+      setSelectedGroupId(activeLesson ? activeLesson.id : groups[0].id);
     }
   }, [groups, selectedGroupId]);
 
@@ -985,16 +989,45 @@ const Attendance = ({ groups = [], students = [], attendance = [], onSaveAttenda
             {groups.length > 0 ? (
               <div className="custom-select-container">
                 <button type="button" className="filter-select-btn" onClick={() => setIsGroupDropdownOpen(!isGroupDropdownOpen)}>
-                  <span>{selectedGroup ? selectedGroup.name : 'Guruhni tanlang'}</span>
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
+                    {selectedGroup ? selectedGroup.name : 'Guruhni tanlang'}
+                    {selectedGroup && isGroupLessonActive(selectedGroup) && (
+                      <span className="current-lesson-live-dot" style={{ fontSize: '0.68rem', padding: '1px 6px' }}>
+                        <span className="live-dot-circle" />
+                        Hozir darsda
+                      </span>
+                    )}
+                  </span>
                   <span className="dropdown-arrow"><IconChevronDown /></span>
                 </button>
                 {isGroupDropdownOpen && (
                   <>
                     <div className="custom-select-overlay" onClick={() => setIsGroupDropdownOpen(false)} />
                     <div className="custom-dropdown-list glass">
-                      {groups.map((g) => (
-                        <div key={g.id} className={`custom-dropdown-item ${g.id === selectedGroupId ? 'active' : ''}`} onClick={() => { requestSafeNavigation(() => { setSelectedGroupId(g.id); setIsGroupDropdownOpen(false); }); }}>{g.name}</div>
-                      ))}
+                      {groups.map((g) => {
+                        const isLive = isGroupLessonActive(g);
+                        return (
+                          <div
+                            key={g.id}
+                            className={`custom-dropdown-item ${g.id === selectedGroupId ? 'active' : ''}`}
+                            style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}
+                            onClick={() => {
+                              requestSafeNavigation(() => {
+                                setSelectedGroupId(g.id);
+                                setIsGroupDropdownOpen(false);
+                              });
+                            }}
+                          >
+                            <span>{g.name}</span>
+                            {isLive && (
+                              <span className="current-lesson-live-dot" style={{ fontSize: '0.68rem', padding: '1px 6px' }}>
+                                <span className="live-dot-circle" />
+                                Hozir darsda
+                              </span>
+                            )}
+                          </div>
+                        );
+                      })}
                     </div>
                   </>
                 )}
@@ -1257,25 +1290,43 @@ const Attendance = ({ groups = [], students = [], attendance = [], onSaveAttenda
                     onClick={() => setIsJournalGroupDropdownOpen((prev) => !prev)}
                     title="Guruhni almashtirish"
                   >
-                    <span className="toolbar-group-name">{selectedGroup ? selectedGroup.name : 'Guruhni tanlang'}</span>
+                    <span className="toolbar-group-name" style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
+                      {selectedGroup ? selectedGroup.name : 'Guruhni tanlang'}
+                      {selectedGroup && isGroupLessonActive(selectedGroup) && (
+                        <span className="current-lesson-live-dot" style={{ fontSize: '0.68rem', padding: '1px 6px' }}>
+                          <span className="live-dot-circle" />
+                          Hozir darsda
+                        </span>
+                      )}
+                    </span>
                     <IconChevronDown size={13} className={`group-chevron ${isJournalGroupDropdownOpen ? 'open' : ''}`} />
                   </button>
                   {isJournalGroupDropdownOpen && (
                     <>
                       <div className="custom-select-overlay" onClick={() => setIsJournalGroupDropdownOpen(false)} />
                       <div className="custom-dropdown-list glass">
-                        {groups.map((g) => (
-                          <div
-                            key={g.id}
-                            className={`custom-dropdown-item ${g.id === selectedGroupId ? 'active' : ''}`}
-                            onClick={() => {
-                              setSelectedGroupId(g.id);
-                              setIsJournalGroupDropdownOpen(false);
-                            }}
-                          >
-                            {g.name}
-                          </div>
-                        ))}
+                        {groups.map((g) => {
+                          const isLive = isGroupLessonActive(g);
+                          return (
+                            <div
+                              key={g.id}
+                              className={`custom-dropdown-item ${g.id === selectedGroupId ? 'active' : ''}`}
+                              style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}
+                              onClick={() => {
+                                setSelectedGroupId(g.id);
+                                setIsJournalGroupDropdownOpen(false);
+                              }}
+                            >
+                              <span>{g.name}</span>
+                              {isLive && (
+                                <span className="current-lesson-live-dot" style={{ fontSize: '0.68rem', padding: '1px 6px' }}>
+                                  <span className="live-dot-circle" />
+                                  Hozir darsda
+                                </span>
+                              )}
+                            </div>
+                          );
+                        })}
                       </div>
                     </>
                   )}
@@ -7510,6 +7561,35 @@ const Attendance = ({ groups = [], students = [], attendance = [], onSaveAttenda
             color: #9CA3AF !important;
             border: 1px solid #E5E7EB !important;
           }
+        }
+
+        .current-lesson-live-dot {
+          display: inline-flex;
+          align-items: center;
+          gap: 5px;
+          font-size: 0.72rem;
+          font-weight: 600;
+          color: #248A3D;
+          background: rgba(52, 199, 89, 0.12);
+          border: 1px solid rgba(52, 199, 89, 0.3);
+          padding: 1px 7px;
+          border-radius: var(--radius-full);
+          letter-spacing: 0.01em;
+          white-space: nowrap;
+        }
+
+        .live-dot-circle {
+          width: 6px;
+          height: 6px;
+          border-radius: 50%;
+          background: #34C759;
+          box-shadow: 0 0 4px rgba(52, 199, 89, 0.6);
+        }
+
+        [data-theme="dark"] .current-lesson-live-dot {
+          color: #34C759;
+          background: rgba(52, 199, 89, 0.16);
+          border-color: rgba(52, 199, 89, 0.35);
         }
       `}</style>
     </div>

@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { generateUniqueGroupPassword } from '../utils/db';
 import { GROUP_SVG_ICONS, GROUP_COLOR_OPTIONS, renderGroupIcon } from '../utils/groupIcons';
 import { AVATAR_GALLERY_IMAGES, isGalleryImage, compressUploadedImage } from '../utils/avatarGallery';
+import { isGroupLessonActive } from '../utils/scheduleUtils';
 import ScheduleView from './ScheduleView';
 import Time24Input from './Time24Input';
 
@@ -287,10 +288,11 @@ const GroupsList = ({
           {groups.map((group) => {
             const count = getStudentCount(group.id);
             const colorOption = GROUP_COLOR_OPTIONS.find(c => c.value === group.color) || GROUP_COLOR_OPTIONS[0];
+            const isCurrentLesson = isGroupLessonActive(group);
             return (
               <div
                 key={group.id}
-                className="glass-card group-list-item"
+                className={`glass-card group-list-item ${isCurrentLesson ? 'is-current-lesson' : ''}`}
                 style={{
                   '--group-bg-light': colorOption.value || '#FFFFFF',
                   '--group-border-light': colorOption.border || 'rgba(0, 0, 0, 0.08)',
@@ -305,6 +307,12 @@ const GroupsList = ({
                   <div className="group-item-info">
                     <div className="group-title-schedule-row">
                       <h3 className="group-item-title">{group.name}</h3>
+                      {isCurrentLesson && (
+                        <span className="current-lesson-live-dot" title="Ayni paytda dars vaqti oralig'i (15 daqiqalik bufer bilan)">
+                          <span className="live-dot-circle" />
+                          Hozir darsda
+                        </span>
+                      )}
                       {formatGroupScheduleBadge(group.schedule, () => handleOpenScheduleForGroup(group.id))}
                     </div>
                     <div className="group-item-meta-row">
@@ -1343,15 +1351,64 @@ const GroupsList = ({
           contain-intrinsic-size: 0 76px;
         }
 
+        .group-list-item.is-current-lesson {
+          border-color: rgba(52, 199, 89, 0.45) !important;
+          box-shadow: 0 0 0 1px rgba(52, 199, 89, 0.2), var(--shadow-sm);
+        }
+
         [data-theme="dark"] .group-list-item {
           background-color: var(--group-bg-dark, #292A2D) !important;
           border-color: var(--group-border-dark, #3C4043) !important;
+        }
+
+        [data-theme="dark"] .group-list-item.is-current-lesson {
+          border-color: rgba(52, 199, 89, 0.45) !important;
+          box-shadow: 0 0 0 1px rgba(52, 199, 89, 0.25), 0 2px 8px rgba(0, 0, 0, 0.3);
         }
 
         @media (hover: hover) and (pointer: fine) {
           .group-list-item:hover {
             box-shadow: var(--shadow-md);
           }
+
+          .group-list-item.is-current-lesson:hover {
+            border-color: rgba(52, 199, 89, 0.75) !important;
+            box-shadow: 0 0 0 1.5px rgba(52, 199, 89, 0.35), var(--shadow-md);
+          }
+
+          [data-theme="dark"] .group-list-item.is-current-lesson:hover {
+            border-color: rgba(52, 199, 89, 0.7) !important;
+            box-shadow: 0 0 0 1.5px rgba(52, 199, 89, 0.4), 0 4px 14px rgba(0, 0, 0, 0.4);
+          }
+        }
+
+        .current-lesson-live-dot {
+          display: inline-flex;
+          align-items: center;
+          gap: 5px;
+          font-size: 0.72rem;
+          font-weight: 600;
+          color: #248A3D;
+          background: rgba(52, 199, 89, 0.12);
+          border: 1px solid rgba(52, 199, 89, 0.3);
+          padding: 1px 7px;
+          border-radius: var(--radius-full);
+          letter-spacing: 0.01em;
+          white-space: nowrap;
+        }
+
+        .live-dot-circle {
+          width: 6px;
+          height: 6px;
+          border-radius: 50%;
+          background: #34C759;
+          box-shadow: 0 0 4px rgba(52, 199, 89, 0.6);
+        }
+
+        [data-theme="dark"] .current-lesson-live-dot {
+          color: #34C759;
+          background: rgba(52, 199, 89, 0.16);
+          border-color: rgba(52, 199, 89, 0.35);
         }
 
         .group-item-main {

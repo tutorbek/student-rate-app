@@ -100,6 +100,12 @@ export const normalizeQuickTags = (tags) => {
 // Helper: Generate Unique ID
 const generateId = () => Math.random().toString(36).substring(2, 11);
 
+// Helper: Get Start of Today (00:00:00)
+export const getStartOfToday = () => {
+  const now = new Date();
+  return new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
+};
+
 // Helper: Get Start of Current Month (1st of current month 00:00)
 export const getStartOfMonth = () => {
   const now = new Date();
@@ -590,6 +596,13 @@ export const getStudentScore = (transactions, studentId, timeframe = 'month') =>
   
   if (timeframe === 'all') {
     return txs.reduce((sum, t) => sum + t.amount, 0);
+  }
+
+  if (timeframe === 'today') {
+    const startOfToday = getStartOfToday();
+    return txs
+      .filter((t) => new Date(t.timestamp) >= startOfToday)
+      .reduce((sum, t) => sum + t.amount, 0);
   }
 
   if (timeframe === 'lastMonth') {

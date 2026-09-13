@@ -13,6 +13,7 @@ import AdminGroups from './components/admin/AdminGroups';
 import AdminAttendance from './components/admin/AdminAttendance';
 import LoginPage from './components/LoginPage';
 import LandingPage from './components/LandingPage';
+import StudentPortal from './components/student/StudentPortal';
 import {
   loadFromSupabase as loadFromFirestore,
   saveToSupabase as saveToFirestore,
@@ -905,6 +906,23 @@ function App() {
             />
           );
       }
+    }
+
+    if (userRole === 'student') {
+      return (
+        <StudentPortal
+          attendance={attendance}
+          groups={filteredGroups}
+          students={filteredStudents}
+          transactions={filteredTransactions}
+          allActiveGroups={allActiveGroups}
+          allActiveStudents={allActiveStudents}
+          allActiveTransactions={allActiveTransactions}
+          userRole={userRole}
+          studentGroupId={studentGroupId}
+          showToast={showToast}
+        />
+      );
     }
 
     switch (activeTab) {

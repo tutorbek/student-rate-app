@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { getStudentScore, getStartOfMonth, getStartOfLastMonth, getEndOfLastMonth } from '../utils/db';
+import { getStudentScore, getStartOfToday, getStartOfMonth, getStartOfLastMonth, getEndOfLastMonth } from '../utils/db';
+import { getCurrentActiveLessonGroup, isGroupLessonActive } from '../utils/scheduleUtils';
 import { renderAvatar } from '../utils/studentAvatars';
 
 const IconTrophy = ({ size = 15 }) => (
@@ -64,21 +65,44 @@ const Leaderboard = ({
   showToast
 }) => {
   const [activeTab, setActiveTab] = useState('standings'); // 'standings' | 'history'
-  const [timeframe, setTimeframe] = useState('month'); // 'month', 'lastMonth', 'all'
+  const hasUserManuallySelectedGroupRef = useRef(false);
+
+  // Smart initial timeframe: If active lesson is ongoing OR if points were already awarded today, default to 'today', otherwise 'month'
+  const [timeframe, setTimeframe] = useState(() => {
+    const activeLesson = getCurrentActiveLessonGroup(groups);
+    if (activeLesson) return 'today';
+    const startOfToday = getStartOfToday();
+    const hasTodayTx = (transactions || []).some((tx) => !tx.deleted && new Date(tx.timestamp) >= startOfToday);
+    return hasTodayTx ? 'today' : 'month';
+  });
   
   const initialGroupId = useMemo(() => {
     if (userRole === 'student') {
       return 'top10_all';
     }
+    const activeLesson = getCurrentActiveLessonGroup(groups);
+    if (activeLesson) return activeLesson.id;
     return 'all';
-  }, [userRole]);
+  }, [userRole, groups]);
 
   const [selectedGroupId, setSelectedGroupId] = useState(initialGroupId);
   const [selectedHistoryStudentId, setSelectedHistoryStudentId] = useState('all');
 
   useEffect(() => {
-    setSelectedGroupId(initialGroupId);
-  }, [initialGroupId]);
+    if (userRole === 'student') {
+      setSelectedGroupId('top10_all');
+      return;
+    }
+    if (!hasUserManuallySelectedGroupRef.current) {
+      const activeLesson = getCurrentActiveLessonGroup(groups);
+      if (activeLesson) {
+        setSelectedGroupId(activeLesson.id);
+        setTimeframe('today');
+      } else {
+        setSelectedGroupId((prev) => prev || 'all');
+      }
+    }
+  }, [userRole, groups]);
 
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isHistoryStudentDropdownOpen, setIsHistoryStudentDropdownOpen] = useState(false);
@@ -129,6 +153,7 @@ const Leaderboard = ({
   // Fast pre-calculated scores map in O(T) single pass
   const studentScoreMap = useMemo(() => {
     const map = new Map();
+    const startOfToday = timeframe === 'today' ? getStartOfToday() : null;
     const startOfMonth = timeframe === 'month' ? getStartOfMonth() : null;
     const startOfLastMonth = timeframe === 'lastMonth' ? getStartOfLastMonth() : null;
     const endOfLastMonth = timeframe === 'lastMonth' ? getEndOfLastMonth() : null;
@@ -138,7 +163,9 @@ const Leaderboard = ({
       if (tx.deleted) continue;
 
       let isValid = true;
-      if (timeframe === 'month') {
+      if (timeframe === 'today') {
+        isValid = new Date(tx.timestamp) >= startOfToday;
+      } else if (timeframe === 'month') {
         isValid = new Date(tx.timestamp) >= startOfMonth;
       } else if (timeframe === 'lastMonth') {
         const txDate = new Date(tx.timestamp);
@@ -380,7 +407,18 @@ const Leaderboard = ({
                 className="filter-select-btn" 
                 onClick={() => setIsDropdownOpen(!isDropdownOpen)}
               >
-                <span>{selectedGroupId === 'all' ? 'Barcha guruhlar' : (groups.find(g => g.id === selectedGroupId)?.name || 'Guruhsiz')}</span>
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
+                  {selectedGroupId === 'all' ? 'Barcha guruhlar' : (groups.find(g => g.id === selectedGroupId)?.name || 'Guruhsiz')}
+                  {selectedGroupId !== 'all' && (() => {
+                    const selG = groups.find(g => g.id === selectedGroupId);
+                    return selG && isGroupLessonActive(selG) ? (
+                      <span className="current-lesson-live-dot" style={{ fontSize: '0.68rem', padding: '1px 6px' }}>
+                        <span className="live-dot-circle" />
+                        Hozir darsda
+                      </span>
+                    ) : null;
+                  })()}
+                </span>
                 <span className="dropdown-arrow">
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="6 9 12 15 18 9"/></svg>
                 </span>
@@ -392,24 +430,36 @@ const Leaderboard = ({
                     <div 
                       className={`custom-dropdown-item ${selectedGroupId === 'all' ? 'active' : ''}`}
                       onClick={() => {
+                        hasUserManuallySelectedGroupRef.current = true;
                         setSelectedGroupId('all');
                         setIsDropdownOpen(false);
                       }}
                     >
                       Barcha guruhlar
                     </div>
-                    {groups.map((g) => (
-                      <div 
-                        key={g.id} 
-                        className={`custom-dropdown-item ${selectedGroupId === g.id ? 'active' : ''}`}
-                        onClick={() => {
-                          setSelectedGroupId(g.id);
-                          setIsDropdownOpen(false);
-                        }}
-                      >
-                        {g.name}
-                      </div>
-                    ))}
+                    {groups.map((g) => {
+                      const isLive = isGroupLessonActive(g);
+                      return (
+                        <div 
+                          key={g.id} 
+                          className={`custom-dropdown-item ${selectedGroupId === g.id ? 'active' : ''}`}
+                          style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}
+                          onClick={() => {
+                            hasUserManuallySelectedGroupRef.current = true;
+                            setSelectedGroupId(g.id);
+                            setIsDropdownOpen(false);
+                          }}
+                        >
+                          <span>{g.name}</span>
+                          {isLive && (
+                            <span className="current-lesson-live-dot" style={{ fontSize: '0.68rem', padding: '1px 6px' }}>
+                              <span className="live-dot-circle" />
+                              Hozir darsda
+                            </span>
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
                 </>
               )}
@@ -424,6 +474,13 @@ const Leaderboard = ({
             <div className="timeframe-toggle-desktop-wrapper">
               <div className="timeframe-toggle-wrapper">
                 <div className="timeframe-toggle glass">
+                  <button
+                    type="button"
+                    className={`toggle-btn ${timeframe === 'today' ? 'active' : ''}`}
+                    onClick={() => setTimeframe('today')}
+                  >
+                    Bugun
+                  </button>
                   <button
                     type="button"
                     className={`toggle-btn ${timeframe === 'month' ? 'active' : ''}`}
@@ -456,6 +513,7 @@ const Leaderboard = ({
                 onClick={() => setIsTimeframeDropdownOpen(!isTimeframeDropdownOpen)}
               >
                 <span>{
+                  timeframe === 'today' ? 'Bugun' :
                   timeframe === 'month' ? 'Bu oy' :
                   timeframe === 'lastMonth' ? "O'tgan oy" :
                   'Kurs davomida'
@@ -468,6 +526,12 @@ const Leaderboard = ({
                 <>
                   <div className="custom-select-overlay" onClick={() => setIsTimeframeDropdownOpen(false)} />
                   <div className="custom-dropdown-list glass">
+                    <div 
+                      className={`custom-dropdown-item ${timeframe === 'today' ? 'active' : ''}`}
+                      onClick={() => { setTimeframe('today'); setIsTimeframeDropdownOpen(false); }}
+                    >
+                      Bugun
+                    </div>
                     <div 
                       className={`custom-dropdown-item ${timeframe === 'month' ? 'active' : ''}`}
                       onClick={() => { setTimeframe('month'); setIsTimeframeDropdownOpen(false); }}
@@ -541,6 +605,17 @@ const Leaderboard = ({
       {activeTab === 'standings' ? (
         standings.length > 0 ? (
           <div className="glass-card standings-card">
+            {timeframe === 'today' && !hasAnyPoints && (
+              <div className="leaderboard-today-empty-banner">
+                <div className="banner-icon">⭐</div>
+                <div className="banner-content">
+                  <div className="banner-title">Bugungi darsda hali ballar berilmadi</div>
+                  <div className="banner-desc">
+                    O'quvchilarga like va ballar berishingiz bilan, bugungi dars reytingi va <strong>"Bugungi dars yulduzi"</strong> darhol shu yerda shakllanadi.
+                  </div>
+                </div>
+              </div>
+            )}
             <div className="standings-header">
               <span className="th-rank">O'rin</span>
               <span className="th-student">Talaba</span>
@@ -552,10 +627,11 @@ const Leaderboard = ({
                 const rank = student.rank;
                 const isTop3 = rank <= 3 && hasAnyPoints;
                 const isFirst = rank === 1 && hasAnyPoints;
+                const isDailyStar = timeframe === 'today' && isFirst;
                 return (
                   <div 
                     key={student.id} 
-                    className={`standings-row ${isFirst ? 'row-rank-1' : isTop3 ? 'row-top3' : ''} clickable-row`}
+                    className={`standings-row ${isFirst ? 'row-rank-1' : isTop3 ? 'row-top3' : ''} ${isDailyStar ? 'row-daily-star' : ''} clickable-row`}
                     onClick={() => {
                       setSelectedProfileStudent(student);
                     }}
@@ -580,9 +656,14 @@ const Leaderboard = ({
                         </div>
                       </div>
                       <div className="student-info-meta">
-                        <span className={`student-table-name ${isFirst ? 'font-bold' : ''}`}>
-                          {student.name}
-                        </span>
+                        <div className="student-name-row">
+                          <span className={`student-table-name ${isFirst ? 'font-bold' : ''}`}>
+                            {student.name}
+                          </span>
+                          {isDailyStar && (
+                            <span className="leaderboard-daily-star-badge">⭐ Dars yulduzi</span>
+                          )}
+                        </div>
                         <span className="student-mobile-group">{student.groupName}</span>
                       </div>
                     </span>
@@ -788,6 +869,10 @@ const Leaderboard = ({
             </div>
 
             <div className="profile-stats-grid">
+              <div className="profile-stat-box">
+                <span className="profile-stat-val">{getStudentScore(activeTransactionsPool, profileStudent.id, 'today')}</span>
+                <span className="profile-stat-lbl">Bugun</span>
+              </div>
               <div className="profile-stat-box">
                 <span className="profile-stat-val">{getStudentScore(activeTransactionsPool, profileStudent.id, 'month')}</span>
                 <span className="profile-stat-lbl">Bu Oy</span>
@@ -1347,6 +1432,63 @@ const Leaderboard = ({
           color: var(--apple-red);
         }
 
+        .student-name-row {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          flex-wrap: wrap;
+        }
+
+        .leaderboard-daily-star-badge {
+          font-size: 0.68rem;
+          font-weight: 700;
+          background: linear-gradient(135deg, #F59E0B, #D97706);
+          color: #FFFFFF;
+          padding: 1px 7px;
+          border-radius: var(--radius-full);
+          letter-spacing: 0.02em;
+          white-space: nowrap;
+          box-shadow: 0 1px 3px rgba(217, 119, 6, 0.25);
+        }
+
+        .row-daily-star {
+          background: linear-gradient(90deg, rgba(245, 158, 11, 0.09), transparent) !important;
+        }
+
+        .leaderboard-today-empty-banner {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          padding: 14px 18px;
+          margin: 14px 16px 8px 16px;
+          background: rgba(245, 158, 11, 0.08);
+          border: 1px solid rgba(245, 158, 11, 0.25);
+          border-radius: var(--radius-md);
+        }
+
+        .leaderboard-today-empty-banner .banner-icon {
+          font-size: 1.6rem;
+          line-height: 1;
+          flex-shrink: 0;
+        }
+
+        .leaderboard-today-empty-banner .banner-content {
+          flex: 1;
+        }
+
+        .leaderboard-today-empty-banner .banner-title {
+          font-size: 0.92rem;
+          font-weight: 700;
+          color: var(--text-primary);
+          margin-bottom: 2px;
+        }
+
+        .leaderboard-today-empty-banner .banner-desc {
+          font-size: 0.8rem;
+          color: var(--text-secondary);
+          line-height: 1.4;
+        }
+
         /* History Card */
         .history-card {
           padding: 0;
@@ -1624,7 +1766,7 @@ const Leaderboard = ({
 
         .profile-stats-grid {
           display: grid;
-          grid-template-columns: repeat(3, 1fr);
+          grid-template-columns: repeat(4, 1fr);
           gap: 8px;
           margin-bottom: 14px;
         }
@@ -2072,6 +2214,44 @@ const Leaderboard = ({
           background: #303134;
           color: #E8EAED;
           box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
+        }
+
+        [data-theme="dark"] .leaderboard-today-empty-banner {
+          background: rgba(245, 158, 11, 0.12);
+          border-color: rgba(245, 158, 11, 0.35);
+        }
+
+        [data-theme="dark"] .row-daily-star {
+          background: linear-gradient(90deg, rgba(245, 158, 11, 0.14), transparent) !important;
+        }
+
+        .current-lesson-live-dot {
+          display: inline-flex;
+          align-items: center;
+          gap: 5px;
+          font-size: 0.72rem;
+          font-weight: 600;
+          color: #248A3D;
+          background: rgba(52, 199, 89, 0.12);
+          border: 1px solid rgba(52, 199, 89, 0.3);
+          padding: 1px 7px;
+          border-radius: var(--radius-full);
+          letter-spacing: 0.01em;
+          white-space: nowrap;
+        }
+
+        .live-dot-circle {
+          width: 6px;
+          height: 6px;
+          border-radius: 50%;
+          background: #34C759;
+          box-shadow: 0 0 4px rgba(52, 199, 89, 0.6);
+        }
+
+        [data-theme="dark"] .current-lesson-live-dot {
+          color: #34C759;
+          background: rgba(52, 199, 89, 0.16);
+          border-color: rgba(52, 199, 89, 0.35);
         }
       `}</style>
     </div>
