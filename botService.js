@@ -33,8 +33,8 @@ const getSessionsLocal = () => {
 // Persistent Reply Keyboard
 const MAIN_KEYBOARD = {
   keyboard: [
-    [{ text: '🏠 Asosiy' }, { text: '🏆 Reyting' }],
-    [{ text: '🛍 Do\'kon' }, { text: '👤 Profilni almashtirish' }]
+    [{ text: '🏠 Asosiy' }, { text: '🏆 Reyting' }, { text: '🛍 Do\'kon' }],
+    [{ text: '🔄 Guruhni almashtirish' }]
   ],
   resize_keyboard: true
 };
@@ -47,8 +47,8 @@ export const createBotService = ({ supabase, botToken, adminChatId }) => {
     if (String(chatId) === String(adminChatId)) {
       return {
         keyboard: [
-          [{ text: '🏠 Asosiy' }, { text: '🏆 Reyting' }],
-          [{ text: '🛍 Do\'kon' }, { text: '👤 Profilni almashtirish' }],
+          [{ text: '🏠 Asosiy' }, { text: '🏆 Reyting' }, { text: '🛍 Do\'kon' }],
+          [{ text: '🔄 Guruhni almashtirish' }],
           [{ text: '⚙️ Admin menyusi' }]
         ],
         resize_keyboard: true
@@ -593,12 +593,21 @@ export const createBotService = ({ supabase, botToken, adminChatId }) => {
   // View Handlers
 
   // 1. Welcome / Ask Password
-  const promptGroupPassword = async (chatId, isRetry = false) => {
+  const promptGroupPassword = async (chatId, isRetry = false, canCancel = false) => {
     userStates.set(String(chatId), 'WAITING_FOR_GROUP_PASSWORD');
     const msg = isRetry
       ? "❌ <b>Noto'g'ri parol kiritildi!</b>\n\nIltimos, ustozingiz bergan guruh parolini to'g'ri kiriting (masalan: <code>olma</code>, <code>anor</code>):"
       : "👋 <b>Assalomu alaykum!</b>\nO'quvchilar va ota-onalar portaliga xush kelibsiz.\n\nIltimos, davom etish uchun <b>guruhingiz parolini</b> kiriting:";
-    await sendTelegramMessage(chatId, msg);
+    
+    const options = {};
+    if (canCancel) {
+      options.reply_markup = {
+        inline_keyboard: [
+          [{ text: '❌ Bekor qilish (Ortga)', callback_data: 'cancel_add_group' }]
+        ]
+      };
+    }
+    await sendTelegramMessage(chatId, msg, options);
   };
 
   // 2. Select Student Profile Screen
@@ -623,6 +632,13 @@ export const createBotService = ({ supabase, botToken, adminChatId }) => {
         });
       }
       inline_keyboard.push(row);
+    }
+
+    const session = await getSession(chatId);
+    if (session) {
+      inline_keyboard.push([
+        { text: '❌ Bekor qilish (Ortga)', callback_data: 'cancel_add_group' }
+      ]);
     }
 
     const text = `✅ <b>Guruh topildi:</b> ${groupName}\n\n👤 <b>Siz kimning profilisiz?</b>\nQuyidagi ro'yxatdan o'z ismingizni (yoki farzandingiz ismini) tanlang:`;
@@ -1089,6 +1105,60 @@ export const createBotService = ({ supabase, botToken, adminChatId }) => {
         return;
       }
 
+      // Handle Keyboard buttons FIRST (immediately clears WAITING_FOR_GROUP_PASSWORD)
+      const MAIN_NAV_BUTTONS = [
+        '🏠 Asosiy',
+        '🏆 Reyting',
+        '🛍 Do\'kon',
+        '🔄 Guruhni almashtirish',
+        '👥 Guruhni almashtirish',
+        '👤 Guruhni almashtirish',
+        'Guruhni almashtirish',
+        '👤 Profilni almashtirish',
+        '⚙️ Admin menyusi'
+      ];
+      if (MAIN_NAV_BUTTONS.includes(text)) {
+        userStates.delete(chatId);
+        if (text === '🏠 Asosiy') {
+          await renderHomeView(chatId);
+          return;
+        }
+        if (text === '🏆 Reyting') {
+          await renderRatingView(chatId, 'today');
+          return;
+        }
+        if (text === '🛍 Do\'kon') {
+          await renderShopView(chatId);
+          return;
+        }
+        if (
+          text === '🔄 Guruhni almashtirish' ||
+          text === '👥 Guruhni almashtirish' ||
+          text === '👤 Guruhni almashtirish' ||
+          text === 'Guruhni almashtirish' ||
+          text === '👤 Profilni almashtirish'
+        ) {
+          await renderSwitchProfileView(chatId);
+          return;
+        }
+      }
+
+      // Check for explicit cancel command/text
+      const lowerText = text.toLowerCase();
+      if (lowerText === 'cancel' || lowerText === 'bekor qilish' || text === '/cancel') {
+        userStates.delete(chatId);
+        const session = await getSession(chatId);
+        if (session) {
+          await sendTelegramMessage(chatId, "❌ Amal bekor qilindi.", {
+            reply_markup: getKeyboardForChat(chatId)
+          });
+          await renderSwitchProfileView(chatId);
+        } else {
+          await promptGroupPassword(chatId);
+        }
+        return;
+      }
+
       // If waiting for password or user has no session and typed potential password
       const currentState = userStates.get(chatId);
       const session = await getSession(chatId);
@@ -1107,30 +1177,9 @@ export const createBotService = ({ supabase, botToken, adminChatId }) => {
           await showStudentSelection(chatId, match.teacherId, match.groupId, groupName, groupStudents);
           return;
         } else if (currentState === 'WAITING_FOR_GROUP_PASSWORD') {
-          await promptGroupPassword(chatId, true);
+          await promptGroupPassword(chatId, true, Boolean(session));
           return;
         }
-      }
-
-      // Handle Keyboard buttons
-      if (text === '🏠 Asosiy') {
-        await renderHomeView(chatId);
-        return;
-      }
-
-      if (text === '🏆 Reyting') {
-        await renderRatingView(chatId, 'today');
-        return;
-      }
-
-      if (text === '🛍 Do\'kon') {
-        await renderShopView(chatId);
-        return;
-      }
-
-      if (text === '👤 Profilni almashtirish') {
-        await renderSwitchProfileView(chatId);
-        return;
       }
 
       // Default fallback
@@ -1174,7 +1223,7 @@ export const createBotService = ({ supabase, botToken, adminChatId }) => {
 
         const profileCount = updatedSession?.profiles?.length || 1;
         const extraNote = profileCount > 1 
-          ? `\n\n💡 <i>Sizda hozir <b>${profileCount} ta</b> guruh ulangan. Istalgan vaqt "👤 Profilni almashtirish" orqali guruhlaringiz orasida o'tishingiz mumkin.</i>`
+          ? `\n\n💡 <i>Sizda hozir <b>${profileCount} ta</b> guruh ulangan. Istalgan vaqt "🔄 Guruhni almashtirish" orqali guruhlaringiz orasida o'tishingiz mumkin.</i>`
           : '';
 
         await sendTelegramMessage(chatId, `🎉 <b>Profil muvaffaqiyatli bog'landi!</b>\n\nSalom, <b>${student?.name || ''}</b>! Siz <b>${group?.name || 'guruh'}</b> a'zosi sifatida ulandingiz.${extraNote}`, {
@@ -1239,7 +1288,22 @@ export const createBotService = ({ supabase, botToken, adminChatId }) => {
       // Add new group
       if (data === 'add_new_group' || data === 'switch_new_group') {
         userStates.set(chatId, 'WAITING_FOR_GROUP_PASSWORD');
-        await sendTelegramMessage(chatId, `🔑 <b>Yangi guruhni ulash</b>\n\nIltimos, yangi guruhingiz parolini kiriting:`);
+        const inline_keyboard = [
+          [{ text: '❌ Bekor qilish (Ortga)', callback_data: 'cancel_add_group' }]
+        ];
+        await sendTelegramMessage(chatId, `🔑 <b>Yangi guruhni ulash</b>\n\nIltimos, yangi guruhingiz parolini kiriting:\n\n<i>(Bekor qilish uchun pastdagi tugmani yoki asosiy menyudagi istalgan bo'limni bosishingiz mumkin)</i>`, {
+          reply_markup: { inline_keyboard }
+        });
+        return;
+      }
+
+      // Cancel adding new group
+      if (data === 'cancel_add_group') {
+        userStates.delete(chatId);
+        await sendTelegramMessage(chatId, "❌ Yangi guruh ulash bekor qilindi.", {
+          reply_markup: getKeyboardForChat(chatId)
+        });
+        await renderSwitchProfileView(chatId);
         return;
       }
 
