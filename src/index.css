@@ -87,7 +87,6 @@
 }
 
 html {
-  zoom: 0.9;
   min-height: 100%;
   scrollbar-width: none;
   -ms-overflow-style: none;
@@ -184,6 +183,13 @@ html, body {
   .app-container {
     padding-top: calc(56px + env(safe-area-inset-top, 0px));
   }
+  .app-container.student-app-root {
+    padding-top: env(safe-area-inset-top, 0px) !important;
+  }
+}
+
+.app-container.student-app-root {
+  padding-top: 0 !important;
 }
 
 /* Background Atmosphere */
@@ -202,10 +208,18 @@ html, body {
   overflow: visible;
 }
 
+.main-content.student-main-content {
+  padding: 16px 20px;
+}
+
 @media (max-width: 900px) {
   .main-content {
-    padding: 20px 16px;
-    padding-bottom: calc(90px + env(safe-area-inset-bottom, 0px));
+    padding: 14px 12px;
+    padding-bottom: calc(76px + env(safe-area-inset-bottom, 0px));
+  }
+  .main-content.student-main-content {
+    padding: 8px 12px;
+    padding-bottom: calc(72px + env(safe-area-inset-bottom, 0px));
   }
 }
 

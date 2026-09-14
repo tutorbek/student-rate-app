@@ -1525,7 +1525,7 @@ const Attendance = ({ groups = [], students = [], attendance = [], onSaveAttenda
             {/* Search & Legend Toolbar */}
             <div className="matrix-top-toolbar">
               <div className="matrix-search-box">
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="search-icon">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="matrix-search-icon">
                   <circle cx="11" cy="11" r="8" />
                   <line x1="21" y1="21" x2="16.65" y2="16.65" />
                 </svg>
@@ -4789,12 +4789,16 @@ const Attendance = ({ groups = [], students = [], attendance = [], onSaveAttenda
           max-width: 100%;
         }
 
-        .matrix-search-icon {
+        .matrix-search-icon,
+        .matrix-search-box .search-icon {
           position: absolute;
           left: 10px;
           color: var(--text-tertiary);
-          font-size: 0.85rem;
           pointer-events: none;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          z-index: 1;
         }
 
         .matrix-search-input {

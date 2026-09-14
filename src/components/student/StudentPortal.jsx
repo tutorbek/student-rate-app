@@ -10,17 +10,20 @@ export default function StudentPortal({
   groups = [],
   students = [],
   transactions = [],
-  allActiveGroups = [],
-  allActiveStudents = [],
-  allActiveTransactions = [],
-  _userRole = 'student',
+  allActiveGroups: _allActiveGroups = [],
+  allActiveStudents: _allActiveStudents = [],
+  allActiveTransactions: _allActiveTransactions = [],
+  userRole: _userRole = 'student',
   studentGroupId = null,
   studentGroups = [],
   allConnectedGroups = [],
   onSwitchGroup,
   onAddGroup,
   onRemoveGroup,
+  onLogout,
   showToast,
+  theme = 'light',
+  toggleTheme,
 }) {
   // Navigation Tabs: 'main' (Asosiy) | 'rating' (Reyting) | 'shop' (Do'kon)
   const [activeTab, setActiveTab] = useState(() => {
@@ -35,18 +38,17 @@ export default function StudentPortal({
     localStorage.setItem('rsa_student_portal_tab', activeTab);
   }, [activeTab]);
 
-  // Determine current student group (from connected groups, teacher groups, or all active groups)
+  // Determine current student group (strictly from authorized connected groups or matched group)
   const currentGroup = useMemo(() => {
     if (studentGroupId) {
       const sId = String(studentGroupId);
       const found =
         (allConnectedGroups || []).find((g) => String(g.id) === sId) ||
-        groups.find((g) => String(g.id) === sId) ||
-        allActiveGroups.find((g) => String(g.id) === sId);
+        (groups || []).find((g) => String(g.id) === sId);
       if (found) return found;
     }
-    return (allConnectedGroups && allConnectedGroups[0]) || groups[0] || allActiveGroups[0] || null;
-  }, [studentGroupId, allConnectedGroups, groups, allActiveGroups]);
+    return (allConnectedGroups && allConnectedGroups[0]) || (groups && groups.length > 0 && String(groups[0]?.id) === String(studentGroupId) ? groups[0] : null);
+  }, [studentGroupId, allConnectedGroups, groups]);
 
   // Unified list of connected groups
   const connectedGroupsList = useMemo(() => {
@@ -55,14 +57,12 @@ export default function StudentPortal({
     }
     if (studentGroups && studentGroups.length > 0) {
       return studentGroups.map((sg) => {
-        const found =
-          groups.find((g) => String(g.id) === String(sg.groupId)) ||
-          allActiveGroups.find((g) => String(g.id) === String(sg.groupId));
+        const found = groups.find((g) => String(g.id) === String(sg.groupId));
         return found || { id: sg.groupId, name: sg.groupName || 'Guruh' };
       });
     }
     return currentGroup ? [currentGroup] : [];
-  }, [allConnectedGroups, studentGroups, groups, allActiveGroups, currentGroup]);
+  }, [allConnectedGroups, studentGroups, groups, currentGroup]);
 
   // Sort connected groups so the active group is always first
   const sortedConnectedGroups = useMemo(() => {
@@ -133,32 +133,31 @@ export default function StudentPortal({
     }
   };
 
-  // Group students
+  // Group students strictly scoped to current group
   const groupStudents = useMemo(() => {
-    if (!currentGroup) return students;
+    if (!currentGroup?.id) return [];
     const gId = String(currentGroup.id);
-    const list = students.filter((s) => String(s.groupId) === gId && !s.deleted);
-    if (list.length > 0) return list;
-    return allActiveStudents.filter((s) => String(s.groupId) === gId && !s.deleted);
-  }, [currentGroup, students, allActiveStudents]);
+    return students.filter((s) => String(s.groupId) === gId && !s.deleted);
+  }, [currentGroup, students]);
 
-  // Group transactions
+  // Group transactions strictly scoped to current group students
   const groupTransactions = useMemo(() => {
+    if (!currentGroup?.id || groupStudents.length === 0) return [];
     const validStudentIds = new Set(groupStudents.map((s) => String(s.id)));
-    const pool = allActiveTransactions.length > 0 ? allActiveTransactions : transactions;
-    return pool.filter((t) => !t.deleted && validStudentIds.has(String(t.studentId)));
-  }, [groupStudents, transactions, allActiveTransactions]);
+    return transactions.filter((t) => !t.deleted && validStudentIds.has(String(t.studentId)));
+  }, [currentGroup, groupStudents, transactions]);
 
-  // Group attendance
+  // Group attendance strictly scoped to current group
   const groupAttendance = useMemo(() => {
-    if (!currentGroup) return attendance;
+    if (!currentGroup?.id) return [];
     const gId = String(currentGroup.id);
     return attendance.filter((a) => String(a.groupId) === gId);
   }, [attendance, currentGroup]);
 
-  // Pinned Student Profile
+  // Pinned Student Profile (strictly scoped to current group)
   const [pinnedStudentId, setPinnedStudentId] = useState(() => {
-    return localStorage.getItem('rsa_pinned_student_id') || null;
+    if (!currentGroup?.id) return null;
+    return localStorage.getItem(`rsa_pinned_student_${currentGroup.id}`) || null;
   });
 
   const [isChangingProfile, setIsChangingProfile] = useState(false);
@@ -180,11 +179,16 @@ export default function StudentPortal({
 
   // Sync pinned student when current group changes/resolves
   useEffect(() => {
-    if (!currentGroup?.id) return;
+    if (!currentGroup?.id) {
+      setPinnedStudentId(null);
+      return;
+    }
     const scopedKey = `rsa_pinned_student_${currentGroup.id}`;
-    const saved = localStorage.getItem(scopedKey) || localStorage.getItem('rsa_pinned_student_id');
+    const saved = localStorage.getItem(scopedKey);
     if (saved && groupStudents.some((s) => String(s.id) === String(saved))) {
       setPinnedStudentId(saved);
+    } else {
+      setPinnedStudentId(null);
     }
   }, [currentGroup?.id, groupStudents]);
 
@@ -237,92 +241,157 @@ export default function StudentPortal({
 
   return (
     <div className="student-portal-root">
-      {/* Desktop Top Segmented Navigation (Hidden on Mobile) */}
-      <div className="student-desktop-nav-container">
-        <nav className="student-segmented-nav" aria-label="Student sahifalari">
-          <button
-            type="button"
-            className={`student-nav-btn ${activeTab === 'main' ? 'active' : ''}`}
-            onClick={() => setActiveTab('main')}
-          >
-            Asosiy
-          </button>
-          <button
-            type="button"
-            className={`student-nav-btn ${activeTab === 'rating' ? 'active' : ''}`}
-            onClick={() => setActiveTab('rating')}
-          >
-            Reyting
-          </button>
-          <button
-            type="button"
-            className={`student-nav-btn ${activeTab === 'shop' ? 'active' : ''}`}
-            onClick={() => setActiveTab('shop')}
-          >
-            Do'kon
-          </button>
-        </nav>
-      </div>
-
-      {/* Unified Student & Group Header Card (Clean, Single-Row/Compact Mobile-First UI) */}
-      <div className="student-unified-user-card">
-        {/* Left: Profile Identification */}
+      {/* Sleek Unified Student Header Bar */}
+      <div className="student-header-bar">
+        {/* Left: Active Group Info with modal trigger */}
         <div
-          className="user-profile-chip"
-          onClick={() => setIsChangingProfile(true)}
-          title="Profilingizni tanlash yoki o'zgartirish"
+          className="student-group-chip"
+          onClick={() => setIsGroupModalOpen(true)}
+          title={connectedGroupsList.length > 1 ? "Guruhni almashtirish yoki yangi guruh ulash" : "Guruh ma'lumotlari"}
+          role="button"
+          tabIndex={0}
         >
-          <div className="user-avatar-circle">
-            {pinnedStudent ? (
-              <span className="user-initial">{pinnedStudent.name.charAt(0).toUpperCase()}</span>
-            ) : (
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-                <circle cx="12" cy="7" r="4" />
-              </svg>
-            )}
-          </div>
-          <div className="user-text-col">
-            <span className="user-name-title">
-              {pinnedStudent ? pinnedStudent.name : "Profilni tanlang"}
-            </span>
-            <span className="user-sub-action">
-              {pinnedStudent ? "O'zgartirish" : "Ismingizni belgilang"}
-            </span>
-          </div>
-          <span className="user-edit-icon">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+          <div className="student-group-icon-wrap">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+              <circle cx="9" cy="7" r="4" />
+              <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+              <path d="M16 3.13a4 4 0 0 1 0 7.75" />
             </svg>
-          </span>
+          </div>
+          <div className="student-group-text-col">
+            <span className="student-group-title">{currentGroup?.name || "Guruh"}</span>
+            <span className="student-group-switcher-hint">
+              {connectedGroupsList.length > 1 ? `${connectedGroupsList.length} ta guruh ▾` : "Guruhim"}
+            </span>
+          </div>
         </div>
 
-        {/* Right: Group Switcher Pills */}
-        <div className="user-groups-nav">
-          <div className="groups-pills-row">
+        {/* Center: Desktop Segmented Navigation (Hidden on Mobile) */}
+        <div className="student-desktop-nav-wrap">
+          <nav className="student-segmented-nav" aria-label="Student sahifalari">
+            <button
+              type="button"
+              className={`student-nav-btn ${activeTab === 'main' ? 'active' : ''}`}
+              onClick={() => setActiveTab('main')}
+            >
+              Asosiy
+            </button>
+            <button
+              type="button"
+              className={`student-nav-btn ${activeTab === 'rating' ? 'active' : ''}`}
+              onClick={() => setActiveTab('rating')}
+            >
+              Reyting
+            </button>
+            <button
+              type="button"
+              className={`student-nav-btn ${activeTab === 'shop' ? 'active' : ''}`}
+              onClick={() => setActiveTab('shop')}
+            >
+              Do'kon
+            </button>
+          </nav>
+        </div>
+
+        {/* Right: Student Profile, Theme Toggle & Logout Actions */}
+        <div className="student-header-right-actions">
+          <div
+            className={`student-profile-chip ${pinnedStudent ? 'has-profile' : 'no-profile'}`}
+            onClick={() => setIsChangingProfile(true)}
+            title="Profilingizni tanlang yoki o'zgartiring"
+            role="button"
+            tabIndex={0}
+          >
+            <div className="student-avatar-circle">
+              {pinnedStudent ? (
+                pinnedStudent.name.charAt(0).toUpperCase()
+              ) : (
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                  <circle cx="12" cy="7" r="4" />
+                </svg>
+              )}
+            </div>
+            <div className="student-profile-text-col">
+              <span className="student-profile-name">
+                {pinnedStudent ? pinnedStudent.name : "Profilni tanlang"}
+              </span>
+              <span className="student-profile-sub">
+                {pinnedStudent ? "Profilim" : "Belgilang"}
+              </span>
+            </div>
+          </div>
+
+          {toggleTheme && (
+            <button
+              type="button"
+              className="student-header-action-btn theme-btn"
+              onClick={toggleTheme}
+              title="Mavzuni o'zgartirish"
+              aria-label="Mavzuni o'zgartirish"
+            >
+              {theme === 'dark' ? (
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="12" cy="12" r="5" />
+                  <line x1="12" y1="1" x2="12" y2="3" />
+                  <line x1="12" y1="21" x2="12" y2="23" />
+                  <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" />
+                  <line x1="18.36" y1="18.36" x2="19.78" y2="19.78" />
+                  <line x1="1" y1="12" x2="3" y2="12" />
+                  <line x1="21" y1="12" x2="23" y2="12" />
+                  <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" />
+                  <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
+                </svg>
+              ) : (
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+                </svg>
+              )}
+            </button>
+          )}
+
+          {onLogout && (
+            <button
+              type="button"
+              className="student-header-action-btn logout"
+              onClick={onLogout}
+              title="Tizimdan chiqish"
+              aria-label="Chiqish"
+            >
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                <polyline points="16 17 21 12 16 7" />
+                <line x1="21" y1="12" x2="9" y2="12" />
+              </svg>
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Multi-Groups Horizontal Quick Switcher (Shown only if connected to >1 groups) */}
+      {connectedGroupsList.length > 1 && (
+        <div className="multi-groups-quick-bar">
+          <div className="multi-groups-scroll">
             {connectedGroupsList.map((grp) => {
               const isCurrent = String(grp.id) === String(currentGroup?.id);
               return (
                 <button
                   key={grp.id}
                   type="button"
-                  className={`user-group-pill ${isCurrent ? 'active' : ''}`}
+                  className={`multi-group-quick-pill ${isCurrent ? 'active' : ''}`}
                   onClick={() => {
-                    if (!isCurrent && onSwitchGroup) {
-                      onSwitchGroup(grp.id);
-                    }
+                    if (!isCurrent && onSwitchGroup) onSwitchGroup(grp.id);
                   }}
-                  title={grp.name}
                 >
-                  {isCurrent && <span className="active-dot" />}
-                  <span className="group-pill-name">{grp.name}</span>
+                  {isCurrent && <span className="pill-dot" />}
+                  <span>{grp.name}</span>
                 </button>
               );
             })}
             <button
               type="button"
-              className="user-group-pill add-pill"
+              className="multi-group-quick-pill add-btn"
               onClick={() => {
                 setIsGroupModalOpen(true);
                 setIsAddingGroup(true);
@@ -330,48 +399,18 @@ export default function StudentPortal({
               }}
               title="Yangi guruh ulash"
             >
-              <span className="plus-sign">+</span>
-              <span className="add-text">Guruh</span>
+              + Guruh
             </button>
           </div>
         </div>
-      </div>
+      )}
 
       {/* Main Tab Content */}
       <div className="student-tab-content">
         {activeTab === 'main' && (
           <div className="tab-pane-main animate-fadeIn">
-            {/* Group Schedule Cards */}
-            {connectedGroupsList.length > 1 ? (
-              <div className="multi-schedules-section">
-                <div className="multi-schedules-header">
-                  <div className="multi-schedules-title-row">
-                    <span className="multi-schedules-title">Dars jadvallari</span>
-                    <span className="multi-schedules-count-pill">{connectedGroupsList.length} ta guruh</span>
-                  </div>
-                </div>
-                <div className="multi-schedules-grid">
-                  {sortedConnectedGroups.map((grp) => {
-                    const isActive = String(grp.id) === String(currentGroup?.id);
-                    return (
-                      <StudentScheduleCard
-                        key={grp.id}
-                        group={grp}
-                        isActive={isActive}
-                        showActiveBadge={true}
-                        onMakeActive={() => {
-                          if (!isActive && onSwitchGroup) {
-                            onSwitchGroup(grp.id);
-                          }
-                        }}
-                      />
-                    );
-                  })}
-                </div>
-              </div>
-            ) : (
-              <StudentScheduleCard group={currentGroup} />
-            )}
+            {/* Active Group Schedule Card */}
+            <StudentScheduleCard group={currentGroup} />
 
             {/* Monthly Attendance Calendar */}
             <StudentAttendanceCalendar
@@ -388,9 +427,6 @@ export default function StudentPortal({
             <StudentRatingView
               students={groupStudents}
               transactions={groupTransactions}
-              allStudents={allActiveStudents.length > 0 ? allActiveStudents : groupStudents}
-              allTransactions={allActiveTransactions.length > 0 ? allActiveTransactions : groupTransactions}
-              allGroups={allActiveGroups.length > 0 ? allActiveGroups : (currentGroup ? [currentGroup] : [])}
               pinnedStudentId={pinnedStudentId}
               group={currentGroup}
               connectedGroups={connectedGroupsList}
@@ -515,7 +551,7 @@ export default function StudentPortal({
             <div className="student-modal-body">
               {/* Groups List */}
               <div className="student-groups-list">
-                {connectedGroupsList.map((grp) => {
+                {sortedConnectedGroups.map((grp) => {
                   const isCurrent = String(grp.id) === String(currentGroup?.id);
                   const isConfirmingRemove = confirmRemoveId === grp.id;
 
@@ -753,8 +789,8 @@ export default function StudentPortal({
           box-sizing: border-box;
         }
 
-        /* Unified Student & Group Bar (Compact, Single-Row Mobile-First UI) */
-        .student-unified-user-card {
+        /* Sleek Modern Unified Header Bar */
+        .student-header-bar {
           display: flex;
           align-items: center;
           justify-content: space-between;
@@ -764,11 +800,24 @@ export default function StudentPortal({
           padding: 8px 12px;
           margin-bottom: 12px;
           box-shadow: var(--shadow-sm);
-          gap: 8px;
-          flex-wrap: wrap;
+          gap: 10px;
+          position: sticky;
+          top: 8px;
+          z-index: 50;
         }
 
-        .user-profile-chip {
+        .student-desktop-nav-wrap {
+          display: none;
+        }
+
+        @media (min-width: 641px) {
+          .student-desktop-nav-wrap {
+            display: flex;
+            align-items: center;
+          }
+        }
+
+        .student-group-chip {
           display: inline-flex;
           align-items: center;
           gap: 8px;
@@ -776,19 +825,19 @@ export default function StudentPortal({
           background: var(--bg-secondary, rgba(0, 0, 0, 0.03));
           border: 1px solid var(--border-color);
           border-radius: var(--radius-full);
-          padding: 4px 10px 4px 5px;
+          padding: 4px 10px 4px 6px;
           transition: all var(--transition-fast);
           user-select: none;
           min-width: 0;
           touch-action: manipulation;
         }
 
-        .user-profile-chip:hover {
+        .student-group-chip:hover {
           border-color: var(--apple-blue);
           background: rgba(var(--apple-blue-rgb, 0, 113, 227), 0.06);
         }
 
-        .user-avatar-circle {
+        .student-group-icon-wrap {
           width: 24px;
           height: 24px;
           border-radius: 50%;
@@ -797,19 +846,17 @@ export default function StudentPortal({
           display: flex;
           align-items: center;
           justify-content: center;
-          font-weight: 700;
-          font-size: 0.74rem;
           flex-shrink: 0;
         }
 
-        .user-text-col {
+        .student-group-text-col {
           display: flex;
           flex-direction: column;
           line-height: 1.15;
           min-width: 0;
         }
 
-        .user-name-title {
+        .student-group-title {
           font-size: 0.84rem;
           font-weight: 700;
           color: var(--text-primary);
@@ -819,83 +866,174 @@ export default function StudentPortal({
           max-width: 140px;
         }
 
-        .user-sub-action {
+        .student-group-switcher-hint {
           font-size: 0.65rem;
           color: var(--text-tertiary);
           font-weight: 500;
         }
 
-        .user-edit-icon {
-          color: var(--text-tertiary);
+        .student-header-right-actions {
           display: flex;
           align-items: center;
+          gap: 8px;
+          flex-shrink: 0;
         }
 
-        /* Right side: Group pills */
-        .user-groups-nav {
+        .student-profile-chip {
+          display: inline-flex;
+          align-items: center;
+          gap: 7px;
+          cursor: pointer;
+          background: var(--bg-secondary, rgba(0, 0, 0, 0.03));
+          border: 1px solid var(--border-color);
+          border-radius: var(--radius-full);
+          padding: 4px 10px 4px 5px;
+          transition: all var(--transition-fast);
+          user-select: none;
+          touch-action: manipulation;
+        }
+
+        .student-profile-chip:hover {
+          border-color: var(--apple-blue);
+        }
+
+        .student-avatar-circle {
+          width: 24px;
+          height: 24px;
+          border-radius: 50%;
+          background: #34C759;
+          color: #ffffff;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-weight: 700;
+          font-size: 0.74rem;
+          flex-shrink: 0;
+        }
+
+        .student-profile-chip.no-profile .student-avatar-circle {
+          background: var(--text-tertiary);
+        }
+
+        .student-profile-text-col {
+          display: flex;
+          flex-direction: column;
+          line-height: 1.15;
+          min-width: 0;
+        }
+
+        .student-profile-name {
+          font-size: 0.82rem;
+          font-weight: 700;
+          color: var(--text-primary);
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          max-width: 110px;
+        }
+
+        .student-profile-sub {
+          font-size: 0.64rem;
+          color: var(--text-tertiary);
+          font-weight: 500;
+        }
+
+        .student-header-action-btn {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          width: 32px;
+          height: 32px;
+          border-radius: var(--radius-full);
+          border: 1px solid var(--border-color);
+          background: var(--bg-secondary, rgba(0, 0, 0, 0.04));
+          color: var(--text-secondary);
+          cursor: pointer;
+          transition: all var(--transition-fast);
+          touch-action: manipulation;
+          padding: 0;
+          flex-shrink: 0;
+        }
+
+        .student-header-action-btn:hover {
+          border-color: var(--apple-blue);
+          color: var(--apple-blue);
+        }
+
+        .student-header-action-btn.logout {
+          border-color: rgba(255, 59, 48, 0.25);
+          background: rgba(255, 59, 48, 0.08);
+          color: #FF3B30;
+        }
+
+        .student-header-action-btn.logout:hover {
+          background: rgba(255, 59, 48, 0.16);
+        }
+
+        /* Multi-groups horizontal quick switcher */
+        .multi-groups-quick-bar {
+          margin-bottom: 12px;
+        }
+
+        .multi-groups-scroll {
           display: flex;
           align-items: center;
           gap: 6px;
           overflow-x: auto;
           scrollbar-width: none;
-          max-width: 100%;
+          -ms-overflow-style: none;
+          padding-bottom: 2px;
         }
 
-        .user-groups-nav::-webkit-scrollbar {
+        .multi-groups-scroll::-webkit-scrollbar {
           display: none;
         }
 
-        .groups-pills-row {
-          display: flex;
-          align-items: center;
-          gap: 6px;
-          flex-shrink: 0;
-        }
-
-        .user-group-pill {
+        .multi-group-quick-pill {
           display: inline-flex;
           align-items: center;
           gap: 5px;
-          background: var(--bg-secondary, rgba(0, 0, 0, 0.03));
+          background: var(--bg-card);
           border: 1px solid var(--border-color);
           border-radius: var(--radius-full);
           padding: 5px 12px;
-          font-size: 0.8rem;
+          font-size: 0.78rem;
           font-weight: 600;
           color: var(--text-secondary);
           cursor: pointer;
           white-space: nowrap;
+          flex-shrink: 0;
           transition: all var(--transition-fast);
           touch-action: manipulation;
         }
 
-        .user-group-pill:hover {
+        .multi-group-quick-pill:hover {
           color: var(--text-primary);
           border-color: var(--apple-blue);
         }
 
-        .user-group-pill.active {
+        .multi-group-quick-pill.active {
           background: var(--apple-blue);
           color: #ffffff;
           border-color: var(--apple-blue);
           box-shadow: 0 2px 8px rgba(0, 113, 227, 0.25);
         }
 
-        .active-dot {
-          width: 6px;
-          height: 6px;
+        .multi-group-quick-pill .pill-dot {
+          width: 5px;
+          height: 5px;
           border-radius: 50%;
           background: #34C759;
         }
 
-        .user-group-pill.add-pill {
+        .multi-group-quick-pill.add-btn {
           border-style: dashed;
           background: transparent;
           color: var(--apple-blue);
           padding: 5px 10px;
         }
 
-        .user-group-pill.add-pill:hover {
+        .multi-group-quick-pill.add-btn:hover {
           background: rgba(var(--apple-blue-rgb, 0, 113, 227), 0.08);
         }
 
@@ -924,17 +1062,6 @@ export default function StudentPortal({
           border: 1px solid var(--border-color);
           padding: 1px 7px;
           border-radius: var(--radius-full);
-        }
-        }
-
-        .student-group-pill.add-btn {
-          border-style: dashed;
-          background: transparent;
-          color: var(--apple-blue);
-        }
-
-        .student-group-pill.add-btn:hover {
-          background: rgba(var(--apple-blue-rgb, 0, 113, 227), 0.08);
         }
 
         /* Multi Schedules Section in Tab Main */
@@ -1450,33 +1577,29 @@ export default function StudentPortal({
         }
 
         .animate-fadeIn {
-          animation: fadeIn 0.2s ease-in-out;
+          animation: fadeIn 0.15s ease-out;
         }
 
         @keyframes fadeIn {
           from {
             opacity: 0;
-            transform: translateY(4px);
           }
           to {
             opacity: 1;
-            transform: translateY(0);
           }
         }
 
         @media (max-width: 640px) {
           .student-portal-root {
-            padding-top: 4px;
-            padding-bottom: calc(75px + env(safe-area-inset-bottom, 0px));
+            padding-top: 0;
+            padding-bottom: calc(64px + env(safe-area-inset-bottom, 0px)) !important;
           }
 
-          .student-desktop-nav-container {
-            display: none !important;
-          }
-
-          .student-portal-root {
-            padding-top: 4px;
-            padding-bottom: calc(84px + env(safe-area-inset-bottom, 0px)) !important;
+          .student-header-bar {
+            top: 4px;
+            padding: 6px 10px;
+            margin-bottom: 8px;
+            border-radius: var(--radius-md, 12px);
           }
 
           /* Fixed Native Mobile App Bottom Navigation Bar */
@@ -1489,18 +1612,18 @@ export default function StudentPortal({
             width: 100% !important;
             height: calc(58px + env(safe-area-inset-bottom, 0px)) !important;
             padding-bottom: env(safe-area-inset-bottom, 0px) !important;
-            background: rgba(255, 255, 255, 0.92) !important;
-            backdrop-filter: blur(20px) saturate(180%) !important;
-            -webkit-backdrop-filter: blur(20px) saturate(180%) !important;
-            border-top: 0.5px solid rgba(0, 0, 0, 0.12) !important;
-            box-shadow: 0 -2px 12px rgba(0, 0, 0, 0.04) !important;
+            background: rgba(255, 255, 255, 0.96) !important;
+            backdrop-filter: blur(8px) !important;
+            -webkit-backdrop-filter: blur(8px) !important;
+            border-top: 1px solid rgba(0, 0, 0, 0.08) !important;
+            box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.03) !important;
             z-index: 99999 !important;
             box-sizing: border-box !important;
             user-select: none !important;
             -webkit-user-select: none !important;
             touch-action: manipulation !important;
-            transform: translate3d(0, 0, 0) !important;
-            -webkit-transform: translate3d(0, 0, 0) !important;
+            transform: translateZ(0) !important;
+            -webkit-transform: translateZ(0) !important;
           }
 
           .student-mobile-nav-inner {
@@ -1585,6 +1708,30 @@ export default function StudentPortal({
           }
         }
 
+        [data-theme="dark"] .student-header-bar {
+          background: var(--bg-card);
+          border-color: var(--border-color);
+        }
+
+        [data-theme="dark"] .student-group-chip,
+        [data-theme="dark"] .student-profile-chip,
+        [data-theme="dark"] .student-header-action-btn {
+          background: rgba(255, 255, 255, 0.05);
+          border-color: rgba(255, 255, 255, 0.1);
+          color: var(--text-secondary);
+        }
+
+        [data-theme="dark"] .student-header-action-btn.logout {
+          background: rgba(239, 68, 68, 0.15);
+          color: #F87171;
+          border-color: rgba(239, 68, 68, 0.3);
+        }
+
+        [data-theme="dark"] .multi-group-quick-pill {
+          background: var(--bg-card);
+          border-color: var(--border-color);
+        }
+
         [data-theme="dark"] .student-segmented-nav,
         [data-theme="dark"] .pinned-profile-bar,
         [data-theme="dark"] .profile-picker-card {
@@ -1593,9 +1740,9 @@ export default function StudentPortal({
         }
 
         [data-theme="dark"] .student-mobile-bottom-bar {
-          background: rgba(26, 26, 30, 0.94) !important;
-          border-top-color: rgba(255, 255, 255, 0.12) !important;
-          box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.4) !important;
+          background: rgba(26, 26, 30, 0.96) !important;
+          border-top-color: rgba(255, 255, 255, 0.1) !important;
+          box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.35) !important;
         }
 
         [data-theme="dark"] .student-mobile-tab-btn {

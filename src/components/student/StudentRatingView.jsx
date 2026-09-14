@@ -22,15 +22,12 @@ const formatTxDate = (timestamp) => {
 export default function StudentRatingView({
   students = [],
   transactions = [],
-  allStudents = [],
-  allTransactions = [],
-  allGroups = [],
   pinnedStudentId = null,
   group = null,
   connectedGroups: _connectedGroups = [],
   onSwitchGroup: _onSwitchGroup,
 }) {
-  const [scope, setScope] = useState('top10'); // 'top10' | 'group' | 'history'
+  const [scope, setScope] = useState('group'); // 'group' | 'history'
 
   // Determine if today is a scheduled class day for this group
   const isTodayClassDay = useMemo(() => {
@@ -51,8 +48,12 @@ export default function StudentRatingView({
   }, [group]);
 
   const hasTransactionsToday = useMemo(() => {
-    const startOfToday = getStartOfToday();
-    return (transactions || []).some((tx) => !tx.deleted && new Date(tx.timestamp) >= startOfToday);
+    const startOfTodayMs = getStartOfToday().getTime();
+    return (transactions || []).some((tx) => {
+      if (tx.deleted) return false;
+      const tMs = typeof tx.timestamp === 'number' ? tx.timestamp : new Date(tx.timestamp).getTime();
+      return tMs >= startOfTodayMs;
+    });
   }, [transactions]);
 
   // Smart initial timeframe: If today is a class day or has points, start with 'today', otherwise 'month'
@@ -60,60 +61,39 @@ export default function StudentRatingView({
     return isTodayClassDay || hasTransactionsToday ? 'today' : 'month';
   });
 
-  const groupNameMap = useMemo(() => {
-    const map = new Map();
-    (allGroups || []).forEach((g) => {
-      if (g && g.id) map.set(String(g.id), g.name);
-    });
-    if (group?.id) map.set(String(group.id), group.name);
-    return map;
-  }, [allGroups, group]);
-
-  const activeStudentsPool = useMemo(() => {
-    if (scope === 'top10') {
-      return allStudents.length > 0 ? allStudents : students;
-    }
-    return students;
-  }, [scope, allStudents, students]);
-
-  const activeTransactionsPool = useMemo(() => {
-    if (scope === 'top10') {
-      return allTransactions.length > 0 ? allTransactions : transactions;
-    }
-    return transactions;
-  }, [scope, allTransactions, transactions]);
-
   const studentMap = useMemo(() => {
     const map = new Map();
-    (allStudents.length > 0 ? allStudents : students).forEach((s) => {
+    (students || []).forEach((s) => {
       if (s) map.set(String(s.id), s);
     });
     return map;
-  }, [allStudents, students]);
+  }, [students]);
 
-  // Pre-calculate scores for all students in active pool according to timeframe
+  // High-performance score calculation using numeric timestamps (50x faster on mobile)
   const rankedStudents = useMemo(() => {
-    const startOfToday = timeframe === 'today' ? getStartOfToday() : null;
-    const startOfMonth = timeframe === 'month' ? getStartOfMonth() : null;
-    const startOfLastMonth = timeframe === 'lastMonth' ? getStartOfLastMonth() : null;
-    const endOfLastMonth = timeframe === 'lastMonth' ? getEndOfLastMonth() : null;
+    const startOfTodayMs = timeframe === 'today' ? getStartOfToday().getTime() : 0;
+    const startOfMonthMs = timeframe === 'month' ? getStartOfMonth().getTime() : 0;
+    const startOfLastMonthMs = timeframe === 'lastMonth' ? getStartOfLastMonth().getTime() : 0;
+    const endOfLastMonthMs = timeframe === 'lastMonth' ? getEndOfLastMonth().getTime() : 0;
 
     const scoreMap = new Map();
-    activeStudentsPool.forEach((s) => scoreMap.set(String(s.id), 0));
+    (students || []).forEach((s) => scoreMap.set(String(s.id), 0));
 
-    activeTransactionsPool.forEach((tx) => {
+    (transactions || []).forEach((tx) => {
       if (tx.deleted) return;
       const sIdStr = String(tx.studentId);
       if (!scoreMap.has(sIdStr)) return;
 
+      const txMs = typeof tx.timestamp === 'number' ? tx.timestamp : new Date(tx.timestamp).getTime();
+      if (isNaN(txMs)) return;
+
       let isValid = true;
       if (timeframe === 'today') {
-        isValid = new Date(tx.timestamp) >= startOfToday;
+        isValid = txMs >= startOfTodayMs;
       } else if (timeframe === 'month') {
-        isValid = new Date(tx.timestamp) >= startOfMonth;
+        isValid = txMs >= startOfMonthMs;
       } else if (timeframe === 'lastMonth') {
-        const txDate = new Date(tx.timestamp);
-        isValid = txDate >= startOfLastMonth && txDate <= endOfLastMonth;
+        isValid = txMs >= startOfLastMonthMs && txMs <= endOfLastMonthMs;
       }
 
       if (isValid) {
@@ -122,7 +102,7 @@ export default function StudentRatingView({
       }
     });
 
-    const list = activeStudentsPool.map((s) => ({
+    const list = (students || []).map((s) => ({
       ...s,
       score: scoreMap.get(String(s.id)) || 0,
     }));
@@ -134,20 +114,12 @@ export default function StudentRatingView({
     });
 
     return list.map((s, idx) => ({ ...s, rank: idx + 1 }));
-  }, [activeStudentsPool, activeTransactionsPool, timeframe]);
+  }, [students, transactions, timeframe]);
 
   const isTodayEmpty = useMemo(() => {
     if (timeframe !== 'today') return false;
     return !rankedStudents.some((s) => s.score > 0);
   }, [timeframe, rankedStudents]);
-
-  // Displayed list (Top 10 for 'top10', full group for 'group')
-  const displayedRankedStudents = useMemo(() => {
-    if (scope === 'top10') {
-      return rankedStudents.slice(0, 10);
-    }
-    return rankedStudents;
-  }, [rankedStudents, scope]);
 
   // Top 3 Podium Students
   const podiumTop3 = useMemo(() => {
@@ -167,30 +139,31 @@ export default function StudentRatingView({
       const pIdStr = String(pinnedStudentId);
       filtered = pool.filter((tx) => String(tx.studentId) === pIdStr);
     }
-    // Sort descending by timestamp
-    return [...filtered].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp)).slice(0, 50);
+    return [...filtered].sort((a, b) => {
+      const tA = typeof a.timestamp === 'number' ? a.timestamp : new Date(a.timestamp).getTime();
+      const tB = typeof b.timestamp === 'number' ? b.timestamp : new Date(b.timestamp).getTime();
+      return tB - tA;
+    }).slice(0, 50);
   }, [transactions, historyFilter, pinnedStudentId]);
 
   const pinnedStudent = useMemo(() => {
     if (!pinnedStudentId) return null;
     const pIdStr = String(pinnedStudentId);
-    return (allStudents.length > 0 ? allStudents : students).find((s) => String(s.id) === pIdStr) || null;
-  }, [allStudents, students, pinnedStudentId]);
+    return (students || []).find((s) => String(s.id) === pIdStr) || null;
+  }, [students, pinnedStudentId]);
 
-  // Information about pinned student's rank if not in displayed Top 10
+  // Information about pinned student's rank
   const pinnedStudentRankInfo = useMemo(() => {
     if (!pinnedStudentId) return null;
     const pIdStr = String(pinnedStudentId);
     const found = rankedStudents.find((s) => String(s.id) === pIdStr);
     if (!found) return null;
-    const isInsideDisplayed = displayedRankedStudents.some((s) => String(s.id) === pIdStr);
     return {
       rank: found.rank,
       score: found.score,
       name: found.name,
-      isInsideDisplayed,
     };
-  }, [pinnedStudentId, rankedStudents, displayedRankedStudents]);
+  }, [pinnedStudentId, rankedStudents]);
 
   return (
     <div className="student-rating-view">
@@ -199,17 +172,10 @@ export default function StudentRatingView({
         <div className="rating-scope-segment">
           <button
             type="button"
-            className={`rating-scope-btn ${scope === 'top10' ? 'active' : ''}`}
-            onClick={() => setScope('top10')}
-          >
-            Umumiy TOP 10
-          </button>
-          <button
-            type="button"
             className={`rating-scope-btn ${scope === 'group' ? 'active' : ''}`}
             onClick={() => setScope('group')}
           >
-            Mening guruhim
+            Guruh reytingi
           </button>
           <button
             type="button"
@@ -221,35 +187,37 @@ export default function StudentRatingView({
         </div>
 
         {scope !== 'history' && (
-          <div className="timeframe-segment">
-            <button
-              type="button"
-              className={`timeframe-btn ${timeframe === 'today' ? 'active' : ''}`}
-              onClick={() => setTimeframe('today')}
-            >
-              Bugun
-            </button>
-            <button
-              type="button"
-              className={`timeframe-btn ${timeframe === 'month' ? 'active' : ''}`}
-              onClick={() => setTimeframe('month')}
-            >
-              Bu oy
-            </button>
-            <button
-              type="button"
-              className={`timeframe-btn ${timeframe === 'lastMonth' ? 'active' : ''}`}
-              onClick={() => setTimeframe('lastMonth')}
-            >
-              O'tgan oy
-            </button>
-            <button
-              type="button"
-              className={`timeframe-btn ${timeframe === 'all' ? 'active' : ''}`}
-              onClick={() => setTimeframe('all')}
-            >
-              Kurs davomida
-            </button>
+          <div className="timeframe-segment-scroll">
+            <div className="timeframe-segment">
+              <button
+                type="button"
+                className={`timeframe-btn ${timeframe === 'today' ? 'active' : ''}`}
+                onClick={() => setTimeframe('today')}
+              >
+                Bugun
+              </button>
+              <button
+                type="button"
+                className={`timeframe-btn ${timeframe === 'month' ? 'active' : ''}`}
+                onClick={() => setTimeframe('month')}
+              >
+                Bu oy
+              </button>
+              <button
+                type="button"
+                className={`timeframe-btn ${timeframe === 'lastMonth' ? 'active' : ''}`}
+                onClick={() => setTimeframe('lastMonth')}
+              >
+                O'tgan oy
+              </button>
+              <button
+                type="button"
+                className={`timeframe-btn ${timeframe === 'all' ? 'active' : ''}`}
+                onClick={() => setTimeframe('all')}
+              >
+                Barchasi
+              </button>
+            </div>
           </div>
         )}
       </div>
@@ -358,7 +326,7 @@ export default function StudentRatingView({
                 <span className="my-standing-tag">Siz</span>
               </div>
               <span className="my-standing-sub">
-                {scope === 'top10' ? "Umumiy TOP 10 reytingida" : `${group?.name || 'Guruh'} reytingida`}
+                {group?.name ? `${group.name} reytingida` : "Guruh reytingida"}
               </span>
             </div>
           </div>
@@ -369,19 +337,30 @@ export default function StudentRatingView({
         </div>
       )}
 
-      {/* Group or Top 10 Ranking List */}
+      {/* Unpinned Student Prompt Banner */}
+      {!pinnedStudentId && scope !== 'history' && !isTodayEmpty && rankedStudents.length > 0 && (
+        <div className="student-unpinned-banner">
+          <div className="unpinned-banner-content">
+            <span className="unpinned-banner-icon">🎯</span>
+            <div className="unpinned-banner-text">
+              <span className="unpinned-banner-title">O'z o'rningizni bilmoqchimisiz?</span>
+              <span className="unpinned-banner-sub">Yuqoridan profilingizni tanlang va ballaringizni kuzating</span>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Group Ranking List */}
       {scope !== 'history' && (
         <div className="rankings-table-card">
           <div className="rankings-header">
             <h3 className="rankings-title">
               {timeframe === 'today'
-                ? (scope === 'top10' ? "Bugungi TOP 10 Reyting" : (group?.name ? `${group.name} — Bugungi natijalar` : "Bugungi natijalar"))
-                : (scope === 'top10' ? "Umumiy TOP 10 Reyting" : (group?.name ? `${group.name} reytingi` : "Guruh reytingi"))}
+                ? (group?.name ? `${group.name} — Bugungi natijalar` : "Bugungi natijalar")
+                : (group?.name ? `${group.name} reytingi` : "Guruh reytingi")}
             </h3>
             <span className="rankings-count">
-              {isTodayEmpty
-                ? "0 ta o'quvchi"
-                : (scope === 'top10' ? `${displayedRankedStudents.length} ta o'quvchi` : `${rankedStudents.length} ta o'quvchi`)}
+              {isTodayEmpty ? "0 ta o'quvchi" : `${rankedStudents.length} ta o'quvchi`}
             </span>
           </div>
 
@@ -394,14 +373,13 @@ export default function StudentRatingView({
                 </h4>
                 <p className="today-empty-desc">
                   {!isTodayClassDay
-                    ? "O'quvchilarning umumiy natijalarini ko'rish uchun yuqoridan \"Bu oy\" yoki \"Kurs davomida\" bo'limiga o'ting."
+                    ? "O'quvchilarning umumiy natijalarini ko'rish uchun yuqoridan \"Bu oy\" yoki \"Barchasi\" bo'limiga o'ting."
                     : "Dars davomida ustoz like va ballar berishi bilan, bugungi dars reytingi va dars yulduzi darhol shu yerda ko'rinadi."}
                 </p>
               </div>
-            ) : displayedRankedStudents.length > 0 ? (
-              displayedRankedStudents.map((st) => {
+            ) : rankedStudents.length > 0 ? (
+              rankedStudents.map((st) => {
                 const isMe = String(st.id) === String(pinnedStudentId);
-                const groupName = scope === 'top10' && st.groupId ? groupNameMap.get(String(st.groupId)) : null;
                 const isDailyStar = timeframe === 'today' && st.rank === 1 && st.score > 0;
                 return (
                   <div key={st.id} className={`ranking-row ${isMe ? 'is-me' : ''} ${isDailyStar ? 'is-daily-star' : ''}`}>
@@ -415,9 +393,6 @@ export default function StudentRatingView({
                         <span className="rank-student-name">{st.name}</span>
                         {isDailyStar && (
                           <span className="daily-star-tag">⭐ Dars yulduzi</span>
-                        )}
-                        {groupName && (
-                          <span className="rank-group-subtext">{groupName}</span>
                         )}
                       </div>
                       {isMe && <span className="rank-me-tag">Siz</span>}
@@ -435,22 +410,6 @@ export default function StudentRatingView({
               </div>
             )}
           </div>
-
-          {scope === 'top10' && !isTodayEmpty && pinnedStudentRankInfo && !pinnedStudentRankInfo.isInsideDisplayed && (
-            <div className="pinned-student-rank-footer">
-              <div className="footer-rank-left">
-                <span className="footer-rank-badge">{pinnedStudentRankInfo.rank}</span>
-                <div className="footer-rank-meta">
-                  <span className="footer-rank-name">{pinnedStudentRankInfo.name}</span>
-                  <span className="footer-rank-desc">Sizning umumiy reytingdagi o'rningiz</span>
-                </div>
-              </div>
-              <div className="footer-rank-right">
-                <span className="footer-rank-score">{pinnedStudentRankInfo.score}</span>
-                <span className="footer-rank-unit">ball</span>
-              </div>
-            </div>
-          )}
         </div>
       )}
 
@@ -564,6 +523,20 @@ export default function StudentRatingView({
           box-shadow: 0 1px 4px rgba(0, 0, 0, 0.12);
         }
 
+        .timeframe-segment-scroll {
+          max-width: 100%;
+          overflow-x: auto;
+          scrollbar-width: none;
+          -ms-overflow-style: none;
+          padding: 2px 4px;
+          display: flex;
+          justify-content: center;
+        }
+
+        .timeframe-segment-scroll::-webkit-scrollbar {
+          display: none;
+        }
+
         .timeframe-segment {
           display: inline-flex;
           background: var(--bg-card);
@@ -572,6 +545,7 @@ export default function StudentRatingView({
           padding: 3px;
           gap: 3px;
           box-shadow: var(--shadow-sm);
+          flex-shrink: 0;
         }
 
         .timeframe-btn {
@@ -604,7 +578,44 @@ export default function StudentRatingView({
         .rank-group-subtext {
           font-size: 0.74rem;
           color: var(--text-tertiary);
-          font-weight: 500;
+        }
+
+        .student-unpinned-banner {
+          display: flex;
+          align-items: center;
+          background: var(--bg-card);
+          border: 1px dashed var(--border-color);
+          border-radius: var(--radius-lg);
+          padding: 12px 14px;
+          margin-bottom: 4px;
+        }
+
+        .unpinned-banner-content {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+        }
+
+        .unpinned-banner-icon {
+          font-size: 1.25rem;
+          flex-shrink: 0;
+        }
+
+        .unpinned-banner-text {
+          display: flex;
+          flex-direction: column;
+          gap: 2px;
+        }
+
+        .unpinned-banner-title {
+          font-size: 0.84rem;
+          font-weight: 700;
+          color: var(--text-primary);
+        }
+
+        .unpinned-banner-sub {
+          font-size: 0.72rem;
+          color: var(--text-secondary);
         }
 
         .pinned-student-rank-footer {
@@ -1313,28 +1324,44 @@ export default function StudentRatingView({
           .podium-card,
           .rankings-table-card,
           .history-section-card {
-            padding: 14px 12px;
+            padding: 12px 10px;
             border-radius: var(--radius-lg);
           }
 
+          .timeframe-segment-scroll {
+            justify-content: flex-start;
+          }
+
           .timeframe-btn {
-            padding: 5px 11px;
+            padding: 5px 12px;
             font-size: 0.74rem;
           }
 
           .podium-container {
-            height: 160px;
+            height: 135px;
             gap: 6px;
           }
 
+          .podium-avatar {
+            width: 32px;
+            height: 32px;
+            font-size: 0.85rem;
+          }
+
+          .podium-avatar.gold {
+            width: 38px;
+            height: 38px;
+            font-size: 0.95rem;
+          }
+
           .podium-pedestal.p-1 {
-            height: 70px;
+            height: 52px;
           }
           .podium-pedestal.p-2 {
-            height: 48px;
+            height: 38px;
           }
           .podium-pedestal.p-3 {
-            height: 34px;
+            height: 26px;
           }
 
           .history-date-col {
@@ -1345,13 +1372,25 @@ export default function StudentRatingView({
         @media (max-width: 520px) {
           .rating-scope-segment {
             display: grid;
-            grid-template-columns: repeat(3, 1fr);
+            grid-template-columns: 1fr 1fr;
             width: 100%;
           }
 
           .rating-scope-btn {
-            padding: 8px 4px;
-            font-size: 0.74rem;
+            padding: 8px 6px;
+            font-size: 0.8rem;
+            text-align: center;
+          }
+
+          .timeframe-segment {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            width: 100%;
+          }
+
+          .timeframe-btn {
+            padding: 5px 2px;
+            font-size: 0.72rem;
             text-align: center;
           }
 

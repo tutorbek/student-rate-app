@@ -272,30 +272,28 @@ function App() {
         const registry = await getGroupPasswordsRegistry();
         const groupMatch = registry[passwordClean];
         if (groupMatch) {
-          let currentGroups = [];
-          try {
-            const raw = localStorage.getItem('rsa_student_groups');
-            if (raw) currentGroups = JSON.parse(raw);
-          } catch (_) {}
-          if (!Array.isArray(currentGroups)) currentGroups = [];
-
-          const exists = currentGroups.some(g => String(g.groupId) === String(groupMatch.groupId));
-          const updatedGroups = exists
-            ? currentGroups
-            : [
-                ...currentGroups,
-                {
-                  teacherId: groupMatch.teacherId,
-                  groupId: groupMatch.groupId,
-                  groupName: groupMatch.groupName || ''
-                }
-              ];
+          const freshGroup = {
+            teacherId: groupMatch.teacherId,
+            groupId: groupMatch.groupId,
+            groupName: groupMatch.groupName || ''
+          };
+          const updatedGroups = [freshGroup];
 
           localStorage.setItem('rsa_authenticated', 'true');
           localStorage.setItem('rsa_role', 'student');
           localStorage.setItem('rsa_teacher_id', groupMatch.teacherId);
           localStorage.setItem('rsa_student_group_id', groupMatch.groupId);
           localStorage.setItem('rsa_student_groups', JSON.stringify(updatedGroups));
+
+          // Clear previous user's pinned identities from other groups
+          localStorage.removeItem('rsa_pinned_student_id');
+          try {
+            Object.keys(localStorage).forEach((k) => {
+              if (k.startsWith('rsa_pinned_student_') && k !== `rsa_pinned_student_${groupMatch.groupId}`) {
+                localStorage.removeItem(k);
+              }
+            });
+          } catch (_) {}
 
           setStudentGroups(updatedGroups);
           setIsAuthenticated(true);
@@ -548,8 +546,9 @@ function App() {
   const filteredGroups = useMemo(() => {
     const activeGroups = groups.filter(g => !g.deleted);
     const sorted = sortGroupsNaturally(activeGroups);
-    if (userRole === 'student' && studentGroupId) {
-      return sorted.filter(g => g.id === studentGroupId);
+    if (userRole === 'student') {
+      if (!studentGroupId) return [];
+      return sorted.filter(g => String(g.id) === String(studentGroupId));
     }
     return sorted;
   }, [groups, userRole, studentGroupId]);
@@ -561,8 +560,9 @@ function App() {
       const nameB = b.name || '';
       return nameA.localeCompare(nameB, undefined, { numeric: true, sensitivity: 'base' });
     });
-    if (userRole === 'student' && studentGroupId) {
-      return sorted.filter(s => s.groupId === studentGroupId);
+    if (userRole === 'student') {
+      if (!studentGroupId) return [];
+      return sorted.filter(s => String(s.groupId) === String(studentGroupId));
     }
     return sorted;
   }, [students, userRole, studentGroupId]);
@@ -573,11 +573,21 @@ function App() {
 
   const filteredTransactions = useMemo(() => {
     const activeTxs = transactions.filter(t => !t.deleted);
-    if (userRole === 'student' && studentGroupId) {
-      return activeTxs.filter(t => studentIds.includes(t.studentId));
+    if (userRole === 'student') {
+      if (!studentGroupId || studentIds.length === 0) return [];
+      const idSet = new Set(studentIds.map(String));
+      return activeTxs.filter(t => idSet.has(String(t.studentId)));
     }
     return activeTxs;
   }, [transactions, studentIds, userRole, studentGroupId]);
+
+  const filteredAttendance = useMemo(() => {
+    if (userRole === 'student') {
+      if (!studentGroupId) return [];
+      return attendance.filter(a => String(a.groupId) === String(studentGroupId));
+    }
+    return attendance;
+  }, [attendance, userRole, studentGroupId]);
 
   // All active data for the current teacher (no student-group isolation)
   const allActiveGroups = useMemo(() => sortGroupsNaturally(groups.filter(g => !g.deleted)), [groups]);
@@ -593,7 +603,7 @@ function App() {
       if (allTeachersData && allTeachersData[sg.teacherId]) {
         g = (allTeachersData[sg.teacherId].groups || []).find(x => String(x.id) === String(sg.groupId));
       }
-      if (!g && groups) {
+      if (!g && groups && teacherId === sg.teacherId) {
         g = groups.find(x => String(x.id) === String(sg.groupId));
       }
       if (g) {
@@ -603,10 +613,10 @@ function App() {
       }
     });
     return result;
-  }, [userRole, studentGroups, allTeachersData, groups]);
+  }, [userRole, studentGroups, allTeachersData, groups, teacherId]);
 
-  const handleSwitchStudentGroup = useCallback((groupId) => {
-    const target = studentGroups.find(g => String(g.groupId) === String(groupId));
+  const handleSwitchStudentGroup = useCallback((groupId, overrideTarget = null) => {
+    const target = overrideTarget || studentGroups.find(g => String(g.groupId) === String(groupId));
     if (!target) return;
 
     setStudentGroupId(target.groupId);
@@ -622,6 +632,25 @@ function App() {
         setStudents(tData.students || []);
         setTransactions(tData.transactions || []);
         setAttendance(tData.attendance || []);
+      } else {
+        loadAllTeachersFromSupabase([target.teacherId]).then((fetched) => {
+          if (fetched && fetched[target.teacherId]) {
+            const t = fetched[target.teacherId];
+            const normalizedTeacher = {
+              ...t,
+              groups: (t.groups || []).map(g => ({ ...g, icon: normalizeIconUrl(g.icon) })),
+              students: (t.students || []).map(s => ({ ...s, emoji: normalizeIconUrl(s.emoji) })),
+              transactions: t.transactions || [],
+              quickTags: normalizeQuickTags(t.quickTags),
+              attendance: t.attendance || []
+            };
+            setAllTeachersData(prev => ({ ...prev, [target.teacherId]: normalizedTeacher }));
+            setGroups(normalizedTeacher.groups || []);
+            setStudents(normalizedTeacher.students || []);
+            setTransactions(normalizedTeacher.transactions || []);
+            setAttendance(normalizedTeacher.attendance || []);
+          }
+        });
       }
     }
   }, [studentGroups, teacherId, allTeachersData]);
@@ -637,23 +666,22 @@ function App() {
       const groupMatch = registry[clean];
       if (groupMatch) {
         const exists = studentGroups.some(g => String(g.groupId) === String(groupMatch.groupId));
-        let updated;
+        const newGroupObj = {
+          teacherId: groupMatch.teacherId,
+          groupId: groupMatch.groupId,
+          groupName: groupMatch.groupName || ''
+        };
+        let targetGroup;
         if (exists) {
-          updated = studentGroups;
+          targetGroup = studentGroups.find(g => String(g.groupId) === String(groupMatch.groupId));
         } else {
-          updated = [
-            ...studentGroups,
-            {
-              teacherId: groupMatch.teacherId,
-              groupId: groupMatch.groupId,
-              groupName: groupMatch.groupName || ''
-            }
-          ];
+          const updated = [...studentGroups, newGroupObj];
           setStudentGroups(updated);
           localStorage.setItem('rsa_student_groups', JSON.stringify(updated));
+          targetGroup = newGroupObj;
         }
 
-        handleSwitchStudentGroup(groupMatch.groupId);
+        handleSwitchStudentGroup(groupMatch.groupId, targetGroup);
         return { success: true, group: groupMatch, alreadyConnected: exists };
       } else {
         return { success: false, message: "Noto'g'ri guruh paroli kiritildi!" };
@@ -996,6 +1024,15 @@ function App() {
     sessionStorage.removeItem('rsa_active_tab');
     localStorage.removeItem('rsa_student_group_id');
     localStorage.removeItem('rsa_student_groups');
+    localStorage.removeItem('rsa_pinned_student_id');
+    localStorage.removeItem('rsa_student_portal_tab');
+    try {
+      Object.keys(localStorage).forEach((k) => {
+        if (k.startsWith('rsa_pinned_student_')) {
+          localStorage.removeItem(k);
+        }
+      });
+    } catch (_) {}
 
     // Clear localized caches to prevent cross-teacher leakage
     localStorage.removeItem('rsa_groups');
@@ -1106,13 +1143,10 @@ function App() {
     if (userRole === 'student') {
       return (
         <StudentPortal
-          attendance={attendance}
+          attendance={filteredAttendance}
           groups={filteredGroups}
           students={filteredStudents}
           transactions={filteredTransactions}
-          allActiveGroups={allActiveGroups}
-          allActiveStudents={allActiveStudents}
-          allActiveTransactions={allActiveTransactions}
           userRole={userRole}
           studentGroupId={studentGroupId}
           studentGroups={studentGroups}
@@ -1120,7 +1154,10 @@ function App() {
           onSwitchGroup={handleSwitchStudentGroup}
           onAddGroup={handleAddStudentGroup}
           onRemoveGroup={handleRemoveStudentGroup}
+          onLogout={handleLogout}
           showToast={showToast}
+          theme={theme}
+          toggleTheme={toggleTheme}
         />
       );
     }
@@ -1322,12 +1359,23 @@ function App() {
   }
 
   return (
-    <div className="app-container">
-      {/* Sidebar Navigation */}
-      <Sidebar activeTab={activeTab} setActiveTab={handleTabChange} userRole={userRole} onLogout={handleLogout} syncStatus={syncStatus} isSyncing={isSyncing} theme={theme} toggleTheme={toggleTheme} />
+    <div className={`app-container ${userRole === 'student' ? 'student-app-root' : ''}`}>
+      {/* Sidebar Navigation: Rendered for Teachers and Admins. Students use their unified header */}
+      {userRole !== 'student' && (
+        <Sidebar
+          activeTab={activeTab}
+          setActiveTab={handleTabChange}
+          userRole={userRole}
+          onLogout={handleLogout}
+          syncStatus={syncStatus}
+          isSyncing={isSyncing}
+          theme={theme}
+          toggleTheme={toggleTheme}
+        />
+      )}
 
       {/* Main Panel Content */}
-      <main className="main-content">
+      <main className={`main-content ${userRole === 'student' ? 'student-main-content' : ''}`}>
         <div key={activeTab} className="page-fade-in">
           {renderContent()}
         </div>
