@@ -83,6 +83,9 @@ function App() {
     if (savedTheme === 'dark' || savedTheme === 'light') {
       return savedTheme;
     }
+    if (typeof window !== 'undefined' && window.Telegram?.WebApp?.colorScheme) {
+      return window.Telegram.WebApp.colorScheme;
+    }
     return 'light';
   });
 
@@ -120,7 +123,18 @@ function App() {
   const [loginError, setLoginError] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loginLoading, setLoginLoading] = useState(false);
-  const [authView, setAuthView] = useState('landing');
+  const [authView, setAuthView] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('auth') === 'login' || window.location.hash === '#login') {
+        return 'login';
+      }
+      if (window.Telegram?.WebApp?.initData || window.TelegramWebviewProxy) {
+        return 'login';
+      }
+    }
+    return 'landing';
+  });
 
   const applyThemeInstantly = useCallback((newTheme) => {
     // Temporarily disable CSS transitions so that background, text, and cards switch in 0ms without white flicker
@@ -179,6 +193,30 @@ function App() {
       applyThemeInstantly(newTheme);
     }
   }, [applyThemeInstantly]);
+
+  // Initialize Telegram WebApp and handle deep links / URL parameters
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      if (window.Telegram?.WebApp) {
+        try {
+          window.Telegram.WebApp.ready();
+          window.Telegram.WebApp.expand();
+        } catch (e) {
+          console.warn('Telegram WebApp init error:', e);
+        }
+      }
+
+      const checkAuthParam = () => {
+        const params = new URLSearchParams(window.location.search);
+        if (params.get('auth') === 'login' || window.location.hash === '#login') {
+          setAuthView('login');
+        }
+      };
+      checkAuthParam();
+      window.addEventListener('hashchange', checkAuthParam);
+      return () => window.removeEventListener('hashchange', checkAuthParam);
+    }
+  }, []);
 
   const handleLoginSubmit = async (e) => {
     e.preventDefault();
@@ -979,6 +1017,12 @@ function App() {
     setActiveTab('dashboard');
     setLoginPassword('');
     setLoginError('');
+
+    if (typeof window !== 'undefined' && (window.Telegram?.WebApp?.initData || window.TelegramWebviewProxy || new URLSearchParams(window.location.search).get('auth') === 'login')) {
+      setAuthView('login');
+    } else {
+      setAuthView('landing');
+    }
   };
 
   const handleAdminRefresh = async () => {
