@@ -27,8 +27,8 @@ export default function StudentRatingView({
   allGroups = [],
   pinnedStudentId = null,
   group = null,
-  connectedGroups = [],
-  onSwitchGroup,
+  connectedGroups: _connectedGroups = [],
+  onSwitchGroup: _onSwitchGroup,
 }) {
   const [scope, setScope] = useState('top10'); // 'top10' | 'group' | 'history'
 
@@ -254,33 +254,6 @@ export default function StudentRatingView({
         )}
       </div>
 
-      {/* Quick Group Switcher for Multi-Group Students */}
-      {scope === 'group' && connectedGroups.length > 1 && (
-        <div className="rating-group-switcher">
-          <span className="rating-group-label">Guruh:</span>
-          <div className="rating-group-pills">
-            {connectedGroups.map((grp) => {
-              const isCurrent = String(grp.id) === String(group?.id);
-              return (
-                <button
-                  key={grp.id}
-                  type="button"
-                  className={`rating-group-pill ${isCurrent ? 'active' : ''}`}
-                  onClick={() => {
-                    if (!isCurrent && onSwitchGroup) {
-                      onSwitchGroup(grp.id);
-                    }
-                  }}
-                >
-                  {isCurrent && <span className="rating-pill-dot" />}
-                  <span>{grp.name}</span>
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      )}
-
       {/* Top-3 Minimalist Podium */}
       {scope !== 'history' && rankedStudents.length > 0 && !isTodayEmpty && (
         <div className="podium-card">
@@ -290,8 +263,17 @@ export default function StudentRatingView({
               {podiumTop3.second ? (
                 <>
                   <div className="podium-student-meta">
+                    <div className="podium-avatar-wrap">
+                      <div className="podium-avatar silver">
+                        {podiumTop3.second.name ? podiumTop3.second.name.charAt(0).toUpperCase() : '2'}
+                      </div>
+                      <span className="podium-medal">🥈</span>
+                    </div>
                     <span className="podium-name" title={podiumTop3.second.name}>{podiumTop3.second.name}</span>
-                    <span className="podium-score">{podiumTop3.second.score} ball</span>
+                    <div className="podium-score-pill">
+                      <span>{podiumTop3.second.score}</span>
+                      <span className="unit">ball</span>
+                    </div>
                   </div>
                   <div className="podium-pedestal p-2">
                     <span className="podium-rank-num">2</span>
@@ -310,11 +292,20 @@ export default function StudentRatingView({
                     {timeframe === 'today' && podiumTop3.first.score > 0 && (
                       <div className="podium-today-star-badge">
                         <span className="star-icon">⭐</span>
-                        <span className="star-text">Bugungi dars yulduzi</span>
+                        <span className="star-text">Dars yulduzi</span>
                       </div>
                     )}
+                    <div className="podium-avatar-wrap">
+                      <div className="podium-avatar gold">
+                        {podiumTop3.first.name ? podiumTop3.first.name.charAt(0).toUpperCase() : '1'}
+                      </div>
+                      <span className="podium-medal">🥇</span>
+                    </div>
                     <span className="podium-name" title={podiumTop3.first.name}>{podiumTop3.first.name}</span>
-                    <span className="podium-score">{podiumTop3.first.score} ball</span>
+                    <div className="podium-score-pill gold-pill">
+                      <span>{podiumTop3.first.score}</span>
+                      <span className="unit">ball</span>
+                    </div>
                   </div>
                   <div className="podium-pedestal p-1">
                     <span className="podium-rank-num">1</span>
@@ -330,8 +321,17 @@ export default function StudentRatingView({
               {podiumTop3.third ? (
                 <>
                   <div className="podium-student-meta">
+                    <div className="podium-avatar-wrap">
+                      <div className="podium-avatar bronze">
+                        {podiumTop3.third.name ? podiumTop3.third.name.charAt(0).toUpperCase() : '3'}
+                      </div>
+                      <span className="podium-medal">🥉</span>
+                    </div>
                     <span className="podium-name" title={podiumTop3.third.name}>{podiumTop3.third.name}</span>
-                    <span className="podium-score">{podiumTop3.third.score} ball</span>
+                    <div className="podium-score-pill">
+                      <span>{podiumTop3.third.score}</span>
+                      <span className="unit">ball</span>
+                    </div>
                   </div>
                   <div className="podium-pedestal p-3">
                     <span className="podium-rank-num">3</span>
@@ -341,6 +341,30 @@ export default function StudentRatingView({
                 <div className="podium-empty" />
               )}
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Personal Standing Banner */}
+      {pinnedStudentRankInfo && scope !== 'history' && !isTodayEmpty && (
+        <div className="student-my-standing-banner">
+          <div className="my-standing-left">
+            <span className={`my-standing-rank-badge ${pinnedStudentRankInfo.rank <= 3 ? `top-${pinnedStudentRankInfo.rank}` : ''}`}>
+              {pinnedStudentRankInfo.rank === 1 ? '🥇' : pinnedStudentRankInfo.rank === 2 ? '🥈' : pinnedStudentRankInfo.rank === 3 ? '🥉' : `#${pinnedStudentRankInfo.rank}`}
+            </span>
+            <div className="my-standing-text-wrap">
+              <div className="my-standing-title-row">
+                <span className="my-standing-title">Siz <strong>{pinnedStudentRankInfo.rank}-o'rinda</strong>siz</span>
+                <span className="my-standing-tag">Siz</span>
+              </div>
+              <span className="my-standing-sub">
+                {scope === 'top10' ? "Umumiy TOP 10 reytingida" : `${group?.name || 'Guruh'} reytingida`}
+              </span>
+            </div>
+          </div>
+          <div className="my-standing-score-pill">
+            <span className="score-num">{pinnedStudentRankInfo.score}</span>
+            <span className="score-unit">ball</span>
           </div>
         </div>
       )}
@@ -383,7 +407,7 @@ export default function StudentRatingView({
                   <div key={st.id} className={`ranking-row ${isMe ? 'is-me' : ''} ${isDailyStar ? 'is-daily-star' : ''}`}>
                     <div className="rank-num-col">
                       <span className={`rank-badge ${st.rank <= 3 ? `top-${st.rank}` : ''}`}>
-                        {st.rank}
+                        {st.rank === 1 ? '🥇' : st.rank === 2 ? '🥈' : st.rank === 3 ? '🥉' : `#${st.rank}`}
                       </span>
                     </div>
                     <div className="rank-name-col">
@@ -653,7 +677,7 @@ export default function StudentRatingView({
           background: var(--bg-card);
           border: 1px solid var(--border-color);
           border-radius: var(--radius-xl);
-          padding: 24px 16px 0;
+          padding: 16px 14px 0;
           box-shadow: var(--shadow-sm);
         }
 
@@ -661,13 +685,13 @@ export default function StudentRatingView({
           display: flex;
           align-items: flex-end;
           justify-content: center;
-          gap: 12px;
-          height: 220px;
+          gap: 10px;
+          height: 180px;
         }
 
         .podium-col {
           flex: 1;
-          max-width: 140px;
+          max-width: 130px;
           display: flex;
           flex-direction: column;
           align-items: center;
@@ -680,13 +704,60 @@ export default function StudentRatingView({
           flex-direction: column;
           align-items: center;
           text-align: center;
-          margin-bottom: 10px;
+          margin-bottom: 8px;
           width: 100%;
-          padding: 0 4px;
+          padding: 0 2px;
+        }
+
+        .podium-avatar-wrap {
+          position: relative;
+          margin-bottom: 4px;
+        }
+
+        .podium-avatar {
+          width: 36px;
+          height: 36px;
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 0.95rem;
+          font-weight: 700;
+          color: #FFFFFF;
+        }
+
+        .podium-avatar.gold {
+          width: 42px;
+          height: 42px;
+          background: linear-gradient(135deg, #F59E0B, #D97706);
+          border: 2px solid #FDE68A;
+          box-shadow: 0 3px 10px rgba(245, 158, 11, 0.35);
+          font-size: 1.05rem;
+        }
+
+        .podium-avatar.silver {
+          background: linear-gradient(135deg, #9CA3AF, #6B7280);
+          border: 2px solid #E5E7EB;
+          box-shadow: 0 3px 10px rgba(107, 114, 128, 0.25);
+        }
+
+        .podium-avatar.bronze {
+          background: linear-gradient(135deg, #D97706, #92400E);
+          border: 2px solid #FCD34D;
+          box-shadow: 0 3px 10px rgba(180, 83, 9, 0.25);
+        }
+
+        .podium-medal {
+          position: absolute;
+          bottom: -4px;
+          right: -6px;
+          font-size: 0.85rem;
+          line-height: 1;
+          filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.2));
         }
 
         .podium-name {
-          font-size: 0.84rem;
+          font-size: 0.82rem;
           font-weight: 700;
           color: var(--text-primary);
           line-height: 1.2;
@@ -696,11 +767,28 @@ export default function StudentRatingView({
           max-width: 100%;
         }
 
-        .podium-score {
-          font-size: 0.76rem;
-          font-weight: 600;
+        .podium-score-pill {
+          display: inline-flex;
+          align-items: baseline;
+          gap: 2px;
+          background: rgba(var(--apple-blue-rgb, 0, 113, 227), 0.08);
           color: var(--apple-blue);
-          margin-top: 2px;
+          font-size: 0.72rem;
+          font-weight: 700;
+          padding: 1px 7px;
+          border-radius: var(--radius-full);
+          margin-top: 3px;
+        }
+
+        .podium-score-pill.gold-pill {
+          background: rgba(245, 158, 11, 0.15);
+          color: #D97706;
+        }
+
+        .podium-score-pill .unit {
+          font-size: 0.64rem;
+          font-weight: 500;
+          opacity: 0.85;
         }
 
         .podium-pedestal {
@@ -708,34 +796,34 @@ export default function StudentRatingView({
           display: flex;
           align-items: center;
           justify-content: center;
-          border-top-left-radius: var(--radius-md);
-          border-top-right-radius: var(--radius-md);
+          border-top-left-radius: 12px;
+          border-top-right-radius: 12px;
           transition: height 0.3s ease;
         }
 
         .podium-pedestal.p-1 {
-          height: 120px;
-          background: rgba(245, 158, 11, 0.14);
-          border: 1px solid rgba(245, 158, 11, 0.3);
+          height: 76px;
+          background: linear-gradient(180deg, rgba(245, 158, 11, 0.22), rgba(245, 158, 11, 0.08));
+          border: 1.5px solid rgba(245, 158, 11, 0.4);
           border-bottom: none;
         }
 
         .podium-pedestal.p-2 {
-          height: 85px;
-          background: rgba(156, 163, 175, 0.14);
-          border: 1px solid rgba(156, 163, 175, 0.3);
+          height: 54px;
+          background: linear-gradient(180deg, rgba(156, 163, 175, 0.22), rgba(156, 163, 175, 0.08));
+          border: 1.5px solid rgba(156, 163, 175, 0.4);
           border-bottom: none;
         }
 
         .podium-pedestal.p-3 {
-          height: 60px;
-          background: rgba(180, 83, 9, 0.12);
-          border: 1px solid rgba(180, 83, 9, 0.25);
+          height: 38px;
+          background: linear-gradient(180deg, rgba(180, 83, 9, 0.18), rgba(180, 83, 9, 0.06));
+          border: 1.5px solid rgba(180, 83, 9, 0.35);
           border-bottom: none;
         }
 
         .podium-rank-num {
-          font-size: 1.4rem;
+          font-size: 1.25rem;
           font-weight: 800;
           line-height: 1;
         }
@@ -755,13 +843,121 @@ export default function StudentRatingView({
         .podium-empty {
           width: 100%;
           height: 100%;
-          min-height: 80px;
+          min-height: 60px;
           opacity: 0;
           pointer-events: none;
         }
 
         .podium-col.is-me .podium-name {
           color: var(--apple-blue);
+        }
+
+        /* Personal Standing Banner */
+        .student-my-standing-banner {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          padding: 10px 14px;
+          background: linear-gradient(135deg, rgba(var(--apple-blue-rgb, 0, 113, 227), 0.09), rgba(var(--apple-blue-rgb, 0, 113, 227), 0.03));
+          border: 1px solid rgba(var(--apple-blue-rgb, 0, 113, 227), 0.24);
+          border-radius: var(--radius-lg, 12px);
+          gap: 12px;
+          box-shadow: var(--shadow-sm);
+        }
+
+        .my-standing-left {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          min-width: 0;
+        }
+
+        .my-standing-rank-badge {
+          width: 34px;
+          height: 34px;
+          border-radius: var(--radius-full);
+          background: var(--apple-blue);
+          color: #FFFFFF;
+          font-size: 0.88rem;
+          font-weight: 800;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          flex-shrink: 0;
+          box-shadow: 0 2px 6px rgba(var(--apple-blue-rgb, 0, 113, 227), 0.3);
+        }
+
+        .my-standing-rank-badge.top-1,
+        .my-standing-rank-badge.top-2,
+        .my-standing-rank-badge.top-3 {
+          background: transparent;
+          font-size: 1.3rem;
+          box-shadow: none;
+        }
+
+        .my-standing-text-wrap {
+          display: flex;
+          flex-direction: column;
+          gap: 1px;
+          min-width: 0;
+        }
+
+        .my-standing-title-row {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+        }
+
+        .my-standing-title {
+          font-size: 0.88rem;
+          font-weight: 600;
+          color: var(--text-primary);
+        }
+
+        .my-standing-title strong {
+          color: var(--apple-blue);
+          font-weight: 800;
+        }
+
+        .my-standing-tag {
+          font-size: 0.65rem;
+          font-weight: 700;
+          background: var(--apple-blue);
+          color: #FFFFFF;
+          padding: 1px 6px;
+          border-radius: var(--radius-full);
+          letter-spacing: 0.02em;
+        }
+
+        .my-standing-sub {
+          font-size: 0.72rem;
+          color: var(--text-secondary);
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+
+        .my-standing-score-pill {
+          display: flex;
+          align-items: baseline;
+          gap: 3px;
+          padding: 6px 12px;
+          border-radius: var(--radius-full);
+          background: rgba(var(--apple-blue-rgb, 0, 113, 227), 0.12);
+          flex-shrink: 0;
+        }
+
+        .my-standing-score-pill .score-num {
+          font-size: 1.05rem;
+          font-weight: 800;
+          color: var(--apple-blue);
+        }
+
+        .my-standing-score-pill .score-unit {
+          font-size: 0.72rem;
+          font-weight: 600;
+          color: var(--apple-blue);
+          opacity: 0.85;
         }
 
         /* Rankings Table */
@@ -1117,28 +1313,28 @@ export default function StudentRatingView({
           .podium-card,
           .rankings-table-card,
           .history-section-card {
-            padding: 16px 14px;
+            padding: 14px 12px;
             border-radius: var(--radius-lg);
           }
 
           .timeframe-btn {
-            padding: 6px 12px;
-            font-size: 0.76rem;
+            padding: 5px 11px;
+            font-size: 0.74rem;
           }
 
           .podium-container {
-            height: 190px;
-            gap: 8px;
+            height: 160px;
+            gap: 6px;
           }
 
           .podium-pedestal.p-1 {
-            height: 100px;
-          }
-          .podium-pedestal.p-2 {
             height: 70px;
           }
+          .podium-pedestal.p-2 {
+            height: 48px;
+          }
           .podium-pedestal.p-3 {
-            height: 50px;
+            height: 34px;
           }
 
           .history-date-col {
@@ -1176,85 +1372,53 @@ export default function StudentRatingView({
             text-align: center;
             padding: 6px 4px;
           }
+
+          .student-my-standing-banner {
+            padding: 9px 12px;
+            gap: 8px;
+          }
+
+          .my-standing-rank-badge {
+            width: 30px;
+            height: 30px;
+            font-size: 0.8rem;
+          }
+
+          .my-standing-title {
+            font-size: 0.82rem;
+          }
+
+          .my-standing-sub {
+            font-size: 0.68rem;
+          }
+
+          .my-standing-score-pill {
+            padding: 4px 9px;
+          }
+
+          .my-standing-score-pill .score-num {
+            font-size: 0.95rem;
+          }
         }
 
-        /* Multi-Group Quick Switcher in Rating */
-        .rating-group-switcher {
-          display: flex;
-          align-items: center;
-          gap: 10px;
-          margin-bottom: 16px;
-          padding: 8px 14px;
-          background: var(--bg-card);
-          border: 1px solid var(--border-color);
-          border-radius: var(--radius-lg, 12px);
-          overflow-x: auto;
-          scrollbar-width: none;
+        [data-theme="dark"] .student-my-standing-banner {
+          background: linear-gradient(135deg, rgba(var(--apple-blue-rgb, 0, 113, 227), 0.16), rgba(255, 255, 255, 0.02));
+          border-color: rgba(var(--apple-blue-rgb, 0, 113, 227), 0.38);
         }
 
-        .rating-group-switcher::-webkit-scrollbar {
-          display: none;
+        [data-theme="dark"] .podium-pedestal.p-1 {
+          background: linear-gradient(180deg, rgba(245, 158, 11, 0.28), rgba(245, 158, 11, 0.05));
+          border-color: rgba(245, 158, 11, 0.5);
         }
 
-        .rating-group-label {
-          font-size: 0.76rem;
-          font-weight: 700;
-          color: var(--text-tertiary);
-          text-transform: uppercase;
-          letter-spacing: 0.04em;
-          white-space: nowrap;
+        [data-theme="dark"] .podium-pedestal.p-2 {
+          background: linear-gradient(180deg, rgba(156, 163, 175, 0.25), rgba(156, 163, 175, 0.05));
+          border-color: rgba(156, 163, 175, 0.45);
         }
 
-        .rating-group-pills {
-          display: flex;
-          align-items: center;
-          gap: 6px;
-          flex-wrap: nowrap;
-        }
-
-        .rating-group-pill {
-          display: inline-flex;
-          align-items: center;
-          gap: 6px;
-          background: var(--bg-secondary, rgba(0, 0, 0, 0.04));
-          border: 1px solid var(--border-color);
-          border-radius: var(--radius-full);
-          padding: 5px 12px;
-          font-size: 0.82rem;
-          font-weight: 600;
-          color: var(--text-secondary);
-          cursor: pointer;
-          white-space: nowrap;
-          transition: all var(--transition-fast);
-        }
-
-        .rating-group-pill:hover {
-          color: var(--text-primary);
-          border-color: var(--apple-blue);
-        }
-
-        .rating-group-pill.active {
-          background: var(--apple-blue);
-          color: #FFFFFF;
-          border-color: var(--apple-blue);
-          box-shadow: 0 2px 6px rgba(0, 113, 227, 0.25);
-        }
-
-        .rating-pill-dot {
-          width: 6px;
-          height: 6px;
-          border-radius: 50%;
-          background: #34C759;
-        }
-
-        [data-theme="dark"] .rating-group-switcher {
-          background: var(--bg-card);
-          border-color: var(--border-color);
-        }
-
-        [data-theme="dark"] .rating-group-pill {
-          background: rgba(255, 255, 255, 0.04);
-          border-color: rgba(255, 255, 255, 0.08);
+        [data-theme="dark"] .podium-pedestal.p-3 {
+          background: linear-gradient(180deg, rgba(180, 83, 9, 0.25), rgba(180, 83, 9, 0.05));
+          border-color: rgba(180, 83, 9, 0.45);
         }
 
         [data-theme="dark"] .podium-card,

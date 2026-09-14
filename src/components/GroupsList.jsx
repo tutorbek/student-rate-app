@@ -267,11 +267,6 @@ const GroupsList = ({
     }
   };
 
-  // Helper: Count students in group
-  const getStudentCount = (groupId) => {
-    return students.filter(s => s.groupId === groupId).length;
-  };
-
   return (
     <div className="groups-list-container">
       <div className="page-header">
@@ -286,7 +281,6 @@ const GroupsList = ({
       {groups.length > 0 ? (
         <div className="groups-vertical-list">
           {groups.map((group) => {
-            const count = getStudentCount(group.id);
             const colorOption = GROUP_COLOR_OPTIONS.find(c => c.value === group.color) || GROUP_COLOR_OPTIONS[0];
             const isCurrentLesson = isGroupLessonActive(group);
             return (
@@ -333,10 +327,6 @@ const GroupsList = ({
                       )}
                     </div>
                   </div>
-                </div>
-
-                <div className="group-item-badge-wrap" onClick={() => onSelectGroup(group.id)}>
-                  <span className="group-badge badge badge-blue">{count} ta talaba</span>
                 </div>
 
                 <div className="group-item-actions">

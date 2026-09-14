@@ -351,7 +351,6 @@ const ScheduleView = ({
                 <div className="day-col-content">
                   {dayClasses.length > 0 ? (
                     dayClasses.map((group) => {
-                      const studentCount = getStudentCount(group.id);
                       const cardStyles = getGroupStyle(group.color);
 
                       return (
@@ -380,7 +379,6 @@ const ScheduleView = ({
                           </div>
 
                           <div className="lesson-card-footer">
-                            <span className="lesson-students-count">{studentCount} talaba</span>
                             <span
                               className="lesson-edit-hint"
                               onClick={(e) => {
@@ -1215,7 +1213,7 @@ const ScheduleView = ({
         .lesson-card-footer {
           display: flex;
           align-items: center;
-          justify-content: space-between;
+          justify-content: flex-end;
           padding-top: 4px;
           border-top: 1px dashed rgba(0, 0, 0, 0.06);
         }

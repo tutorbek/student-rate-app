@@ -64,6 +64,16 @@ export default function StudentPortal({
     return currentGroup ? [currentGroup] : [];
   }, [allConnectedGroups, studentGroups, groups, allActiveGroups, currentGroup]);
 
+  // Sort connected groups so the active group is always first
+  const sortedConnectedGroups = useMemo(() => {
+    if (!currentGroup) return connectedGroupsList;
+    return [...connectedGroupsList].sort((a, b) => {
+      if (String(a.id) === String(currentGroup.id)) return -1;
+      if (String(b.id) === String(currentGroup.id)) return 1;
+      return 0;
+    });
+  }, [connectedGroupsList, currentGroup]);
+
   // Group Switcher & Add Group Modal state
   const [isGroupModalOpen, setIsGroupModalOpen] = useState(false);
   const [isAddingGroup, setIsAddingGroup] = useState(false);
@@ -185,12 +195,6 @@ export default function StudentPortal({
     return groupStudents.find((s) => String(s.id) === pId) || null;
   }, [pinnedStudentId, groupStudents]);
 
-  // Currently selected draft student object
-  const selectedStudentDraft = useMemo(() => {
-    if (!selectedStudentDraftId) return null;
-    return groupStudents.find((s) => String(s.id) === String(selectedStudentDraftId)) || null;
-  }, [selectedStudentDraftId, groupStudents]);
-
   // Auto-init draft selection
   useEffect(() => {
     if (pinnedStudentId && groupStudents.some((s) => String(s.id) === String(pinnedStudentId))) {
@@ -260,207 +264,77 @@ export default function StudentPortal({
         </nav>
       </div>
 
-      {/* Multi-Group Switcher Bar */}
-      <div className="student-group-bar">
-        <div className="student-group-bar-left">
-          <span className="student-group-tag">GURUH</span>
-          <span className="student-group-current-name">{currentGroup?.name || 'Guruh'}</span>
-          {connectedGroupsList.length > 1 && (
-            <span className="student-group-count-badge">{connectedGroupsList.length} ta guruh</span>
-          )}
-        </div>
-        <div className="student-group-bar-right">
-          <button
-            type="button"
-            className="student-group-action-btn"
-            onClick={() => {
-              setIsGroupModalOpen(true);
-              setIsAddingGroup(false);
-              setGroupAddError('');
-            }}
-          >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-              <polyline points="16 3 21 3 21 8" />
-              <line x1="4" y1="20" x2="21" y2="3" />
-              <polyline points="21 16 21 21 16 21" />
-              <line x1="15" y1="15" x2="21" y2="21" />
-              <line x1="4" y1="4" x2="9" y2="9" />
+      {/* Unified Student & Group Header Card (Clean, Single-Row/Compact Mobile-First UI) */}
+      <div className="student-unified-user-card">
+        {/* Left: Profile Identification */}
+        <div
+          className="user-profile-chip"
+          onClick={() => setIsChangingProfile(true)}
+          title="Profilingizni tanlash yoki o'zgartirish"
+        >
+          <div className="user-avatar-circle">
+            {pinnedStudent ? (
+              <span className="user-initial">{pinnedStudent.name.charAt(0).toUpperCase()}</span>
+            ) : (
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                <circle cx="12" cy="7" r="4" />
+              </svg>
+            )}
+          </div>
+          <div className="user-text-col">
+            <span className="user-name-title">
+              {pinnedStudent ? pinnedStudent.name : "Profilni tanlang"}
+            </span>
+            <span className="user-sub-action">
+              {pinnedStudent ? "O'zgartirish" : "Ismingizni belgilang"}
+            </span>
+          </div>
+          <span className="user-edit-icon">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
             </svg>
-            <span>{connectedGroupsList.length > 1 ? "Guruhni almashtirish" : "+ Guruh qo'shish"}</span>
-          </button>
+          </span>
         </div>
-      </div>
 
-      {/* Quick Group Switcher Pills if enrolled in 2+ groups */}
-      {connectedGroupsList.length > 1 && (
-        <div className="student-group-quick-pills">
-          {connectedGroupsList.map((grp) => {
-            const isCurrent = String(grp.id) === String(currentGroup?.id);
-            return (
-              <button
-                key={grp.id}
-                type="button"
-                className={`student-group-pill ${isCurrent ? 'active' : ''}`}
-                onClick={() => {
-                  if (!isCurrent && onSwitchGroup) {
-                    onSwitchGroup(grp.id);
-                  }
-                }}
-              >
-                {isCurrent && <span className="pill-dot" />}
-                <span className="pill-name">{grp.name}</span>
-              </button>
-            );
-          })}
-          <button
-            type="button"
-            className="student-group-pill add-btn"
-            onClick={() => {
-              setIsGroupModalOpen(true);
-              setIsAddingGroup(true);
-              setGroupAddError('');
-            }}
-          >
-            + Qo'shish
-          </button>
-        </div>
-      )}
-
-      {/* Profile Selector / Pinned Header Banner */}
-      <div className="student-profile-banner">
-        {pinnedStudent && !isChangingProfile ? (
-          <div className="pinned-profile-bar">
-            <div className="pinned-profile-meta">
-              <span className="pinned-label">Profil:</span>
-              <span className="pinned-name">{pinnedStudent.name}</span>
-            </div>
-            <button
-              type="button"
-              className="profile-change-btn"
-              onClick={() => setIsChangingProfile(true)}
-            >
-              O'zgartirish
-            </button>
-          </div>
-        ) : isChangingProfile || activeTab === 'main' ? (
-          <div className="profile-picker-card">
-            <div className="picker-text-wrap">
-              <h4 className="picker-title">Profilingizni tanlang</h4>
-              <p className="picker-desc">
-                Davomat va shaxsiy ballaringizni aniq ko'rish uchun ismingizni tanlang:
-              </p>
-            </div>
-            <div className="picker-actions">
-              <div className="custom-profile-picker-wrap">
+        {/* Right: Group Switcher Pills */}
+        <div className="user-groups-nav">
+          <div className="groups-pills-row">
+            {connectedGroupsList.map((grp) => {
+              const isCurrent = String(grp.id) === String(currentGroup?.id);
+              return (
                 <button
+                  key={grp.id}
                   type="button"
-                  className={`custom-profile-trigger ${isStudentPickerOpen ? 'open' : ''}`}
-                  onClick={() => setIsStudentPickerOpen((prev) => !prev)}
-                  disabled={groupStudents.length === 0}
-                  aria-haspopup="listbox"
-                  aria-expanded={isStudentPickerOpen}
+                  className={`user-group-pill ${isCurrent ? 'active' : ''}`}
+                  onClick={() => {
+                    if (!isCurrent && onSwitchGroup) {
+                      onSwitchGroup(grp.id);
+                    }
+                  }}
+                  title={grp.name}
                 >
-                  <span className="trigger-student-name">
-                    {selectedStudentDraft
-                      ? selectedStudentDraft.name
-                      : (groupStudents.length > 0 ? "O'quvchini tanlang..." : "O'quvchilar ro'yxati mavjud emas")}
-                  </span>
-                  <span className={`trigger-chevron ${isStudentPickerOpen ? 'rotated' : ''}`}>
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                      <polyline points="6 9 12 15 18 9" />
-                    </svg>
-                  </span>
+                  {isCurrent && <span className="active-dot" />}
+                  <span className="group-pill-name">{grp.name}</span>
                 </button>
-
-                {isStudentPickerOpen && (
-                  <>
-                    <div
-                      className="custom-picker-overlay"
-                      onClick={() => setIsStudentPickerOpen(false)}
-                    />
-                    <div className="custom-profile-menu glass" role="listbox">
-                      {groupStudents.length > 0 ? (
-                        groupStudents.map((st) => {
-                          const isSelected = String(st.id) === String(selectedStudentDraftId);
-                          return (
-                            <div
-                              key={st.id}
-                              role="option"
-                              aria-selected={isSelected}
-                              className={`custom-profile-item ${isSelected ? 'selected' : ''}`}
-                              onClick={() => {
-                                setSelectedStudentDraftId(String(st.id));
-                                setIsStudentPickerOpen(false);
-                              }}
-                            >
-                              <span className="item-student-name">{st.name}</span>
-                              {isSelected && (
-                                <span className="item-check-icon">
-                                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                                    <polyline points="20 6 9 17 4 12" />
-                                  </svg>
-                                </span>
-                              )}
-                            </div>
-                          );
-                        })
-                      ) : (
-                        <div className="custom-profile-empty">O'quvchilar ro'yxati mavjud emas</div>
-                      )}
-                    </div>
-                  </>
-                )}
-              </div>
-
-              <button
-                type="button"
-                className="profile-save-btn"
-                disabled={groupStudents.length === 0 || !selectedStudentDraftId}
-                onClick={() => handleSaveProfilePin(selectedStudentDraftId)}
-              >
-                Bu mening profilim
-              </button>
-              {pinnedStudent && (
-                <>
-                  <button
-                    type="button"
-                    className="profile-cancel-btn"
-                    onClick={() => {
-                      setIsChangingProfile(false);
-                      setIsStudentPickerOpen(false);
-                    }}
-                  >
-                    Yopish
-                  </button>
-                  <button
-                    type="button"
-                    className="profile-clear-btn"
-                    onClick={() => {
-                      handleClearProfilePin();
-                      setIsStudentPickerOpen(false);
-                    }}
-                  >
-                    Tanlovni bekor qilish
-                  </button>
-                </>
-              )}
-            </div>
-          </div>
-        ) : (
-          <div className="pinned-profile-bar unpinned">
-            <div className="pinned-profile-meta">
-              <span className="pinned-label">Profil:</span>
-              <span className="pinned-name muted">Tanlanmagan</span>
-            </div>
+              );
+            })}
             <button
               type="button"
-              className="profile-change-btn"
-              onClick={() => setIsChangingProfile(true)}
+              className="user-group-pill add-pill"
+              onClick={() => {
+                setIsGroupModalOpen(true);
+                setIsAddingGroup(true);
+                setGroupAddError('');
+              }}
+              title="Yangi guruh ulash"
             >
-              Profilni tanlash
+              <span className="plus-sign">+</span>
+              <span className="add-text">Guruh</span>
             </button>
           </div>
-        )}
+        </div>
       </div>
 
       {/* Main Tab Content */}
@@ -471,11 +345,13 @@ export default function StudentPortal({
             {connectedGroupsList.length > 1 ? (
               <div className="multi-schedules-section">
                 <div className="multi-schedules-header">
-                  <span className="multi-schedules-title">Dars jadvallari ({connectedGroupsList.length} ta guruh)</span>
-                  <span className="multi-schedules-hint">Faol guruhni almashtirish uchun kartadagi tugmani bosing</span>
+                  <div className="multi-schedules-title-row">
+                    <span className="multi-schedules-title">Dars jadvallari</span>
+                    <span className="multi-schedules-count-pill">{connectedGroupsList.length} ta guruh</span>
+                  </div>
                 </div>
                 <div className="multi-schedules-grid">
-                  {connectedGroupsList.map((grp) => {
+                  {sortedConnectedGroups.map((grp) => {
                     const isActive = String(grp.id) === String(currentGroup?.id);
                     return (
                       <StudentScheduleCard
@@ -785,137 +661,270 @@ export default function StudentPortal({
         document.body
       )}
 
+      {/* Profile Selector Modal (Clean, quick 1-tap select) */}
+      {isChangingProfile && typeof document !== 'undefined' && createPortal(
+        <div className="student-modal-overlay" onClick={() => setIsChangingProfile(false)}>
+          <div
+            className="student-group-modal glass animate-scaleUp"
+            onClick={(e) => e.stopPropagation()}
+            role="dialog"
+            aria-modal="true"
+            aria-label="Profilingizni tanlang"
+          >
+            <div className="student-modal-header">
+              <div>
+                <h3 className="student-modal-title">Profilingizni tanlang</h3>
+                <p className="student-modal-subtitle">
+                  {currentGroup?.name ? `${currentGroup.name} guruhi o'quvchilari` : "Ismingizni tanlang"}
+                </p>
+              </div>
+              <button
+                type="button"
+                className="student-modal-close-btn"
+                onClick={() => setIsChangingProfile(false)}
+                aria-label="Yopish"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="student-modal-body">
+              <div className="student-picker-list">
+                {groupStudents.length > 0 ? (
+                  groupStudents.map((st) => {
+                    const isCurrent = String(st.id) === String(pinnedStudentId);
+                    return (
+                      <div
+                        key={st.id}
+                        className={`student-picker-item ${isCurrent ? 'is-selected' : ''}`}
+                        onClick={() => handleSaveProfilePin(st.id)}
+                      >
+                        <div className="picker-item-avatar">
+                          {st.name.charAt(0).toUpperCase()}
+                        </div>
+                        <div className="picker-item-info">
+                          <span className="picker-item-name">{st.name}</span>
+                          {isCurrent && <span className="picker-item-current-tag">Tanlangan</span>}
+                        </div>
+                        {isCurrent ? (
+                          <span className="picker-check-icon">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                              <polyline points="20 6 9 17 4 12" />
+                            </svg>
+                          </span>
+                        ) : (
+                          <span className="picker-select-arrow">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                              <polyline points="9 18 15 12 9 6" />
+                            </svg>
+                          </span>
+                        )}
+                      </div>
+                    );
+                  })
+                ) : (
+                  <div className="student-picker-empty">Guruhda o'quvchilar ro'yxati mavjud emas</div>
+                )}
+              </div>
+
+              {pinnedStudent && (
+                <div className="student-picker-footer">
+                  <button
+                    type="button"
+                    className="student-picker-clear-btn"
+                    onClick={() => handleClearProfilePin()}
+                  >
+                    Profil tanlovini bekor qilish
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+
       <style>{`
         .student-portal-root {
           width: 100%;
           max-width: 900px;
           margin: 0 auto;
-          padding: 8px 0 40px;
+          padding: 6px 0 40px;
           box-sizing: border-box;
         }
 
-        /* Group Switcher Bar */
-        .student-group-bar {
+        /* Unified Student & Group Bar (Compact, Single-Row Mobile-First UI) */
+        .student-unified-user-card {
           display: flex;
           align-items: center;
           justify-content: space-between;
           background: var(--bg-card);
           border: 1px solid var(--border-color);
-          border-radius: var(--radius-lg, 12px);
-          padding: 10px 16px;
+          border-radius: var(--radius-lg, 14px);
+          padding: 8px 12px;
           margin-bottom: 12px;
           box-shadow: var(--shadow-sm);
+          gap: 8px;
+          flex-wrap: wrap;
         }
 
-        .student-group-bar-left {
+        .user-profile-chip {
+          display: inline-flex;
+          align-items: center;
+          gap: 8px;
+          cursor: pointer;
+          background: var(--bg-secondary, rgba(0, 0, 0, 0.03));
+          border: 1px solid var(--border-color);
+          border-radius: var(--radius-full);
+          padding: 4px 10px 4px 5px;
+          transition: all var(--transition-fast);
+          user-select: none;
+          min-width: 0;
+          touch-action: manipulation;
+        }
+
+        .user-profile-chip:hover {
+          border-color: var(--apple-blue);
+          background: rgba(var(--apple-blue-rgb, 0, 113, 227), 0.06);
+        }
+
+        .user-avatar-circle {
+          width: 24px;
+          height: 24px;
+          border-radius: 50%;
+          background: var(--apple-blue);
+          color: #ffffff;
           display: flex;
           align-items: center;
-          gap: 10px;
+          justify-content: center;
+          font-weight: 700;
+          font-size: 0.74rem;
+          flex-shrink: 0;
+        }
+
+        .user-text-col {
+          display: flex;
+          flex-direction: column;
+          line-height: 1.15;
           min-width: 0;
         }
 
-        .student-group-tag {
-          font-size: 0.72rem;
-          font-weight: 700;
-          letter-spacing: 0.05em;
-          color: var(--apple-blue);
-          background: rgba(var(--apple-blue-rgb, 0, 113, 227), 0.1);
-          padding: 3px 8px;
-          border-radius: 6px;
-          text-transform: uppercase;
-        }
-
-        .student-group-current-name {
-          font-size: 0.95rem;
+        .user-name-title {
+          font-size: 0.84rem;
           font-weight: 700;
           color: var(--text-primary);
           white-space: nowrap;
           overflow: hidden;
           text-overflow: ellipsis;
+          max-width: 140px;
         }
 
-        .student-group-count-badge {
-          font-size: 0.75rem;
-          font-weight: 600;
-          color: var(--text-secondary);
-          background: var(--bg-secondary, rgba(0, 0, 0, 0.05));
-          padding: 2px 8px;
-          border-radius: var(--radius-full);
-          white-space: nowrap;
+        .user-sub-action {
+          font-size: 0.65rem;
+          color: var(--text-tertiary);
+          font-weight: 500;
         }
 
-        .student-group-action-btn {
-          display: inline-flex;
-          align-items: center;
-          gap: 6px;
-          background: rgba(var(--apple-blue-rgb, 0, 113, 227), 0.08);
-          color: var(--apple-blue);
-          border: 1px solid rgba(var(--apple-blue-rgb, 0, 113, 227), 0.2);
-          border-radius: var(--radius-full);
-          padding: 6px 14px;
-          font-size: 0.82rem;
-          font-weight: 600;
-          cursor: pointer;
-          transition: all var(--transition-fast);
-          white-space: nowrap;
-          touch-action: manipulation;
-        }
-
-        .student-group-action-btn:hover {
-          background: var(--apple-blue);
-          color: #FFFFFF;
-          border-color: var(--apple-blue);
-        }
-
-        /* Quick Group Switcher Pills */
-        .student-group-quick-pills {
+        .user-edit-icon {
+          color: var(--text-tertiary);
           display: flex;
           align-items: center;
-          gap: 8px;
-          overflow-x: auto;
-          padding-bottom: 8px;
-          margin-bottom: 14px;
-          scrollbar-width: none;
         }
 
-        .student-group-quick-pills::-webkit-scrollbar {
+        /* Right side: Group pills */
+        .user-groups-nav {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          overflow-x: auto;
+          scrollbar-width: none;
+          max-width: 100%;
+        }
+
+        .user-groups-nav::-webkit-scrollbar {
           display: none;
         }
 
-        .student-group-pill {
-          display: inline-flex;
+        .groups-pills-row {
+          display: flex;
           align-items: center;
           gap: 6px;
-          background: var(--bg-card);
+          flex-shrink: 0;
+        }
+
+        .user-group-pill {
+          display: inline-flex;
+          align-items: center;
+          gap: 5px;
+          background: var(--bg-secondary, rgba(0, 0, 0, 0.03));
           border: 1px solid var(--border-color);
           border-radius: var(--radius-full);
-          padding: 6px 14px;
-          font-size: 0.84rem;
+          padding: 5px 12px;
+          font-size: 0.8rem;
           font-weight: 600;
           color: var(--text-secondary);
           cursor: pointer;
           white-space: nowrap;
           transition: all var(--transition-fast);
-          user-select: none;
+          touch-action: manipulation;
         }
 
-        .student-group-pill:hover {
+        .user-group-pill:hover {
           color: var(--text-primary);
           border-color: var(--apple-blue);
         }
 
-        .student-group-pill.active {
+        .user-group-pill.active {
           background: var(--apple-blue);
-          color: #FFFFFF;
+          color: #ffffff;
           border-color: var(--apple-blue);
-          box-shadow: 0 2px 6px rgba(0, 113, 227, 0.25);
+          box-shadow: 0 2px 8px rgba(0, 113, 227, 0.25);
         }
 
-        .student-group-pill .pill-dot {
-          width: 7px;
-          height: 7px;
+        .active-dot {
+          width: 6px;
+          height: 6px;
           border-radius: 50%;
           background: #34C759;
+        }
+
+        .user-group-pill.add-pill {
+          border-style: dashed;
+          background: transparent;
+          color: var(--apple-blue);
+          padding: 5px 10px;
+        }
+
+        .user-group-pill.add-pill:hover {
+          background: rgba(var(--apple-blue-rgb, 0, 113, 227), 0.08);
+        }
+
+        /* Multi Schedules Section Header */
+        .multi-schedules-header {
+          margin-bottom: 10px;
+        }
+
+        .multi-schedules-title-row {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+        }
+
+        .multi-schedules-title {
+          font-size: 0.92rem;
+          font-weight: 700;
+          color: var(--text-primary);
+        }
+
+        .multi-schedules-count-pill {
+          font-size: 0.72rem;
+          font-weight: 600;
+          color: var(--text-secondary);
+          background: var(--bg-secondary, rgba(0, 0, 0, 0.04));
+          border: 1px solid var(--border-color);
+          padding: 1px 7px;
+          border-radius: var(--radius-full);
+        }
         }
 
         .student-group-pill.add-btn {
@@ -1322,296 +1331,119 @@ export default function StudentPortal({
           display: none;
         }
 
-        /* Profile Banner */
-        .student-profile-banner {
-          margin-bottom: 20px;
-        }
-
-        .pinned-profile-bar {
+        /* Profile Picker Modal Styles */
+        .student-picker-list {
           display: flex;
-          align-items: center;
-          justify-content: space-between;
-          background: var(--bg-card);
-          border: 1px solid var(--border-color);
-          border-radius: var(--radius-lg);
-          padding: 12px 18px;
-          box-shadow: var(--shadow-sm);
-        }
-
-        .pinned-profile-meta {
-          display: flex;
-          align-items: center;
-          gap: 8px;
-        }
-
-        .pinned-label {
-          font-size: 0.8rem;
-          color: var(--text-tertiary);
-          font-weight: 600;
-          text-transform: uppercase;
-          letter-spacing: 0.04em;
-        }
-
-        .pinned-name {
-          font-size: 0.95rem;
-          font-weight: 700;
-          color: var(--text-primary);
-        }
-
-        .profile-change-btn {
-          background: transparent;
-          border: 1px solid var(--border-color);
-          border-radius: var(--radius-sm);
-          color: var(--apple-blue);
-          font-size: 0.78rem;
-          font-weight: 600;
-          padding: 4px 12px;
-          cursor: pointer;
-          transition: background var(--transition-fast);
-        }
-
-        .profile-change-btn:hover {
-          background: var(--bg-primary);
-        }
-
-        .profile-picker-card {
-          background: var(--bg-card);
-          border: 1px solid var(--border-color);
-          border-radius: var(--radius-xl);
-          padding: 18px 20px;
-          box-shadow: var(--shadow-sm);
-        }
-
-        .picker-text-wrap {
-          margin-bottom: 12px;
-        }
-
-        .picker-title {
-          font-size: 0.98rem;
-          font-weight: 700;
-          color: var(--text-primary);
-          margin: 0 0 4px;
-        }
-
-        .picker-desc {
-          font-size: 0.82rem;
-          color: var(--text-secondary);
-          margin: 0;
-          line-height: 1.4;
-        }
-
-        .picker-actions {
-          display: flex;
-          align-items: center;
-          gap: 10px;
-          flex-wrap: wrap;
-        }
-
-        .custom-profile-picker-wrap {
-          position: relative;
-          flex: 1;
-          min-width: 220px;
-        }
-
-        .custom-profile-trigger {
-          width: 100%;
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          background: var(--bg-primary);
-          border: 1px solid var(--border-color);
-          border-radius: var(--radius-md);
-          padding: 10px 14px;
-          color: var(--text-primary);
-          font-family: inherit;
-          font-size: 0.88rem;
-          font-weight: 500;
-          cursor: pointer;
-          transition: all var(--transition-fast);
-          text-align: left;
-          user-select: none;
-        }
-
-        .custom-profile-trigger:hover:not(:disabled) {
-          border-color: var(--apple-blue);
-        }
-
-        .custom-profile-trigger.open {
-          border-color: var(--apple-blue);
-          box-shadow: 0 0 0 3px rgba(var(--apple-blue-rgb, 0, 113, 227), 0.14);
-        }
-
-        .custom-profile-trigger:disabled {
-          opacity: 0.5;
-          cursor: not-allowed;
-        }
-
-        .trigger-student-name {
-          overflow: hidden;
-          text-overflow: ellipsis;
-          white-space: nowrap;
-          font-weight: 600;
-        }
-
-        .trigger-chevron {
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-          margin-left: 8px;
-          color: var(--text-secondary);
-          transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-          flex-shrink: 0;
-        }
-
-        .trigger-chevron.rotated {
-          transform: rotate(180deg);
-          color: var(--apple-blue);
-        }
-
-        .custom-picker-overlay {
-          position: fixed;
-          inset: 0;
-          z-index: 998;
-          background: transparent;
-        }
-
-        .custom-profile-menu {
-          position: absolute;
-          top: calc(100% + 6px);
-          left: 0;
-          right: 0;
-          min-width: 240px;
-          max-height: 250px;
+          flex-direction: column;
+          gap: 6px;
+          max-height: 380px;
           overflow-y: auto;
-          background: var(--bg-card);
-          border: 1px solid var(--border-color);
-          border-radius: var(--radius-lg);
-          padding: 6px;
-          box-shadow: var(--shadow-lg), 0 10px 30px rgba(0, 0, 0, 0.12);
-          z-index: 999;
-          animation: dropdownFadeIn 0.16s cubic-bezier(0.16, 1, 0.3, 1);
-          backdrop-filter: blur(20px);
-          -webkit-backdrop-filter: blur(20px);
+          padding: 2px;
         }
 
-        @keyframes dropdownFadeIn {
-          from {
-            opacity: 0;
-            transform: translateY(-6px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-
-        .custom-profile-item {
+        .student-picker-item {
           display: flex;
           align-items: center;
           justify-content: space-between;
-          padding: 9px 12px;
-          border-radius: var(--radius-md);
+          background: var(--bg-secondary, rgba(0, 0, 0, 0.02));
+          border: 1px solid var(--border-color);
+          border-radius: var(--radius-md, 10px);
+          padding: 10px 14px;
           cursor: pointer;
-          font-size: 0.88rem;
-          color: var(--text-primary);
-          font-weight: 500;
           transition: all var(--transition-fast);
-          margin-bottom: 2px;
+          gap: 10px;
         }
 
-        .custom-profile-item:last-child {
-          margin-bottom: 0;
+        .student-picker-item:hover {
+          border-color: var(--apple-blue);
+          background: rgba(var(--apple-blue-rgb, 0, 113, 227), 0.05);
         }
 
-        .custom-profile-item:hover {
-          background: var(--bg-primary);
-          color: var(--text-primary);
+        .student-picker-item.is-selected {
+          border-color: var(--apple-blue);
+          background: rgba(var(--apple-blue-rgb, 0, 113, 227), 0.1);
         }
 
-        .custom-profile-item.selected {
-          background: rgba(var(--apple-blue-rgb, 0, 113, 227), 0.08);
-          color: var(--apple-blue);
-          font-weight: 600;
-        }
-
-        .item-student-name {
-          overflow: hidden;
-          text-overflow: ellipsis;
-          white-space: nowrap;
-        }
-
-        .item-check-icon {
-          display: inline-flex;
+        .picker-item-avatar {
+          width: 32px;
+          height: 32px;
+          border-radius: 50%;
+          background: var(--apple-blue);
+          color: #ffffff;
+          display: flex;
           align-items: center;
           justify-content: center;
-          color: var(--apple-blue);
-          margin-left: 8px;
+          font-weight: 700;
+          font-size: 0.82rem;
           flex-shrink: 0;
         }
 
-        .custom-profile-empty {
-          padding: 16px;
+        .picker-item-info {
+          display: flex;
+          flex-direction: column;
+          gap: 2px;
+          flex: 1;
+          min-width: 0;
+        }
+
+        .picker-item-name {
+          font-size: 0.92rem;
+          font-weight: 600;
+          color: var(--text-primary);
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+
+        .picker-item-current-tag {
+          font-size: 0.68rem;
+          color: #34C759;
+          font-weight: 600;
+        }
+
+        .picker-check-icon {
+          color: var(--apple-blue);
+          display: flex;
+          align-items: center;
+          font-weight: bold;
+        }
+
+        .picker-select-arrow {
+          color: var(--text-tertiary);
+          display: flex;
+          align-items: center;
+        }
+
+        .student-picker-empty {
+          padding: 24px;
           text-align: center;
-          font-size: 0.84rem;
+          font-size: 0.85rem;
           color: var(--text-secondary);
         }
 
-        .profile-save-btn {
-          background: var(--apple-blue);
-          border: none;
-          border-radius: var(--radius-md);
-          color: #FFFFFF;
-          font-size: 0.84rem;
-          font-weight: 600;
-          padding: 10px 18px;
-          cursor: pointer;
-          transition: opacity var(--transition-fast);
-          white-space: nowrap;
+        .student-picker-footer {
+          margin-top: 14px;
+          padding-top: 12px;
+          border-top: 1px solid var(--border-color);
+          display: flex;
+          justify-content: center;
         }
 
-        .profile-save-btn:hover:not(:disabled) {
-          opacity: 0.9;
-        }
-
-        .profile-save-btn:disabled {
-          opacity: 0.45;
-          cursor: not-allowed;
-        }
-
-        .pinned-name.muted {
-          color: var(--text-secondary);
-          font-weight: 500;
-          font-style: italic;
-        }
-
-        .profile-cancel-btn {
-          background: var(--bg-primary);
-          border: 1px solid var(--border-color);
-          border-radius: var(--radius-md);
-          color: var(--text-secondary);
-          font-size: 0.84rem;
-          font-weight: 600;
-          padding: 10px 14px;
-          cursor: pointer;
-          white-space: nowrap;
-        }
-
-        .profile-clear-btn {
+        .student-picker-clear-btn {
           background: transparent;
-          border: 1px solid rgba(220, 38, 38, 0.3);
-          border-radius: var(--radius-md);
-          color: #DC2626;
-          font-size: 0.84rem;
+          border: none;
+          color: #FF3B30;
+          font-size: 0.82rem;
           font-weight: 600;
-          padding: 10px 14px;
           cursor: pointer;
-          white-space: nowrap;
-          transition: background var(--transition-fast);
+          padding: 6px 12px;
+          border-radius: var(--radius-sm);
         }
 
-        .profile-clear-btn:hover {
-          background: rgba(220, 38, 38, 0.08);
+        .student-picker-clear-btn:hover {
+          background: rgba(255, 59, 48, 0.08);
         }
+
 
         .student-tab-content {
           width: 100%;
