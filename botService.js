@@ -58,6 +58,44 @@ export const createBotService = ({ supabase, botToken, adminChatId }) => {
   };
 
 
+  // Normalizes session to guarantee profiles array and activeProfileId
+  const normalizeSession = (raw) => {
+    if (!raw) return null;
+    let profiles = Array.isArray(raw.profiles) ? [...raw.profiles] : [];
+
+    // Migrate old single-profile session if profiles is empty
+    if (profiles.length === 0 && (raw.groupId || raw.studentId)) {
+      profiles.push({
+        id: `prof_${raw.groupId || 'g'}_${raw.studentId || 's'}`,
+        teacherId: raw.teacherId,
+        groupId: raw.groupId,
+        studentId: raw.studentId,
+        groupName: raw.groupName || 'Guruh',
+        studentName: raw.studentName || 'O\'quvchi'
+      });
+    }
+
+    let activeProfileId = raw.activeProfileId;
+    let activeProfile = profiles.find(p => p.id === activeProfileId);
+    if (!activeProfile && profiles.length > 0) {
+      activeProfile = profiles[0];
+      activeProfileId = activeProfile.id;
+    }
+
+    if (!activeProfile) return null;
+
+    return {
+      teacherId: activeProfile.teacherId,
+      groupId: activeProfile.groupId,
+      studentId: activeProfile.studentId,
+      groupName: activeProfile.groupName,
+      studentName: activeProfile.studentName,
+      profiles,
+      activeProfileId,
+      ...(raw.data || {})
+    };
+  };
+
   // Supabase + Local Fallback Session Handlers
   const getSession = async (chatId) => {
     try {
@@ -68,19 +106,20 @@ export const createBotService = ({ supabase, botToken, adminChatId }) => {
           .eq('chat_id', String(chatId))
           .maybeSingle();
         if (!error && data) {
-          return {
+          return normalizeSession({
             teacherId: data.teacher_id,
             groupId: data.group_id,
             studentId: data.student_id,
             ...(data.data || {})
-          };
+          });
         }
       }
     } catch (err) {
       console.warn('[Bot Sessions] Supabase get error, fallback to local:', err.message);
     }
     const local = getSessionsLocal();
-    return local[String(chatId)] || null;
+    const raw = local[String(chatId)] || null;
+    return normalizeSession(raw);
   };
 
   const saveSession = async (chatId, sessionData) => {
@@ -109,6 +148,99 @@ export const createBotService = ({ supabase, botToken, adminChatId }) => {
       };
       fs.writeFileSync(SESSIONS_FILE, JSON.stringify(local, null, 2));
     } catch (_) {}
+  };
+
+  const addProfileToSession = async (chatId, newProfile) => {
+    const current = await getSession(chatId);
+    let profiles = current?.profiles ? [...current.profiles] : [];
+
+    const existingIndex = profiles.findIndex(
+      p => String(p.groupId) === String(newProfile.groupId) && String(p.studentId) === String(newProfile.studentId)
+    );
+
+    const profileId = existingIndex >= 0 
+      ? profiles[existingIndex].id 
+      : `prof_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
+
+    const fullProfile = {
+      id: profileId,
+      teacherId: newProfile.teacherId,
+      groupId: newProfile.groupId,
+      studentId: newProfile.studentId,
+      groupName: newProfile.groupName || 'Guruh',
+      studentName: newProfile.studentName || 'O\'quvchi'
+    };
+
+    if (existingIndex >= 0) {
+      profiles[existingIndex] = fullProfile;
+    } else {
+      profiles.push(fullProfile);
+    }
+
+    const sessionPayload = {
+      teacherId: fullProfile.teacherId,
+      groupId: fullProfile.groupId,
+      studentId: fullProfile.studentId,
+      groupName: fullProfile.groupName,
+      studentName: fullProfile.studentName,
+      profiles,
+      activeProfileId: profileId
+    };
+
+    await saveSession(chatId, sessionPayload);
+    return sessionPayload;
+  };
+
+  const switchActiveProfile = async (chatId, profileId) => {
+    const current = await getSession(chatId);
+    if (!current || !Array.isArray(current.profiles)) return null;
+
+    const target = current.profiles.find(p => p.id === profileId);
+    if (!target) return null;
+
+    const sessionPayload = {
+      teacherId: target.teacherId,
+      groupId: target.groupId,
+      studentId: target.studentId,
+      groupName: target.groupName,
+      studentName: target.studentName,
+      profiles: current.profiles,
+      activeProfileId: profileId
+    };
+
+    await saveSession(chatId, sessionPayload);
+    return target;
+  };
+
+  const removeProfileFromSession = async (chatId, profileId) => {
+    const current = await getSession(chatId);
+    if (!current || !Array.isArray(current.profiles)) return null;
+
+    const remaining = current.profiles.filter(p => p.id !== profileId);
+    if (remaining.length === 0) {
+      await clearSession(chatId);
+      return null;
+    }
+
+    let activeProfileId = current.activeProfileId;
+    let activeProfile = remaining.find(p => p.id === activeProfileId);
+    if (!activeProfile) {
+      activeProfile = remaining[0];
+      activeProfileId = activeProfile.id;
+    }
+
+    const sessionPayload = {
+      teacherId: activeProfile.teacherId,
+      groupId: activeProfile.groupId,
+      studentId: activeProfile.studentId,
+      groupName: activeProfile.groupName,
+      studentName: activeProfile.studentName,
+      profiles: remaining,
+      activeProfileId
+    };
+
+    await saveSession(chatId, sessionPayload);
+    return sessionPayload;
   };
 
   const clearSession = async (chatId) => {
@@ -796,25 +928,100 @@ export const createBotService = ({ supabase, botToken, adminChatId }) => {
     });
   };
 
-  // 9. Switch Profile View
-  const renderSwitchProfileView = async (chatId) => {
+  // 9. Switch Profile View (Multi-Group / Multi-Profile)
+  const renderSwitchProfileView = async (chatId, messageId = null) => {
     const session = await getSession(chatId);
+    if (!session) {
+      await promptGroupPassword(chatId);
+      return;
+    }
+
+    const profiles = Array.isArray(session.profiles) ? session.profiles : [];
+    const activeId = session.activeProfileId;
     const inline_keyboard = [];
 
-    if (session) {
+    // List all connected groups & profiles
+    for (const p of profiles) {
+      const isActive = p.id === activeId;
+      const label = isActive
+        ? `• 🟢 ${p.groupName} — ${p.studentName} •`
+        : `${p.groupName} — ${p.studentName}`;
+
       inline_keyboard.push([
-        { text: '🔄 Shu guruhdan boshqa o\'quvchini tanlash', callback_data: 'switch_same_group' }
+        {
+          text: label,
+          callback_data: isActive ? 'noop' : `switch_prof:${p.id}`
+        }
+      ]);
+    }
+
+    // Action buttons
+    inline_keyboard.push([
+      { text: '➕ Yangi guruh ulash', callback_data: 'add_new_group' }
+    ]);
+
+    inline_keyboard.push([
+      { text: '🔄 Shu guruhdan boshqa o\'quvchini tanlash', callback_data: 'switch_same_group' }
+    ]);
+
+    if (profiles.length > 1) {
+      inline_keyboard.push([
+        { text: '🗑 Guruhni o\'chirish (ajratish)', callback_data: 'manage_remove_group' }
+      ]);
+    }
+
+    const activeProfile = profiles.find(p => p.id === activeId) || profiles[0] || session;
+    const text = `👤 <b>Mening Guruhlarim va Profillarim</b>\n\n` +
+      `📌 <b>Hozirgi faol guruh:</b> <b>${activeProfile.groupName}</b> (${activeProfile.studentName})\n\n` +
+      `Boshqa guruh ma'lumotlarini (jadval, davomat, reyting) ko'rish uchun yuqoridagi ro'yxatdan tanlang yoki yangi guruh ulang:`;
+
+    if (messageId) {
+      await editTelegramMessage(chatId, messageId, text, {
+        reply_markup: { inline_keyboard }
+      });
+    } else {
+      await sendTelegramMessage(chatId, text, {
+        reply_markup: { inline_keyboard }
+      });
+    }
+  };
+
+  // 10. Remove/Unlink Group View
+  const renderRemoveGroupView = async (chatId, messageId = null) => {
+    const session = await getSession(chatId);
+    const profiles = Array.isArray(session?.profiles) ? session.profiles : [];
+
+    if (!session || profiles.length <= 1) {
+      await renderSwitchProfileView(chatId, messageId);
+      return;
+    }
+
+    const inline_keyboard = [];
+    for (const p of profiles) {
+      inline_keyboard.push([
+        {
+          text: `❌ ${p.groupName} (${p.studentName})`,
+          callback_data: `del_prof:${p.id}`
+        }
       ]);
     }
 
     inline_keyboard.push([
-      { text: '🔑 Boshqa guruh parolini kiritish', callback_data: 'switch_new_group' }
+      { text: '⬅️ Ortga qaytish', callback_data: 'back_to_profiles' }
     ]);
 
-    const text = `👤 <b>Profil yoki Guruhni almashtirish</b>\n\nQuyidagi amallardan birini tanlang:`;
-    await sendTelegramMessage(chatId, text, {
-      reply_markup: { inline_keyboard }
-    });
+    const text = `🗑 <b>Qaysi guruhni Telegram akkauntingizdan uzmoqchisiz?</b>\n\n` +
+      `<i>Eslatma: Guruh uzilganda dars natijalari va ballar o'chmaydi. Istalgan payt yangi guruh paroli orqali qayta ulashingiz mumkin.</i>`;
+
+    if (messageId) {
+      await editTelegramMessage(chatId, messageId, text, {
+        reply_markup: { inline_keyboard }
+      });
+    } else {
+      await sendTelegramMessage(chatId, text, {
+        reply_markup: { inline_keyboard }
+      });
+    }
   };
 
   // Master Update Handler
@@ -957,7 +1164,7 @@ export const createBotService = ({ supabase, botToken, adminChatId }) => {
         const group = (tData?.groups || []).find(g => String(g.id) === String(groupId));
         const student = (tData?.students || []).find(s => String(s.id) === String(studentId));
 
-        await saveSession(chatId, {
+        const updatedSession = await addProfileToSession(chatId, {
           teacherId,
           groupId,
           studentId,
@@ -965,7 +1172,12 @@ export const createBotService = ({ supabase, botToken, adminChatId }) => {
           studentName: student?.name || ''
         });
 
-        await sendTelegramMessage(chatId, `🎉 <b>Profil muvaffaqiyatli bog'landi!</b>\n\nSalom, <b>${student?.name || ''}</b>! Endi quyidagi menyu orqali dars jadvali, davomatingiz va reytingingizni kuzatib borishingiz mumkin.`, {
+        const profileCount = updatedSession?.profiles?.length || 1;
+        const extraNote = profileCount > 1 
+          ? `\n\n💡 <i>Sizda hozir <b>${profileCount} ta</b> guruh ulangan. Istalgan vaqt "👤 Profilni almashtirish" orqali guruhlaringiz orasida o'tishingiz mumkin.</i>`
+          : '';
+
+        await sendTelegramMessage(chatId, `🎉 <b>Profil muvaffaqiyatli bog'landi!</b>\n\nSalom, <b>${student?.name || ''}</b>! Siz <b>${group?.name || 'guruh'}</b> a'zosi sifatida ulandingiz.${extraNote}`, {
           reply_markup: getKeyboardForChat(chatId)
         });
 
@@ -1004,6 +1216,54 @@ export const createBotService = ({ supabase, botToken, adminChatId }) => {
         return;
       }
 
+      // No-op (e.g. clicking currently active profile)
+      if (data === 'noop') {
+        return;
+      }
+
+      // Switch active profile: switch_prof:<profileId>
+      if (data.startsWith('switch_prof:')) {
+        const profileId = data.replace('switch_prof:', '');
+        const target = await switchActiveProfile(chatId, profileId);
+        if (target) {
+          await sendTelegramMessage(chatId, `✅ Faol guruh almashtirildi:\n📚 <b>${target.groupName}</b> — <b>${target.studentName}</b>`, {
+            reply_markup: getKeyboardForChat(chatId)
+          });
+          await renderHomeView(chatId);
+        } else {
+          await renderSwitchProfileView(chatId, messageId);
+        }
+        return;
+      }
+
+      // Add new group
+      if (data === 'add_new_group' || data === 'switch_new_group') {
+        userStates.set(chatId, 'WAITING_FOR_GROUP_PASSWORD');
+        await sendTelegramMessage(chatId, `🔑 <b>Yangi guruhni ulash</b>\n\nIltimos, yangi guruhingiz parolini kiriting:`);
+        return;
+      }
+
+      // Manage group removal
+      if (data === 'manage_remove_group') {
+        await renderRemoveGroupView(chatId, messageId);
+        return;
+      }
+
+      // Delete/unlink a profile: del_prof:<profileId>
+      if (data.startsWith('del_prof:')) {
+        const profileId = data.replace('del_prof:', '');
+        await removeProfileFromSession(chatId, profileId);
+        await sendTelegramMessage(chatId, `🗑 Guruh muvaffaqiyatli uzildi.`);
+        await renderSwitchProfileView(chatId);
+        return;
+      }
+
+      // Back to profiles view
+      if (data === 'back_to_profiles') {
+        await renderSwitchProfileView(chatId, messageId);
+        return;
+      }
+
       // Switch: same group pick student
       if (data === 'switch_same_group') {
         const session = await getSession(chatId);
@@ -1017,13 +1277,6 @@ export const createBotService = ({ supabase, botToken, adminChatId }) => {
           s => String(s.groupId) === String(session.groupId) && !s.deleted
         );
         await showStudentSelection(chatId, session.teacherId, session.groupId, group?.name || '', groupStudents);
-        return;
-      }
-
-      // Switch: new group
-      if (data === 'switch_new_group') {
-        await clearSession(chatId);
-        await promptGroupPassword(chatId);
         return;
       }
     }

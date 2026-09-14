@@ -1,1 +1,21 @@
-{}
+{
+  "test_multi_user_999": {
+    "teacherId": "teacher1",
+    "groupId": "group_rus_1",
+    "studentId": "student_ali_rus",
+    "groupName": "Guruh",
+    "studentName": "O'quvchi",
+    "profiles": [
+      {
+        "id": "prof_1789355692906_stvi",
+        "groupId": "group_rus_1",
+        "groupName": "Guruh",
+        "studentId": "student_ali_rus",
+        "teacherId": "teacher1",
+        "studentName": "O'quvchi"
+      }
+    ],
+    "activeProfileId": "prof_1789355692906_stvi",
+    "updatedAt": "2026-09-14T03:14:57.577Z"
+  }
+}
