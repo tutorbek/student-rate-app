@@ -27,6 +27,8 @@ export default function StudentRatingView({
   allGroups = [],
   pinnedStudentId = null,
   group = null,
+  connectedGroups = [],
+  onSwitchGroup,
 }) {
   const [scope, setScope] = useState('top10'); // 'top10' | 'group' | 'history'
 
@@ -251,6 +253,33 @@ export default function StudentRatingView({
           </div>
         )}
       </div>
+
+      {/* Quick Group Switcher for Multi-Group Students */}
+      {scope === 'group' && connectedGroups.length > 1 && (
+        <div className="rating-group-switcher">
+          <span className="rating-group-label">Guruh:</span>
+          <div className="rating-group-pills">
+            {connectedGroups.map((grp) => {
+              const isCurrent = String(grp.id) === String(group?.id);
+              return (
+                <button
+                  key={grp.id}
+                  type="button"
+                  className={`rating-group-pill ${isCurrent ? 'active' : ''}`}
+                  onClick={() => {
+                    if (!isCurrent && onSwitchGroup) {
+                      onSwitchGroup(grp.id);
+                    }
+                  }}
+                >
+                  {isCurrent && <span className="rating-pill-dot" />}
+                  <span>{grp.name}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Top-3 Minimalist Podium */}
       {scope !== 'history' && rankedStudents.length > 0 && !isTodayEmpty && (
@@ -1147,6 +1176,85 @@ export default function StudentRatingView({
             text-align: center;
             padding: 6px 4px;
           }
+        }
+
+        /* Multi-Group Quick Switcher in Rating */
+        .rating-group-switcher {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          margin-bottom: 16px;
+          padding: 8px 14px;
+          background: var(--bg-card);
+          border: 1px solid var(--border-color);
+          border-radius: var(--radius-lg, 12px);
+          overflow-x: auto;
+          scrollbar-width: none;
+        }
+
+        .rating-group-switcher::-webkit-scrollbar {
+          display: none;
+        }
+
+        .rating-group-label {
+          font-size: 0.76rem;
+          font-weight: 700;
+          color: var(--text-tertiary);
+          text-transform: uppercase;
+          letter-spacing: 0.04em;
+          white-space: nowrap;
+        }
+
+        .rating-group-pills {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          flex-wrap: nowrap;
+        }
+
+        .rating-group-pill {
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          background: var(--bg-secondary, rgba(0, 0, 0, 0.04));
+          border: 1px solid var(--border-color);
+          border-radius: var(--radius-full);
+          padding: 5px 12px;
+          font-size: 0.82rem;
+          font-weight: 600;
+          color: var(--text-secondary);
+          cursor: pointer;
+          white-space: nowrap;
+          transition: all var(--transition-fast);
+        }
+
+        .rating-group-pill:hover {
+          color: var(--text-primary);
+          border-color: var(--apple-blue);
+        }
+
+        .rating-group-pill.active {
+          background: var(--apple-blue);
+          color: #FFFFFF;
+          border-color: var(--apple-blue);
+          box-shadow: 0 2px 6px rgba(0, 113, 227, 0.25);
+        }
+
+        .rating-pill-dot {
+          width: 6px;
+          height: 6px;
+          border-radius: 50%;
+          background: #34C759;
+        }
+
+        [data-theme="dark"] .rating-group-switcher {
+          background: var(--bg-card);
+          border-color: var(--border-color);
+        }
+
+        [data-theme="dark"] .rating-group-pill {
+          background: rgba(255, 255, 255, 0.04);
+          border-color: rgba(255, 255, 255, 0.08);
         }
 
         [data-theme="dark"] .podium-card,

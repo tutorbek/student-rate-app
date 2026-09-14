@@ -78,7 +78,12 @@ const calculateNextLesson = (schedule, groupName = '') => {
   return 'Belgilanmagan';
 };
 
-export default function StudentScheduleCard({ group }) {
+export default function StudentScheduleCard({
+  group,
+  isActive = false,
+  showActiveBadge = false,
+  onMakeActive = null,
+}) {
   const schedule = group?.schedule;
   const daysText = useMemo(() => formatDaysList(schedule?.days), [schedule?.days]);
   const timeText = useMemo(() => {
@@ -93,10 +98,31 @@ export default function StudentScheduleCard({ group }) {
   const nextLessonText = useMemo(() => calculateNextLesson(schedule, group?.name), [schedule, group?.name]);
 
   return (
-    <div className="student-schedule-card">
+    <div className={`student-schedule-card ${showActiveBadge && isActive ? 'is-active-card' : ''}`}>
       <div className="schedule-header">
         <div className="schedule-title-wrap">
-          <span className="schedule-tag">Dars Jadvali</span>
+          <div className="schedule-title-top">
+            <span className="schedule-tag">Dars Jadvali</span>
+            {showActiveBadge && (
+              isActive ? (
+                <span className="schedule-active-badge">
+                  <span className="badge-dot active" /> Faol guruh
+                </span>
+              ) : onMakeActive ? (
+                <button
+                  type="button"
+                  className="schedule-activate-btn"
+                  onClick={onMakeActive}
+                  title="Ushbu guruhni asosiy (faol) qilish"
+                >
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="20 6 9 17 4 12" />
+                  </svg>
+                  Faol qilish
+                </button>
+              ) : null
+            )}
+          </div>
           <h2 className="schedule-group-name">{group?.name || 'Guruh'}</h2>
         </div>
       </div>
@@ -133,6 +159,11 @@ export default function StudentScheduleCard({ group }) {
           box-shadow: var(--shadow-sm);
         }
 
+        .student-schedule-card.is-active-card {
+          border-color: rgba(52, 199, 89, 0.4);
+          box-shadow: 0 4px 16px rgba(52, 199, 89, 0.08);
+        }
+
         .schedule-header {
           display: flex;
           align-items: center;
@@ -143,7 +174,15 @@ export default function StudentScheduleCard({ group }) {
         .schedule-title-wrap {
           display: flex;
           flex-direction: column;
-          gap: 4px;
+          gap: 6px;
+          width: 100%;
+        }
+
+        .schedule-title-top {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 8px;
         }
 
         .schedule-tag {
@@ -152,6 +191,47 @@ export default function StudentScheduleCard({ group }) {
           text-transform: uppercase;
           letter-spacing: 0.06em;
           color: var(--apple-blue);
+        }
+
+        .schedule-active-badge {
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          padding: 3px 10px;
+          border-radius: 9999px;
+          background: rgba(52, 199, 89, 0.12);
+          color: #34C759;
+          font-size: 0.72rem;
+          font-weight: 700;
+          letter-spacing: 0.02em;
+        }
+
+        .badge-dot {
+          width: 6px;
+          height: 6px;
+          border-radius: 50%;
+          background: #34C759;
+        }
+
+        .schedule-activate-btn {
+          display: inline-flex;
+          align-items: center;
+          gap: 5px;
+          padding: 4px 10px;
+          border-radius: var(--radius-sm);
+          background: rgba(0, 113, 227, 0.08);
+          color: var(--apple-blue);
+          border: 1px solid rgba(0, 113, 227, 0.2);
+          font-size: 0.75rem;
+          font-weight: 600;
+          cursor: pointer;
+          transition: all 0.15s ease;
+        }
+
+        .schedule-activate-btn:hover {
+          background: var(--apple-blue);
+          color: #ffffff;
+          border-color: var(--apple-blue);
         }
 
         .schedule-group-name {

@@ -655,35 +655,114 @@ export const createBotService = ({ supabase, botToken, adminChatId }) => {
       return;
     }
 
-    const data = await getTeacherData(session.teacherId);
-    if (!data) {
-      await sendTelegramMessage(chatId, "⚠️ Ma'lumotlarni yuklashda xatolik yuz berdi. Iltimos, qaytadan urinib ko'ring.");
-      return;
+    const profiles = Array.isArray(session.profiles) && session.profiles.length > 0
+      ? session.profiles
+      : [{
+          id: 'default',
+          teacherId: session.teacherId,
+          groupId: session.groupId,
+          studentId: session.studentId,
+          groupName: session.groupName,
+          studentName: session.studentName
+        }];
+
+    // Pre-fetch teacher data for all unique teachers
+    const teacherDataMap = new Map();
+    for (const p of profiles) {
+      if (p.teacherId && !teacherDataMap.has(p.teacherId)) {
+        try {
+          const tData = await getTeacherData(p.teacherId);
+          if (tData) {
+            teacherDataMap.set(p.teacherId, tData);
+          }
+        } catch (err) {
+          console.warn('[HomeView] Teacher data load error:', err.message);
+        }
+      }
     }
 
-    const group = (data.groups || []).find(g => String(g.id) === String(session.groupId));
-    const student = (data.students || []).find(s => String(s.id) === String(session.studentId));
-    const groupName = group ? group.name : (session.groupName || 'Guruh');
-    const studentName = student ? student.name : (session.studentName || 'O\'quvchi');
+    const activeProfileId = session.activeProfileId || profiles[0]?.id;
+    const cards = profiles.map((p, idx) => {
+      const tData = teacherDataMap.get(p.teacherId);
+      const group = (tData?.groups || []).find(g => String(g.id) === String(p.groupId));
+      const student = (tData?.students || []).find(s => String(s.id) === String(p.studentId));
 
-    const daysText = formatScheduleDays(group);
-    const timeText = group?.schedule?.startTime
-      ? (group?.schedule?.endTime ? `${group.schedule.startTime} - ${group.schedule.endTime}` : group.schedule.startTime)
-      : (group?.name?.match(/(\d{1,2}[:.]\d{2})/)?.[0] || 'Belgilanmagan');
-    const roomText = group?.schedule?.room ? `${group.schedule.room}` : 'Xona ko\'rsatilmagan';
-    const nextLessonText = calculateNextLesson(group);
+      const groupName = group ? group.name : (p.groupName || 'Guruh');
+      const studentName = student ? student.name : (p.studentName || 'O\'quvchi');
+      const daysText = group ? formatScheduleDays(group) : 'Belgilanmagan';
+      const timeText = group?.schedule?.startTime
+        ? (group?.schedule?.endTime ? `${group.schedule.startTime} - ${group.schedule.endTime}` : group.schedule.startTime)
+        : (group?.name?.match(/(\d{1,2}[:.]\d{2})/)?.[0] || 'Belgilanmagan');
+      const roomText = group?.schedule?.room ? `${group.schedule.room}` : 'Xona ko\'rsatilmagan';
+      const nextLessonText = group ? calculateNextLesson(group) : 'Noma\'lum';
+      const isActive = p.id === activeProfileId || (!activeProfileId && idx === 0);
 
-    const text = `🏠 <b>Asosiy Ma'lumotlar</b>\n\n` +
-      `👤 <b>O'quvchi:</b> ${studentName}\n` +
-      `📚 <b>Guruh:</b> ${groupName}\n\n` +
-      `📅 <b>Dars kunlari:</b> ${daysText}\n` +
-      `⏰ <b>Dars vaqti:</b> ${timeText}\n` +
-      `🚪 <b>Xona:</b> ${roomText}\n\n` +
-      `⏳ <b>Keyingi dars:</b> <b>${nextLessonText}</b>`;
+      return {
+        id: p.id,
+        group,
+        groupName,
+        studentName,
+        daysText,
+        timeText,
+        roomText,
+        nextLessonText,
+        isActive,
+        idx
+      };
+    });
 
-    const inline_keyboard = [
-      [{ text: '📊 Oylik davomatni ko\'rish', callback_data: 'view_att' }]
-    ];
+    let text = '';
+    const inline_keyboard = [];
+
+    if (cards.length <= 1) {
+      // Single Group
+      const c = cards[0];
+      text = `🏠 <b>Asosiy Ma'lumotlar</b>\n\n` +
+        `👤 <b>O'quvchi:</b> ${c.studentName}\n` +
+        `📚 <b>Guruh:</b> ${c.groupName}\n\n` +
+        `📅 <b>Dars kunlari:</b> ${c.daysText}\n` +
+        `⏰ <b>Dars vaqti:</b> ${c.timeText}\n` +
+        `🚪 <b>Xona:</b> ${c.roomText}\n\n` +
+        `⏳ <b>Keyingi dars:</b> <b>${c.nextLessonText}</b>`;
+
+      inline_keyboard.push([
+        { text: '📊 Oylik davomatni ko\'rish', callback_data: 'view_att' }
+      ]);
+    } else {
+      // Multi-Group (2 or more groups)
+      const allSameStudent = cards.every(c => c.studentName === cards[0].studentName);
+      const activeCard = cards.find(c => c.isActive) || cards[0];
+
+      text = `🏠 <b>Mening Dars Jadvallarim</b>\n\n` +
+        (allSameStudent ? `👤 <b>O'quvchi:</b> ${cards[0].studentName}\n` : '') +
+        `📚 <b>Ulangan guruhlar:</b> <b>${cards.length} ta</b>\n`;
+
+      cards.forEach((c, i) => {
+        const activeBadge = c.isActive ? ' 🟢 <i>(Hozirgi faol)</i>' : '';
+        const studentLine = (!allSameStudent) ? `👤 <b>O'quvchi:</b> ${c.studentName}\n` : '';
+
+        text += `\n━━━━━━━━━━━━━━━━━━━━\n` +
+          `📚 <b>${i + 1}-Guruh: ${c.groupName}</b>${activeBadge}\n` +
+          studentLine +
+          `📅 <b>Dars kunlari:</b> ${c.daysText}\n` +
+          `⏰ <b>Dars vaqti:</b> ${c.timeText}\n` +
+          `🚪 <b>Xona:</b> ${c.roomText}\n` +
+          `⏳ <b>Keyingi dars:</b> <b>${c.nextLessonText}</b>\n`;
+      });
+
+      text += `\n💡 <i>Davomat va reyting ma'lumotlarini ko'rish uchun quyidagi tugmalardan guruhni tanlashingiz mumkin:</i>`;
+
+      inline_keyboard.push([
+        { text: `📊 ${activeCard.groupName} davomati`, callback_data: 'view_att' }
+      ]);
+
+      const inactiveCards = cards.filter(c => !c.isActive);
+      for (const ic of inactiveCards) {
+        inline_keyboard.push([
+          { text: `🔄 ${ic.groupName}ga o'tish (Faol qilish)`, callback_data: `switch_prof:${ic.id}` }
+        ]);
+      }
+    }
 
     if (messageId) {
       await editTelegramMessage(chatId, messageId, text, {
@@ -691,10 +770,6 @@ export const createBotService = ({ supabase, botToken, adminChatId }) => {
       });
     } else {
       await sendTelegramMessage(chatId, text, {
-        reply_markup: getKeyboardForChat(chatId)
-      });
-      // Also send the inline action card
-      await sendTelegramMessage(chatId, "Qo'shimcha tafsilotlar:", {
         reply_markup: { inline_keyboard }
       });
     }
@@ -736,9 +811,18 @@ export const createBotService = ({ supabase, botToken, adminChatId }) => {
       `📈 <b>Davomat ko'rsatkichi:</b> <b>${summary.rate}%</b>` +
       recentText;
 
-    const inline_keyboard = [
-      [{ text: '⬅️ Jadvalga qaytish', callback_data: 'view_home' }]
-    ];
+    const inline_keyboard = [];
+    if (Array.isArray(session.profiles) && session.profiles.length > 1) {
+      const otherProfiles = session.profiles.filter(p => p.id !== session.activeProfileId);
+      for (const op of otherProfiles) {
+        inline_keyboard.push([
+          { text: `🔄 ${op.groupName} davomatiga o'tish`, callback_data: `switch_att_prof:${op.id}` }
+        ]);
+      }
+    }
+    inline_keyboard.push([
+      { text: '⬅️ Asosiy jadvalga qaytish', callback_data: 'view_home' }
+    ]);
 
     await editTelegramMessage(chatId, messageId, text, {
       reply_markup: { inline_keyboard }
@@ -816,6 +900,15 @@ export const createBotService = ({ supabase, botToken, adminChatId }) => {
       [{ text: '📜 Baholar tarixi', callback_data: 'rate_history' }],
       [{ text: '🌐 Umumiy TOP 10', callback_data: 'rate_top10' }]
     ];
+
+    if (Array.isArray(session.profiles) && session.profiles.length > 1) {
+      const otherProfiles = session.profiles.filter(p => p.id !== session.activeProfileId);
+      for (const op of otherProfiles) {
+        inline_keyboard.push([
+          { text: `🔄 ${op.groupName} reytingiga o'tish`, callback_data: `switch_rate_prof:${op.id}` }
+        ]);
+      }
+    }
 
     if (messageId) {
       await editTelegramMessage(chatId, messageId, text, {
@@ -1282,6 +1375,22 @@ export const createBotService = ({ supabase, botToken, adminChatId }) => {
         } else {
           await renderSwitchProfileView(chatId, messageId);
         }
+        return;
+      }
+
+      // Switch attendance group: switch_att_prof:<profileId>
+      if (data.startsWith('switch_att_prof:')) {
+        const profileId = data.replace('switch_att_prof:', '');
+        await switchActiveProfile(chatId, profileId);
+        await renderAttendanceView(chatId, messageId);
+        return;
+      }
+
+      // Switch rating group: switch_rate_prof:<profileId>
+      if (data.startsWith('switch_rate_prof:')) {
+        const profileId = data.replace('switch_rate_prof:', '');
+        await switchActiveProfile(chatId, profileId);
+        await renderRatingView(chatId, 'today', messageId);
         return;
       }
 

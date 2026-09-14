@@ -98,6 +98,21 @@ function App() {
   const [studentGroupId, setStudentGroupId] = useState(() => {
     return localStorage.getItem('rsa_student_group_id') || null;
   });
+  const [studentGroups, setStudentGroups] = useState(() => {
+    try {
+      const raw = localStorage.getItem('rsa_student_groups');
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch (_) {}
+    const sId = localStorage.getItem('rsa_student_group_id');
+    const tId = localStorage.getItem('rsa_teacher_id');
+    if (sId && tId) {
+      return [{ teacherId: tId, groupId: sId, groupName: '' }];
+    }
+    return [];
+  });
   const [syncStatus, setSyncStatus] = useState('saved'); // 'saved', 'saving', 'offline'
   const [snapshots, setSnapshots] = useState([]);
 
@@ -219,11 +234,32 @@ function App() {
         const registry = await getGroupPasswordsRegistry();
         const groupMatch = registry[passwordClean];
         if (groupMatch) {
+          let currentGroups = [];
+          try {
+            const raw = localStorage.getItem('rsa_student_groups');
+            if (raw) currentGroups = JSON.parse(raw);
+          } catch (_) {}
+          if (!Array.isArray(currentGroups)) currentGroups = [];
+
+          const exists = currentGroups.some(g => String(g.groupId) === String(groupMatch.groupId));
+          const updatedGroups = exists
+            ? currentGroups
+            : [
+                ...currentGroups,
+                {
+                  teacherId: groupMatch.teacherId,
+                  groupId: groupMatch.groupId,
+                  groupName: groupMatch.groupName || ''
+                }
+              ];
+
           localStorage.setItem('rsa_authenticated', 'true');
           localStorage.setItem('rsa_role', 'student');
           localStorage.setItem('rsa_teacher_id', groupMatch.teacherId);
           localStorage.setItem('rsa_student_group_id', groupMatch.groupId);
+          localStorage.setItem('rsa_student_groups', JSON.stringify(updatedGroups));
 
+          setStudentGroups(updatedGroups);
           setIsAuthenticated(true);
           setUserRole('student');
           setTeacherId(groupMatch.teacherId);
@@ -323,9 +359,17 @@ function App() {
     const load = async () => {
       setIsSyncing(true);
 
-      // Handle Admin Mode: Load all 4 teachers concurrently
-      if (userRole === 'admin') {
-        const allData = await loadAllTeachersFromSupabase(['teacher1', 'teacher2', 'teacher3', 'teacher4']);
+      // Multi-Teacher Student Mode or Admin Mode
+      const studentTeacherIds = userRole === 'student' && Array.isArray(studentGroups)
+        ? [...new Set(studentGroups.map(g => g.teacherId).filter(Boolean))]
+        : [];
+
+      if (userRole === 'admin' || (userRole === 'student' && studentTeacherIds.length > 1)) {
+        const idsToLoad = userRole === 'admin'
+          ? ['teacher1', 'teacher2', 'teacher3', 'teacher4']
+          : studentTeacherIds;
+
+        const allData = await loadAllTeachersFromSupabase(idsToLoad);
         if (allData) {
           const normalized = {};
           Object.keys(allData).forEach(tId => {
@@ -340,6 +384,18 @@ function App() {
             };
           });
           setAllTeachersData(normalized);
+
+          if (userRole === 'student') {
+            const currentT = normalized[teacherId] || Object.values(normalized)[0];
+            if (currentT) {
+              setGroups(currentT.groups || []);
+              setStudents(currentT.students || []);
+              setTransactions(currentT.transactions || []);
+              setAttendance(currentT.attendance || []);
+              setQuickTags(currentT.quickTags || DEFAULT_DATA.quickTags);
+            }
+          }
+
           setIsLoaded(true);
           setConnectionError(false);
           setSyncStatus('saved');
@@ -489,6 +545,99 @@ function App() {
   const allActiveGroups = useMemo(() => sortGroupsNaturally(groups.filter(g => !g.deleted)), [groups]);
   const allActiveStudents = useMemo(() => students.filter(s => !s.deleted), [students]);
   const allActiveTransactions = useMemo(() => transactions.filter(t => !t.deleted), [transactions]);
+
+  // Aggregated connected groups for students across all teachers
+  const allStudentConnectedGroups = useMemo(() => {
+    if (userRole !== 'student' || !Array.isArray(studentGroups) || studentGroups.length === 0) return [];
+    const result = [];
+    studentGroups.forEach(sg => {
+      let g = null;
+      if (allTeachersData && allTeachersData[sg.teacherId]) {
+        g = (allTeachersData[sg.teacherId].groups || []).find(x => String(x.id) === String(sg.groupId));
+      }
+      if (!g && groups) {
+        g = groups.find(x => String(x.id) === String(sg.groupId));
+      }
+      if (g) {
+        result.push({ ...g, teacherId: sg.teacherId });
+      } else {
+        result.push({ id: sg.groupId, name: sg.groupName || 'Guruh', teacherId: sg.teacherId });
+      }
+    });
+    return result;
+  }, [userRole, studentGroups, allTeachersData, groups]);
+
+  const handleSwitchStudentGroup = useCallback((groupId) => {
+    const target = studentGroups.find(g => String(g.groupId) === String(groupId));
+    if (!target) return;
+
+    setStudentGroupId(target.groupId);
+    localStorage.setItem('rsa_student_group_id', target.groupId);
+
+    if (target.teacherId && target.teacherId !== teacherId) {
+      setTeacherId(target.teacherId);
+      localStorage.setItem('rsa_teacher_id', target.teacherId);
+
+      if (allTeachersData && allTeachersData[target.teacherId]) {
+        const tData = allTeachersData[target.teacherId];
+        setGroups(tData.groups || []);
+        setStudents(tData.students || []);
+        setTransactions(tData.transactions || []);
+        setAttendance(tData.attendance || []);
+      }
+    }
+  }, [studentGroups, teacherId, allTeachersData]);
+
+  const handleAddStudentGroup = useCallback(async (password) => {
+    const clean = (password || '').trim().toLowerCase();
+    if (!clean) {
+      return { success: false, message: "Parolni kiriting!" };
+    }
+
+    try {
+      const registry = await getGroupPasswordsRegistry();
+      const groupMatch = registry[clean];
+      if (groupMatch) {
+        const exists = studentGroups.some(g => String(g.groupId) === String(groupMatch.groupId));
+        let updated;
+        if (exists) {
+          updated = studentGroups;
+        } else {
+          updated = [
+            ...studentGroups,
+            {
+              teacherId: groupMatch.teacherId,
+              groupId: groupMatch.groupId,
+              groupName: groupMatch.groupName || ''
+            }
+          ];
+          setStudentGroups(updated);
+          localStorage.setItem('rsa_student_groups', JSON.stringify(updated));
+        }
+
+        handleSwitchStudentGroup(groupMatch.groupId);
+        return { success: true, group: groupMatch, alreadyConnected: exists };
+      } else {
+        return { success: false, message: "Noto'g'ri guruh paroli kiritildi!" };
+      }
+    } catch (err) {
+      console.error('Add group failed:', err);
+      return { success: false, message: "Ulanishda xatolik yuz berdi. Internetni tekshiring." };
+    }
+  }, [studentGroups, handleSwitchStudentGroup]);
+
+  const handleRemoveStudentGroup = useCallback((groupId) => {
+    if (studentGroups.length <= 1) return;
+
+    const updated = studentGroups.filter(g => String(g.groupId) !== String(groupId));
+    setStudentGroups(updated);
+    localStorage.setItem('rsa_student_groups', JSON.stringify(updated));
+
+    if (String(studentGroupId) === String(groupId)) {
+      const nextGroup = updated[0];
+      handleSwitchStudentGroup(nextGroup.groupId);
+    }
+  }, [studentGroups, studentGroupId, handleSwitchStudentGroup]);
 
   // Debounced Save to Firestore whenever state changes (Teachers only!)
   useEffect(() => {
@@ -808,6 +957,7 @@ function App() {
     localStorage.removeItem('rsa_active_tab');
     sessionStorage.removeItem('rsa_active_tab');
     localStorage.removeItem('rsa_student_group_id');
+    localStorage.removeItem('rsa_student_groups');
 
     // Clear localized caches to prevent cross-teacher leakage
     localStorage.removeItem('rsa_groups');
@@ -820,6 +970,7 @@ function App() {
     setTransactions([]);
     setQuickTags([]);
     setAllTeachersData({});
+    setStudentGroups([]);
 
     setIsAuthenticated(false);
     setTeacherId(null);
@@ -920,6 +1071,11 @@ function App() {
           allActiveTransactions={allActiveTransactions}
           userRole={userRole}
           studentGroupId={studentGroupId}
+          studentGroups={studentGroups}
+          allConnectedGroups={allStudentConnectedGroups}
+          onSwitchGroup={handleSwitchStudentGroup}
+          onAddGroup={handleAddStudentGroup}
+          onRemoveGroup={handleRemoveStudentGroup}
           showToast={showToast}
         />
       );
