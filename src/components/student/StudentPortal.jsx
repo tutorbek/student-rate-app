@@ -638,45 +638,58 @@ export default function StudentPortal({
               {/* Add New Group Form or Trigger */}
               {isAddingGroup ? (
                 <form className="student-add-group-form" onSubmit={handleAddNewGroup}>
-                  <label className="add-group-label" htmlFor="new-group-password-modal">
-                    Yangi guruh paroli
-                  </label>
-                  <div className="add-group-input-box">
-                    <input
-                      id="new-group-password-modal"
-                      type="text"
-                      className="add-group-input"
-                      placeholder="Guruh paroli (masalan: rus2026)"
-                      value={newGroupPassword}
-                      onChange={(e) => {
-                        setNewGroupPassword(e.target.value);
+                  <div className="add-group-header-row">
+                    <span className="add-group-label">Guruh paroli</span>
+                    <span className="add-group-hint">Ustoz bergan parol</span>
+                  </div>
+                  <input
+                    id="new-group-password-modal"
+                    type="text"
+                    className="add-group-input"
+                    placeholder="Masalan: rus2026"
+                    value={newGroupPassword}
+                    onChange={(e) => {
+                      setNewGroupPassword(e.target.value);
+                      setGroupAddError('');
+                    }}
+                    autoFocus
+                    disabled={isSubmittingGroup}
+                    autoComplete="off"
+                    autoCapitalize="none"
+                  />
+                  {groupAddError && (
+                    <div className="add-group-error-msg">
+                      <span className="error-icon">⚠️</span>
+                      <span>{groupAddError}</span>
+                    </div>
+                  )}
+                  <div className="add-group-btn-group">
+                    <button
+                      type="button"
+                      className="add-group-cancel-btn"
+                      onClick={() => {
+                        setIsAddingGroup(false);
                         setGroupAddError('');
                       }}
-                      autoFocus
                       disabled={isSubmittingGroup}
-                    />
+                    >
+                      Bekor qilish
+                    </button>
                     <button
                       type="submit"
                       className="add-group-submit-btn"
                       disabled={isSubmittingGroup || !newGroupPassword.trim()}
                     >
-                      {isSubmittingGroup ? "Tekshirilmoqda..." : "Ulash"}
+                      {isSubmittingGroup ? (
+                        <>
+                          <span className="btn-spinner" />
+                          <span>Ulanmoqda...</span>
+                        </>
+                      ) : (
+                        "Ulash"
+                      )}
                     </button>
                   </div>
-                  {groupAddError && (
-                    <div className="add-group-error-msg">{groupAddError}</div>
-                  )}
-                  <button
-                    type="button"
-                    className="add-group-cancel-link"
-                    onClick={() => {
-                      setIsAddingGroup(false);
-                      setGroupAddError('');
-                    }}
-                    disabled={isSubmittingGroup}
-                  >
-                    Bekor qilish
-                  </button>
                 </form>
               ) : (
                 <button
@@ -1339,40 +1352,93 @@ export default function StudentPortal({
         .student-add-group-form {
           display: flex;
           flex-direction: column;
-          gap: 8px;
-          background: var(--bg-secondary, rgba(0, 0, 0, 0.02));
+          gap: 10px;
+          background: var(--bg-secondary, rgba(0, 0, 0, 0.03));
           border: 1px solid var(--border-color);
-          border-radius: var(--radius-md, 10px);
+          border-radius: var(--radius-lg, 12px);
           padding: 14px;
         }
 
-        .add-group-label {
-          font-size: 0.8rem;
-          font-weight: 600;
-          color: var(--text-secondary);
-        }
-
-        .add-group-input-box {
+        .add-group-header-row {
           display: flex;
+          align-items: center;
+          justify-content: space-between;
           gap: 8px;
         }
 
+        .add-group-label {
+          font-size: 0.82rem;
+          font-weight: 600;
+          color: var(--text-primary);
+        }
+
+        .add-group-hint {
+          font-size: 0.74rem;
+          color: var(--text-tertiary);
+        }
+
         .add-group-input {
-          flex: 1;
-          background: var(--bg-card);
-          border: 1px solid var(--border-color);
-          border-radius: var(--radius-md, 8px);
-          padding: 9px 12px;
-          font-size: 0.88rem;
+          width: 100%;
+          box-sizing: border-box;
+          background: var(--bg-card, #FFFFFF);
+          border: 1.5px solid var(--border-color);
+          border-radius: var(--radius-md, 10px);
+          padding: 10px 12px;
+          font-size: 0.92rem;
           color: var(--text-primary);
           outline: none;
+          transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
         }
 
         .add-group-input:focus {
           border-color: var(--apple-blue);
+          box-shadow: 0 0 0 3px rgba(var(--apple-blue-rgb, 0, 113, 227), 0.15);
+        }
+
+        .add-group-error-msg {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          font-size: 0.78rem;
+          color: #FF3B30;
+          font-weight: 500;
+          background: rgba(255, 59, 48, 0.08);
+          padding: 6px 10px;
+          border-radius: 6px;
+        }
+
+        .add-group-btn-group {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          margin-top: 4px;
+        }
+
+        .add-group-cancel-btn {
+          flex: 1;
+          background: var(--bg-secondary, rgba(0, 0, 0, 0.05));
+          border: 1px solid var(--border-color);
+          border-radius: var(--radius-md, 8px);
+          padding: 9px 14px;
+          font-size: 0.85rem;
+          font-weight: 600;
+          color: var(--text-secondary);
+          cursor: pointer;
+          transition: all var(--transition-fast);
+          text-align: center;
+        }
+
+        .add-group-cancel-btn:hover {
+          background: rgba(0, 0, 0, 0.08);
+          color: var(--text-primary);
         }
 
         .add-group-submit-btn {
+          flex: 1;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          gap: 6px;
           background: var(--apple-blue);
           color: #FFFFFF;
           border: none;
@@ -1381,7 +1447,8 @@ export default function StudentPortal({
           font-size: 0.85rem;
           font-weight: 600;
           cursor: pointer;
-          transition: opacity var(--transition-fast);
+          transition: opacity var(--transition-fast), transform var(--transition-fast);
+          text-align: center;
         }
 
         .add-group-submit-btn:disabled {
@@ -1389,25 +1456,18 @@ export default function StudentPortal({
           cursor: not-allowed;
         }
 
-        .add-group-error-msg {
-          font-size: 0.78rem;
-          color: #FF3B30;
-          font-weight: 500;
+        .btn-spinner {
+          width: 13px;
+          height: 13px;
+          border: 2px solid rgba(255, 255, 255, 0.35);
+          border-top-color: #ffffff;
+          border-radius: 50%;
+          animation: spin 0.8s linear infinite;
+          display: inline-block;
         }
 
-        .add-group-cancel-link {
-          background: transparent;
-          border: none;
-          color: var(--text-tertiary);
-          font-size: 0.78rem;
-          cursor: pointer;
-          align-self: flex-start;
-          padding: 0;
-        }
-
-        .add-group-cancel-link:hover {
-          color: var(--text-primary);
-          text-decoration: underline;
+        @keyframes spin {
+          to { transform: rotate(360deg); }
         }
 
         /* Top Segmented Navigation (Desktop) */
@@ -1706,6 +1766,51 @@ export default function StudentPortal({
             width: 100%;
             text-align: center;
           }
+
+          .student-modal-overlay {
+            align-items: flex-end;
+            padding: 0;
+          }
+
+          .student-group-modal {
+            max-width: 100%;
+            border-radius: 20px 20px 0 0;
+            max-height: 85vh;
+            margin: 0;
+            animation: slideUpModal 0.24s cubic-bezier(0.16, 1, 0.3, 1);
+          }
+
+          @keyframes slideUpModal {
+            from {
+              transform: translateY(100%);
+            }
+            to {
+              transform: translateY(0);
+            }
+          }
+
+          .student-group-title {
+            max-width: 80px;
+          }
+
+          .student-profile-name {
+            max-width: 70px;
+          }
+        }
+
+        @media (max-width: 380px) {
+          .student-group-title {
+            max-width: 65px;
+          }
+
+          .student-profile-name {
+            max-width: 55px;
+          }
+
+          .student-header-bar {
+            padding: 5px 8px;
+            gap: 6px;
+          }
         }
 
         [data-theme="dark"] .student-header-bar {
@@ -1813,6 +1918,17 @@ export default function StudentPortal({
         [data-theme="dark"] .student-group-switch-btn {
           background: rgba(255, 255, 255, 0.05);
           border-color: rgba(255, 255, 255, 0.12);
+        }
+
+        [data-theme="dark"] .add-group-cancel-btn {
+          background: rgba(255, 255, 255, 0.06);
+          border-color: rgba(255, 255, 255, 0.1);
+          color: var(--text-secondary);
+        }
+
+        [data-theme="dark"] .add-group-cancel-btn:hover {
+          background: rgba(255, 255, 255, 0.1);
+          color: var(--text-primary);
         }
       `}</style>
     </div>

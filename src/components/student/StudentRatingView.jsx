@@ -1382,15 +1382,26 @@ export default function StudentRatingView({
             text-align: center;
           }
 
+          .timeframe-segment-scroll {
+            justify-content: flex-start;
+            padding: 3px 2px;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+          }
+
           .timeframe-segment {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            width: 100%;
+            display: inline-flex;
+            width: max-content;
+            min-width: max-content;
+            padding: 3px;
+            gap: 4px;
           }
 
           .timeframe-btn {
-            padding: 5px 2px;
-            font-size: 0.72rem;
+            padding: 6px 12px;
+            font-size: 0.76rem;
+            white-space: nowrap;
+            flex-shrink: 0;
             text-align: center;
           }
 
@@ -1409,7 +1420,11 @@ export default function StudentRatingView({
 
           .history-subfilter-btn {
             text-align: center;
-            padding: 6px 4px;
+            padding: 6px 8px;
+            font-size: 0.76rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
           }
 
           .student-my-standing-banner {
