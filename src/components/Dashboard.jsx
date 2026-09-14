@@ -297,7 +297,7 @@ const Dashboard = ({ setActiveTab, onSelectGroup, onOpenSchedule, groups = [], s
             <div className="spotlight-header-row">
               <span className="spotlight-badge">Hozircha BU OY 1-O'RIN</span>
               {thisMonthSpotlight && (
-                <span className="spotlight-score-pill">+{thisMonthSpotlight.score} Likelar</span>
+                <span className="spotlight-score-pill">❤️ +{thisMonthSpotlight.score} Like</span>
               )}
             </div>
 
@@ -318,7 +318,7 @@ const Dashboard = ({ setActiveTab, onSelectGroup, onOpenSchedule, groups = [], s
               </div>
             ) : (
               <div className="spotlight-empty">
-                <p className="spotlight-empty-text">Bu oyda hali hech kim like olmagan.</p>
+                <p className="spotlight-empty-text">Bu oyda hali hech kim Like olmagan.</p>
               </div>
             )}
           </div>
@@ -328,7 +328,7 @@ const Dashboard = ({ setActiveTab, onSelectGroup, onOpenSchedule, groups = [], s
             <div className="spotlight-header-row">
               <span className="spotlight-badge">O'TGAN OY G'OLIBI</span>
               {lastMonthSpotlight && (
-                <span className="spotlight-score-pill">+{lastMonthSpotlight.score} Likelar</span>
+                <span className="spotlight-score-pill">❤️ +{lastMonthSpotlight.score} Like</span>
               )}
             </div>
 
@@ -344,7 +344,7 @@ const Dashboard = ({ setActiveTab, onSelectGroup, onOpenSchedule, groups = [], s
               </div>
             ) : (
               <div className="spotlight-empty">
-                <p className="spotlight-empty-text">O'tgan oyda hech kim like olmagan.</p>
+                <p className="spotlight-empty-text">O'tgan oyda hech kim Like olmagan.</p>
               </div>
             )}
           </div>
@@ -354,7 +354,7 @@ const Dashboard = ({ setActiveTab, onSelectGroup, onOpenSchedule, groups = [], s
             <div className="spotlight-header-row">
               <span className="spotlight-badge">O'TGAN OY G'OLIB GURUHI</span>
               {lastMonthGroupSpotlight && (
-                <span className="spotlight-score-pill">+{lastMonthGroupSpotlight.score} Likelar</span>
+                <span className="spotlight-score-pill">❤️ +{lastMonthGroupSpotlight.score} Like</span>
               )}
             </div>
 
@@ -370,7 +370,7 @@ const Dashboard = ({ setActiveTab, onSelectGroup, onOpenSchedule, groups = [], s
               </div>
             ) : (
               <div className="spotlight-empty">
-                <p className="spotlight-empty-text">O'tgan oyda hech bir guruh like olmagan.</p>
+                <p className="spotlight-empty-text">O'tgan oyda hech bir guruh Like olmagan.</p>
               </div>
             )}
           </div>

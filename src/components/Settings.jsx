@@ -346,7 +346,7 @@ const Settings = ({
               <div className="profile-info-block">
                 <span className="role-pill-badge">Talaba</span>
                 <h3 className="profile-name">Talaba Kabineti</h3>
-                <p className="profile-desc">Guruh reytingi va ballaringizni kuzatib borasiz.</p>
+                <p className="profile-desc">Guruh reytingi va Like'laringizni kuzatib borasiz.</p>
               </div>
             </div>
 
@@ -483,7 +483,7 @@ const Settings = ({
             <div className="card-header-flex">
               <div>
                 <h3 className="card-title">Yangi Izoh Shabloni Qo'shish</h3>
-                <p className="card-desc">Baholash oynasida o'quvchilarga tezkor ball va sharh berish uchun shablon</p>
+                <p className="card-desc">Baholash oynasida o'quvchilarga tezkor Like va sharh berish uchun shablon</p>
               </div>
             </div>
 
@@ -501,11 +501,11 @@ const Settings = ({
                 </div>
 
                 <div className="tag-input-group flex-1">
-                  <label className="input-field-label">Ball qiymati (+ / -)</label>
+                  <label className="input-field-label">Like qiymati (+ / -)</label>
                   <input
                     type="number"
                     className="form-input tag-pts-modern"
-                    placeholder="Ball (+/-)"
+                    placeholder="Like (+/-)"
                     value={newTagPoints}
                     onChange={(e) => setNewTagPoints(e.target.value)}
                   />
@@ -521,7 +521,7 @@ const Settings = ({
 
               {/* Point Preset Quick Buttons */}
               <div className="points-presets-container">
-                <span className="presets-label">Tezkor ballar:</span>
+                <span className="presets-label">Tezkor Like'lar:</span>
                 <div className="presets-chips-list">
                   {POINT_PRESETS.map((pts) => (
                     <button
@@ -1012,9 +1012,9 @@ const Settings = ({
               </div>
               <div className="form-group" style={{ marginBottom: '20px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
-                  <label className="input-field-label" style={{ margin: 0 }}>Ball qiymati (+ / -)</label>
+                  <label className="input-field-label" style={{ margin: 0 }}>Like qiymati (+ / -)</label>
                   <span className={`tag-pts-pill ${Number(editTagPoints) >= 0 ? 'pts-pos' : 'pts-neg'}`}>
-                    {Number(editTagPoints) >= 0 ? `+${Number(editTagPoints) || 0}` : Number(editTagPoints)} ball
+                    {Number(editTagPoints) >= 0 ? `+${Number(editTagPoints) || 0}` : Number(editTagPoints)} Like
                   </span>
                 </div>
                 <input

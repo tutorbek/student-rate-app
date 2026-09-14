@@ -1,4 +1,5 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
+import { extractGroupDays } from '../../utils/scheduleUtils';
 
 const UZBEK_MONTHS = [
   'Yanvar', 'Fevral', 'Mart', 'Aprel', 'May', 'Iyun',
@@ -7,6 +8,16 @@ const UZBEK_MONTHS = [
 
 const WEEKDAY_HEADERS = ['Du', 'Se', 'Ch', 'Pa', 'Ju', 'Sh', 'Ya'];
 const DAY_KEYS = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
+
+const triggerHaptic = (style = 'light') => {
+  try {
+    if (typeof window !== 'undefined' && window.Telegram?.WebApp?.HapticFeedback) {
+      window.Telegram.WebApp.HapticFeedback.impactOccurred(style);
+    } else if (typeof navigator !== 'undefined' && navigator.vibrate) {
+      navigator.vibrate(10);
+    }
+  } catch {}
+};
 
 export default function StudentAttendanceCalendar({
   attendance = [],
@@ -18,6 +29,11 @@ export default function StudentAttendanceCalendar({
   const [currentMonth, setCurrentMonth] = useState(() => new Date().getMonth());
   const [selectedDateStr, setSelectedDateStr] = useState(null);
 
+  // Reset selected date inspector when switching group
+  useEffect(() => {
+    setSelectedDateStr(null);
+  }, [group?.id]);
+
   const todayStr = useMemo(() => {
     const today = new Date();
     const y = today.getFullYear();
@@ -26,23 +42,10 @@ export default function StudentAttendanceCalendar({
     return `${y}-${m}-${d}`;
   }, []);
 
-  const scheduledDays = useMemo(() => {
-    if (group?.schedule?.days && Array.isArray(group.schedule.days) && group.schedule.days.length > 0) {
-      return group.schedule.days;
-    }
-    const lower = (group?.name || '').toLowerCase();
-    if (lower.includes('dushanba')) return ['mon'];
-    if (lower.includes('seshanba')) return ['tue'];
-    if (lower.includes('chorshanba')) return ['wed'];
-    if (lower.includes('payshanba')) return ['thu'];
-    if (lower.includes('juma')) return ['fri'];
-    if (lower.includes('shanba')) return ['sat'];
-    if (lower.includes('yakshanba')) return ['sun'];
-    return [];
-  }, [group]);
+  const scheduledDays = useMemo(() => extractGroupDays(group), [group]);
 
-  // Navigate to previous month
   const handlePrevMonth = () => {
+    triggerHaptic('light');
     if (currentMonth === 0) {
       setCurrentYear((prev) => prev - 1);
       setCurrentMonth(11);
@@ -52,8 +55,8 @@ export default function StudentAttendanceCalendar({
     setSelectedDateStr(null);
   };
 
-  // Navigate to next month
   const handleNextMonth = () => {
+    triggerHaptic('light');
     if (currentMonth === 11) {
       setCurrentYear((prev) => prev + 1);
       setCurrentMonth(0);
@@ -63,8 +66,8 @@ export default function StudentAttendanceCalendar({
     setSelectedDateStr(null);
   };
 
-  // Reset to today's month
   const handleResetToToday = () => {
+    triggerHaptic('light');
     const today = new Date();
     setCurrentYear(today.getFullYear());
     setCurrentMonth(today.getMonth());
@@ -117,7 +120,6 @@ export default function StudentAttendanceCalendar({
         status = record.records?.[pId] ?? record.records?.[pinnedStudent.id] ?? null;
       }
 
-      // Check scheduled class day
       const isScheduled = scheduledDays.includes(dayKey) && dateStr >= todayStr && !status;
 
       cells.push({
@@ -180,528 +182,658 @@ export default function StudentAttendanceCalendar({
     const parts = selectedDateStr.split('-');
     const formatted = `${parseInt(parts[2], 10)}-${UZBEK_MONTHS[parseInt(parts[1], 10) - 1]}`;
 
-    let statusText = 'Dars belgilanmagan';
+    let statusText = "Dars o'tkazilmagan";
     let statusType = 'none';
+    let icon = 'ℹ️';
 
     if (cell.status === 'present') {
-      statusText = 'Darsga kelgan';
+      statusText = 'Darsda qatnashgan';
       statusType = 'present';
+      icon = '✅';
     } else if (cell.status === 'late') {
       statusText = 'Darsga kechikkan';
       statusType = 'late';
+      icon = '⏰';
     } else if (cell.status === 'absent') {
       statusText = 'Darsga kelmagan';
       statusType = 'absent';
+      icon = '❌';
     } else if (cell.status === 'excused') {
       statusText = 'Sababli qatnashmadi';
       statusType = 'excused';
+      icon = '📝';
     } else if (cell.isScheduled) {
-      statusText = 'Kelgusi rejadagi dars';
+      statusText = 'Kelgusi rejadagi dars kuni';
       statusType = 'scheduled';
+      icon = '📅';
     } else if (cell.hasGroupRecord && !pinnedStudent) {
       statusText = "Guruh darsi o'tilgan";
       statusType = 'group-lesson';
+      icon = '👥';
     }
 
-    return { formatted, statusText, statusType };
+    return { formatted, statusText, statusType, icon };
   }, [selectedDateStr, calendarDays, pinnedStudent]);
 
   return (
-    <div className="student-calendar-card">
+    <div className="student-calendar-card" id="student-attendance-calendar">
       {/* Calendar Header / Month Switcher */}
-      <div className="calendar-header">
-        <div className="calendar-title-wrap">
-          <span className="calendar-subtitle">Davomat Taqvimi</span>
-          <h3 className="calendar-month-title">
+      <div className="calendar-header-bar">
+        <div className="calendar-title-col">
+          <span className="calendar-eyebrow">Davomat Taqvimi</span>
+          <h3 className="calendar-month-name">
             {UZBEK_MONTHS[currentMonth]} {currentYear}
           </h3>
         </div>
 
-        <div className="calendar-controls">
+        <div className="calendar-action-controls">
           {!isCurrentMonth && (
             <button
               type="button"
-              className="calendar-btn-today"
+              className="calendar-today-pill"
               onClick={handleResetToToday}
             >
               Bugun
             </button>
           )}
-          <button
-            type="button"
-            className="calendar-nav-btn"
-            onClick={handlePrevMonth}
-            aria-label="Oldingi oy"
-          >
-            ←
-          </button>
-          <button
-            type="button"
-            className="calendar-nav-btn"
-            onClick={handleNextMonth}
-            aria-label="Keyingi oy"
-          >
-            →
-          </button>
+          <div className="calendar-arrows-wrap">
+            <button
+              type="button"
+              className="calendar-arrow-btn"
+              onClick={handlePrevMonth}
+              aria-label="Oldingi oy"
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="15 18 9 12 15 6" />
+              </svg>
+            </button>
+            <button
+              type="button"
+              className="calendar-arrow-btn"
+              onClick={handleNextMonth}
+              aria-label="Keyingi oy"
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="9 18 15 12 9 6" />
+              </svg>
+            </button>
+          </div>
         </div>
       </div>
 
+      {/* Monthly Overview Stats Strip (Compact & Instant) */}
+      {pinnedStudent && monthStats && (
+        <div className="calendar-stats-strip">
+          <div className="stat-pill-rate">
+            <span className="stat-rate-val">{monthStats.rate}%</span>
+            <span className="stat-rate-sub">Davomat</span>
+          </div>
+          <div className="stat-mini-chips">
+            <span className="stat-chip present">
+              <span className="chip-dot" /> {monthStats.present} kelgan
+            </span>
+            {monthStats.late > 0 && (
+              <span className="stat-chip late">
+                <span className="chip-dot" /> {monthStats.late} kechikkan
+              </span>
+            )}
+            <span className="stat-chip absent">
+              <span className="chip-dot" /> {monthStats.absent} qoldirgan
+            </span>
+          </div>
+        </div>
+      )}
+
+      {/* If profile is not chosen yet, friendly prompt */}
+      {!pinnedStudent && (
+        <div className="calendar-unpinned-tip">
+          <span>Shaxsiy davomatingizni ko'rish uchun profilingizni tanlang.</span>
+          {onOpenProfilePicker && (
+            <button
+              type="button"
+              className="unpinned-tip-btn"
+              onClick={onOpenProfilePicker}
+            >
+              Tanlash
+            </button>
+          )}
+        </div>
+      )}
+
       {/* Weekdays Row */}
-      <div className="calendar-weekdays-grid">
+      <div className="calendar-weekdays-row">
         {WEEKDAY_HEADERS.map((w, idx) => (
-          <div key={w} className={`weekday-header ${idx >= 5 ? 'weekend' : ''}`}>
+          <div key={w} className={`calendar-weekday ${idx >= 5 ? 'is-weekend' : ''}`}>
             {w}
           </div>
         ))}
       </div>
 
       {/* Days Grid */}
-      <div className="calendar-days-grid">
+      <div className="calendar-grid">
         {calendarDays.map((cell) => {
           if (cell.isBlank) {
-            return <div key={cell.key} className="day-cell blank" />;
+            return <div key={cell.key} className="calendar-cell is-blank" />;
           }
 
           const isSelected = cell.dateStr === selectedDateStr;
-          let cellClass = 'day-cell';
-          if (cell.isToday) cellClass += ' today';
-          if (cell.status === 'present') cellClass += ' status-present';
-          else if (cell.status === 'late') cellClass += ' status-late';
-          else if (cell.status === 'absent') cellClass += ' status-absent';
-          else if (cell.status === 'excused') cellClass += ' status-excused';
-          else if (cell.isScheduled) cellClass += ' status-scheduled';
-          if (isSelected) cellClass += ' selected';
+          let statusClass = '';
+          if (cell.status === 'present') statusClass = 'status-present';
+          else if (cell.status === 'late') statusClass = 'status-late';
+          else if (cell.status === 'absent') statusClass = 'status-absent';
+          else if (cell.status === 'excused') statusClass = 'status-excused';
+          else if (cell.isScheduled) statusClass = 'status-scheduled';
 
           return (
             <button
               key={cell.key}
               type="button"
-              className={cellClass}
-              onClick={() => setSelectedDateStr(cell.dateStr)}
+              className={`calendar-cell ${cell.isToday ? 'is-today' : ''} ${statusClass} ${isSelected ? 'is-selected' : ''}`}
+              onClick={() => {
+                triggerHaptic('light');
+                setSelectedDateStr(isSelected ? null : cell.dateStr);
+              }}
+              aria-label={`${cell.day}-kun`}
             >
-              <span className="day-num">{cell.day}</span>
-              {cell.status && <span className="day-dot" />}
+              <span className="cell-num">{cell.day}</span>
+              {cell.status && <span className="cell-indicator-dot" />}
             </button>
           );
         })}
       </div>
 
-      {/* Selected Day Toast Line */}
+      {/* Interactive Selected Date Banner */}
       {selectedDayInfo && (
-        <div className={`selected-day-detail ${selectedDayInfo.statusType}`}>
-          <span className="selected-date">{selectedDayInfo.formatted}:</span>
-          <span className="selected-status">{selectedDayInfo.statusText}</span>
+        <div className={`calendar-day-inspection ${selectedDayInfo.statusType}`}>
+          <div className="inspection-left">
+            <span className="inspection-icon">{selectedDayInfo.icon}</span>
+            <div className="inspection-text-col">
+              <span className="inspection-date">{selectedDayInfo.formatted}</span>
+              <span className="inspection-status">{selectedDayInfo.statusText}</span>
+            </div>
+          </div>
+          <button
+            type="button"
+            className="inspection-close-btn"
+            onClick={() => setSelectedDateStr(null)}
+            aria-label="Yopish"
+          >
+            ✕
+          </button>
         </div>
       )}
 
-      {/* Minimal Legend */}
-      <div className="calendar-legend">
-        <div className="legend-item">
-          <span className="legend-dot present" />
+      {/* Modern Minimalist Legend */}
+      <div className="calendar-legend-bar">
+        <div className="legend-badge">
+          <span className="legend-indicator present" />
           <span>Kelgan</span>
         </div>
-        <div className="legend-item">
-          <span className="legend-dot late" />
+        <div className="legend-badge">
+          <span className="legend-indicator late" />
           <span>Kechikkan</span>
         </div>
-        <div className="legend-item">
-          <span className="legend-dot absent" />
+        <div className="legend-badge">
+          <span className="legend-indicator absent" />
           <span>Kelmagan</span>
         </div>
-        <div className="legend-item">
-          <span className="legend-dash scheduled" />
+        <div className="legend-badge">
+          <span className="legend-indicator scheduled" />
           <span>Rejadagi dars</span>
         </div>
-      </div>
-
-      {/* Monthly Summary Line */}
-      <div className="calendar-summary-footer">
-        {pinnedStudent ? (
-          monthStats && (monthStats.accountable > 0 || monthStats.excused > 0) ? (
-            <p className="summary-text">
-              <strong>Shu oyda:</strong> {monthStats.present} ta darsda qatnashdi
-              {monthStats.late > 0 ? `, ${monthStats.late} ta kechikdi` : ''}
-              {monthStats.excused > 0 ? `, ${monthStats.excused} ta sababli` : ''}
-              {`, ${monthStats.absent} ta qoldirdi`}
-              <span className="summary-rate"> (Davomat: {monthStats.rate}%)</span>
-            </p>
-          ) : (
-            <p className="summary-text muted">
-              Shu oyda hali darslar o'tkazilmagan
-            </p>
-          )
-        ) : (
-          <div className="summary-prompt">
-            <span className="summary-text muted">
-              Shaxsiy davomatni ko'rish uchun profilingizni tanlang.
-            </span>
-            {onOpenProfilePicker && (
-              <button
-                type="button"
-                className="summary-link-btn"
-                onClick={onOpenProfilePicker}
-              >
-                Profilni tanlash
-              </button>
-            )}
-          </div>
-        )}
       </div>
 
       <style>{`
         .student-calendar-card {
           background: var(--bg-card);
           border: 1px solid var(--border-color);
-          border-radius: var(--radius-xl);
-          padding: 20px 24px;
-          margin-bottom: 24px;
+          border-radius: var(--radius-xl, 20px);
+          padding: 16px 18px;
+          margin-bottom: 20px;
           box-shadow: var(--shadow-sm);
+          display: flex;
+          flex-direction: column;
+          gap: 12px;
         }
 
-        .calendar-header {
+        /* Header Bar */
+        .calendar-header-bar {
           display: flex;
           align-items: center;
           justify-content: space-between;
-          margin-bottom: 16px;
+          gap: 8px;
         }
 
-        .calendar-title-wrap {
+        .calendar-title-col {
           display: flex;
           flex-direction: column;
-          gap: 2px;
+          gap: 1px;
         }
 
-        .calendar-subtitle {
-          font-size: 0.72rem;
-          font-weight: 700;
+        .calendar-eyebrow {
+          font-size: 0.68rem;
+          font-weight: 800;
           text-transform: uppercase;
           letter-spacing: 0.06em;
           color: var(--apple-blue);
         }
 
-        .calendar-month-title {
+        .calendar-month-name {
           font-size: 1.15rem;
           font-weight: 700;
           color: var(--text-primary);
           margin: 0;
+          letter-spacing: -0.01em;
         }
 
-        .calendar-controls {
+        .calendar-action-controls {
           display: flex;
           align-items: center;
           gap: 6px;
         }
 
-        .calendar-btn-today {
-          background: var(--bg-primary);
+        .calendar-today-pill {
+          background: var(--bg-secondary, rgba(0, 0, 0, 0.04));
           border: 1px solid var(--border-color);
           color: var(--text-primary);
-          border-radius: var(--radius-sm);
+          border-radius: var(--radius-full);
           padding: 4px 10px;
-          font-size: 0.76rem;
+          font-size: 0.74rem;
           font-weight: 600;
           cursor: pointer;
-          transition: background var(--transition-fast);
+          transition: all var(--transition-fast);
         }
 
-        .calendar-nav-btn {
-          background: var(--bg-primary);
+        .calendar-today-pill:hover {
+          border-color: var(--apple-blue);
+          color: var(--apple-blue);
+        }
+
+        .calendar-arrows-wrap {
+          display: inline-flex;
+          align-items: center;
+          background: var(--bg-secondary, rgba(0, 0, 0, 0.04));
           border: 1px solid var(--border-color);
-          color: var(--text-primary);
-          border-radius: var(--radius-sm);
-          width: 32px;
-          height: 32px;
+          border-radius: var(--radius-full);
+          padding: 2px;
+          gap: 2px;
+        }
+
+        .calendar-arrow-btn {
+          width: 28px;
+          height: 28px;
+          border-radius: 50%;
+          border: none;
+          background: transparent;
+          color: var(--text-secondary);
           display: flex;
           align-items: center;
           justify-content: center;
-          font-size: 0.95rem;
-          font-weight: 700;
           cursor: pointer;
-          transition: background var(--transition-fast), border-color var(--transition-fast);
+          transition: all var(--transition-fast);
         }
 
-        .calendar-nav-btn:hover,
-        .calendar-btn-today:hover {
-          background: var(--bg-secondary);
-          border-color: var(--apple-blue);
+        .calendar-arrow-btn:hover {
+          background: var(--bg-card);
+          color: var(--text-primary);
         }
 
-        .calendar-weekdays-grid {
+        /* Stats Strip */
+        .calendar-stats-strip {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          background: var(--bg-secondary, rgba(0, 0, 0, 0.02));
+          border: 1px solid var(--border-color-subtle, rgba(0, 0, 0, 0.05));
+          border-radius: var(--radius-md, 12px);
+          padding: 8px 12px;
+          gap: 10px;
+          flex-wrap: wrap;
+        }
+
+        .stat-pill-rate {
+          display: flex;
+          align-items: baseline;
+          gap: 5px;
+        }
+
+        .stat-rate-val {
+          font-size: 1.1rem;
+          font-weight: 800;
+          color: var(--apple-blue);
+          line-height: 1;
+        }
+
+        .stat-rate-sub {
+          font-size: 0.72rem;
+          font-weight: 600;
+          color: var(--text-tertiary);
+          text-transform: uppercase;
+        }
+
+        .stat-mini-chips {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          flex-wrap: wrap;
+        }
+
+        .stat-chip {
+          display: inline-flex;
+          align-items: center;
+          gap: 4px;
+          font-size: 0.72rem;
+          font-weight: 600;
+          padding: 3px 8px;
+          border-radius: var(--radius-full);
+        }
+
+        .stat-chip.present {
+          background: rgba(52, 199, 89, 0.12);
+          color: #2E7D32;
+        }
+
+        .stat-chip.late {
+          background: rgba(255, 149, 0, 0.12);
+          color: #E65100;
+        }
+
+        .stat-chip.absent {
+          background: rgba(255, 59, 48, 0.12);
+          color: #C62828;
+        }
+
+        .chip-dot {
+          width: 5px;
+          height: 5px;
+          border-radius: 50%;
+          background: currentColor;
+        }
+
+        /* Unpinned Prompt */
+        .calendar-unpinned-tip {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          background: rgba(var(--apple-blue-rgb, 0, 113, 227), 0.05);
+          border: 1px dashed rgba(var(--apple-blue-rgb, 0, 113, 227), 0.25);
+          border-radius: var(--radius-md, 10px);
+          padding: 8px 12px;
+          font-size: 0.78rem;
+          color: var(--text-secondary);
+          gap: 8px;
+        }
+
+        .unpinned-tip-btn {
+          background: var(--apple-blue);
+          color: #FFFFFF;
+          border: none;
+          padding: 3px 10px;
+          border-radius: var(--radius-full);
+          font-size: 0.74rem;
+          font-weight: 600;
+          cursor: pointer;
+          flex-shrink: 0;
+        }
+
+        /* Weekdays */
+        .calendar-weekdays-row {
           display: grid;
           grid-template-columns: repeat(7, 1fr);
           gap: 4px;
-          margin-bottom: 8px;
           text-align: center;
+          margin-top: 2px;
         }
 
-        .weekday-header {
-          font-size: 0.75rem;
-          font-weight: 600;
+        .calendar-weekday {
+          font-size: 0.72rem;
+          font-weight: 700;
           color: var(--text-tertiary);
-          padding: 4px 0;
+          padding: 2px 0;
         }
 
-        .weekday-header.weekend {
+        .calendar-weekday.is-weekend {
           color: var(--text-secondary);
         }
 
-        .calendar-days-grid {
+        /* Day Grid */
+        .calendar-grid {
           display: grid;
           grid-template-columns: repeat(7, 1fr);
-          gap: 6px;
+          gap: 5px;
         }
 
-        .day-cell {
+        .calendar-cell {
           aspect-ratio: 1;
-          background: var(--bg-primary);
-          border: 1px solid var(--border-color-subtle);
-          border-radius: var(--radius-md);
+          background: var(--bg-secondary, rgba(0, 0, 0, 0.02));
+          border: 1px solid var(--border-color-subtle, rgba(0, 0, 0, 0.04));
+          border-radius: 10px;
           display: flex;
           flex-direction: column;
           align-items: center;
           justify-content: center;
-          position: relative;
           cursor: pointer;
           padding: 0;
-          transition: transform var(--transition-fast), border-color var(--transition-fast), background var(--transition-fast);
+          transition: all var(--transition-fast);
           user-select: none;
+          touch-action: manipulation;
+          position: relative;
         }
 
-        .day-cell.blank {
+        .calendar-cell.is-blank {
           background: transparent;
           border-color: transparent;
           cursor: default;
           pointer-events: none;
         }
 
-        .day-cell:not(.blank):hover {
-          border-color: var(--apple-blue);
+        .calendar-cell:not(.is-blank):active {
+          transform: scale(0.93);
         }
 
-        .day-num {
-          font-size: 0.88rem;
+        .cell-num {
+          font-size: 0.84rem;
           font-weight: 600;
           color: var(--text-primary);
           line-height: 1;
         }
 
-        .day-dot {
+        .cell-indicator-dot {
           width: 4px;
           height: 4px;
           border-radius: 50%;
           margin-top: 3px;
         }
 
-        .day-cell.today {
+        .calendar-cell.is-today {
           border: 1.5px solid var(--apple-blue);
         }
 
-        .day-cell.today .day-num {
+        .calendar-cell.is-today .cell-num {
           color: var(--apple-blue);
-          font-weight: 700;
+          font-weight: 800;
         }
 
-        .day-cell.status-present {
-          background: rgba(52, 199, 89, 0.12);
-          border-color: rgba(52, 199, 89, 0.3);
+        /* Statuses */
+        .calendar-cell.status-present {
+          background: rgba(52, 199, 89, 0.14);
+          border-color: rgba(52, 199, 89, 0.35);
         }
-        .day-cell.status-present .day-num {
+        .calendar-cell.status-present .cell-num,
+        .calendar-cell.status-present .cell-indicator-dot {
           color: #2E7D32;
-        }
-        .day-cell.status-present .day-dot {
           background: #2E7D32;
         }
 
-        .day-cell.status-late {
-          background: rgba(255, 149, 0, 0.12);
-          border-color: rgba(255, 149, 0, 0.3);
+        .calendar-cell.status-late {
+          background: rgba(255, 149, 0, 0.14);
+          border-color: rgba(255, 149, 0, 0.35);
         }
-        .day-cell.status-late .day-num {
+        .calendar-cell.status-late .cell-num,
+        .calendar-cell.status-late .cell-indicator-dot {
           color: #E65100;
-        }
-        .day-cell.status-late .day-dot {
           background: #E65100;
         }
 
-        .day-cell.status-absent {
-          background: rgba(255, 59, 48, 0.12);
-          border-color: rgba(255, 59, 48, 0.3);
+        .calendar-cell.status-absent {
+          background: rgba(255, 59, 48, 0.14);
+          border-color: rgba(255, 59, 48, 0.35);
         }
-        .day-cell.status-absent .day-num {
+        .calendar-cell.status-absent .cell-num,
+        .calendar-cell.status-absent .cell-indicator-dot {
           color: #C62828;
-        }
-        .day-cell.status-absent .day-dot {
           background: #C62828;
         }
 
-        .day-cell.status-excused {
-          background: rgba(0, 113, 227, 0.08);
-          border-color: rgba(0, 113, 227, 0.25);
+        .calendar-cell.status-excused {
+          background: rgba(var(--apple-blue-rgb, 0, 113, 227), 0.1);
+          border-color: rgba(var(--apple-blue-rgb, 0, 113, 227), 0.3);
         }
-        .day-cell.status-excused .day-num {
+        .calendar-cell.status-excused .cell-num,
+        .calendar-cell.status-excused .cell-indicator-dot {
           color: var(--apple-blue);
-        }
-        .day-cell.status-excused .day-dot {
           background: var(--apple-blue);
         }
 
-        .day-cell.status-scheduled {
-          border: 1px dashed var(--apple-blue);
-          background: rgba(var(--apple-blue-rgb, 0, 113, 227), 0.03);
+        .calendar-cell.status-scheduled {
+          border: 1.5px dashed var(--apple-blue);
+          background: rgba(var(--apple-blue-rgb, 0, 113, 227), 0.04);
         }
 
-        .day-cell.selected {
-          outline: 2px solid var(--apple-blue);
-          outline-offset: 1px;
+        .calendar-cell.is-selected {
+          box-shadow: 0 0 0 2px var(--apple-blue) !important;
         }
 
-        .selected-day-detail {
-          margin-top: 14px;
-          padding: 8px 12px;
-          border-radius: var(--radius-sm);
-          font-size: 0.82rem;
+        /* Inspection Drawer */
+        .calendar-day-inspection {
           display: flex;
-          gap: 6px;
           align-items: center;
-          background: var(--bg-primary);
+          justify-content: space-between;
+          padding: 9px 12px;
+          border-radius: var(--radius-md, 11px);
+          background: var(--bg-secondary, rgba(0, 0, 0, 0.03));
           border: 1px solid var(--border-color);
+          gap: 10px;
+          animation: inspectFade 0.2s ease-out;
         }
 
-        .selected-day-detail.present {
+        @keyframes inspectFade {
+          from { opacity: 0; transform: translateY(-4px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+
+        .calendar-day-inspection.present {
           background: rgba(52, 199, 89, 0.1);
           border-color: rgba(52, 199, 89, 0.3);
         }
-        .selected-day-detail.late {
+        .calendar-day-inspection.late {
           background: rgba(255, 149, 0, 0.1);
           border-color: rgba(255, 149, 0, 0.3);
         }
-        .selected-day-detail.absent {
+        .calendar-day-inspection.absent {
           background: rgba(255, 59, 48, 0.1);
           border-color: rgba(255, 59, 48, 0.3);
         }
-        .selected-day-detail.excused {
-          background: rgba(var(--apple-blue-rgb, 0, 113, 227), 0.08);
-          border-color: rgba(var(--apple-blue-rgb, 0, 113, 227), 0.25);
-        }
-        .selected-day-detail.scheduled {
-          background: rgba(var(--apple-blue-rgb, 0, 113, 227), 0.04);
+        .calendar-day-inspection.scheduled {
+          background: rgba(var(--apple-blue-rgb, 0, 113, 227), 0.06);
           border: 1px dashed var(--apple-blue);
         }
-        .selected-day-detail.group-lesson {
-          background: rgba(156, 163, 175, 0.1);
-          border-color: rgba(156, 163, 175, 0.25);
+
+        .inspection-left {
+          display: flex;
+          align-items: center;
+          gap: 8px;
         }
 
-        .selected-date {
+        .inspection-icon {
+          font-size: 1.1rem;
+          flex-shrink: 0;
+        }
+
+        .inspection-text-col {
+          display: flex;
+          flex-direction: column;
+          gap: 1px;
+        }
+
+        .inspection-date {
+          font-size: 0.78rem;
           font-weight: 700;
           color: var(--text-primary);
         }
 
-        .selected-status {
-          color: var(--text-secondary);
-        }
-
-        .calendar-legend {
-          display: flex;
-          align-items: center;
-          flex-wrap: wrap;
-          gap: 14px;
-          margin-top: 16px;
-          padding-top: 12px;
-          border-top: 1px solid var(--border-color-subtle);
+        .inspection-status {
           font-size: 0.74rem;
           color: var(--text-secondary);
         }
 
-        .legend-item {
+        .inspection-close-btn {
+          background: transparent;
+          border: none;
+          color: var(--text-tertiary);
+          font-size: 0.8rem;
+          cursor: pointer;
+          padding: 4px;
+        }
+
+        /* Legend */
+        .calendar-legend-bar {
           display: flex;
           align-items: center;
-          gap: 6px;
+          justify-content: center;
+          gap: 12px;
+          flex-wrap: wrap;
+          padding-top: 8px;
+          border-top: 1px solid var(--border-color-subtle, rgba(0, 0, 0, 0.06));
         }
 
-        .legend-dot {
-          width: 8px;
-          height: 8px;
-          border-radius: 50%;
-        }
-
-        .legend-dot.present {
-          background: var(--apple-green);
-        }
-
-        .legend-dot.late {
-          background: var(--apple-orange);
-        }
-
-        .legend-dot.absent {
-          background: var(--apple-red);
-        }
-
-        .legend-dash.scheduled {
-          width: 10px;
-          height: 0;
-          border-top: 1.5px dashed var(--apple-blue);
-        }
-
-        .calendar-summary-footer {
-          margin-top: 14px;
-          padding: 10px 14px;
-          border-radius: var(--radius-md);
-          background: var(--bg-primary);
-          border: 1px solid var(--border-color-subtle);
-        }
-
-        .summary-text {
-          font-size: 0.84rem;
-          color: var(--text-primary);
-          line-height: 1.4;
-          margin: 0;
-        }
-
-        .summary-text.muted {
+        .legend-badge {
+          display: inline-flex;
+          align-items: center;
+          gap: 5px;
+          font-size: 0.7rem;
           color: var(--text-secondary);
         }
 
-        .summary-rate {
-          font-weight: 700;
-          color: var(--apple-blue);
+        .legend-indicator {
+          width: 7px;
+          height: 7px;
+          border-radius: 50%;
         }
 
-        .summary-prompt {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          gap: 10px;
-          flex-wrap: wrap;
-        }
-
-        .summary-link-btn {
+        .legend-indicator.present { background: #34C759; }
+        .legend-indicator.late { background: #FF9500; }
+        .legend-indicator.absent { background: #FF3B30; }
+        .legend-indicator.scheduled {
+          border: 1.5px dashed var(--apple-blue);
           background: transparent;
-          border: none;
-          color: var(--apple-blue);
-          font-size: 0.82rem;
-          font-weight: 700;
-          cursor: pointer;
-          padding: 2px 0;
-          text-decoration: underline;
         }
 
-        @media (max-width: 640px) {
+        @media (max-width: 420px) {
           .student-calendar-card {
-            padding: 16px 14px;
-            border-radius: var(--radius-lg);
-          }
-
-          .calendar-days-grid {
-            gap: 4px;
-          }
-
-          .day-num {
-            font-size: 0.8rem;
-          }
-
-          .calendar-legend {
+            padding: 13px 12px;
             gap: 10px;
+          }
+
+          .calendar-month-name {
+            font-size: 1.05rem;
+          }
+
+          .calendar-cell {
+            border-radius: 8px;
+          }
+
+          .cell-num {
+            font-size: 0.78rem;
+          }
+
+          .calendar-stats-strip {
+            padding: 7px 10px;
+          }
+
+          .calendar-legend-bar {
+            gap: 8px;
+            justify-content: flex-start;
           }
         }
 
@@ -710,33 +842,51 @@ export default function StudentAttendanceCalendar({
           border-color: var(--border-color);
         }
 
-        [data-theme="dark"] .day-cell {
+        [data-theme="dark"] .calendar-stats-strip {
           background: rgba(255, 255, 255, 0.03);
           border-color: rgba(255, 255, 255, 0.06);
         }
 
-        [data-theme="dark"] .day-cell.status-present .day-num,
-        [data-theme="dark"] .day-cell.status-present .day-dot {
+        [data-theme="dark"] .calendar-cell {
+          background: rgba(255, 255, 255, 0.03);
+          border-color: rgba(255, 255, 255, 0.06);
+        }
+
+        [data-theme="dark"] .calendar-cell.status-present .cell-num,
+        [data-theme="dark"] .calendar-cell.status-present .cell-indicator-dot {
           color: #81C995;
           background: #81C995;
         }
 
-        [data-theme="dark"] .day-cell.status-late .day-num,
-        [data-theme="dark"] .day-cell.status-late .day-dot {
+        [data-theme="dark"] .calendar-cell.status-late .cell-num,
+        [data-theme="dark"] .calendar-cell.status-late .cell-indicator-dot {
           color: #FDD663;
           background: #FDD663;
         }
 
-        [data-theme="dark"] .day-cell.status-absent .day-num,
-        [data-theme="dark"] .day-cell.status-absent .day-dot {
+        [data-theme="dark"] .calendar-cell.status-absent .cell-num,
+        [data-theme="dark"] .calendar-cell.status-absent .cell-indicator-dot {
           color: #F28B82;
           background: #F28B82;
         }
 
-        [data-theme="dark"] .day-cell.status-excused .day-num,
-        [data-theme="dark"] .day-cell.status-excused .day-dot {
-          color: #8AB4F8;
-          background: #8AB4F8;
+        [data-theme="dark"] .stat-chip.present {
+          background: rgba(129, 201, 149, 0.15);
+          color: #81C995;
+        }
+
+        [data-theme="dark"] .stat-chip.late {
+          background: rgba(253, 214, 99, 0.15);
+          color: #FDD663;
+        }
+
+        [data-theme="dark"] .stat-chip.absent {
+          background: rgba(242, 139, 130, 0.15);
+          color: #F28B82;
+        }
+
+        [data-theme="dark"] .calendar-legend-bar {
+          border-top-color: rgba(255, 255, 255, 0.08);
         }
       `}</style>
     </div>

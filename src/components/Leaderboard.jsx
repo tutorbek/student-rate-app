@@ -354,7 +354,7 @@ const Leaderboard = ({
     <div className="leaderboard-container">
       <div className="page-header flex-col-mobile">
         <div>
-          <h2 className="page-title">{activeTab === 'standings' ? 'Leaderboard' : 'Ballar Tarixi'}</h2>
+          <h2 className="page-title">{activeTab === 'standings' ? 'Leaderboard' : "Like'lar Tarixi"}</h2>
         </div>
 
         <div className="tab-control-brutalist">
@@ -372,7 +372,7 @@ const Leaderboard = ({
             onClick={() => setActiveTab('history')}
           >
             <IconScroll size={15} />
-            <span>Ballar Tarixi</span>
+            <span>Like'lar Tarixi</span>
           </button>
         </div>
       </div>
@@ -609,9 +609,9 @@ const Leaderboard = ({
               <div className="leaderboard-today-empty-banner">
                 <div className="banner-icon">⭐</div>
                 <div className="banner-content">
-                  <div className="banner-title">Bugungi darsda hali ballar berilmadi</div>
+                  <div className="banner-title">Bugungi darsda hali Like'lar berilmadi</div>
                   <div className="banner-desc">
-                    O'quvchilarga like va ballar berishingiz bilan, bugungi dars reytingi va <strong>"Bugungi dars yulduzi"</strong> darhol shu yerda shakllanadi.
+                    O'quvchilarga jonli Like berishingiz bilan, bugungi dars reytingi va <strong>"Bugungi dars yulduzi"</strong> darhol shu yerda shakllanadi.
                   </div>
                 </div>
               </div>
@@ -620,7 +620,7 @@ const Leaderboard = ({
               <span className="th-rank">O'rin</span>
               <span className="th-student">Talaba</span>
               <span className="th-group">Guruh</span>
-              <span className="th-score text-right">Likelar</span>
+              <span className="th-score text-right">Like'lar</span>
             </div>
             <div className="standings-body">
               {standings.map((student) => {
@@ -829,7 +829,7 @@ const Leaderboard = ({
             </button>
             <h3 className="modal-title">Baholashni bekor qilish</h3>
             <p className="modal-warning-text">
-              Ushbu baholash harakatini bekor qilmoqchimisiz? Talabaning umumiy likelari mos ravishda qayta hisoblanadi.
+              Ushbu baholash harakatini bekor qilmoqchimisiz? Talabaning umumiy Like'lari mos ravishda qayta hisoblanadi.
             </p>
             <div className="modal-actions">
               <button className="btn btn-secondary scale-active" onClick={() => setConfirmDeleteTxId(null)}>

@@ -30,7 +30,7 @@ const SOHUB_SCREENS = [
     titleMuted: "va Leaderboard",
     bg: "#1B212B",
     tagBg: "#29303D",
-    tags: ["Top-3 Shohsupasi", "Oylik hisob", "Kurs davomida", "Ballar tarixi"],
+    tags: ["Top-3 Shohsupasi", "Oylik hisob", "Kurs davomida", "Like'lar tarixi"],
     description: "O'quvchilarning har bir to'plagan Like'i real vaqtda jadvalda aks etadi va sog'lom raqobatni oshiradi.",
     src: "/screens/3.png",
     alt: "Jonli Reyting va Leaderboard"
@@ -70,14 +70,14 @@ const SOHUB_SCREENS = [
   },
   {
     id: 7,
-    titleWhite: "Ballar va Like'lar",
+    titleWhite: "Jonli Like'lar",
     titleMuted: "Tarixi",
     bg: "#10161E",
     tagBg: "#1A222D",
     tags: ["To'liq shaffoflik", "Sana va vaqt", "Berilgan sabab", "Bekor qilish imkoni"],
-    description: "Har bir o'quvchiga qachon, qaysi guruhda va nima sababdan ball yoki like berilganining shaffof auditi.",
+    description: "Har bir o'quvchiga qachon, qaysi guruhda va nima sababdan jonli like berilganining shaffof auditi.",
     src: "/screens/7.png",
-    alt: "Ballar va likelar tarixi auditi"
+    alt: "Jonli likelar tarixi auditi"
   },
 ];
 
@@ -86,7 +86,7 @@ const CORE_FEATURES = [
   {
     badge: "Motivatsiya & Havas",
     title: "Jonli Oylik va Umumiy Reyting",
-    description: "Top-3 shohsupasi va ballar jadvali orqali o'quvchilarda darsga bo'lgan ichki qiziqish va intilishni yuksaltiring.",
+    description: "Top-3 shohsupasi va jonli Like jadvali orqali o'quvchilarda darsga bo'lgan ichki qiziqish va intilishni yuksaltiring.",
     color: "#f6511d",
   },
   {

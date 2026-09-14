@@ -1,9 +1,21 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import StudentScheduleCard from './StudentScheduleCard';
 import StudentAttendanceCalendar from './StudentAttendanceCalendar';
 import StudentRatingView from './StudentRatingView';
 import StudentShopComingSoon from './StudentShopComingSoon';
+import { renderAvatar, STUDENT_AVATARS } from '../../utils/studentAvatars';
+import { AVATAR_GALLERY_IMAGES } from '../../utils/avatarGallery';
+
+const triggerHaptic = (style = 'light') => {
+  try {
+    if (typeof window !== 'undefined' && window.Telegram?.WebApp?.HapticFeedback) {
+      window.Telegram.WebApp.HapticFeedback.impactOccurred(style);
+    } else if (typeof navigator !== 'undefined' && navigator.vibrate) {
+      navigator.vibrate(10);
+    }
+  } catch {}
+};
 
 export default function StudentPortal({
   attendance = [],
@@ -21,10 +33,14 @@ export default function StudentPortal({
   onAddGroup,
   onRemoveGroup,
   onLogout,
+  onUpdateAvatar,
+  onSetStudentPin,
+  onClaimStudentDevice,
   showToast,
   theme = 'light',
   toggleTheme,
 }) {
+
   // Navigation Tabs: 'main' (Asosiy) | 'rating' (Reyting) | 'shop' (Do'kon)
   const [activeTab, setActiveTab] = useState(() => {
     const saved = localStorage.getItem('rsa_student_portal_tab');
@@ -34,11 +50,13 @@ export default function StudentPortal({
     return 'main';
   });
 
+  const [ratingInitialTimeframe] = useState('month');
+
   useEffect(() => {
     localStorage.setItem('rsa_student_portal_tab', activeTab);
   }, [activeTab]);
 
-  // Determine current student group (strictly from authorized connected groups or matched group)
+  // Determine current student group
   const currentGroup = useMemo(() => {
     if (studentGroupId) {
       const sId = String(studentGroupId);
@@ -47,7 +65,8 @@ export default function StudentPortal({
         (groups || []).find((g) => String(g.id) === sId);
       if (found) return found;
     }
-    return (allConnectedGroups && allConnectedGroups[0]) || (groups && groups.length > 0 && String(groups[0]?.id) === String(studentGroupId) ? groups[0] : null);
+    return (allConnectedGroups && allConnectedGroups[0]) ||
+      (groups && groups.length > 0 && String(groups[0]?.id) === String(studentGroupId) ? groups[0] : null);
   }, [studentGroupId, allConnectedGroups, groups]);
 
   // Unified list of connected groups
@@ -64,7 +83,7 @@ export default function StudentPortal({
     return currentGroup ? [currentGroup] : [];
   }, [allConnectedGroups, studentGroups, groups, currentGroup]);
 
-  // Sort connected groups so the active group is always first
+  // Sort connected groups so current active group is first
   const sortedConnectedGroups = useMemo(() => {
     if (!currentGroup) return connectedGroupsList;
     return [...connectedGroupsList].sort((a, b) => {
@@ -154,139 +173,364 @@ export default function StudentPortal({
     return attendance.filter((a) => String(a.groupId) === gId);
   }, [attendance, currentGroup]);
 
-  // Pinned Student Profile (strictly scoped to current group)
-  const [pinnedStudentId, setPinnedStudentId] = useState(() => {
-    if (!currentGroup?.id) return null;
-    return localStorage.getItem(`rsa_pinned_student_${currentGroup.id}`) || null;
-  });
+  // Pinned Student Profile (Synchronous resolution to eliminate frame-lag and layout shift)
+  const [pinnedOverrides, setPinnedOverrides] = useState({});
 
   const [isChangingProfile, setIsChangingProfile] = useState(false);
-  const [selectedStudentDraftId, setSelectedStudentDraftId] = useState('');
-  const [isStudentPickerOpen, setIsStudentPickerOpen] = useState(false);
+  const [profileSearchQuery, setProfileSearchQuery] = useState('');
 
-  // Close dropdown on Escape key
+  // Lock background scroll when any bottom sheet is open
+  useEffect(() => {
+    if (typeof document === 'undefined') return;
+    if (isGroupModalOpen || isChangingProfile) {
+      const original = document.body.style.overflow;
+      document.body.style.overflow = 'hidden';
+      return () => {
+        document.body.style.overflow = original;
+      };
+    }
+  }, [isGroupModalOpen, isChangingProfile]);
+
+  // Bottom sheet touch drag dismiss logic for Group Modal
+  const [groupSheetDragY, setGroupSheetDragY] = useState(0);
+  const [isGroupDragging, setIsGroupDragging] = useState(false);
+  const groupTouchStartY = useRef(0);
+
+  const handleGroupTouchStart = (e) => {
+    groupTouchStartY.current = e.touches[0].clientY;
+    setIsGroupDragging(true);
+  };
+  const handleGroupTouchMove = (e) => {
+    const diff = e.touches[0].clientY - groupTouchStartY.current;
+    if (diff > 0) setGroupSheetDragY(diff);
+  };
+  const handleGroupTouchEnd = () => {
+    setIsGroupDragging(false);
+    if (groupSheetDragY > 75) {
+      triggerHaptic('light');
+      setIsGroupModalOpen(false);
+    }
+    setGroupSheetDragY(0);
+  };
+
+  // Bottom sheet touch drag dismiss logic for Profile Modal
+  const [profileSheetDragY, setProfileSheetDragY] = useState(0);
+  const [isProfileDragging, setIsProfileDragging] = useState(false);
+  const profileTouchStartY = useRef(0);
+
+  const handleProfileTouchStart = (e) => {
+    profileTouchStartY.current = e.touches[0].clientY;
+    setIsProfileDragging(true);
+  };
+  const handleProfileTouchMove = (e) => {
+    const diff = e.touches[0].clientY - profileTouchStartY.current;
+    if (diff > 0) setProfileSheetDragY(diff);
+  };
+  const handleProfileTouchEnd = () => {
+    setIsProfileDragging(false);
+    if (profileSheetDragY > 75) {
+      triggerHaptic('light');
+      setIsChangingProfile(false);
+      setProfileSheetView('list');
+    }
+    setProfileSheetDragY(0);
+  };
+
+  // Profile Sheet internal view: 'list' | 'avatar' | 'pin_setup' | 'pin_entry'
+  const [profileSheetView, setProfileSheetView] = useState('list');
+  const [avatarTab, setAvatarTab] = useState('gallery'); // 'gallery' | 'avatars'
+
+  // PIN authentication & setup state
+  const [pinTargetStudent, setPinTargetStudent] = useState(null);
+  const [pinInput, setPinInput] = useState('');
+  const [confirmPinInput, setConfirmPinInput] = useState('');
+  const [pinError, setPinError] = useState('');
+  const [showForgotPinNotice, setShowForgotPinNotice] = useState(false);
+
+  const handleTabSelect = (newTab) => {
+    if (newTab === activeTab) {
+      if (typeof window !== 'undefined') {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+      return;
+    }
+    triggerHaptic('light');
+    setActiveTab(newTab);
+    if (typeof window !== 'undefined') {
+      window.scrollTo({ top: 0, behavior: 'instant' });
+    }
+  };
+
+  const handleScrollToAttendance = () => {
+    triggerHaptic('light');
+    if (typeof document !== 'undefined') {
+      const el = document.getElementById('student-attendance-calendar');
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }
+  };
+
+  // Close modals on Escape key
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (e.key === 'Escape') {
-        setIsStudentPickerOpen(false);
+        if (profileSheetView === 'avatar' || profileSheetView === 'pin_setup' || profileSheetView === 'pin_entry') {
+          setProfileSheetView('list');
+          setPinError('');
+          setPinInput('');
+          setConfirmPinInput('');
+        } else {
+          setIsChangingProfile(false);
+          setIsGroupModalOpen(false);
+        }
       }
     };
-    if (isStudentPickerOpen) {
-      window.addEventListener('keydown', handleKeyDown);
-      return () => window.removeEventListener('keydown', handleKeyDown);
-    }
-  }, [isStudentPickerOpen]);
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [profileSheetView]);
 
-  // Sync pinned student when current group changes/resolves
-  useEffect(() => {
-    if (!currentGroup?.id) {
-      setPinnedStudentId(null);
+  // Synchronously compute pinned student for the active group (no 1-frame lag or flicker)
+  const pinnedStudent = useMemo(() => {
+    if (!currentGroup?.id || groupStudents.length === 0) return null;
+    const gId = String(currentGroup.id);
+
+    // 1. Check in-memory session override (if explicitly chosen or cleared in this session)
+    let candidateId = pinnedOverrides[gId];
+
+    // 2. Check localStorage for this specific group
+    if (candidateId === undefined) {
+      try {
+        candidateId = localStorage.getItem(`rsa_pinned_student_${gId}`) || null;
+      } catch {
+        candidateId = null;
+      }
+    }
+
+    // Explicitly unpinned
+    if (candidateId === null) {
+      return null;
+    }
+
+    // 3. Match candidateId in current group's students
+    if (candidateId) {
+      const found = groupStudents.find((s) => String(s.id) === String(candidateId));
+      if (found) return found;
+    }
+
+    // 4. Smart Name Auto-Match:
+    // If the student previously pinned their profile in any connected group, automatically connect to same-named student
+    try {
+      const savedName = localStorage.getItem('rsa_pinned_student_name');
+      if (savedName) {
+        const cleanSavedName = savedName.trim().toLowerCase();
+        const matchByName = groupStudents.find(
+          (s) => (s.name || '').trim().toLowerCase() === cleanSavedName
+        );
+        if (matchByName) {
+          try {
+            localStorage.setItem(`rsa_pinned_student_${gId}`, String(matchByName.id));
+          } catch {}
+          return matchByName;
+        }
+      }
+    } catch {}
+
+    return null;
+  }, [currentGroup?.id, groupStudents, pinnedOverrides]);
+
+  const pinnedStudentId = useMemo(() => {
+    return pinnedStudent ? String(pinnedStudent.id) : null;
+  }, [pinnedStudent]);
+
+  // Triggered when a student row is clicked in the profile modal
+  const handleSelectStudentForPin = (st) => {
+    if (!st) return;
+    triggerHaptic('light');
+    setPinError('');
+    setPinInput('');
+    setConfirmPinInput('');
+    setShowForgotPinNotice(false);
+    setPinTargetStudent(st);
+
+    // If student clicks their own currently pinned profile, just close modal
+    if (pinnedStudentId && String(st.id) === String(pinnedStudentId)) {
+      setIsChangingProfile(false);
       return;
     }
-    const scopedKey = `rsa_pinned_student_${currentGroup.id}`;
-    const saved = localStorage.getItem(scopedKey);
-    if (saved && groupStudents.some((s) => String(s.id) === String(saved))) {
-      setPinnedStudentId(saved);
+
+    if (st.pin) {
+      setProfileSheetView('pin_entry');
     } else {
-      setPinnedStudentId(null);
+      setProfileSheetView('pin_setup');
     }
-  }, [currentGroup?.id, groupStudents]);
+  };
 
-  // Validate that pinned student exists in current group
-  const pinnedStudent = useMemo(() => {
-    if (!pinnedStudentId) return null;
-    const pId = String(pinnedStudentId);
-    return groupStudents.find((s) => String(s.id) === pId) || null;
-  }, [pinnedStudentId, groupStudents]);
+  // Submit new 4-digit PIN setup
+  const handleSavePinSetup = (e) => {
+    if (e) e.preventDefault();
+    const cleanPin = (pinInput || '').trim();
+    const cleanConfirm = (confirmPinInput || '').trim();
 
-  // Auto-init draft selection
-  useEffect(() => {
-    if (pinnedStudentId && groupStudents.some((s) => String(s.id) === String(pinnedStudentId))) {
-      setSelectedStudentDraftId(String(pinnedStudentId));
-    } else if (groupStudents.length > 0) {
-      setSelectedStudentDraftId(String(groupStudents[0].id));
+    if (cleanPin.length !== 4 || !/^\d{4}$/.test(cleanPin)) {
+      setPinError("PIN-kod aynan 4 ta raqamdan iborat bo'lishi kerak!");
+      triggerHaptic('heavy');
+      return;
     }
-  }, [pinnedStudentId, groupStudents]);
 
-  const handleSaveProfilePin = (studentIdToPin) => {
-    const targetId = studentIdToPin || selectedStudentDraftId;
-    if (!targetId) return;
-
-    const targetStr = String(targetId);
-    if (currentGroup?.id) {
-      localStorage.setItem(`rsa_pinned_student_${currentGroup.id}`, targetStr);
+    if (cleanPin !== cleanConfirm) {
+      setPinError("Kiritilgan PIN-kodlar bir-biriga mos kelmadi!");
+      triggerHaptic('heavy');
+      return;
     }
-    localStorage.setItem('rsa_pinned_student_id', targetStr);
-    setPinnedStudentId(targetStr);
+
+    if (!pinTargetStudent || !currentGroup?.id) return;
+    const targetStr = String(pinTargetStudent.id);
+    const gId = String(currentGroup.id);
+
+    // Persist PIN
+    if (onSetStudentPin) {
+      onSetStudentPin(pinTargetStudent.id, cleanPin, pinTargetStudent.name);
+    } else if (onClaimStudentDevice) {
+      onClaimStudentDevice(pinTargetStudent.id, cleanPin, pinTargetStudent.name);
+    }
+
+    try {
+      localStorage.setItem(`rsa_pinned_student_${gId}`, targetStr);
+      if (pinTargetStudent.name) {
+        localStorage.setItem('rsa_pinned_student_name', pinTargetStudent.name.trim());
+      }
+      localStorage.setItem('rsa_pinned_student_id', targetStr);
+    } catch {}
+
+    setPinnedOverrides((prev) => ({ ...prev, [gId]: targetStr }));
     setIsChangingProfile(false);
-    setIsStudentPickerOpen(false);
+    setProfileSheetView('list');
+    setPinTargetStudent(null);
+    setPinInput('');
+    setConfirmPinInput('');
+    setPinError('');
+    triggerHaptic('medium');
     if (showToast) {
-      const studentObj = groupStudents.find((s) => String(s.id) === targetStr);
-      showToast(`Profil ${studentObj ? studentObj.name : ''} sifatida saqlandi!`, 'success');
+      showToast(`Xush kelibsiz, ${pinTargetStudent.name}! Profilingiz PIN bilan himoyalandi.`, 'success');
+    }
+  };
+
+  // Verify existing PIN entry
+  const handleVerifyPinEntry = (e) => {
+    if (e) e.preventDefault();
+    const cleanPin = (pinInput || '').trim();
+
+    if (!pinTargetStudent || !currentGroup?.id) return;
+
+    if (cleanPin.length !== 4) {
+      setPinError("4 xonali PIN-kodni kiriting!");
+      triggerHaptic('heavy');
+      return;
+    }
+
+    if (String(pinTargetStudent.pin).trim() !== cleanPin) {
+      setPinError("Noto'g'ri PIN-kod! Qayta urinib ko'ring.");
+      triggerHaptic('heavy');
+      return;
+    }
+
+    // PIN matched!
+    const targetStr = String(pinTargetStudent.id);
+    const gId = String(currentGroup.id);
+    try {
+      localStorage.setItem(`rsa_pinned_student_${gId}`, targetStr);
+      if (pinTargetStudent.name) {
+        localStorage.setItem('rsa_pinned_student_name', pinTargetStudent.name.trim());
+      }
+      localStorage.setItem('rsa_pinned_student_id', targetStr);
+    } catch {}
+
+    setPinnedOverrides((prev) => ({ ...prev, [gId]: targetStr }));
+    setIsChangingProfile(false);
+    setProfileSheetView('list');
+    setPinTargetStudent(null);
+    setPinInput('');
+    setPinError('');
+    triggerHaptic('medium');
+    if (showToast) {
+      showToast(`Xush kelibsiz, ${pinTargetStudent.name}!`, 'success');
     }
   };
 
   const handleClearProfilePin = () => {
-    if (currentGroup?.id) {
-      localStorage.removeItem(`rsa_pinned_student_${currentGroup.id}`);
-    }
-    localStorage.removeItem('rsa_pinned_student_id');
-    setPinnedStudentId(null);
-    setIsChangingProfile(true);
-    setIsStudentPickerOpen(false);
+    if (!currentGroup?.id) return;
+    const gId = String(currentGroup.id);
+    try {
+      localStorage.removeItem(`rsa_pinned_student_${gId}`);
+      localStorage.removeItem('rsa_pinned_student_id');
+    } catch {}
+    setPinnedOverrides((prev) => ({ ...prev, [gId]: null }));
+    setIsChangingProfile(false);
+    setProfileSheetView('list');
+    setProfileSearchQuery('');
     if (showToast) {
       showToast("Profil tanlovi bekor qilindi.", 'info');
     }
   };
 
+  // Filter students for profile search in modal
+  const filteredModalStudents = useMemo(() => {
+    const q = profileSearchQuery.trim().toLowerCase();
+    if (!q) return groupStudents;
+    return groupStudents.filter((s) => (s.name || '').toLowerCase().includes(q));
+  }, [groupStudents, profileSearchQuery]);
+
+
+
   return (
-    <div className="student-portal-root">
-      {/* Sleek Unified Student Header Bar */}
-      <div className="student-header-bar">
-        {/* Left: Active Group Info with modal trigger */}
-        <div
-          className="student-group-chip"
+    <div className="student-portal-container">
+      {/* Sleek Minimalist Top Navigation Header */}
+      <header className="student-navbar">
+        {/* Left: Active Group Chip */}
+        <button
+          type="button"
+          className="navbar-group-pill"
           onClick={() => setIsGroupModalOpen(true)}
           title={connectedGroupsList.length > 1 ? "Guruhni almashtirish yoki yangi guruh ulash" : "Guruh ma'lumotlari"}
-          role="button"
-          tabIndex={0}
+          aria-label="Guruhlar menyusi"
         >
-          <div className="student-group-icon-wrap">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+          <div className="navbar-group-icon">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.3" strokeLinecap="round" strokeLinejoin="round">
               <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
               <circle cx="9" cy="7" r="4" />
               <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
               <path d="M16 3.13a4 4 0 0 1 0 7.75" />
             </svg>
           </div>
-          <div className="student-group-text-col">
-            <span className="student-group-title">{currentGroup?.name || "Guruh"}</span>
-            <span className="student-group-switcher-hint">
-              {connectedGroupsList.length > 1 ? `${connectedGroupsList.length} ta guruh ▾` : "Guruhim"}
+          <div className="navbar-group-text">
+            <span className="navbar-group-name">{currentGroup?.name || "Guruh"}</span>
+            <span className="navbar-group-hint">
+              {connectedGroupsList.length > 1 ? `${connectedGroupsList.length} ta guruh ▾` : "Guruhim ▾"}
             </span>
           </div>
-        </div>
+        </button>
 
-        {/* Center: Desktop Segmented Navigation (Hidden on Mobile) */}
-        <div className="student-desktop-nav-wrap">
-          <nav className="student-segmented-nav" aria-label="Student sahifalari">
+        {/* Center: Desktop-only Navigation Tabs (Hidden on Mobile) */}
+        <div className="navbar-desktop-nav">
+          <nav className="desktop-segmented-control" aria-label="Student sahifalari">
             <button
               type="button"
-              className={`student-nav-btn ${activeTab === 'main' ? 'active' : ''}`}
+              className={`desktop-nav-btn ${activeTab === 'main' ? 'active' : ''}`}
               onClick={() => setActiveTab('main')}
             >
               Asosiy
             </button>
             <button
               type="button"
-              className={`student-nav-btn ${activeTab === 'rating' ? 'active' : ''}`}
+              className={`desktop-nav-btn ${activeTab === 'rating' ? 'active' : ''}`}
               onClick={() => setActiveTab('rating')}
             >
               Reyting
             </button>
             <button
               type="button"
-              className={`student-nav-btn ${activeTab === 'shop' ? 'active' : ''}`}
+              className={`desktop-nav-btn ${activeTab === 'shop' ? 'active' : ''}`}
               onClick={() => setActiveTab('shop')}
             >
               Do'kon
@@ -294,42 +538,45 @@ export default function StudentPortal({
           </nav>
         </div>
 
-        {/* Right: Student Profile, Theme Toggle & Logout Actions */}
-        <div className="student-header-right-actions">
-          <div
-            className={`student-profile-chip ${pinnedStudent ? 'has-profile' : 'no-profile'}`}
-            onClick={() => setIsChangingProfile(true)}
-            title="Profilingizni tanlang yoki o'zgartiring"
-            role="button"
-            tabIndex={0}
+        {/* Right: Profile Chip & Controls */}
+        <div className="navbar-actions-row">
+          <button
+            type="button"
+            className={`navbar-profile-pill ${pinnedStudent ? 'has-profile' : 'no-profile'}`}
+            onClick={() => {
+              setProfileSheetView('list');
+              setIsChangingProfile(true);
+            }}
+            title="Profilingizni tanlang yoki almashtiring"
+            aria-label="Student profili"
           >
-            <div className="student-avatar-circle">
+            <div className="navbar-avatar">
               {pinnedStudent ? (
-                pinnedStudent.name.charAt(0).toUpperCase()
+                renderAvatar(pinnedStudent.emoji, 26)
               ) : (
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
                   <circle cx="12" cy="7" r="4" />
                 </svg>
               )}
             </div>
-            <div className="student-profile-text-col">
-              <span className="student-profile-name">
-                {pinnedStudent ? pinnedStudent.name : "Profilni tanlang"}
+            <div className="navbar-profile-text">
+              <span className="navbar-student-name">
+                {pinnedStudent ? pinnedStudent.name.split(' ')[0] : "Profil tanlash"}
               </span>
-              <span className="student-profile-sub">
-                {pinnedStudent ? "Profilim" : "Belgilang"}
+              <span className="navbar-student-sub">
+                {pinnedStudent ? "Profilim ▾" : "Belgilang ▾"}
               </span>
             </div>
-          </div>
+          </button>
 
           {toggleTheme && (
             <button
               type="button"
-              className="student-header-action-btn theme-btn"
+              className="navbar-icon-btn theme-toggle"
               onClick={toggleTheme}
               title="Mavzuni o'zgartirish"
-              aria-label="Mavzuni o'zgartirish"
+              aria-label="Mavzu"
             >
               {theme === 'dark' ? (
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
@@ -354,7 +601,7 @@ export default function StudentPortal({
           {onLogout && (
             <button
               type="button"
-              className="student-header-action-btn logout"
+              className="navbar-icon-btn logout-btn"
               onClick={onLogout}
               title="Tizimdan chiqish"
               aria-label="Chiqish"
@@ -367,31 +614,34 @@ export default function StudentPortal({
             </button>
           )}
         </div>
-      </div>
+      </header>
 
-      {/* Multi-Groups Horizontal Quick Switcher (Shown only if connected to >1 groups) */}
+      {/* Multi-Group Quick Switcher Strip (if connected to >1 groups) */}
       {connectedGroupsList.length > 1 && (
-        <div className="multi-groups-quick-bar">
-          <div className="multi-groups-scroll">
+        <div className="connected-groups-strip">
+          <div className="connected-groups-scroll">
             {connectedGroupsList.map((grp) => {
               const isCurrent = String(grp.id) === String(currentGroup?.id);
               return (
                 <button
                   key={grp.id}
                   type="button"
-                  className={`multi-group-quick-pill ${isCurrent ? 'active' : ''}`}
+                  className={`group-chip-pill ${isCurrent ? 'active' : ''}`}
                   onClick={() => {
-                    if (!isCurrent && onSwitchGroup) onSwitchGroup(grp.id);
+                    if (!isCurrent && onSwitchGroup) {
+                      triggerHaptic('light');
+                      onSwitchGroup(grp.id);
+                    }
                   }}
+                  aria-pressed={isCurrent}
                 >
-                  {isCurrent && <span className="pill-dot" />}
                   <span>{grp.name}</span>
                 </button>
               );
             })}
             <button
               type="button"
-              className="multi-group-quick-pill add-btn"
+              className="group-chip-pill add-new"
               onClick={() => {
                 setIsGroupModalOpen(true);
                 setIsAddingGroup(true);
@@ -399,14 +649,15 @@ export default function StudentPortal({
               }}
               title="Yangi guruh ulash"
             >
-              + Guruh
+              + Guruh ulash
             </button>
           </div>
         </div>
       )}
 
-      {/* Main Tab Content */}
-      <div className="student-tab-content">
+      {/* Tab Content Container */}
+      <main className="student-content-view">
+        {/* Main Tab: Asosiy */}
         {activeTab === 'main' && (
           <div className="tab-pane-main animate-fadeIn">
             {/* Active Group Schedule Card */}
@@ -422,65 +673,77 @@ export default function StudentPortal({
           </div>
         )}
 
+        {/* Rating Tab: Reyting */}
         {activeTab === 'rating' && (
           <div className="tab-pane-rating animate-fadeIn">
             <StudentRatingView
+              key={currentGroup?.id || 'rating'}
               students={groupStudents}
               transactions={groupTransactions}
               pinnedStudentId={pinnedStudentId}
+              pinnedStudent={pinnedStudent}
               group={currentGroup}
               connectedGroups={connectedGroupsList}
               onSwitchGroup={onSwitchGroup}
+              initialTimeframe={ratingInitialTimeframe}
             />
           </div>
         )}
 
+        {/* Shop Tab: Do'kon */}
         {activeTab === 'shop' && (
           <div className="tab-pane-shop animate-fadeIn">
             <StudentShopComingSoon
               pinnedStudent={pinnedStudent}
               transactions={groupTransactions}
+              showToast={showToast}
+              onOpenProfilePicker={() => {
+                triggerHaptic('light');
+                setIsChangingProfile(true);
+              }}
             />
           </div>
         )}
-      </div>
+      </main>
 
-      {/* Mobile Native App Bottom Navigation Bar (Portal to document.body, Immune to parent transforms/scrolling) */}
+      {/* Modern Mobile Bottom Navigation Dock (Portal to document.body) */}
       {typeof document !== 'undefined' && createPortal(
-        <nav className="student-mobile-bottom-bar" aria-label="Mobil navigatsiya">
-          <div className="student-mobile-nav-inner">
+        <nav className="student-mobile-dock" aria-label="Mobil navigatsiya">
+          <div className="mobile-dock-inner">
             <button
               type="button"
-              className={`student-mobile-tab-btn ${activeTab === 'main' ? 'active' : ''}`}
-              onClick={() => setActiveTab('main')}
+              className={`dock-tab-btn ${activeTab === 'main' ? 'active' : ''}`}
+              onClick={() => handleTabSelect('main')}
+              aria-label="Asosiy sahifa"
             >
-              <div className="student-mobile-tab-icon">
+              <div className="dock-icon-wrap">
                 {activeTab === 'main' ? (
                   <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
                     <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z" />
                   </svg>
                 ) : (
-                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
                     <polyline points="9 22 9 12 15 12 15 22" />
                   </svg>
                 )}
               </div>
-              <span className="student-mobile-tab-label">Asosiy</span>
+              <span className="dock-tab-label">Asosiy</span>
             </button>
 
             <button
               type="button"
-              className={`student-mobile-tab-btn ${activeTab === 'rating' ? 'active' : ''}`}
-              onClick={() => setActiveTab('rating')}
+              className={`dock-tab-btn ${activeTab === 'rating' ? 'active' : ''}`}
+              onClick={() => handleTabSelect('rating')}
+              aria-label="Reyting sahifasi"
             >
-              <div className="student-mobile-tab-icon">
+              <div className="dock-icon-wrap">
                 {activeTab === 'rating' ? (
                   <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
                     <path d="M19 5h-2V3H7v2H5c-1.1 0-2 .9-2 2v1c0 2.55 1.92 4.63 4.39 4.94.63 1.5 1.98 2.63 3.61 2.96V19H7v2h10v-2h-4v-3.1c1.63-.33 2.98-1.46 3.61-2.96C19.08 12.63 21 10.55 21 8V7c0-1.1-.9-2-2-2zM5 8V7h2v3.82C5.84 10.4 5 9.3 5 8zm14 0c0 1.3-.84 2.4-2 2.82V7h2v1z" />
                   </svg>
                 ) : (
-                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6" />
                     <path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18" />
                     <path d="M4 22h16" />
@@ -490,49 +753,69 @@ export default function StudentPortal({
                   </svg>
                 )}
               </div>
-              <span className="student-mobile-tab-label">Reyting</span>
+              <span className="dock-tab-label">Reyting</span>
             </button>
 
             <button
               type="button"
-              className={`student-mobile-tab-btn ${activeTab === 'shop' ? 'active' : ''}`}
-              onClick={() => setActiveTab('shop')}
+              className={`dock-tab-btn ${activeTab === 'shop' ? 'active' : ''}`}
+              onClick={() => handleTabSelect('shop')}
+              aria-label="Do'kon sahifasi"
             >
-              <div className="student-mobile-tab-icon">
+              <div className="dock-icon-wrap">
                 {activeTab === 'shop' ? (
                   <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
                     <path d="M19 6h-2c0-2.76-2.24-5-5-5S7 3.24 7 6H5c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm-7-3c1.66 0 3 1.34 3 3H9c0-1.66 1.34-3 3-3zm7 17H5V8h14v12z" />
                     <circle cx="12" cy="14" r="2" />
                   </svg>
                 ) : (
-                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z" />
                     <line x1="3" y1="6" x2="21" y2="6" />
                     <path d="M16 10a4 4 0 0 1-8 0" />
                   </svg>
                 )}
               </div>
-              <span className="student-mobile-tab-label">Do'kon</span>
+              <span className="dock-tab-label">Do'kon</span>
             </button>
           </div>
         </nav>,
         document.body
       )}
 
-      {/* Group Switcher / Add Group Modal */}
+      {/* Group Switcher Bottom Sheet Modal */}
       {isGroupModalOpen && typeof document !== 'undefined' && createPortal(
-        <div className="student-modal-overlay" onClick={() => setIsGroupModalOpen(false)}>
+        <div className="sheet-backdrop" onClick={() => setIsGroupModalOpen(false)}>
           <div
-            className="student-group-modal glass animate-scaleUp"
+            className="sheet-container animate-slideUpSheet"
+            style={{
+              transform: groupSheetDragY > 0 ? `translateY(${groupSheetDragY}px)` : undefined,
+              transition: isGroupDragging ? 'none' : 'transform 0.22s cubic-bezier(0.16, 1, 0.3, 1)',
+            }}
             onClick={(e) => e.stopPropagation()}
             role="dialog"
             aria-modal="true"
-            aria-label="Guruhlarni boshqarish"
+            aria-label="Guruhlarim"
           >
-            <div className="student-modal-header">
-              <div>
-                <h3 className="student-modal-title">Guruhlarim</h3>
-                <p className="student-modal-subtitle">
+            {/* Pull indicator bar */}
+            <div
+              className="sheet-drag-zone"
+              onTouchStart={handleGroupTouchStart}
+              onTouchMove={handleGroupTouchMove}
+              onTouchEnd={handleGroupTouchEnd}
+            >
+              <div className="sheet-drag-handle" />
+            </div>
+
+            <div
+              className="sheet-header"
+              onTouchStart={handleGroupTouchStart}
+              onTouchMove={handleGroupTouchMove}
+              onTouchEnd={handleGroupTouchEnd}
+            >
+              <div className="sheet-title-wrap">
+                <h3 className="sheet-title">Guruhlarim</h3>
+                <p className="sheet-sub">
                   {connectedGroupsList.length > 1
                     ? "Barcha ulangan kurs va guruhlaringiz"
                     : "Boshqa kurs yoki guruhlaringizni ulang"}
@@ -540,7 +823,7 @@ export default function StudentPortal({
               </div>
               <button
                 type="button"
-                className="student-modal-close-btn"
+                className="sheet-close-btn"
                 onClick={() => setIsGroupModalOpen(false)}
                 aria-label="Yopish"
               >
@@ -548,9 +831,9 @@ export default function StudentPortal({
               </button>
             </div>
 
-            <div className="student-modal-body">
+            <div className="sheet-body">
               {/* Groups List */}
-              <div className="student-groups-list">
+              <div className="sheet-groups-list">
                 {sortedConnectedGroups.map((grp) => {
                   const isCurrent = String(grp.id) === String(currentGroup?.id);
                   const isConfirmingRemove = confirmRemoveId === grp.id;
@@ -558,10 +841,10 @@ export default function StudentPortal({
                   return (
                     <div
                       key={grp.id}
-                      className={`student-group-card-item ${isCurrent ? 'is-active' : ''}`}
+                      className={`sheet-group-card ${isCurrent ? 'is-active' : ''}`}
                     >
                       <div
-                        className="student-group-item-main"
+                        className="sheet-group-main"
                         onClick={() => {
                           if (!isCurrent && onSwitchGroup) {
                             onSwitchGroup(grp.id);
@@ -569,47 +852,47 @@ export default function StudentPortal({
                           setIsGroupModalOpen(false);
                         }}
                       >
-                        <div className="student-group-item-header">
-                          <span className="student-group-item-title">{grp.name}</span>
+                        <div className="sheet-group-header-row">
+                          <span className="sheet-group-name">{grp.name}</span>
                           {isCurrent && (
-                            <span className="student-group-active-pill">Faol</span>
+                            <span className="sheet-active-tag">Faol</span>
                           )}
                         </div>
                         {grp.schedule?.time && (
-                          <div className="student-group-item-meta">
+                          <div className="sheet-group-meta">
                             <span>{grp.schedule.time}</span>
                             {grp.room && <span> • {grp.room}</span>}
                           </div>
                         )}
                       </div>
 
-                      <div className="student-group-item-actions">
+                      <div className="sheet-group-actions">
                         {!isCurrent && (
                           <button
                             type="button"
-                            className="student-group-switch-btn"
+                            className="sheet-switch-btn"
                             onClick={() => {
                               if (onSwitchGroup) onSwitchGroup(grp.id);
                               setIsGroupModalOpen(false);
                             }}
                           >
-                            Faol qilish
+                            Tanlash
                           </button>
                         )}
                         {connectedGroupsList.length > 1 && (
                           isConfirmingRemove ? (
-                            <div className="group-remove-confirm">
-                              <span className="confirm-text">O'chirish?</span>
+                            <div className="sheet-remove-confirm">
+                              <span className="remove-confirm-txt">O'chirish?</span>
                               <button
                                 type="button"
-                                className="confirm-btn-yes"
+                                className="remove-btn-yes"
                                 onClick={() => handleRemoveGroup(grp.id, grp.name)}
                               >
                                 Ha
                               </button>
                               <button
                                 type="button"
-                                className="confirm-btn-no"
+                                className="remove-btn-no"
                                 onClick={() => setConfirmRemoveId(null)}
                               >
                                 Yo'q
@@ -618,7 +901,7 @@ export default function StudentPortal({
                           ) : (
                             <button
                               type="button"
-                              className="student-group-delete-btn"
+                              className="sheet-delete-btn"
                               title="Guruhni ajratish"
                               onClick={() => setConfirmRemoveId(grp.id)}
                             >
@@ -635,17 +918,17 @@ export default function StudentPortal({
                 })}
               </div>
 
-              {/* Add New Group Form or Trigger */}
+              {/* Add Group Section */}
               {isAddingGroup ? (
-                <form className="student-add-group-form" onSubmit={handleAddNewGroup}>
-                  <div className="add-group-header-row">
-                    <span className="add-group-label">Guruh paroli</span>
-                    <span className="add-group-hint">Ustoz bergan parol</span>
+                <form className="sheet-add-group-box" onSubmit={handleAddNewGroup}>
+                  <div className="add-box-header">
+                    <span className="add-box-title">Guruh paroli</span>
+                    <span className="add-box-hint">Ustoz bergan kod</span>
                   </div>
                   <input
-                    id="new-group-password-modal"
+                    id="modal-new-group-password"
                     type="text"
-                    className="add-group-input"
+                    className="add-box-input"
                     placeholder="Masalan: rus2026"
                     value={newGroupPassword}
                     onChange={(e) => {
@@ -658,15 +941,14 @@ export default function StudentPortal({
                     autoCapitalize="none"
                   />
                   {groupAddError && (
-                    <div className="add-group-error-msg">
-                      <span className="error-icon">⚠️</span>
-                      <span>{groupAddError}</span>
+                    <div className="add-box-error">
+                      <span>⚠️ {groupAddError}</span>
                     </div>
                   )}
-                  <div className="add-group-btn-group">
+                  <div className="add-box-actions">
                     <button
                       type="button"
-                      className="add-group-cancel-btn"
+                      className="add-box-cancel-btn"
                       onClick={() => {
                         setIsAddingGroup(false);
                         setGroupAddError('');
@@ -677,30 +959,23 @@ export default function StudentPortal({
                     </button>
                     <button
                       type="submit"
-                      className="add-group-submit-btn"
+                      className="add-box-submit-btn"
                       disabled={isSubmittingGroup || !newGroupPassword.trim()}
                     >
-                      {isSubmittingGroup ? (
-                        <>
-                          <span className="btn-spinner" />
-                          <span>Ulanmoqda...</span>
-                        </>
-                      ) : (
-                        "Ulash"
-                      )}
+                      {isSubmittingGroup ? "Ulanmoqda..." : "Ulash"}
                     </button>
                   </div>
                 </form>
               ) : (
                 <button
                   type="button"
-                  className="student-add-group-btn"
+                  className="sheet-add-trigger-btn"
                   onClick={() => {
                     setIsAddingGroup(true);
                     setGroupAddError('');
                   }}
                 >
-                  <span className="plus-icon">+</span>
+                  <span className="trigger-plus">+</span>
                   <span>Boshqa guruhni ulash (parol orqali)</span>
                 </button>
               )}
@@ -710,127 +985,833 @@ export default function StudentPortal({
         document.body
       )}
 
-      {/* Profile Selector Modal (Clean, quick 1-tap select) */}
+      {/* Student Profile & Avatar Bottom Sheet Modal */}
       {isChangingProfile && typeof document !== 'undefined' && createPortal(
-        <div className="student-modal-overlay" onClick={() => setIsChangingProfile(false)}>
+        <div className="sheet-backdrop" onClick={() => { setIsChangingProfile(false); setProfileSheetView('list'); }}>
           <div
-            className="student-group-modal glass animate-scaleUp"
+            className="sheet-container animate-slideUpSheet"
+            style={{
+              transform: profileSheetDragY > 0 ? `translateY(${profileSheetDragY}px)` : undefined,
+              transition: isProfileDragging ? 'none' : 'transform 0.22s cubic-bezier(0.16, 1, 0.3, 1)',
+            }}
             onClick={(e) => e.stopPropagation()}
             role="dialog"
             aria-modal="true"
-            aria-label="Profilingizni tanlang"
+            aria-label={profileSheetView === 'avatar' ? "Profil rasmini tanlash" : "Profilingizni tanlang"}
           >
-            <div className="student-modal-header">
-              <div>
-                <h3 className="student-modal-title">Profilingizni tanlang</h3>
-                <p className="student-modal-subtitle">
-                  {currentGroup?.name ? `${currentGroup.name} guruhi o'quvchilari` : "Ismingizni tanlang"}
-                </p>
-              </div>
-              <button
-                type="button"
-                className="student-modal-close-btn"
-                onClick={() => setIsChangingProfile(false)}
-                aria-label="Yopish"
-              >
-                ✕
-              </button>
+            {/* Pull indicator bar */}
+            <div
+              className="sheet-drag-zone"
+              onTouchStart={handleProfileTouchStart}
+              onTouchMove={handleProfileTouchMove}
+              onTouchEnd={handleProfileTouchEnd}
+            >
+              <div className="sheet-drag-handle" />
             </div>
 
-            <div className="student-modal-body">
-              <div className="student-picker-list">
-                {groupStudents.length > 0 ? (
-                  groupStudents.map((st) => {
-                    const isCurrent = String(st.id) === String(pinnedStudentId);
-                    return (
-                      <div
-                        key={st.id}
-                        className={`student-picker-item ${isCurrent ? 'is-selected' : ''}`}
-                        onClick={() => handleSaveProfilePin(st.id)}
-                      >
-                        <div className="picker-item-avatar">
-                          {st.name.charAt(0).toUpperCase()}
-                        </div>
-                        <div className="picker-item-info">
-                          <span className="picker-item-name">{st.name}</span>
-                          {isCurrent && <span className="picker-item-current-tag">Tanlangan</span>}
-                        </div>
-                        {isCurrent ? (
-                          <span className="picker-check-icon">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                              <polyline points="20 6 9 17 4 12" />
-                            </svg>
-                          </span>
-                        ) : (
-                          <span className="picker-select-arrow">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                              <polyline points="9 18 15 12 9 6" />
-                            </svg>
-                          </span>
-                        )}
-                      </div>
-                    );
-                  })
-                ) : (
-                  <div className="student-picker-empty">Guruhda o'quvchilar ro'yxati mavjud emas</div>
-                )}
-              </div>
-
-              {pinnedStudent && (
-                <div className="student-picker-footer">
+            {profileSheetView === 'avatar' ? (
+              <>
+                <div
+                  className="sheet-header"
+                  onTouchStart={handleProfileTouchStart}
+                  onTouchMove={handleProfileTouchMove}
+                  onTouchEnd={handleProfileTouchEnd}
+                >
                   <button
                     type="button"
-                    className="student-picker-clear-btn"
-                    onClick={() => handleClearProfilePin()}
+                    className="sheet-back-btn"
+                    onClick={() => {
+                      triggerHaptic('light');
+                      setProfileSheetView('list');
+                    }}
+                    aria-label="Ortga"
                   >
-                    Profil tanlovini bekor qilish
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M15 18l-6-6 6-6" />
+                    </svg>
+                    <span>Ortga</span>
+                  </button>
+
+                  <div className="sheet-title-wrap sheet-title-center">
+                    <h3 className="sheet-title">Rasm tanlash</h3>
+                    <p className="sheet-sub">
+                      {pinnedStudent ? `${pinnedStudent.name} uchun yangi rasm` : "Rasmni tanlang"}
+                    </p>
+                  </div>
+
+                  <button
+                    type="button"
+                    className="sheet-close-btn"
+                    onClick={() => {
+                      setIsChangingProfile(false);
+                      setProfileSheetView('list');
+                    }}
+                    aria-label="Yopish"
+                  >
+                    ✕
                   </button>
                 </div>
-              )}
-            </div>
+
+                {/* Segmented Tab Switch */}
+                <div className="avatar-picker-tabs-row">
+                  <button
+                    type="button"
+                    className={`avatar-tab-btn ${avatarTab === 'gallery' ? 'active' : ''}`}
+                    onClick={() => {
+                      triggerHaptic('light');
+                      setAvatarTab('gallery');
+                    }}
+                  >
+                    <span className="tab-icon">📸</span>
+                    <span>Suratlar ({AVATAR_GALLERY_IMAGES.length})</span>
+                  </button>
+                  <button
+                    type="button"
+                    className={`avatar-tab-btn ${avatarTab === 'avatars' ? 'active' : ''}`}
+                    onClick={() => {
+                      triggerHaptic('light');
+                      setAvatarTab('avatars');
+                    }}
+                  >
+                    <span className="tab-icon">🦄</span>
+                    <span>Avatarlar ({STUDENT_AVATARS.length})</span>
+                  </button>
+                </div>
+
+                {/* Avatars Grid Body */}
+                <div className="sheet-body avatar-picker-body">
+                  {avatarTab === 'gallery' ? (
+                    <div className="avatar-grid-gallery">
+                      {AVATAR_GALLERY_IMAGES.map((img) => {
+                        const isSelected = pinnedStudent && (
+                          pinnedStudent.emoji === img.path ||
+                          pinnedStudent.emoji === img.id ||
+                          pinnedStudent.emoji === img.legacyPath ||
+                          pinnedStudent.emoji === img.name
+                        );
+
+                        return (
+                          <button
+                            key={img.id}
+                            type="button"
+                            className={`avatar-grid-item gallery-item ${isSelected ? 'is-selected' : ''}`}
+                            onClick={() => {
+                              triggerHaptic('medium');
+                              if (pinnedStudent && onUpdateAvatar) {
+                                onUpdateAvatar(img.path, pinnedStudent.id, pinnedStudent.name);
+                              }
+                              showToast?.("Profilingiz rasmi muvaffaqiyatli saqlandi!", "success");
+                            }}
+                            title={img.label || 'Surat'}
+                            aria-label={img.label || 'Surat'}
+                          >
+                            <img
+                              src={img.path}
+                              alt={img.label || 'avatar'}
+                              loading="lazy"
+                              decoding="async"
+                              className="avatar-grid-img"
+                            />
+                            {isSelected && (
+                              <div className="avatar-selected-check">
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round">
+                                  <polyline points="20 6 9 17 4 12" />
+                                </svg>
+                              </div>
+                            )}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <div className="avatar-grid-svg">
+                      {STUDENT_AVATARS.map((item) => {
+                        const isSelected = pinnedStudent && (
+                          pinnedStudent.emoji === item.id ||
+                          pinnedStudent.emoji === item.label
+                        );
+
+                        return (
+                          <button
+                            key={item.id}
+                            type="button"
+                            className={`avatar-grid-item svg-item ${isSelected ? 'is-selected' : ''}`}
+                            onClick={() => {
+                              triggerHaptic('medium');
+                              if (pinnedStudent && onUpdateAvatar) {
+                                onUpdateAvatar(item.id, pinnedStudent.id, pinnedStudent.name);
+                              }
+                              showToast?.("Profilingiz avatarisi muvaffaqiyatli saqlandi!", "success");
+                            }}
+                            title={item.label}
+                            aria-label={item.label}
+                          >
+                            <div className="avatar-svg-wrap">
+                              {item.svg(42)}
+                            </div>
+                            <span className="avatar-item-label">{item.label}</span>
+                            {isSelected && (
+                              <div className="avatar-selected-check">
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round">
+                                  <polyline points="20 6 9 17 4 12" />
+                                </svg>
+                              </div>
+                            )}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+
+                  <div className="avatar-done-wrap">
+                    <button
+                      type="button"
+                      className="avatar-done-btn"
+                      onClick={() => {
+                        triggerHaptic('light');
+                        setProfileSheetView('list');
+                      }}
+                    >
+                      Saqlash va qaytish
+                    </button>
+                  </div>
+                </div>
+              </>
+            ) : profileSheetView === 'pin_setup' ? (
+              <>
+                <div
+                  className="sheet-header"
+                  onTouchStart={handleProfileTouchStart}
+                  onTouchMove={handleProfileTouchMove}
+                  onTouchEnd={handleProfileTouchEnd}
+                >
+                  <button
+                    type="button"
+                    className="sheet-back-btn"
+                    onClick={() => {
+                      triggerHaptic('light');
+                      setProfileSheetView('list');
+                      setPinError('');
+                      setPinInput('');
+                      setConfirmPinInput('');
+                    }}
+                    aria-label="Ortga"
+                  >
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M15 18l-6-6 6-6" />
+                    </svg>
+                    <span>Ortga</span>
+                  </button>
+
+                  <div className="sheet-title-wrap sheet-title-center">
+                    <h3 className="sheet-title">PIN-kod o'rnatish</h3>
+                    <p className="sheet-sub">
+                      {pinTargetStudent?.name} profili
+                    </p>
+                  </div>
+
+                  <button
+                    type="button"
+                    className="sheet-close-btn"
+                    onClick={() => {
+                      setIsChangingProfile(false);
+                      setProfileSheetView('list');
+                      setPinError('');
+                      setPinInput('');
+                      setConfirmPinInput('');
+                    }}
+                    aria-label="Yopish"
+                  >
+                    ✕
+                  </button>
+                </div>
+
+                <div className="sheet-body pin-sheet-body">
+                  <div className="pin-notice-card">
+                    <div className="pin-notice-icon">🛡️</div>
+                    <div className="pin-notice-content">
+                      <h4 className="pin-notice-title">Siz haqiqatdan ham "{pinTargetStudent?.name}"misiz?</h4>
+                      <p className="pin-notice-desc">
+                        Profilingizni faqat o'zingiz boshqarishingiz va boshqalar kira olmasligi uchun 4 xonali shaxsiy PIN-kod o'rnating.
+                      </p>
+                    </div>
+                  </div>
+
+                  <form onSubmit={handleSavePinSetup} className="pin-form">
+                    <div className="pin-input-group">
+                      <label className="pin-label">4 xonali yangi PIN-kod:</label>
+                      <input
+                        type="password"
+                        className="pin-numeric-input"
+                        placeholder="••••"
+                        maxLength={4}
+                        inputMode="numeric"
+                        pattern="[0-9]*"
+                        autoFocus
+                        value={pinInput}
+                        onChange={(e) => setPinInput(e.target.value.replace(/\D/g, '').slice(0, 4))}
+                        autoComplete="new-password"
+                      />
+                    </div>
+
+                    <div className="pin-input-group">
+                      <label className="pin-label">PIN-kodni tasdiqlang:</label>
+                      <input
+                        type="password"
+                        className="pin-numeric-input"
+                        placeholder="••••"
+                        maxLength={4}
+                        inputMode="numeric"
+                        pattern="[0-9]*"
+                        value={confirmPinInput}
+                        onChange={(e) => setConfirmPinInput(e.target.value.replace(/\D/g, '').slice(0, 4))}
+                        autoComplete="new-password"
+                      />
+                    </div>
+
+                    {pinError && (
+                      <div className="pin-error-banner animate-shake">
+                        <span>⚠️ {pinError}</span>
+                      </div>
+                    )}
+
+                    <div className="pin-form-actions">
+                      <button
+                        type="submit"
+                        className="pin-primary-btn"
+                        disabled={pinInput.length !== 4 || confirmPinInput.length !== 4}
+                      >
+                        PIN-kodni saqlash va kirish
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              </>
+            ) : profileSheetView === 'pin_entry' ? (
+              <>
+                <div
+                  className="sheet-header"
+                  onTouchStart={handleProfileTouchStart}
+                  onTouchMove={handleProfileTouchMove}
+                  onTouchEnd={handleProfileTouchEnd}
+                >
+                  <button
+                    type="button"
+                    className="sheet-back-btn"
+                    onClick={() => {
+                      triggerHaptic('light');
+                      setProfileSheetView('list');
+                      setPinError('');
+                      setPinInput('');
+                    }}
+                    aria-label="Ortga"
+                  >
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M15 18l-6-6 6-6" />
+                    </svg>
+                    <span>Ortga</span>
+                  </button>
+
+                  <div className="sheet-title-wrap sheet-title-center">
+                    <h3 className="sheet-title">PIN-kodni kiriting</h3>
+                    <p className="sheet-sub">
+                      {pinTargetStudent?.name} profili
+                    </p>
+                  </div>
+
+                  <button
+                    type="button"
+                    className="sheet-close-btn"
+                    onClick={() => {
+                      setIsChangingProfile(false);
+                      setProfileSheetView('list');
+                      setPinError('');
+                      setPinInput('');
+                    }}
+                    aria-label="Yopish"
+                  >
+                    ✕
+                  </button>
+                </div>
+
+                <div className="sheet-body pin-sheet-body">
+                  <div className="pin-profile-preview">
+                    <div className="pin-preview-avatar">
+                      {pinTargetStudent?.emoji ? renderAvatar(pinTargetStudent.emoji, 48) : (
+                        <div style={{ width: 48, height: 48, borderRadius: '50%', background: 'var(--apple-blue)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.2rem', fontWeight: 600 }}>
+                          {pinTargetStudent?.name ? pinTargetStudent.name.charAt(0).toUpperCase() : 'O'}
+                        </div>
+                      )}
+                    </div>
+                    <h4 className="pin-preview-name">{pinTargetStudent?.name}</h4>
+                    <p className="pin-preview-hint">Ushbu profil 4 xonali PIN bilan himoyalangan</p>
+                  </div>
+
+                  <form onSubmit={handleVerifyPinEntry} className="pin-form">
+                    <div className="pin-input-group">
+                      <label className="pin-label">4 xonali PIN-kod:</label>
+                      <input
+                        type="password"
+                        className="pin-numeric-input"
+                        placeholder="••••"
+                        maxLength={4}
+                        inputMode="numeric"
+                        pattern="[0-9]*"
+                        autoFocus
+                        value={pinInput}
+                        onChange={(e) => setPinInput(e.target.value.replace(/\D/g, '').slice(0, 4))}
+                        autoComplete="current-password"
+                      />
+                    </div>
+
+                    {pinError && (
+                      <div className="pin-error-banner animate-shake">
+                        <span>⚠️ {pinError}</span>
+                      </div>
+                    )}
+
+                    <div className="pin-form-actions">
+                      <button
+                        type="submit"
+                        className="pin-primary-btn"
+                        disabled={pinInput.length !== 4}
+                      >
+                        Profilga kirish
+                      </button>
+                    </div>
+
+                    <div className="pin-forgot-wrap">
+                      <button
+                        type="button"
+                        className="pin-forgot-link"
+                        onClick={() => setShowForgotPinNotice(!showForgotPinNotice)}
+                      >
+                        PIN-kodni unutdingizmi?
+                      </button>
+                      {showForgotPinNotice && (
+                        <div className="pin-forgot-box animate-fadeIn">
+                          <span>💡 <strong>Ustozingizga ayting:</strong> O'qituvchi o'z panelidan 1 bosish bilan PIN-kodingizni bekor qilib beradi va siz yangi PIN o'rnatib kirasiz.</span>
+                        </div>
+                      )}
+                    </div>
+                  </form>
+                </div>
+              </>
+            ) : (
+              <>
+                <div
+                  className="sheet-header"
+                  onTouchStart={handleProfileTouchStart}
+                  onTouchMove={handleProfileTouchMove}
+                  onTouchEnd={handleProfileTouchEnd}
+                >
+                  <div className="sheet-title-wrap">
+                    <h3 className="sheet-title">Profilingizni tanlang</h3>
+                    <p className="sheet-sub">
+                      {currentGroup?.name ? `${currentGroup.name} guruhi o'quvchilari` : "Ismingizni tanlang"}
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    className="sheet-close-btn"
+                    onClick={() => {
+                      setIsChangingProfile(false);
+                      setProfileSheetView('list');
+                    }}
+                    aria-label="Yopish"
+                  >
+                    ✕
+                  </button>
+                </div>
+
+                <div className="sheet-body">
+                  {/* Active Profile Card with Avatar & Change Button */}
+                  {pinnedStudent && (
+                    <div className="active-profile-card">
+                      <div className="active-profile-left">
+                        <div className="active-profile-avatar-wrap">
+                          <div className="active-profile-avatar">
+                            {renderAvatar(pinnedStudent.emoji, 46)}
+                          </div>
+                          <button
+                            type="button"
+                            className="avatar-change-badge-btn"
+                            onClick={() => {
+                              triggerHaptic('light');
+                              setProfileSheetView('avatar');
+                            }}
+                            title="Rasmni almashtirish"
+                            aria-label="Rasmni almashtirish"
+                          >
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+                              <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+                              <circle cx="12" cy="13" r="4"/>
+                            </svg>
+                          </button>
+                        </div>
+                        <div className="active-profile-info">
+                          <div className="picker-name-row">
+                            <span className="active-profile-badge">Faol profilingiz</span>
+                            <span className="picker-pin-badge">
+                              {pinnedStudent.pin ? "🔒 PIN faol" : "🔓 PIN belgilanmagan"}
+                            </span>
+                          </div>
+                          <span className="active-profile-name">{pinnedStudent.name}</span>
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        className="choose-avatar-action-btn"
+                        onClick={() => {
+                          triggerHaptic('light');
+                          setProfileSheetView('avatar');
+                        }}
+                      >
+                        <span>Rasm tanlash</span>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M9 18l6-6-6-6"/>
+                        </svg>
+                      </button>
+                    </div>
+                  )}
+
+                  {/* Quick Search Input */}
+                  {groupStudents.length > 5 && (
+                    <div className="sheet-search-wrap">
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="search-icon">
+                        <circle cx="11" cy="11" r="8" />
+                        <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                      </svg>
+                      <input
+                        type="text"
+                        className="sheet-search-input"
+                        placeholder="Ismingizni qidiring..."
+                        value={profileSearchQuery}
+                        onChange={(e) => setProfileSearchQuery(e.target.value)}
+                      />
+                      {profileSearchQuery && (
+                        <button
+                          type="button"
+                          className="search-clear-btn"
+                          onClick={() => setProfileSearchQuery('')}
+                          aria-label="Tozalash"
+                        >
+                          ✕
+                        </button>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Students Picker List */}
+                  <div className="sheet-students-list">
+                    {filteredModalStudents.length > 0 ? (
+                      filteredModalStudents.map((st) => {
+                        const isCurrent = String(st.id) === String(pinnedStudentId);
+                        const hasPin = Boolean(st.pin);
+
+                        return (
+                          <div
+                            key={st.id}
+                            className={`student-picker-row ${isCurrent ? 'is-selected' : ''}`}
+                            onClick={() => handleSelectStudentForPin(st)}
+                          >
+                            <div className="picker-avatar-circle">
+                              {st.emoji ? renderAvatar(st.emoji, 32) : (st.name ? st.name.charAt(0).toUpperCase() : 'O')}
+                            </div>
+
+                            <div className="picker-info-col">
+                              <div className="picker-name-row">
+                                <span className="picker-name">{st.name}</span>
+                                {hasPin ? (
+                                  <span className="picker-has-pin-badge" title="4 xonali PIN bilan himoyalangan">
+                                    🔒 Himoyalangan
+                                  </span>
+                                ) : (
+                                  <span className="picker-no-pin-badge" title="PIN hali o'rnatilmagan">
+                                    🔓 Yangi profil
+                                  </span>
+                                )}
+                              </div>
+                              {isCurrent && (
+                                <span className="picker-active-badge">Tanlangan profil</span>
+                              )}
+                            </div>
+
+                            {isCurrent ? (
+                              <span className="picker-check">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round">
+                                  <polyline points="20 6 9 17 4 12" />
+                                </svg>
+                              </span>
+                            ) : (
+                              <span className="picker-arrow">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                  <polyline points="9 18 15 12 9 6" />
+                                </svg>
+                              </span>
+                            )}
+                          </div>
+                        );
+                      })
+                    ) : (
+                      <div className="sheet-empty-notice">
+                        {profileSearchQuery ? "Bunday ismli o'quvchi topilmadi" : "Guruhda o'quvchilar ro'yxati mavjud emas"}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Footer */}
+                  {pinnedStudent && (
+                    <div className="sheet-footer">
+                      <button
+                        type="button"
+                        className="sheet-clear-pin-btn"
+                        onClick={() => handleClearProfilePin()}
+                      >
+                        Profil tanlovini bekor qilish
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </>
+            )}
           </div>
         </div>,
         document.body
       )}
 
       <style>{`
-        .student-portal-root {
+        /* PIN Code Sheet Styles */
+        .pin-sheet-body {
+          padding: 16px 20px 24px;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+        }
+
+        .pin-notice-card {
+          display: flex;
+          align-items: flex-start;
+          gap: 12px;
+          background: rgba(0, 113, 227, 0.06);
+          border: 1px solid rgba(0, 113, 227, 0.15);
+          border-radius: 16px;
+          padding: 14px;
+          margin-bottom: 20px;
           width: 100%;
-          max-width: 900px;
-          margin: 0 auto;
-          padding: 6px 0 40px;
           box-sizing: border-box;
         }
 
-        /* Sleek Modern Unified Header Bar */
-        .student-header-bar {
+        .pin-notice-icon {
+          font-size: 24px;
+          flex-shrink: 0;
+          line-height: 1;
+        }
+
+        .pin-notice-title {
+          font-size: 0.92rem;
+          font-weight: 600;
+          color: var(--text-primary);
+          margin: 0 0 4px 0;
+        }
+
+        .pin-notice-desc {
+          font-size: 0.8rem;
+          color: var(--text-secondary);
+          margin: 0;
+          line-height: 1.4;
+        }
+
+        .pin-profile-preview {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          margin-bottom: 20px;
+          text-align: center;
+        }
+
+        .pin-preview-avatar {
+          margin-bottom: 8px;
+        }
+
+        .pin-preview-name {
+          font-size: 1.15rem;
+          font-weight: 600;
+          color: var(--text-primary);
+          margin: 0 0 4px;
+        }
+
+        .pin-preview-hint {
+          font-size: 0.82rem;
+          color: var(--text-secondary);
+          margin: 0;
+        }
+
+        .pin-form {
+          width: 100%;
+          max-width: 320px;
+          display: flex;
+          flex-direction: column;
+          gap: 16px;
+        }
+
+        .pin-input-group {
+          display: flex;
+          flex-direction: column;
+          gap: 6px;
+        }
+
+        .pin-label {
+          font-size: 0.82rem;
+          font-weight: 500;
+          color: var(--text-secondary);
+        }
+
+        .pin-numeric-input {
+          width: 100%;
+          font-size: 1.4rem;
+          font-weight: 700;
+          letter-spacing: 12px;
+          text-align: center;
+          padding: 12px 16px;
+          background: var(--bg-card);
+          border: 1.5px solid var(--border-color);
+          border-radius: 14px;
+          color: var(--text-primary);
+          outline: none;
+          box-sizing: border-box;
+          transition: border-color 0.2s, box-shadow 0.2s;
+        }
+
+        .pin-numeric-input:focus {
+          border-color: var(--apple-blue, #0071E3);
+          box-shadow: 0 0 0 3px rgba(0, 113, 227, 0.15);
+        }
+
+        .pin-error-banner {
+          background: rgba(255, 59, 48, 0.08);
+          border: 1px solid rgba(255, 59, 48, 0.2);
+          color: #FF3B30;
+          font-size: 0.82rem;
+          padding: 8px 12px;
+          border-radius: 10px;
+          text-align: center;
+        }
+
+        .pin-form-actions {
+          margin-top: 4px;
+        }
+
+        .pin-primary-btn {
+          width: 100%;
+          padding: 13px 18px;
+          border-radius: 14px;
+          background: var(--apple-blue, #0071E3);
+          color: #FFFFFF;
+          font-size: 0.92rem;
+          font-weight: 600;
+          border: none;
+          cursor: pointer;
+          transition: transform 0.15s, opacity 0.15s, background-color 0.15s;
+        }
+
+        .pin-primary-btn:disabled {
+          opacity: 0.45;
+          cursor: not-allowed;
+        }
+
+        .pin-primary-btn:not(:disabled):active {
+          transform: scale(0.98);
+        }
+
+        .pin-forgot-wrap {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          margin-top: 8px;
+        }
+
+        .pin-forgot-link {
+          background: none;
+          border: none;
+          color: var(--apple-blue, #0071E3);
+          font-size: 0.82rem;
+          cursor: pointer;
+          text-decoration: underline;
+          padding: 4px 8px;
+        }
+
+        .pin-forgot-box {
+          margin-top: 10px;
+          background: var(--bg-secondary, rgba(0, 0, 0, 0.04));
+          border: 1px solid var(--border-color);
+          border-radius: 12px;
+          padding: 10px 14px;
+          font-size: 0.78rem;
+          color: var(--text-secondary);
+          line-height: 1.4;
+          text-align: left;
+        }
+
+        .picker-has-pin-badge {
+          font-size: 0.7rem;
+          font-weight: 500;
+          padding: 2px 7px;
+          border-radius: 8px;
+          background: rgba(52, 199, 89, 0.12);
+          color: #248A3D;
+          display: inline-flex;
+          align-items: center;
+          gap: 3px;
+        }
+
+        .picker-no-pin-badge {
+          font-size: 0.7rem;
+          font-weight: 500;
+          padding: 2px 7px;
+          border-radius: 8px;
+          background: rgba(0, 113, 227, 0.1);
+          color: var(--apple-blue, #0071E3);
+          display: inline-flex;
+          align-items: center;
+          gap: 3px;
+        }
+
+        .picker-pin-badge {
+          font-size: 0.72rem;
+          color: var(--text-tertiary, #8E8E93);
+          font-weight: 500;
+        }
+
+        .student-portal-container {
+          width: 100%;
+          max-width: 860px;
+          margin: 0 auto;
+          padding: 4px 0 24px;
+          box-sizing: border-box;
+        }
+
+        /* Sleek Top Navbar */
+        .student-navbar {
           display: flex;
           align-items: center;
           justify-content: space-between;
           background: var(--bg-card);
           border: 1px solid var(--border-color);
-          border-radius: var(--radius-lg, 14px);
-          padding: 8px 12px;
+          border-radius: var(--radius-xl, 18px);
+          padding: 8px 14px;
           margin-bottom: 12px;
           box-shadow: var(--shadow-sm);
-          gap: 10px;
+          gap: 8px;
           position: sticky;
-          top: 8px;
+          top: max(env(safe-area-inset-top, 0px), 6px);
           z-index: 50;
+          backdrop-filter: blur(16px);
+          -webkit-backdrop-filter: blur(16px);
         }
 
-        .student-desktop-nav-wrap {
-          display: none;
-        }
-
-        @media (min-width: 641px) {
-          .student-desktop-nav-wrap {
-            display: flex;
-            align-items: center;
-          }
-        }
-
-        .student-group-chip {
+        /* Group Pill */
+        .navbar-group-pill {
           display: inline-flex;
           align-items: center;
           gap: 8px;
@@ -838,21 +1819,21 @@ export default function StudentPortal({
           background: var(--bg-secondary, rgba(0, 0, 0, 0.03));
           border: 1px solid var(--border-color);
           border-radius: var(--radius-full);
-          padding: 4px 10px 4px 6px;
+          padding: 5px 12px 5px 6px;
           transition: all var(--transition-fast);
           user-select: none;
           min-width: 0;
           touch-action: manipulation;
         }
 
-        .student-group-chip:hover {
+        .navbar-group-pill:hover {
           border-color: var(--apple-blue);
           background: rgba(var(--apple-blue-rgb, 0, 113, 227), 0.06);
         }
 
-        .student-group-icon-wrap {
-          width: 24px;
-          height: 24px;
+        .navbar-group-icon {
+          width: 26px;
+          height: 26px;
           border-radius: 50%;
           background: var(--apple-blue);
           color: #ffffff;
@@ -862,15 +1843,15 @@ export default function StudentPortal({
           flex-shrink: 0;
         }
 
-        .student-group-text-col {
+        .navbar-group-text {
           display: flex;
           flex-direction: column;
           line-height: 1.15;
           min-width: 0;
         }
 
-        .student-group-title {
-          font-size: 0.84rem;
+        .navbar-group-name {
+          font-size: 0.85rem;
           font-weight: 700;
           color: var(--text-primary);
           white-space: nowrap;
@@ -879,20 +1860,60 @@ export default function StudentPortal({
           max-width: 140px;
         }
 
-        .student-group-switcher-hint {
-          font-size: 0.65rem;
+        .navbar-group-hint {
+          font-size: 0.68rem;
           color: var(--text-tertiary);
-          font-weight: 500;
+          font-weight: 600;
         }
 
-        .student-header-right-actions {
+        /* Desktop Nav */
+        .navbar-desktop-nav {
+          display: none;
+        }
+
+        @media (min-width: 681px) {
+          .navbar-desktop-nav {
+            display: flex;
+            align-items: center;
+          }
+        }
+
+        .desktop-segmented-control {
+          display: inline-flex;
+          background: var(--bg-secondary, rgba(0, 0, 0, 0.04));
+          border: 1px solid var(--border-color);
+          border-radius: var(--radius-full);
+          padding: 3px;
+          gap: 3px;
+        }
+
+        .desktop-nav-btn {
+          background: transparent;
+          border: none;
+          color: var(--text-secondary);
+          font-size: 0.84rem;
+          font-weight: 600;
+          padding: 6px 18px;
+          border-radius: var(--radius-full);
+          cursor: pointer;
+          transition: all var(--transition-fast);
+        }
+
+        .desktop-nav-btn.active {
+          background: var(--apple-blue);
+          color: #FFFFFF;
+          box-shadow: 0 1px 4px rgba(0, 113, 227, 0.3);
+        }
+
+        /* Right Actions */
+        .navbar-actions-row {
           display: flex;
           align-items: center;
-          gap: 8px;
+          gap: 6px;
           flex-shrink: 0;
         }
 
-        .student-profile-chip {
+        .navbar-profile-pill {
           display: inline-flex;
           align-items: center;
           gap: 7px;
@@ -904,766 +1925,186 @@ export default function StudentPortal({
           transition: all var(--transition-fast);
           user-select: none;
           touch-action: manipulation;
+          min-width: 0;
         }
 
-        .student-profile-chip:hover {
+        .navbar-profile-pill:hover {
           border-color: var(--apple-blue);
         }
 
-        .student-avatar-circle {
-          width: 24px;
-          height: 24px;
+        .navbar-avatar {
+          width: 26px;
+          height: 26px;
           border-radius: 50%;
+          overflow: hidden;
           background: #34C759;
           color: #ffffff;
           display: flex;
           align-items: center;
           justify-content: center;
-          font-weight: 700;
-          font-size: 0.74rem;
+          font-weight: 800;
+          font-size: 0.78rem;
           flex-shrink: 0;
         }
 
-        .student-profile-chip.no-profile .student-avatar-circle {
+        .navbar-profile-pill.no-profile .navbar-avatar {
           background: var(--text-tertiary);
         }
 
-        .student-profile-text-col {
+        .navbar-profile-text {
           display: flex;
           flex-direction: column;
           line-height: 1.15;
           min-width: 0;
         }
 
-        .student-profile-name {
+        .navbar-student-name {
           font-size: 0.82rem;
           font-weight: 700;
           color: var(--text-primary);
           white-space: nowrap;
           overflow: hidden;
           text-overflow: ellipsis;
-          max-width: 110px;
+          max-width: 100px;
         }
 
-        .student-profile-sub {
-          font-size: 0.64rem;
+        .navbar-student-sub {
+          font-size: 0.66rem;
           color: var(--text-tertiary);
-          font-weight: 500;
+          font-weight: 600;
         }
 
-        .student-header-action-btn {
-          display: flex;
-          align-items: center;
-          justify-content: center;
+        .navbar-icon-btn {
           width: 32px;
           height: 32px;
-          border-radius: var(--radius-full);
+          border-radius: 50%;
           border: 1px solid var(--border-color);
           background: var(--bg-secondary, rgba(0, 0, 0, 0.04));
           color: var(--text-secondary);
+          display: flex;
+          align-items: center;
+          justify-content: center;
           cursor: pointer;
           transition: all var(--transition-fast);
-          touch-action: manipulation;
           padding: 0;
           flex-shrink: 0;
+          touch-action: manipulation;
         }
 
-        .student-header-action-btn:hover {
+        .navbar-icon-btn:hover {
           border-color: var(--apple-blue);
           color: var(--apple-blue);
         }
 
-        .student-header-action-btn.logout {
-          border-color: rgba(255, 59, 48, 0.25);
-          background: rgba(255, 59, 48, 0.08);
+        .navbar-icon-btn.logout-btn {
           color: #FF3B30;
+          border-color: rgba(255, 59, 48, 0.2);
+          background: rgba(255, 59, 48, 0.06);
         }
 
-        .student-header-action-btn.logout:hover {
-          background: rgba(255, 59, 48, 0.16);
+        .navbar-icon-btn.logout-btn:hover {
+          background: rgba(255, 59, 48, 0.14);
         }
 
-        /* Multi-groups horizontal quick switcher */
-        .multi-groups-quick-bar {
+        /* Connected Groups Strip */
+        .connected-groups-strip {
           margin-bottom: 12px;
         }
 
-        .multi-groups-scroll {
+        .connected-groups-scroll {
           display: flex;
           align-items: center;
           gap: 6px;
           overflow-x: auto;
           scrollbar-width: none;
           -ms-overflow-style: none;
-          padding-bottom: 2px;
+          padding: 2px 2px 4px;
         }
 
-        .multi-groups-scroll::-webkit-scrollbar {
+        .connected-groups-scroll::-webkit-scrollbar {
           display: none;
         }
 
-        .multi-group-quick-pill {
+        .group-chip-pill {
           display: inline-flex;
           align-items: center;
-          gap: 5px;
+          gap: 4px;
           background: var(--bg-card);
           border: 1px solid var(--border-color);
           border-radius: var(--radius-full);
-          padding: 5px 12px;
+          padding: 6px 14px;
           font-size: 0.78rem;
           font-weight: 600;
           color: var(--text-secondary);
           cursor: pointer;
           white-space: nowrap;
           flex-shrink: 0;
-          transition: all var(--transition-fast);
+          transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
           touch-action: manipulation;
         }
 
-        .multi-group-quick-pill:hover {
+        .group-chip-pill:hover {
           color: var(--text-primary);
           border-color: var(--apple-blue);
         }
 
-        .multi-group-quick-pill.active {
+        .group-chip-pill.active {
           background: var(--apple-blue);
-          color: #ffffff;
+          color: #FFFFFF;
           border-color: var(--apple-blue);
           box-shadow: 0 2px 8px rgba(0, 113, 227, 0.25);
         }
 
-        .multi-group-quick-pill .pill-dot {
-          width: 5px;
-          height: 5px;
-          border-radius: 50%;
-          background: #34C759;
-        }
-
-        .multi-group-quick-pill.add-btn {
+        .group-chip-pill.add-new {
           border-style: dashed;
           background: transparent;
           color: var(--apple-blue);
-          padding: 5px 10px;
         }
 
-        .multi-group-quick-pill.add-btn:hover {
-          background: rgba(var(--apple-blue-rgb, 0, 113, 227), 0.08);
-        }
-
-        /* Multi Schedules Section Header */
-        .multi-schedules-header {
-          margin-bottom: 10px;
-        }
-
-        .multi-schedules-title-row {
-          display: flex;
-          align-items: center;
-          gap: 8px;
-        }
-
-        .multi-schedules-title {
-          font-size: 0.92rem;
-          font-weight: 700;
-          color: var(--text-primary);
-        }
-
-        .multi-schedules-count-pill {
-          font-size: 0.72rem;
-          font-weight: 600;
-          color: var(--text-secondary);
-          background: var(--bg-secondary, rgba(0, 0, 0, 0.04));
-          border: 1px solid var(--border-color);
-          padding: 1px 7px;
-          border-radius: var(--radius-full);
-        }
-
-        /* Multi Schedules Section in Tab Main */
-        .multi-schedules-section {
-          margin-bottom: 20px;
-        }
-
-        .multi-schedules-header {
-          display: flex;
-          flex-direction: column;
-          gap: 2px;
-          margin-bottom: 12px;
-        }
-
-        .multi-schedules-title {
-          font-size: 0.95rem;
-          font-weight: 700;
-          color: var(--text-primary);
-        }
-
-        .multi-schedules-hint {
-          font-size: 0.78rem;
-          color: var(--text-tertiary);
-        }
-
-        .multi-schedules-grid {
-          display: grid;
-          grid-template-columns: 1fr;
-          gap: 14px;
-        }
-
-        @media (min-width: 700px) {
-          .multi-schedules-grid {
-            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-          }
-        }
-
-        /* Modal Overlay & Card */
-        .student-modal-overlay {
-          position: fixed;
-          top: 0;
-          left: 0;
-          right: 0;
-          bottom: 0;
-          background: rgba(0, 0, 0, 0.45);
-          backdrop-filter: blur(8px);
-          -webkit-backdrop-filter: blur(8px);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          padding: 16px;
-          z-index: 100000;
-        }
-
-        .student-group-modal {
-          background: var(--bg-card, #FFFFFF);
-          border: 1px solid var(--border-color);
-          border-radius: var(--radius-xl, 18px);
-          width: 100%;
-          max-width: 460px;
-          box-shadow: 0 16px 40px rgba(0, 0, 0, 0.2);
-          overflow: hidden;
-          display: flex;
-          flex-direction: column;
-        }
-
-        .student-modal-header {
-          display: flex;
-          align-items: flex-start;
-          justify-content: space-between;
-          padding: 18px 20px 14px;
-          border-bottom: 1px solid var(--border-color);
-        }
-
-        .student-modal-title {
-          font-size: 1.15rem;
-          font-weight: 700;
-          color: var(--text-primary);
-          margin: 0 0 2px;
-        }
-
-        .student-modal-subtitle {
-          font-size: 0.8rem;
-          color: var(--text-secondary);
-          margin: 0;
-        }
-
-        .student-modal-close-btn {
-          background: var(--bg-secondary, rgba(0, 0, 0, 0.05));
-          border: none;
-          border-radius: 50%;
-          width: 28px;
-          height: 28px;
-          font-size: 0.85rem;
-          color: var(--text-secondary);
-          cursor: pointer;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          transition: all var(--transition-fast);
-        }
-
-        .student-modal-close-btn:hover {
-          background: var(--border-color);
-          color: var(--text-primary);
-        }
-
-        .student-modal-body {
-          padding: 16px 20px 20px;
-          max-height: 70vh;
-          overflow-y: auto;
-          display: flex;
-          flex-direction: column;
-          gap: 14px;
-        }
-
-        .student-groups-list {
-          display: flex;
-          flex-direction: column;
-          gap: 8px;
-        }
-
-        .student-group-card-item {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          background: var(--bg-secondary, rgba(0, 0, 0, 0.02));
-          border: 1px solid var(--border-color);
-          border-radius: var(--radius-md, 10px);
-          padding: 12px 14px;
-          transition: all var(--transition-fast);
-          gap: 12px;
-        }
-
-        .student-group-card-item.is-active {
-          border-color: var(--apple-blue);
-          background: rgba(var(--apple-blue-rgb, 0, 113, 227), 0.06);
-        }
-
-        .student-group-item-main {
-          flex: 1;
-          min-width: 0;
-          cursor: pointer;
-        }
-
-        .student-group-item-header {
-          display: flex;
-          align-items: center;
-          gap: 8px;
-          margin-bottom: 2px;
-        }
-
-        .student-group-item-title {
-          font-size: 0.95rem;
-          font-weight: 700;
-          color: var(--text-primary);
-          white-space: nowrap;
-          overflow: hidden;
-          text-overflow: ellipsis;
-        }
-
-        .student-group-active-pill {
-          font-size: 0.68rem;
-          font-weight: 700;
-          color: #FFFFFF;
-          background: #34C759;
-          padding: 2px 6px;
-          border-radius: 4px;
-          text-transform: uppercase;
-        }
-
-        .student-group-item-meta {
-          font-size: 0.78rem;
-          color: var(--text-tertiary);
-        }
-
-        .student-group-item-actions {
-          display: flex;
-          align-items: center;
-          gap: 6px;
-          flex-shrink: 0;
-        }
-
-        .student-group-switch-btn {
-          background: var(--bg-card);
-          border: 1px solid var(--border-color);
-          border-radius: var(--radius-full);
-          padding: 5px 12px;
-          font-size: 0.78rem;
-          font-weight: 600;
-          color: var(--apple-blue);
-          cursor: pointer;
-          transition: all var(--transition-fast);
-        }
-
-        .student-group-switch-btn:hover {
-          background: var(--apple-blue);
-          color: #FFFFFF;
-          border-color: var(--apple-blue);
-        }
-
-        .student-group-delete-btn {
-          background: transparent;
-          border: none;
-          color: var(--text-tertiary);
-          cursor: pointer;
-          padding: 6px;
-          border-radius: 6px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          transition: all var(--transition-fast);
-        }
-
-        .student-group-delete-btn:hover {
-          color: #FF3B30;
-          background: rgba(255, 59, 48, 0.1);
-        }
-
-        .group-remove-confirm {
-          display: flex;
-          align-items: center;
-          gap: 4px;
-          font-size: 0.75rem;
-        }
-
-        .confirm-text {
-          color: #FF3B30;
-          font-weight: 600;
-        }
-
-        .confirm-btn-yes {
-          background: #FF3B30;
-          color: #FFFFFF;
-          border: none;
-          border-radius: 4px;
-          padding: 3px 8px;
-          font-size: 0.75rem;
-          font-weight: 600;
-          cursor: pointer;
-        }
-
-        .confirm-btn-no {
-          background: var(--bg-secondary, rgba(0, 0, 0, 0.05));
-          color: var(--text-secondary);
-          border: none;
-          border-radius: 4px;
-          padding: 3px 8px;
-          font-size: 0.75rem;
-          cursor: pointer;
-        }
-
-        /* Add Group Form in Modal */
-        .student-add-group-btn {
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          gap: 8px;
-          width: 100%;
-          background: rgba(var(--apple-blue-rgb, 0, 113, 227), 0.06);
-          border: 1px dashed var(--apple-blue);
-          border-radius: var(--radius-md, 10px);
-          padding: 12px;
-          color: var(--apple-blue);
-          font-size: 0.88rem;
-          font-weight: 600;
-          cursor: pointer;
-          transition: all var(--transition-fast);
-        }
-
-        .student-add-group-btn:hover {
-          background: rgba(var(--apple-blue-rgb, 0, 113, 227), 0.12);
-        }
-
-        .student-add-group-form {
-          display: flex;
-          flex-direction: column;
-          gap: 10px;
-          background: var(--bg-secondary, rgba(0, 0, 0, 0.03));
-          border: 1px solid var(--border-color);
-          border-radius: var(--radius-lg, 12px);
-          padding: 14px;
-        }
-
-        .add-group-header-row {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          gap: 8px;
-        }
-
-        .add-group-label {
-          font-size: 0.82rem;
-          font-weight: 600;
-          color: var(--text-primary);
-        }
-
-        .add-group-hint {
-          font-size: 0.74rem;
-          color: var(--text-tertiary);
-        }
-
-        .add-group-input {
-          width: 100%;
-          box-sizing: border-box;
-          background: var(--bg-card, #FFFFFF);
-          border: 1.5px solid var(--border-color);
-          border-radius: var(--radius-md, 10px);
-          padding: 10px 12px;
-          font-size: 0.92rem;
-          color: var(--text-primary);
-          outline: none;
-          transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
-        }
-
-        .add-group-input:focus {
-          border-color: var(--apple-blue);
-          box-shadow: 0 0 0 3px rgba(var(--apple-blue-rgb, 0, 113, 227), 0.15);
-        }
-
-        .add-group-error-msg {
-          display: flex;
-          align-items: center;
-          gap: 6px;
-          font-size: 0.78rem;
-          color: #FF3B30;
-          font-weight: 500;
-          background: rgba(255, 59, 48, 0.08);
-          padding: 6px 10px;
-          border-radius: 6px;
-        }
-
-        .add-group-btn-group {
-          display: flex;
-          align-items: center;
-          gap: 8px;
-          margin-top: 4px;
-        }
-
-        .add-group-cancel-btn {
-          flex: 1;
-          background: var(--bg-secondary, rgba(0, 0, 0, 0.05));
-          border: 1px solid var(--border-color);
-          border-radius: var(--radius-md, 8px);
-          padding: 9px 14px;
-          font-size: 0.85rem;
-          font-weight: 600;
-          color: var(--text-secondary);
-          cursor: pointer;
-          transition: all var(--transition-fast);
-          text-align: center;
-        }
-
-        .add-group-cancel-btn:hover {
-          background: rgba(0, 0, 0, 0.08);
-          color: var(--text-primary);
-        }
-
-        .add-group-submit-btn {
-          flex: 1;
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-          gap: 6px;
-          background: var(--apple-blue);
-          color: #FFFFFF;
-          border: none;
-          border-radius: var(--radius-md, 8px);
-          padding: 9px 16px;
-          font-size: 0.85rem;
-          font-weight: 600;
-          cursor: pointer;
-          transition: opacity var(--transition-fast), transform var(--transition-fast);
-          text-align: center;
-        }
-
-        .add-group-submit-btn:disabled {
-          opacity: 0.5;
-          cursor: not-allowed;
-        }
-
-        .btn-spinner {
-          width: 13px;
-          height: 13px;
-          border: 2px solid rgba(255, 255, 255, 0.35);
-          border-top-color: #ffffff;
-          border-radius: 50%;
-          animation: spin 0.8s linear infinite;
-          display: inline-block;
-        }
-
-        @keyframes spin {
-          to { transform: rotate(360deg); }
-        }
-
-        /* Top Segmented Navigation (Desktop) */
-        .student-desktop-nav-container {
-          display: flex;
-          justify-content: center;
-          margin-bottom: 20px;
-          position: sticky;
-          top: calc(var(--header-height, 64px) + 8px);
-          z-index: 40;
-        }
-
-        .student-segmented-nav {
-          display: inline-flex;
-          background: var(--bg-card);
-          border: 1px solid var(--border-color);
-          border-radius: var(--radius-full);
-          padding: 4px;
-          gap: 4px;
-          box-shadow: var(--shadow-sm);
-          backdrop-filter: blur(12px);
-          -webkit-backdrop-filter: blur(12px);
-        }
-
-        .student-nav-btn {
-          background: transparent;
-          border: none;
-          color: var(--text-secondary);
-          font-size: 0.88rem;
-          font-weight: 600;
-          padding: 8px 24px;
-          border-radius: var(--radius-full);
-          cursor: pointer;
-          transition: all var(--transition-fast);
-          user-select: none;
-          white-space: nowrap;
-          touch-action: manipulation;
-        }
-
-        .student-nav-btn.active {
-          background: var(--apple-blue);
-          color: #FFFFFF;
-          box-shadow: 0 1px 4px rgba(0, 0, 0, 0.14);
-        }
-
-        /* Mobile Bottom Tab Bar Hidden on Desktop */
-        .student-mobile-bottom-bar {
-          display: none;
-        }
-
-        /* Profile Picker Modal Styles */
-        .student-picker-list {
-          display: flex;
-          flex-direction: column;
-          gap: 6px;
-          max-height: 380px;
-          overflow-y: auto;
-          padding: 2px;
-        }
-
-        .student-picker-item {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          background: var(--bg-secondary, rgba(0, 0, 0, 0.02));
-          border: 1px solid var(--border-color);
-          border-radius: var(--radius-md, 10px);
-          padding: 10px 14px;
-          cursor: pointer;
-          transition: all var(--transition-fast);
-          gap: 10px;
-        }
-
-        .student-picker-item:hover {
-          border-color: var(--apple-blue);
-          background: rgba(var(--apple-blue-rgb, 0, 113, 227), 0.05);
-        }
-
-        .student-picker-item.is-selected {
-          border-color: var(--apple-blue);
-          background: rgba(var(--apple-blue-rgb, 0, 113, 227), 0.1);
-        }
-
-        .picker-item-avatar {
-          width: 32px;
-          height: 32px;
-          border-radius: 50%;
-          background: var(--apple-blue);
-          color: #ffffff;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          font-weight: 700;
-          font-size: 0.82rem;
-          flex-shrink: 0;
-        }
-
-        .picker-item-info {
-          display: flex;
-          flex-direction: column;
-          gap: 2px;
-          flex: 1;
-          min-width: 0;
-        }
-
-        .picker-item-name {
-          font-size: 0.92rem;
-          font-weight: 600;
-          color: var(--text-primary);
-          white-space: nowrap;
-          overflow: hidden;
-          text-overflow: ellipsis;
-        }
-
-        .picker-item-current-tag {
-          font-size: 0.68rem;
-          color: #34C759;
-          font-weight: 600;
-        }
-
-        .picker-check-icon {
-          color: var(--apple-blue);
-          display: flex;
-          align-items: center;
-          font-weight: bold;
-        }
-
-        .picker-select-arrow {
-          color: var(--text-tertiary);
-          display: flex;
-          align-items: center;
-        }
-
-        .student-picker-empty {
-          padding: 24px;
-          text-align: center;
-          font-size: 0.85rem;
-          color: var(--text-secondary);
-        }
-
-        .student-picker-footer {
-          margin-top: 14px;
-          padding-top: 12px;
-          border-top: 1px solid var(--border-color);
-          display: flex;
-          justify-content: center;
-        }
-
-        .student-picker-clear-btn {
-          background: transparent;
-          border: none;
-          color: #FF3B30;
-          font-size: 0.82rem;
-          font-weight: 600;
-          cursor: pointer;
-          padding: 6px 12px;
-          border-radius: var(--radius-sm);
-        }
-
-        .student-picker-clear-btn:hover {
-          background: rgba(255, 59, 48, 0.08);
-        }
-
-
-        .student-tab-content {
+        /* Content Area */
+        .student-content-view {
           width: 100%;
         }
 
         .animate-fadeIn {
-          animation: fadeIn 0.15s ease-out;
+          animation: tabFadeIn 0.18s ease-out;
         }
 
-        @keyframes fadeIn {
-          from {
-            opacity: 0;
-          }
-          to {
-            opacity: 1;
-          }
+        @keyframes tabFadeIn {
+          from { opacity: 0; transform: translateY(3px); }
+          to { opacity: 1; transform: translateY(0); }
         }
 
-        @media (max-width: 640px) {
-          .student-portal-root {
+        /* Mobile Bottom Dock (Hidden on Desktop) */
+        .student-mobile-dock {
+          display: none;
+        }
+
+        /* Mobile Responsive Styles */
+        @media (max-width: 680px) {
+          .student-portal-container {
             padding-top: 0;
-            padding-bottom: calc(64px + env(safe-area-inset-bottom, 0px)) !important;
+            padding-bottom: 8px !important;
           }
 
-          .student-header-bar {
-            top: 4px;
+          .student-navbar {
             padding: 6px 10px;
             margin-bottom: 8px;
-            border-radius: var(--radius-md, 12px);
+            border-radius: var(--radius-lg, 14px);
           }
 
-          /* Fixed Native Mobile App Bottom Navigation Bar */
-          .student-mobile-bottom-bar {
+          .navbar-group-name {
+            max-width: 85px;
+          }
+
+          .navbar-student-name {
+            max-width: 75px;
+          }
+
+
+
+          /* Fixed Native-App Mobile Dock */
+          .student-mobile-dock {
             display: block !important;
             position: fixed !important;
             bottom: 0 !important;
@@ -1672,263 +2113,1004 @@ export default function StudentPortal({
             width: 100% !important;
             height: calc(58px + env(safe-area-inset-bottom, 0px)) !important;
             padding-bottom: env(safe-area-inset-bottom, 0px) !important;
-            background: rgba(255, 255, 255, 0.96) !important;
-            backdrop-filter: blur(8px) !important;
-            -webkit-backdrop-filter: blur(8px) !important;
+            background: rgba(255, 255, 255, 0.88) !important;
+            backdrop-filter: blur(20px) saturate(180%) !important;
+            -webkit-backdrop-filter: blur(20px) saturate(180%) !important;
             border-top: 1px solid rgba(0, 0, 0, 0.08) !important;
-            box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.03) !important;
+            box-shadow: 0 -2px 14px rgba(0, 0, 0, 0.04) !important;
             z-index: 99999 !important;
-            box-sizing: border-box !important;
             user-select: none !important;
-            -webkit-user-select: none !important;
             touch-action: manipulation !important;
-            transform: translateZ(0) !important;
-            -webkit-transform: translateZ(0) !important;
           }
 
-          .student-mobile-nav-inner {
+          .mobile-dock-inner {
             display: flex;
             align-items: center;
             justify-content: space-around;
             height: 58px;
-            max-width: 500px;
+            max-width: 480px;
             margin: 0 auto;
-            padding: 0 12px;
+            padding: 0 8px;
           }
 
-          .student-mobile-tab-btn {
+          .dock-tab-btn {
             flex: 1;
             height: 100%;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            gap: 3px;
+            gap: 2px;
             background: transparent;
             border: none;
-            padding: 4px 0;
             color: #8E8E93;
             cursor: pointer;
-            transition: color 0.15s ease, transform 0.12s ease;
-            user-select: none;
-            -webkit-tap-highlight-color: transparent;
+            transition: color 0.15s ease, transform 0.1s ease;
             touch-action: manipulation;
+            -webkit-tap-highlight-color: transparent;
           }
 
-          .student-mobile-tab-icon {
+          .dock-icon-wrap {
+            width: 28px;
+            height: 28px;
             display: flex;
             align-items: center;
             justify-content: center;
-            width: 26px;
-            height: 26px;
             transition: transform 0.15s cubic-bezier(0.16, 1, 0.3, 1);
           }
 
-          .student-mobile-tab-label {
+          .dock-tab-label {
             font-size: 0.68rem;
             font-weight: 500;
-            letter-spacing: -0.01em;
             line-height: 1;
-            white-space: nowrap;
-            transition: color 0.15s ease, font-weight 0.15s ease;
+            letter-spacing: -0.01em;
           }
 
-          .student-mobile-tab-btn.active {
+          .dock-tab-btn.active {
             color: var(--apple-blue);
           }
 
-          .student-mobile-tab-btn.active .student-mobile-tab-label {
+          .dock-tab-btn.active .dock-tab-label {
             font-weight: 700;
             color: var(--apple-blue);
           }
 
-          .student-mobile-tab-btn.active .student-mobile-tab-icon {
-            transform: scale(1.06);
+          .dock-tab-btn.active .dock-icon-wrap {
+            transform: scale(1.08);
           }
 
-          .student-mobile-tab-btn:active {
+          .dock-tab-btn:active {
             transform: scale(0.92);
-            opacity: 0.75;
-          }
-
-          .picker-actions {
-            flex-direction: column;
-            align-items: stretch;
-          }
-
-          .custom-profile-picker-wrap {
-            width: 100%;
-          }
-
-          .profile-save-btn,
-          .profile-cancel-btn,
-          .profile-clear-btn {
-            width: 100%;
-            text-align: center;
-          }
-
-          .student-modal-overlay {
-            align-items: flex-end;
-            padding: 0;
-          }
-
-          .student-group-modal {
-            max-width: 100%;
-            border-radius: 20px 20px 0 0;
-            max-height: 85vh;
-            margin: 0;
-            animation: slideUpModal 0.24s cubic-bezier(0.16, 1, 0.3, 1);
-          }
-
-          @keyframes slideUpModal {
-            from {
-              transform: translateY(100%);
-            }
-            to {
-              transform: translateY(0);
-            }
-          }
-
-          .student-group-title {
-            max-width: 80px;
-          }
-
-          .student-profile-name {
-            max-width: 70px;
           }
         }
 
         @media (max-width: 380px) {
-          .student-group-title {
+          .navbar-group-name {
             max-width: 65px;
           }
-
-          .student-profile-name {
-            max-width: 55px;
-          }
-
-          .student-header-bar {
-            padding: 5px 8px;
-            gap: 6px;
+          .navbar-student-name {
+            max-width: 58px;
           }
         }
 
-        [data-theme="dark"] .student-header-bar {
+        /* Bottom Sheet Modals */
+        .sheet-backdrop {
+          position: fixed;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background: rgba(0, 0, 0, 0.45);
+          backdrop-filter: blur(10px);
+          -webkit-backdrop-filter: blur(10px);
+          display: flex;
+          align-items: flex-end;
+          justify-content: center;
+          z-index: 100000;
+          padding: 0;
+          overscroll-behavior: contain;
+        }
+
+        .sheet-container {
           background: var(--bg-card);
+          border: 1px solid var(--border-color);
+          border-radius: 24px 24px 0 0;
+          width: 100%;
+          max-width: 540px;
+          max-height: 85vh;
+          box-shadow: 0 -8px 36px rgba(0, 0, 0, 0.2);
+          display: flex;
+          flex-direction: column;
+          overflow: hidden;
+          animation: sheetSlideUp 0.26s cubic-bezier(0.16, 1, 0.3, 1);
+          overscroll-behavior: contain;
+        }
+
+        @keyframes sheetSlideUp {
+          from { transform: translateY(100%); }
+          to { transform: translateY(0); }
+        }
+
+        .sheet-drag-zone {
+          padding: 10px 0 4px;
+          width: 100%;
+          display: flex;
+          justify-content: center;
+          cursor: grab;
+          touch-action: none;
+          flex-shrink: 0;
+        }
+
+        .sheet-drag-handle {
+          width: 38px;
+          height: 4px;
+          border-radius: 2px;
+          background: rgba(0, 0, 0, 0.18);
+          margin: 0 auto;
+          flex-shrink: 0;
+        }
+
+        .sheet-header {
+          display: flex;
+          align-items: flex-start;
+          justify-content: space-between;
+          padding: 12px 18px 10px;
+          border-bottom: 1px solid var(--border-color);
+        }
+
+        .sheet-title-wrap {
+          display: flex;
+          flex-direction: column;
+          gap: 2px;
+        }
+
+        .sheet-title {
+          font-size: 1.15rem;
+          font-weight: 700;
+          color: var(--text-primary);
+          margin: 0;
+        }
+
+        .sheet-sub {
+          font-size: 0.78rem;
+          color: var(--text-secondary);
+          margin: 0;
+        }
+
+        .sheet-close-btn {
+          width: 28px;
+          height: 28px;
+          border-radius: 50%;
+          border: none;
+          background: var(--bg-secondary, rgba(0, 0, 0, 0.05));
+          color: var(--text-secondary);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
+        }
+
+        .sheet-body {
+          padding: 14px 18px 24px;
+          overflow-y: auto;
+          display: flex;
+          flex-direction: column;
+          gap: 12px;
+          max-height: 70vh;
+        }
+
+        /* Sheet Search Input */
+        .sheet-search-wrap {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          background: var(--bg-secondary, rgba(0, 0, 0, 0.04));
+          border: 1px solid var(--border-color);
+          border-radius: var(--radius-md, 12px);
+          padding: 8px 12px;
+        }
+
+        .search-icon {
+          color: var(--text-tertiary);
+          flex-shrink: 0;
+        }
+
+        .sheet-search-input {
+          flex: 1;
+          border: none;
+          background: transparent;
+          font-size: 16px;
+          color: var(--text-primary);
+          outline: none;
+        }
+
+        .search-clear-btn {
+          border: none;
+          background: transparent;
+          color: var(--text-tertiary);
+          cursor: pointer;
+          font-size: 0.8rem;
+        }
+
+        /* Group Card in Sheet */
+        .sheet-groups-list,
+        .sheet-students-list {
+          display: flex;
+          flex-direction: column;
+          gap: 8px;
+        }
+
+        .sheet-group-card {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          background: var(--bg-secondary, rgba(0, 0, 0, 0.02));
+          border: 1px solid var(--border-color);
+          border-radius: var(--radius-md, 12px);
+          padding: 12px 14px;
+          gap: 10px;
+        }
+
+        .sheet-group-card.is-active {
+          border-color: var(--apple-blue);
+          background: rgba(var(--apple-blue-rgb, 0, 113, 227), 0.06);
+        }
+
+        .sheet-group-main {
+          flex: 1;
+          min-width: 0;
+          cursor: pointer;
+        }
+
+        .sheet-group-header-row {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          margin-bottom: 2px;
+        }
+
+        .sheet-group-name {
+          font-size: 0.94rem;
+          font-weight: 700;
+          color: var(--text-primary);
+        }
+
+        .sheet-active-tag {
+          font-size: 0.68rem;
+          font-weight: 700;
+          color: #FFFFFF;
+          background: #34C759;
+          padding: 1px 6px;
+          border-radius: 4px;
+          text-transform: uppercase;
+        }
+
+        .sheet-group-meta {
+          font-size: 0.76rem;
+          color: var(--text-tertiary);
+        }
+
+        .sheet-group-actions {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          flex-shrink: 0;
+        }
+
+        .sheet-switch-btn {
+          background: var(--bg-card);
+          border: 1px solid var(--border-color);
+          border-radius: var(--radius-full);
+          padding: 5px 12px;
+          font-size: 0.78rem;
+          font-weight: 600;
+          color: var(--apple-blue);
+          cursor: pointer;
+        }
+
+        .sheet-delete-btn {
+          background: transparent;
+          border: none;
+          color: var(--text-tertiary);
+          cursor: pointer;
+          padding: 6px;
+        }
+
+        .sheet-remove-confirm {
+          display: flex;
+          align-items: center;
+          gap: 4px;
+        }
+
+        .remove-confirm-txt {
+          font-size: 0.72rem;
+          color: #FF3B30;
+          font-weight: 700;
+        }
+
+        .remove-btn-yes {
+          background: #FF3B30;
+          color: #FFFFFF;
+          border: none;
+          padding: 3px 8px;
+          border-radius: 4px;
+          font-size: 0.74rem;
+          cursor: pointer;
+        }
+
+        .remove-btn-no {
+          background: var(--bg-secondary);
+          color: var(--text-secondary);
+          border: none;
+          padding: 3px 8px;
+          border-radius: 4px;
+          font-size: 0.74rem;
+          cursor: pointer;
+        }
+
+        /* Add Group in Sheet */
+        .sheet-add-trigger-btn {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 8px;
+          width: 100%;
+          background: rgba(var(--apple-blue-rgb, 0, 113, 227), 0.06);
+          border: 1.5px dashed var(--apple-blue);
+          border-radius: var(--radius-md, 12px);
+          padding: 12px;
+          color: var(--apple-blue);
+          font-size: 0.85rem;
+          font-weight: 700;
+          cursor: pointer;
+        }
+
+        .sheet-add-group-box {
+          display: flex;
+          flex-direction: column;
+          gap: 8px;
+          background: var(--bg-secondary, rgba(0, 0, 0, 0.03));
+          border: 1px solid var(--border-color);
+          border-radius: var(--radius-md, 12px);
+          padding: 12px;
+        }
+
+        .add-box-header {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+        }
+
+        .add-box-title {
+          font-size: 0.8rem;
+          font-weight: 700;
+          color: var(--text-primary);
+        }
+
+        .add-box-hint {
+          font-size: 0.72rem;
+          color: var(--text-tertiary);
+        }
+
+        .add-box-input {
+          width: 100%;
+          box-sizing: border-box;
+          background: var(--bg-card);
+          border: 1.5px solid var(--border-color);
+          border-radius: var(--radius-md, 8px);
+          padding: 9px 12px;
+          font-size: 16px;
+          color: var(--text-primary);
+          outline: none;
+        }
+
+        .add-box-input:focus {
+          border-color: var(--apple-blue);
+        }
+
+        .add-box-error {
+          font-size: 0.76rem;
+          color: #FF3B30;
+        }
+
+        .add-box-actions {
+          display: flex;
+          gap: 8px;
+          margin-top: 4px;
+        }
+
+        .add-box-cancel-btn {
+          flex: 1;
+          background: var(--bg-secondary);
+          border: 1px solid var(--border-color);
+          border-radius: 8px;
+          padding: 8px;
+          font-size: 0.82rem;
+          font-weight: 600;
+          color: var(--text-secondary);
+          cursor: pointer;
+        }
+
+        .add-box-submit-btn {
+          flex: 1;
+          background: var(--apple-blue);
+          color: #FFFFFF;
+          border: none;
+          border-radius: 8px;
+          padding: 8px;
+          font-size: 0.82rem;
+          font-weight: 700;
+          cursor: pointer;
+        }
+
+        /* Active Profile Showcase Card in Sheet */
+        .active-profile-card {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 12px;
+          background: linear-gradient(135deg, rgba(var(--apple-blue-rgb, 0, 113, 227), 0.08), rgba(var(--apple-blue-rgb, 0, 113, 227), 0.02));
+          border: 1.5px solid rgba(var(--apple-blue-rgb, 0, 113, 227), 0.22);
+          border-radius: var(--radius-lg, 16px);
+          padding: 12px 14px;
+          margin-bottom: 12px;
+        }
+
+        .active-profile-left {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          min-width: 0;
+        }
+
+        .active-profile-avatar-wrap {
+          position: relative;
+          flex-shrink: 0;
+        }
+
+        .active-profile-avatar {
+          width: 46px;
+          height: 46px;
+          border-radius: 50%;
+          overflow: hidden;
+          background: var(--apple-blue);
+          box-shadow: 0 4px 12px rgba(var(--apple-blue-rgb, 0, 113, 227), 0.28);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+
+        .avatar-change-badge-btn {
+          position: absolute;
+          bottom: -2px;
+          right: -2px;
+          width: 20px;
+          height: 20px;
+          border-radius: 50%;
+          background: var(--apple-blue);
+          color: #FFFFFF;
+          border: 2px solid var(--bg-card);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
+          box-shadow: var(--shadow-sm);
+          transition: transform var(--transition-fast);
+        }
+
+        .avatar-change-badge-btn:hover {
+          transform: scale(1.15);
+        }
+
+        .active-profile-info {
+          display: flex;
+          flex-direction: column;
+          gap: 2px;
+          min-width: 0;
+        }
+
+        .active-profile-badge {
+          font-size: 0.68rem;
+          font-weight: 700;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+          color: var(--apple-blue);
+        }
+
+        .active-profile-name {
+          font-size: 0.95rem;
+          font-weight: 700;
+          color: var(--text-primary);
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+
+        .choose-avatar-action-btn {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          background: var(--apple-blue);
+          color: #FFFFFF;
+          border: none;
+          border-radius: var(--radius-full, 9999px);
+          padding: 8px 14px;
+          font-size: 0.8rem;
+          font-weight: 700;
+          cursor: pointer;
+          flex-shrink: 0;
+          box-shadow: 0 2px 8px rgba(var(--apple-blue-rgb, 0, 113, 227), 0.25);
+          transition: all var(--transition-fast);
+        }
+
+        .choose-avatar-action-btn:active {
+          transform: scale(0.96);
+        }
+
+        .sheet-back-btn {
+          display: inline-flex;
+          align-items: center;
+          gap: 4px;
+          background: transparent;
+          border: none;
+          color: var(--apple-blue);
+          font-size: 0.88rem;
+          font-weight: 600;
+          cursor: pointer;
+          padding: 4px 8px;
+          border-radius: 8px;
+          margin-left: -6px;
+          flex-shrink: 0;
+          transition: opacity var(--transition-fast);
+        }
+
+        .sheet-back-btn:active {
+          opacity: 0.65;
+        }
+
+        .sheet-title-center {
+          flex: 1;
+          text-align: center;
+        }
+
+        .avatar-done-wrap {
+          margin-top: 14px;
+          padding-top: 10px;
+          border-top: 1px solid var(--border-color);
+          position: sticky;
+          bottom: 0;
+          background: var(--bg-card);
+        }
+
+        .avatar-done-btn {
+          width: 100%;
+          background: var(--apple-blue);
+          color: #FFFFFF;
+          border: none;
+          border-radius: var(--radius-md, 12px);
+          padding: 11px;
+          font-size: 0.9rem;
+          font-weight: 700;
+          cursor: pointer;
+          box-shadow: 0 3px 10px rgba(var(--apple-blue-rgb, 0, 113, 227), 0.28);
+          transition: transform var(--transition-fast);
+        }
+
+        .avatar-done-btn:active {
+          transform: scale(0.98);
+        }
+
+        /* Avatar Picker in Sheet */
+        .avatar-picker-tabs-row {
+          display: flex;
+          gap: 8px;
+          padding: 0 16px 12px;
+          border-bottom: 1px solid var(--border-color);
+        }
+
+        .avatar-tab-btn {
+          flex: 1;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 6px;
+          padding: 8px 12px;
+          border-radius: var(--radius-full, 9999px);
+          border: 1px solid var(--border-color);
+          background: var(--bg-secondary);
+          color: var(--text-secondary);
+          font-size: 0.82rem;
+          font-weight: 600;
+          cursor: pointer;
+          transition: all var(--transition-fast);
+        }
+
+        .avatar-tab-btn .tab-icon {
+          font-size: 1rem;
+        }
+
+        .avatar-tab-btn.active {
+          background: var(--apple-blue);
+          color: #FFFFFF;
+          border-color: var(--apple-blue);
+          box-shadow: 0 2px 8px rgba(var(--apple-blue-rgb, 0, 113, 227), 0.3);
+        }
+
+        .avatar-picker-body {
+          flex: 1;
+          overflow-y: auto;
+          padding: 16px;
+          -webkit-overflow-scrolling: touch;
+        }
+
+        .avatar-grid-gallery {
+          display: grid;
+          grid-template-columns: repeat(auto-fill, minmax(62px, 1fr));
+          gap: 12px;
+          justify-items: center;
+        }
+
+        .avatar-grid-svg {
+          display: grid;
+          grid-template-columns: repeat(auto-fill, minmax(76px, 1fr));
+          gap: 12px;
+          justify-items: center;
+        }
+
+        .avatar-grid-item {
+          position: relative;
+          width: 62px;
+          height: 62px;
+          border-radius: 16px;
+          border: 2.5px solid transparent;
+          background: var(--bg-card);
+          padding: 0;
+          cursor: pointer;
+          overflow: hidden;
+          box-shadow: var(--shadow-sm);
+          transition: all var(--transition-fast);
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+        }
+
+        .avatar-grid-item:active {
+          transform: scale(0.92);
+        }
+
+        .avatar-grid-item.is-selected {
+          border-color: var(--apple-blue);
+          box-shadow: 0 0 0 2px rgba(var(--apple-blue-rgb, 0, 113, 227), 0.35), var(--shadow-md);
+          transform: scale(1.05);
+        }
+
+        .avatar-grid-img {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+          display: block;
+        }
+
+        .avatar-grid-item.svg-item {
+          width: 76px;
+          height: 82px;
+          border-radius: 16px;
+          padding: 6px 4px 4px;
+          background: var(--bg-secondary);
+        }
+
+        .avatar-svg-wrap {
+          width: 42px;
+          height: 42px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+
+        .avatar-item-label {
+          font-size: 0.66rem;
+          font-weight: 600;
+          color: var(--text-secondary);
+          text-align: center;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          max-width: 100%;
+          margin-top: 2px;
+        }
+
+        .avatar-selected-check {
+          position: absolute;
+          top: 3px;
+          right: 3px;
+          width: 18px;
+          height: 18px;
+          border-radius: 50%;
+          background: var(--apple-blue);
+          color: #FFFFFF;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.25);
+        }
+
+        /* Student Picker in Sheet */
+        .student-picker-row {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          background: var(--bg-secondary, rgba(0, 0, 0, 0.02));
+          border: 1px solid var(--border-color);
+          border-radius: var(--radius-md, 12px);
+          padding: 10px 14px;
+          cursor: pointer;
+          transition: all var(--transition-fast);
+          gap: 10px;
+        }
+
+        .student-picker-row:hover {
+          border-color: var(--apple-blue);
+        }
+
+        .student-picker-row.is-selected {
+          border-color: var(--apple-blue);
+          background: rgba(var(--apple-blue-rgb, 0, 113, 227), 0.1);
+        }
+
+        .picker-avatar-circle {
+          width: 32px;
+          height: 32px;
+          border-radius: 50%;
+          overflow: hidden;
+          background: var(--apple-blue);
+          color: #FFFFFF;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-weight: 700;
+          font-size: 0.82rem;
+          flex-shrink: 0;
+        }
+
+        .picker-info-col {
+          display: flex;
+          flex-direction: column;
+          gap: 2px;
+          flex: 1;
+          min-width: 0;
+        }
+
+        .picker-name {
+          font-size: 0.92rem;
+          font-weight: 600;
+          color: var(--text-primary);
+        }
+
+        .picker-active-badge {
+          font-size: 0.68rem;
+          font-weight: 600;
+          color: #34C759;
+        }
+
+        .picker-name-row {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          flex-wrap: wrap;
+        }
+
+        .student-picker-row.is-locked-other {
+          opacity: 0.65;
+          cursor: not-allowed;
+          background: rgba(0, 0, 0, 0.015);
+        }
+
+        .student-picker-row.is-locked-other:hover {
+          border-color: rgba(255, 59, 48, 0.35);
+          background: rgba(255, 59, 48, 0.04);
+        }
+
+        .picker-locked-badge {
+          display: inline-flex;
+          align-items: center;
+          gap: 3px;
+          font-size: 0.66rem;
+          font-weight: 600;
+          color: #FF3B30;
+          background: rgba(255, 59, 48, 0.1);
+          padding: 2px 6px;
+          border-radius: 6px;
+          line-height: 1.2;
+        }
+
+        .picker-my-device-badge {
+          display: inline-flex;
+          align-items: center;
+          gap: 3px;
+          font-size: 0.66rem;
+          font-weight: 600;
+          color: #34C759;
+          background: rgba(52, 199, 89, 0.1);
+          padding: 2px 6px;
+          border-radius: 6px;
+          line-height: 1.2;
+        }
+
+        .picker-lock-icon {
+          color: #FF3B30;
+          display: flex;
+          align-items: center;
+          opacity: 0.75;
+        }
+
+        .profile-locked-pill {
+          display: inline-flex;
+          align-items: center;
+          gap: 5px;
+          font-size: 0.75rem;
+          font-weight: 600;
+          color: #FF3B30;
+          background: rgba(255, 59, 48, 0.1);
+          border: 1px solid rgba(255, 59, 48, 0.2);
+          border-radius: 20px;
+          padding: 6px 12px;
+        }
+
+        .picker-check {
+          color: var(--apple-blue);
+        }
+
+        .picker-arrow {
+          color: var(--text-tertiary);
+        }
+
+        .sheet-empty-notice {
+          text-align: center;
+          padding: 24px;
+          color: var(--text-secondary);
+          font-size: 0.84rem;
+        }
+
+        .sheet-footer {
+          margin-top: 10px;
+          padding-top: 10px;
+          border-top: 1px solid var(--border-color);
+          display: flex;
+          justify-content: center;
+        }
+
+        .sheet-clear-pin-btn {
+          background: transparent;
+          border: none;
+          color: #FF3B30;
+          font-size: 0.82rem;
+          font-weight: 600;
+          cursor: pointer;
+          padding: 6px 14px;
+        }
+
+        /* Dark Mode */
+        [data-theme="dark"] .student-navbar {
+          background: rgba(41, 42, 45, 0.85);
           border-color: var(--border-color);
         }
 
-        [data-theme="dark"] .student-group-chip,
-        [data-theme="dark"] .student-profile-chip,
-        [data-theme="dark"] .student-header-action-btn {
+        [data-theme="dark"] .navbar-group-pill,
+        [data-theme="dark"] .navbar-profile-pill,
+        [data-theme="dark"] .navbar-icon-btn {
           background: rgba(255, 255, 255, 0.05);
           border-color: rgba(255, 255, 255, 0.1);
           color: var(--text-secondary);
         }
 
-        [data-theme="dark"] .student-header-action-btn.logout {
-          background: rgba(239, 68, 68, 0.15);
-          color: #F87171;
-          border-color: rgba(239, 68, 68, 0.3);
-        }
-
-        [data-theme="dark"] .multi-group-quick-pill {
+        [data-theme="dark"] .group-chip-pill {
           background: var(--bg-card);
           border-color: var(--border-color);
         }
 
-        [data-theme="dark"] .student-segmented-nav,
-        [data-theme="dark"] .pinned-profile-bar,
-        [data-theme="dark"] .profile-picker-card {
-          background: var(--bg-card);
-          border-color: var(--border-color);
-        }
 
-        [data-theme="dark"] .student-mobile-bottom-bar {
-          background: rgba(26, 26, 30, 0.96) !important;
+        [data-theme="dark"] .student-mobile-dock {
+          background: rgba(26, 26, 30, 0.88) !important;
           border-top-color: rgba(255, 255, 255, 0.1) !important;
-          box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.35) !important;
+          box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.4) !important;
         }
 
-        [data-theme="dark"] .student-mobile-tab-btn {
-          color: #8E8E93;
+        [data-theme="dark"] .sheet-drag-handle {
+          background: rgba(255, 255, 255, 0.2);
         }
 
-        [data-theme="dark"] .student-mobile-tab-btn.active {
-          color: #388BFD;
-        }
-
-        [data-theme="dark"] .student-mobile-tab-btn.active .student-mobile-tab-label {
-          color: #388BFD;
-        }
-
-        [data-theme="dark"] .custom-profile-trigger,
-        [data-theme="dark"] .profile-cancel-btn {
-          background: rgba(255, 255, 255, 0.05);
-          border-color: rgba(255, 255, 255, 0.1);
-        }
-
-        [data-theme="dark"] .custom-profile-menu {
-          background: rgba(30, 30, 36, 0.96);
-          border-color: rgba(255, 255, 255, 0.12);
-          box-shadow: 0 12px 35px rgba(0, 0, 0, 0.6);
-        }
-
-        [data-theme="dark"] .custom-profile-item:hover {
-          background: rgba(255, 255, 255, 0.06);
-        }
-
-        [data-theme="dark"] .custom-profile-item.selected {
-          background: rgba(var(--apple-blue-rgb, 0, 113, 227), 0.2);
-          color: #60A5FA;
-        }
-
-        [data-theme="dark"] .item-check-icon {
-          color: #60A5FA;
-        }
-
-        [data-theme="dark"] .student-group-bar,
-        [data-theme="dark"] .student-group-pill,
-        [data-theme="dark"] .student-group-modal {
+        [data-theme="dark"] .sheet-container {
           background: var(--bg-card);
           border-color: var(--border-color);
         }
 
-        [data-theme="dark"] .student-group-card-item {
+        [data-theme="dark"] .sheet-group-card,
+        [data-theme="dark"] .student-picker-row {
           background: rgba(255, 255, 255, 0.03);
           border-color: rgba(255, 255, 255, 0.08);
         }
 
-        [data-theme="dark"] .student-group-card-item.is-active {
-          background: rgba(56, 139, 253, 0.12);
-          border-color: #388BFD;
+        [data-theme="dark"] .sheet-group-card.is-active {
+          background: rgba(138, 180, 248, 0.12);
+          border-color: #8AB4F8;
         }
 
-        [data-theme="dark"] .student-add-group-form {
+        [data-theme="dark"] .student-picker-row.is-selected {
+          background: rgba(138, 180, 248, 0.12);
+          border-color: #8AB4F8;
+        }
+
+        [data-theme="dark"] .student-picker-row.is-locked-other {
+          opacity: 0.55;
+          background: rgba(255, 255, 255, 0.015);
+        }
+
+        [data-theme="dark"] .student-picker-row.is-locked-other:hover {
+          border-color: rgba(255, 69, 58, 0.3);
+          background: rgba(255, 69, 58, 0.06);
+        }
+
+        [data-theme="dark"] .picker-locked-badge {
+          color: #FF453A;
+          background: rgba(255, 69, 58, 0.15);
+        }
+
+        [data-theme="dark"] .picker-my-device-badge {
+          color: #32D74B;
+          background: rgba(50, 215, 75, 0.15);
+        }
+
+        [data-theme="dark"] .profile-locked-pill {
+          color: #FF453A;
+          background: rgba(255, 69, 58, 0.15);
+          border-color: rgba(255, 69, 58, 0.3);
+        }
+
+        [data-theme="dark"] .sheet-search-wrap,
+        [data-theme="dark"] .sheet-add-group-box {
           background: rgba(255, 255, 255, 0.03);
           border-color: rgba(255, 255, 255, 0.08);
         }
 
-        [data-theme="dark"] .add-group-input {
-          background: rgba(255, 255, 255, 0.05);
+        [data-theme="dark"] .add-box-input {
+          background: rgba(255, 255, 255, 0.06);
           border-color: rgba(255, 255, 255, 0.12);
           color: #F0F6FC;
         }
 
-        [data-theme="dark"] .student-group-switch-btn {
-          background: rgba(255, 255, 255, 0.05);
-          border-color: rgba(255, 255, 255, 0.12);
+        [data-theme="dark"] .active-profile-card {
+          background: linear-gradient(135deg, rgba(138, 180, 248, 0.12), rgba(255, 255, 255, 0.02));
+          border-color: rgba(138, 180, 248, 0.28);
         }
 
-        [data-theme="dark"] .add-group-cancel-btn {
-          background: rgba(255, 255, 255, 0.06);
+        [data-theme="dark"] .avatar-change-badge-btn {
+          border-color: var(--bg-card);
+        }
+
+        [data-theme="dark"] .avatar-tab-btn {
+          background: rgba(255, 255, 255, 0.05);
           border-color: rgba(255, 255, 255, 0.1);
           color: var(--text-secondary);
         }
 
-        [data-theme="dark"] .add-group-cancel-btn:hover {
-          background: rgba(255, 255, 255, 0.1);
-          color: var(--text-primary);
+        [data-theme="dark"] .avatar-tab-btn.active {
+          background: var(--apple-blue);
+          color: #FFFFFF;
+          border-color: var(--apple-blue);
+        }
+
+        [data-theme="dark"] .avatar-grid-item {
+          background: rgba(255, 255, 255, 0.05);
+        }
+
+        [data-theme="dark"] .avatar-grid-item.svg-item {
+          background: rgba(255, 255, 255, 0.04);
+        }
+
+        [data-theme="dark"] .avatar-grid-item.is-selected {
+          border-color: #8AB4F8;
+          box-shadow: 0 0 0 2px rgba(138, 180, 248, 0.4), var(--shadow-md);
         }
       `}</style>
     </div>

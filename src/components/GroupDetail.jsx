@@ -97,7 +97,7 @@ const formatScheduleText = (schedule) => {
   return daysText || timeText || null;
 };
 
-const GroupDetail = ({ group, allGroups = [], students, transactions, quickTags, onBack, onAddStudent, onUpdateStudent, onTransferStudent, onDeleteStudent, onAwardPoints, onDeleteTransaction, showToast, userRole }) => {
+const GroupDetail = ({ group, allGroups = [], students, transactions, quickTags, onBack, onAddStudent, onUpdateStudent, onTransferStudent, onDeleteStudent, onAwardPoints, onDeleteTransaction, onResetStudentPin, onResetStudentDevice, showToast, userRole }) => {
   const [profileStudent, setProfileStudent] = useState(null);
   const [showPassword, setShowPassword] = useState(false);
   const [editingStudent, setEditingStudent] = useState(null);
@@ -382,6 +382,15 @@ const GroupDetail = ({ group, allGroups = [], students, transactions, quickTags,
                     <div className="student-score-badge">
                       <span className="score-num">{student.totalScore >= 0 ? `+${student.totalScore}` : student.totalScore}</span>
                       <span className="score-label">Likelar</span>
+                      {student.pin ? (
+                        <span className="student-device-bound-pill" title="4 xonali PIN o'rnatilgan">
+                          🔒 PIN faol
+                        </span>
+                      ) : (
+                        <span className="student-device-unbound-pill" title="PIN hali o'rnatilmagan" style={{ fontSize: '0.68rem', padding: '1px 6px', borderRadius: '6px', background: 'rgba(0,0,0,0.05)', color: 'var(--text-tertiary)' }}>
+                          🔓 PIN yo'q
+                        </span>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -830,6 +839,42 @@ const GroupDetail = ({ group, allGroups = [], students, transactions, quickTags,
               </div>
             </div>
 
+            <div className="profile-device-bound-card">
+              <div className="profile-device-left">
+                <span className="profile-device-icon">{profileStudent.pin ? '🔒' : '🔓'}</span>
+                <div>
+                  <span className="profile-device-title">
+                    {profileStudent.pin ? "PIN-kod o'rnatilgan" : "PIN-kod belgilanmagan"}
+                  </span>
+                  <span className="profile-device-subtitle">
+                    {profileStudent.pin 
+                      ? "O'quvchi o'z profiliga 4 xonali PIN bilan kiradi" 
+                      : "O'quvchi birinchi kirganida o'ziga PIN o'rnatadi"}
+                  </span>
+                </div>
+              </div>
+              {profileStudent.pin && (onResetStudentPin || onResetStudentDevice) && (
+                <button
+                  type="button"
+                  className="btn btn-secondary btn-sm scale-active"
+                  style={{ fontSize: '0.78rem', padding: '5px 12px' }}
+                  onClick={() => {
+                    if (window.confirm(`${profileStudent.name} ning PIN-kodini bekor qilmoqchimisiz? O'quvchi keyingi kirishida yangi PIN o'rnatishi mumkin bo'ladi.`)) {
+                      if (onResetStudentPin) {
+                        onResetStudentPin(profileStudent.id, profileStudent.name);
+                      } else if (onResetStudentDevice) {
+                        onResetStudentDevice(profileStudent.id, profileStudent.name);
+                      }
+                      setProfileStudent((prev) => prev ? { ...prev, pin: null, deviceId: null } : null);
+                      showToast?.("PIN-kod muvaffaqiyatli bekor qilindi!", "success");
+                    }
+                  }}
+                >
+                  PINni bekor qilish (Reset)
+                </button>
+              )}
+            </div>
+
             <div className="modal-actions">
               <button className="btn btn-secondary scale-active" onClick={() => setProfileStudent(null)}>
                 Yopish
@@ -985,6 +1030,59 @@ const GroupDetail = ({ group, allGroups = [], students, transactions, quickTags,
                 </div>
               )}
 
+              {/* Device Binding Status & Reset (Teacher control) */}
+              <div className="form-group device-binding-group">
+                <label className="form-label" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <span>🔒 Profil xavfsizligi (PIN-kod)</span>
+                  {editingStudent.pin ? (
+                    <span className="badge-bound-indicator">🔒 PIN o'rnatilgan</span>
+                  ) : (
+                    <span className="badge-unbound-indicator">PIN belgilanmagan</span>
+                  )}
+                </label>
+                <div className="device-binding-box">
+                  {editingStudent.pin ? (
+                    <div className="device-binding-row">
+                      <div className="device-binding-info">
+                        <p className="device-binding-text">
+                          O'quvchi ushbu profil uchun 4 xonali shaxsiy PIN-kod o'rnatgan. Boshqa o'quvchilar uning profiliga kira olmaydi.
+                        </p>
+                        <span className="device-binding-id" style={{ color: 'var(--accent-blue, #0071E3)', fontWeight: 600 }}>
+                          Holat: 🔒 PIN faol
+                        </span>
+                      </div>
+                      {(onResetStudentPin || onResetStudentDevice) && (
+                        <button
+                          type="button"
+                          className="btn btn-secondary scale-active reset-device-btn"
+                          onClick={() => {
+                            if (window.confirm(`${editingStudent.name} ning PIN-kodini bekor qilmoqchimisiz? O'quvchi keyingi kirishida yangi PIN o'rnatishi mumkin bo'ladi.`)) {
+                              if (onResetStudentPin) {
+                                onResetStudentPin(editingStudent.id, editingStudent.name);
+                              } else if (onResetStudentDevice) {
+                                onResetStudentDevice(editingStudent.id, editingStudent.name);
+                              }
+                              setEditingStudent((prev) => prev ? { ...prev, pin: null, deviceId: null } : null);
+                              showToast?.("PIN-kod muvaffaqiyatli bekor qilindi!", "success");
+                            }
+                          }}
+                        >
+                          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M18.36 6.64a9 9 0 1 1-12.73 0"/>
+                            <line x1="12" y1="2" x2="12" y2="12"/>
+                          </svg>
+                          PINni bekor qilish (Reset)
+                        </button>
+                      )}
+                    </div>
+                  ) : (
+                    <p className="device-binding-hint">
+                      O'quvchi hali PIN-kod o'rnatmagan. Tizimga birinchi marta kirganida o'zi 4 xonali PIN tanlaydi.
+                    </p>
+                  )}
+                </div>
+              </div>
+
               <div className="modal-actions">
                 <button type="button" className="btn btn-secondary scale-active" onClick={() => setEditingStudent(null)}>
                   Bekor qilish
@@ -1095,7 +1193,7 @@ const GroupDetail = ({ group, allGroups = [], students, transactions, quickTags,
                 </div>
 
                 <div className="transfer-info-box" style={{ padding: '10px 12px', background: 'var(--bg-segment, #F5F5F7)', borderRadius: 'var(--radius-md)', fontSize: '0.82rem', color: 'var(--text-secondary)', marginBottom: 20 }}>
-                  💡 Talabaning to'plagan barcha ballari va tranzaksiyalari yangi guruh reytingiga to'liq o'tadi.
+                  💡 Talabaning to'plagan barcha Like'lari va tranzaksiyalari yangi guruh reytingiga to'liq o'tadi.
                 </div>
 
                 <div className="modal-actions">
@@ -1831,6 +1929,167 @@ const GroupDetail = ({ group, allGroups = [], students, transactions, quickTags,
           background: rgba(0, 0, 0, 0.2) !important;
           color: #202124 !important;
           border-color: rgba(0, 0, 0, 0.3) !important;
+        }
+
+        /* Device Binding Styles */
+        .student-device-bound-pill {
+          display: inline-flex;
+          align-items: center;
+          gap: 3px;
+          font-size: 0.68rem;
+          font-weight: 600;
+          color: #34C759;
+          background: rgba(52, 199, 89, 0.1);
+          padding: 2px 7px;
+          border-radius: 6px;
+          margin-left: 6px;
+        }
+
+        .profile-device-bound-card {
+          margin-top: 14px;
+          padding: 10px 14px;
+          border-radius: var(--radius-md);
+          background: rgba(52, 199, 89, 0.08);
+          border: 1px solid rgba(52, 199, 89, 0.22);
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 12px;
+        }
+
+        .profile-device-left {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+        }
+
+        .profile-device-icon {
+          font-size: 1.1rem;
+        }
+
+        .profile-device-title {
+          font-size: 0.82rem;
+          font-weight: 600;
+          color: var(--text-primary);
+          display: block;
+        }
+
+        .profile-device-subtitle {
+          font-size: 0.72rem;
+          color: var(--text-secondary);
+          display: block;
+        }
+
+        .badge-bound-indicator {
+          font-size: 0.72rem;
+          font-weight: 600;
+          color: #34C759;
+          background: rgba(52, 199, 89, 0.12);
+          padding: 2px 8px;
+          border-radius: 6px;
+        }
+
+        .badge-unbound-indicator {
+          font-size: 0.72rem;
+          font-weight: 600;
+          color: var(--text-tertiary);
+          background: rgba(0, 0, 0, 0.05);
+          padding: 2px 8px;
+          border-radius: 6px;
+        }
+
+        .device-binding-box {
+          background: rgba(0, 0, 0, 0.02);
+          border: 1px solid var(--border-color);
+          border-radius: var(--radius-md);
+          padding: 12px 14px;
+        }
+
+        .device-binding-row {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 14px;
+          flex-wrap: wrap;
+        }
+
+        .device-binding-info {
+          flex: 1;
+          min-width: 180px;
+        }
+
+        .device-binding-text {
+          margin: 0;
+          font-size: 0.82rem;
+          color: var(--text-secondary);
+          line-height: 1.4;
+        }
+
+        .device-binding-id {
+          font-size: 0.72rem;
+          color: var(--text-tertiary);
+          font-family: monospace;
+          display: block;
+          margin-top: 4px;
+        }
+
+        .device-binding-hint {
+          margin: 0;
+          font-size: 0.82rem;
+          color: var(--text-secondary);
+          line-height: 1.4;
+        }
+
+        .reset-device-btn {
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          font-size: 0.78rem;
+          font-weight: 600;
+          color: #FF3B30 !important;
+          border-color: rgba(255, 59, 48, 0.3) !important;
+          background: rgba(255, 59, 48, 0.06) !important;
+          padding: 6px 12px;
+          white-space: nowrap;
+        }
+
+        .reset-device-btn:hover {
+          background: rgba(255, 59, 48, 0.12) !important;
+        }
+
+        [data-theme="dark"] .student-device-bound-pill {
+          color: #32D74B;
+          background: rgba(50, 215, 75, 0.15);
+        }
+
+        [data-theme="dark"] .profile-device-bound-card {
+          background: rgba(50, 215, 75, 0.08);
+          border-color: rgba(50, 215, 75, 0.25);
+        }
+
+        [data-theme="dark"] .badge-bound-indicator {
+          color: #32D74B;
+          background: rgba(50, 215, 75, 0.18);
+        }
+
+        [data-theme="dark"] .badge-unbound-indicator {
+          color: #9AA0A6;
+          background: rgba(255, 255, 255, 0.06);
+        }
+
+        [data-theme="dark"] .device-binding-box {
+          background: rgba(255, 255, 255, 0.03);
+          border-color: rgba(255, 255, 255, 0.08);
+        }
+
+        [data-theme="dark"] .reset-device-btn {
+          color: #FF453A !important;
+          border-color: rgba(255, 69, 58, 0.35) !important;
+          background: rgba(255, 69, 58, 0.12) !important;
+        }
+
+        [data-theme="dark"] .reset-device-btn:hover {
+          background: rgba(255, 69, 58, 0.2) !important;
         }
       `}</style>
     </div>

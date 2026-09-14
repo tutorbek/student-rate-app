@@ -81,6 +81,160 @@ export const saveToSupabase = async (teacherId, data, isExplicitReset = false) =
 };
 
 /**
+ * Update a student's avatar in Supabase safely.
+ */
+export const updateStudentAvatarInSupabase = async (teacherId, studentId, newAvatarKey, studentName = null) => {
+  try {
+    if (!teacherId || !studentId || !newAvatarKey) return false;
+
+    const { data: row, error: fetchErr } = await supabase
+      .from('appdata')
+      .select('data')
+      .eq('teacher_id', teacherId)
+      .maybeSingle();
+
+    if (fetchErr) throw fetchErr;
+    if (!row || !row.data) return false;
+
+    const currentData = row.data;
+    const currentStudents = currentData.students || [];
+
+    const targetIdStr = String(studentId);
+    let hasMatch = false;
+
+    const updatedStudents = currentStudents.map((s) => {
+      const matchId = String(s.id) === targetIdStr;
+      const matchName = studentName && (s.name || '').trim().toLowerCase() === studentName.trim().toLowerCase();
+      if (matchId || matchName) {
+        hasMatch = true;
+        return {
+          ...s,
+          emoji: newAvatarKey,
+        };
+      }
+      return s;
+    });
+
+    if (!hasMatch) return false;
+
+    const updatedData = { ...currentData, students: updatedStudents };
+    const { error: upsertErr } = await supabase
+      .from('appdata')
+      .upsert({ teacher_id: teacherId, data: updatedData });
+
+    if (upsertErr) throw upsertErr;
+    return true;
+  } catch (err) {
+    console.error('[Supabase] Failed to update student avatar:', err);
+    return false;
+  }
+};
+
+/**
+ * Set/update a 4-digit PIN for a student in Supabase.
+ */
+export const setStudentPinInSupabase = async (teacherId, studentId, pin, studentName = null) => {
+  try {
+    if (!teacherId || !studentId || !pin) return false;
+
+    const { data: row, error: fetchErr } = await supabase
+      .from('appdata')
+      .select('data')
+      .eq('teacher_id', teacherId)
+      .maybeSingle();
+
+    if (fetchErr) throw fetchErr;
+    if (!row || !row.data) return false;
+
+    const currentData = row.data;
+    const currentStudents = currentData.students || [];
+
+    const targetIdStr = String(studentId);
+    const cleanPin = String(pin).trim();
+    let hasMatch = false;
+
+    const updatedStudents = currentStudents.map((s) => {
+      const matchId = String(s.id) === targetIdStr;
+      const matchName = studentName && (s.name || '').trim().toLowerCase() === studentName.trim().toLowerCase();
+      if (matchId || matchName) {
+        hasMatch = true;
+        const copy = { ...s, pin: cleanPin };
+        delete copy.deviceId; // clean up obsolete deviceId
+        return copy;
+      }
+      return s;
+    });
+
+    if (!hasMatch) return false;
+
+    const updatedData = { ...currentData, students: updatedStudents };
+    const { error: upsertErr } = await supabase
+      .from('appdata')
+      .upsert({ teacher_id: teacherId, data: updatedData });
+
+    if (upsertErr) throw upsertErr;
+    return true;
+  } catch (err) {
+    console.error('[Supabase] Failed to set student PIN:', err);
+    return false;
+  }
+};
+
+/**
+ * Reset/clear a student's PIN so they can set a new one.
+ */
+export const resetStudentPinInSupabase = async (teacherId, studentId, studentName = null) => {
+  try {
+    if (!teacherId || !studentId) return false;
+
+    const { data: row, error: fetchErr } = await supabase
+      .from('appdata')
+      .select('data')
+      .eq('teacher_id', teacherId)
+      .maybeSingle();
+
+    if (fetchErr) throw fetchErr;
+    if (!row || !row.data) return false;
+
+    const currentData = row.data;
+    const currentStudents = currentData.students || [];
+
+    const targetIdStr = String(studentId);
+    let hasMatch = false;
+
+    const updatedStudents = currentStudents.map((s) => {
+      const matchId = String(s.id) === targetIdStr;
+      const matchName = studentName && (s.name || '').trim().toLowerCase() === studentName.trim().toLowerCase();
+      if (matchId || matchName) {
+        hasMatch = true;
+        const copy = { ...s };
+        delete copy.pin;
+        delete copy.deviceId;
+        return copy;
+      }
+      return s;
+    });
+
+    if (!hasMatch) return false;
+
+    const updatedData = { ...currentData, students: updatedStudents };
+    const { error: upsertErr } = await supabase
+      .from('appdata')
+      .upsert({ teacher_id: teacherId, data: updatedData });
+
+    if (upsertErr) throw upsertErr;
+    return true;
+  } catch (err) {
+    console.error('[Supabase] Failed to reset student PIN:', err);
+    return false;
+  }
+};
+
+// Backwards compatibility aliases
+export const claimStudentDeviceInSupabase = async () => true;
+export const clearStudentDeviceBindingInSupabase = resetStudentPinInSupabase;
+
+/**
  * Fetch the entire group passwords registry.
  */
 export const getGroupPasswordsRegistry = async () => {

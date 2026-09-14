@@ -22,7 +22,10 @@ import {
   deregisterGroupPassword,
   getGroupPasswordsRegistry,
   loadSnapshotsFromSupabase as loadSnapshotsFromFirestore,
-  saveSnapshotToSupabase as saveSnapshotToFirestore
+  saveSnapshotToSupabase as saveSnapshotToFirestore,
+  updateStudentAvatarInSupabase,
+  setStudentPinInSupabase,
+  resetStudentPinInSupabase
 } from './utils/supabase';
 
 import {
@@ -376,6 +379,15 @@ function App() {
   const [reloadTrigger, setReloadTrigger] = useState(0);
 
   const lastSavedDataRef = useRef(null);
+  const lastLoadedReloadTrigger = useRef(0);
+  const isLoadedRef = useRef(isLoaded);
+  isLoadedRef.current = isLoaded;
+  const allTeachersDataRef = useRef(allTeachersData);
+  allTeachersDataRef.current = allTeachersData;
+  const groupsRef = useRef(groups);
+  groupsRef.current = groups;
+  const studentGroupsRef = useRef(studentGroups);
+  studentGroupsRef.current = studentGroups;
 
   // Toast notifications state
   const [toast, setToast] = useState(null);
@@ -396,14 +408,35 @@ function App() {
       setIsSyncing(true);
 
       // Multi-Teacher Student Mode or Admin Mode
-      const studentTeacherIds = userRole === 'student' && Array.isArray(studentGroups)
-        ? [...new Set(studentGroups.map(g => g.teacherId).filter(Boolean))]
+      const currentStudentGroups = studentGroupsRef.current;
+      const currentAllTeachersData = allTeachersDataRef.current;
+      const currentGroups = groupsRef.current;
+      const currentIsLoaded = isLoadedRef.current;
+
+      const studentTeacherIds = userRole === 'student' && Array.isArray(currentStudentGroups)
+        ? [...new Set(currentStudentGroups.map(g => g.teacherId).filter(Boolean))]
         : [];
+
+      const isUserForcedReload = reloadTrigger !== lastLoadedReloadTrigger.current;
 
       if (userRole === 'admin' || (userRole === 'student' && studentTeacherIds.length > 1)) {
         const idsToLoad = userRole === 'admin'
           ? ['teacher1', 'teacher2', 'teacher3', 'teacher4']
           : studentTeacherIds;
+
+        // Prevent redundant network refetch on simple group switch if all teacher data is already present in memory
+        if (
+          !isUserForcedReload &&
+          userRole === 'student' &&
+          currentIsLoaded &&
+          currentAllTeachersData &&
+          studentTeacherIds.length > 0 &&
+          studentTeacherIds.every(id => currentAllTeachersData[id])
+        ) {
+          setIsSyncing(false);
+          return;
+        }
+        lastLoadedReloadTrigger.current = reloadTrigger;
 
         const allData = await loadAllTeachersFromSupabase(idsToLoad);
         if (allData) {
@@ -443,6 +476,18 @@ function App() {
         setIsSyncing(false);
         return;
       }
+
+      // Single-Teacher Student Mode: Avoid redundant network refetch on group switch if already loaded
+      if (
+        !isUserForcedReload &&
+        userRole === 'student' &&
+        currentIsLoaded &&
+        currentGroups.length > 0
+      ) {
+        setIsSyncing(false);
+        return;
+      }
+      lastLoadedReloadTrigger.current = reloadTrigger;
 
       // Always prioritize live Cloud Database (Supabase) as Single Source of Truth
       let data = await loadFromFirestore(teacherId);
@@ -896,6 +941,193 @@ function App() {
     setTransactions(updatedTransactions);
   };
 
+  const handleUpdateStudentAvatar = useCallback(async (newAvatarKey, studentId, studentName = null) => {
+    if (!studentId || !newAvatarKey) return;
+
+    // 1. Instant optimistic update for current students array in local state
+    setStudents((prev) =>
+      prev.map((s) => {
+        const matchId = String(s.id) === String(studentId);
+        const matchName = studentName && (s.name || '').trim().toLowerCase() === studentName.trim().toLowerCase();
+        if (matchId || matchName) {
+          return { ...s, emoji: newAvatarKey };
+        }
+        return s;
+      })
+    );
+
+    // 2. Instant optimistic update in allTeachersData cache in memory
+    setAllTeachersData((prev) => {
+      if (!prev || Object.keys(prev).length === 0) return prev;
+      const copy = { ...prev };
+      Object.keys(copy).forEach((tId) => {
+        const tObj = copy[tId];
+        if (tObj && Array.isArray(tObj.students)) {
+          copy[tId] = {
+            ...tObj,
+            students: tObj.students.map((s) => {
+              const matchId = String(s.id) === String(studentId);
+              const matchName = studentName && (s.name || '').trim().toLowerCase() === studentName.trim().toLowerCase();
+              if (matchId || matchName) {
+                return { ...s, emoji: newAvatarKey };
+              }
+              return s;
+            }),
+          };
+        }
+      });
+      return copy;
+    });
+
+    // 3. Background Supabase sync across connected teachers
+    try {
+      const teachersToUpdate = new Set();
+      if (teacherId) teachersToUpdate.add(teacherId);
+      if (Array.isArray(studentGroups)) {
+        studentGroups.forEach((sg) => {
+          if (sg.teacherId) teachersToUpdate.add(sg.teacherId);
+        });
+      }
+
+      await Promise.all(
+        Array.from(teachersToUpdate).map((tId) =>
+          updateStudentAvatarInSupabase(tId, studentId, newAvatarKey, studentName)
+        )
+      );
+    } catch (err) {
+      console.warn('[Avatar Update] Background Supabase sync error:', err);
+    }
+  }, [teacherId, studentGroups]);
+
+  const handleSetStudentPin = useCallback(async (studentId, pin, studentName = null) => {
+    if (!studentId || !pin) return;
+    const cleanPin = String(pin).trim();
+
+    // 1. Optimistic state update
+    setStudents((prev) =>
+      prev.map((s) => {
+        const matchId = String(s.id) === String(studentId);
+        const matchName = studentName && (s.name || '').trim().toLowerCase() === studentName.trim().toLowerCase();
+        if (matchId || matchName) {
+          const copy = { ...s, pin: cleanPin };
+          delete copy.deviceId;
+          return copy;
+        }
+        return s;
+      })
+    );
+
+    // 2. In memory cache update
+    setAllTeachersData((prev) => {
+      if (!prev || Object.keys(prev).length === 0) return prev;
+      const copy = { ...prev };
+      Object.keys(copy).forEach((tId) => {
+        const tObj = copy[tId];
+        if (tObj && Array.isArray(tObj.students)) {
+          copy[tId] = {
+            ...tObj,
+            students: tObj.students.map((s) => {
+              const matchId = String(s.id) === String(studentId);
+              const matchName = studentName && (s.name || '').trim().toLowerCase() === studentName.trim().toLowerCase();
+              if (matchId || matchName) {
+                const sc = { ...s, pin: cleanPin };
+                delete sc.deviceId;
+                return sc;
+              }
+              return s;
+            }),
+          };
+        }
+      });
+      return copy;
+    });
+
+    // 3. Supabase sync
+    try {
+      const teachersToUpdate = new Set();
+      if (teacherId) teachersToUpdate.add(teacherId);
+      if (Array.isArray(studentGroups)) {
+        studentGroups.forEach((sg) => {
+          if (sg.teacherId) teachersToUpdate.add(sg.teacherId);
+        });
+      }
+
+      await Promise.all(
+        Array.from(teachersToUpdate).map((tId) =>
+          setStudentPinInSupabase(tId, studentId, cleanPin, studentName)
+        )
+      );
+    } catch (err) {
+      console.warn('[Set Student PIN] Background sync error:', err);
+    }
+  }, [teacherId, studentGroups]);
+
+  const handleResetStudentPin = useCallback(async (studentId, studentName = null) => {
+    if (!studentId) return;
+
+    // 1. Optimistic state update
+    setStudents((prev) =>
+      prev.map((s) => {
+        const matchId = String(s.id) === String(studentId);
+        const matchName = studentName && (s.name || '').trim().toLowerCase() === studentName.trim().toLowerCase();
+        if (matchId || matchName) {
+          const copy = { ...s };
+          delete copy.pin;
+          delete copy.deviceId;
+          return copy;
+        }
+        return s;
+      })
+    );
+
+    // 2. In memory cache update
+    setAllTeachersData((prev) => {
+      if (!prev || Object.keys(prev).length === 0) return prev;
+      const copy = { ...prev };
+      Object.keys(copy).forEach((tId) => {
+        const tObj = copy[tId];
+        if (tObj && Array.isArray(tObj.students)) {
+          copy[tId] = {
+            ...tObj,
+            students: tObj.students.map((s) => {
+              const matchId = String(s.id) === String(studentId);
+              const matchName = studentName && (s.name || '').trim().toLowerCase() === studentName.trim().toLowerCase();
+              if (matchId || matchName) {
+                const copy = { ...s };
+                delete copy.pin;
+                delete copy.deviceId;
+                return copy;
+              }
+              return s;
+            }),
+          };
+        }
+      });
+      return copy;
+    });
+
+    // 3. Supabase sync
+    try {
+      const teachersToUpdate = new Set();
+      if (teacherId) teachersToUpdate.add(teacherId);
+      if (Array.isArray(studentGroups)) {
+        studentGroups.forEach((sg) => {
+          if (sg.teacherId) teachersToUpdate.add(sg.teacherId);
+        });
+      }
+
+      await Promise.all(
+        Array.from(teachersToUpdate).map((tId) =>
+          resetStudentPinInSupabase(tId, studentId, studentName)
+        )
+      );
+      showToast("O'quvchining PIN-kodi muvaffaqiyatli bekor qilindi!", "success");
+    } catch (err) {
+      console.warn('[PIN Reset] Background sync error:', err);
+      showToast("PIN-kodni bekor qilishda xatolik yuz berdi", "error");
+    }
+  }, [teacherId, studentGroups, showToast]);
+
   const handleUpdateGroup = async (id, name, icon, password, color, schedule) => {
     const group = groups.find((g) => g.id === id);
     const oldPassword = group ? group.password : '';
@@ -1154,6 +1386,8 @@ function App() {
           onSwitchGroup={handleSwitchStudentGroup}
           onAddGroup={handleAddStudentGroup}
           onRemoveGroup={handleRemoveStudentGroup}
+          onUpdateAvatar={handleUpdateStudentAvatar}
+          onSetStudentPin={handleSetStudentPin}
           onLogout={handleLogout}
           showToast={showToast}
           theme={theme}
@@ -1194,6 +1428,7 @@ function App() {
               onUpdateStudent={handleUpdateStudent}
               onTransferStudent={handleTransferStudent}
               onDeleteStudent={handleDeleteStudent}
+              onResetStudentPin={handleResetStudentPin}
               onAwardPoints={handleAwardPoints}
               onDeleteTransaction={handleDeleteTransaction}
               showToast={showToast}

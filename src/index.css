@@ -179,17 +179,17 @@ html, body {
   box-sizing: border-box;
 }
 
+.app-container.student-app-root {
+  padding-top: 0 !important;
+}
+
 @media (max-width: 900px) {
   .app-container {
     padding-top: calc(56px + env(safe-area-inset-top, 0px));
   }
   .app-container.student-app-root {
-    padding-top: env(safe-area-inset-top, 0px) !important;
+    padding-top: max(env(safe-area-inset-top, 0px), 4px) !important;
   }
-}
-
-.app-container.student-app-root {
-  padding-top: 0 !important;
 }
 
 /* Background Atmosphere */
@@ -218,8 +218,8 @@ html, body {
     padding-bottom: calc(76px + env(safe-area-inset-bottom, 0px));
   }
   .main-content.student-main-content {
-    padding: 8px 12px;
-    padding-bottom: calc(72px + env(safe-area-inset-bottom, 0px));
+    padding: 10px 14px;
+    padding-bottom: calc(74px + env(safe-area-inset-bottom, 0px));
   }
 }
 
@@ -400,6 +400,24 @@ html, body {
 
 .toast-info {
   border-left: 4px solid var(--apple-blue);
+}
+
+@media (max-width: 680px) {
+  .toast-container {
+    bottom: calc(72px + env(safe-area-inset-bottom, 0px));
+    left: 16px;
+    right: 16px;
+    align-items: center;
+    z-index: 100002;
+  }
+  .toast {
+    min-width: unset;
+    width: 100%;
+    max-width: 380px;
+    justify-content: center;
+    border-radius: var(--radius-full);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  }
 }
 
 /* Modals */

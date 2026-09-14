@@ -1783,7 +1783,7 @@ const Attendance = ({ groups = [], students = [], attendance = [], onSaveAttenda
                             <td className="matrix-summary-cell">
                               <span 
                                 className={`rate-pill-minimal ${s.totalLessons === 0 ? 'empty' : s.rate >= 90 ? 'good' : s.rate >= 70 ? 'avg' : 'bad'}`}
-                                title={s.totalLessons > 0 ? `Davomat foizi: ${s.rate}%, Reyting balli: ${s.fairScore}` : undefined}
+                                title={s.totalLessons > 0 ? `Davomat foizi: ${s.rate}%, Reyting Like'i: ${s.fairScore}` : undefined}
                               >
                                 {s.totalLessons === 0 ? '—' : `${s.rate}%`}
                               </span>
