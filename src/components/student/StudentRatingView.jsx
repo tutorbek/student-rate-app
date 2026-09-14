@@ -113,21 +113,65 @@ export default function StudentRatingView({
       return (a.name || '').localeCompare(b.name || '', undefined, { numeric: true, sensitivity: 'base' });
     });
 
-    return list.map((s, idx) => ({ ...s, rank: idx + 1 }));
+    let currentRank = 0;
+    let lastScore = null;
+
+    return list.map((s) => {
+      if (s.score <= 0) {
+        return {
+          ...s,
+          rank: null,
+        };
+      }
+
+      if (s.score !== lastScore) {
+        currentRank += 1;
+        lastScore = s.score;
+      }
+
+      return {
+        ...s,
+        rank: currentRank,
+      };
+    });
   }, [students, transactions, timeframe]);
+
+  const hasAnyPoints = useMemo(() => {
+    return (rankedStudents || []).some((s) => s.score > 0);
+  }, [rankedStudents]);
 
   const isTodayEmpty = useMemo(() => {
     if (timeframe !== 'today') return false;
-    return !rankedStudents.some((s) => s.score > 0);
-  }, [timeframe, rankedStudents]);
+    return !hasAnyPoints;
+  }, [timeframe, hasAnyPoints]);
 
-  // Top 3 Podium Students
+  // Top 3 Podium Students (grouped by distinct rank 1, 2, 3 who have score > 0)
   const podiumTop3 = useMemo(() => {
-    const first = rankedStudents[0] || null;
-    const second = rankedStudents[1] || null;
-    const third = rankedStudents[2] || null;
+    if (!hasAnyPoints) {
+      return { first: [], second: [], third: [] };
+    }
+
+    const first = rankedStudents.filter((s) => s.rank === 1 && s.score > 0);
+    const second = rankedStudents.filter((s) => s.rank === 2 && s.score > 0);
+    const third = rankedStudents.filter((s) => s.rank === 3 && s.score > 0);
+
     return { first, second, third };
-  }, [rankedStudents]);
+  }, [hasAnyPoints, rankedStudents]);
+
+  const isFirstMe = useMemo(() => {
+    if (!pinnedStudentId) return false;
+    return podiumTop3.first.some((s) => String(s.id) === String(pinnedStudentId));
+  }, [podiumTop3.first, pinnedStudentId]);
+
+  const isSecondMe = useMemo(() => {
+    if (!pinnedStudentId) return false;
+    return podiumTop3.second.some((s) => String(s.id) === String(pinnedStudentId));
+  }, [podiumTop3.second, pinnedStudentId]);
+
+  const isThirdMe = useMemo(() => {
+    if (!pinnedStudentId) return false;
+    return podiumTop3.third.some((s) => String(s.id) === String(pinnedStudentId));
+  }, [podiumTop3.third, pinnedStudentId]);
 
   const [historyFilter, setHistoryFilter] = useState('all'); // 'all' | 'me'
 
@@ -222,24 +266,60 @@ export default function StudentRatingView({
         )}
       </div>
 
-      {/* Top-3 Minimalist Podium */}
-      {scope !== 'history' && rankedStudents.length > 0 && !isTodayEmpty && (
+      {/* Informative banner when selected timeframe has no points scored yet (not today) */}
+      {scope !== 'history' && !hasAnyPoints && timeframe !== 'today' && (
+        <div className="rating-no-points-card">
+          <div className="no-points-icon">⭐</div>
+          <div className="no-points-content">
+            <h4 className="no-points-title">Ushbu davrda hali ballar to'planmagan</h4>
+            <p className="no-points-desc">
+              Ustoz tomonidan ball va likelar berilishi bilan, peshqadamlar shohsupasi va guruh reytingi shu yerda shakllanadi.
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* Top-3 Minimalist Podium (Only shown if at least one student has score > 0) */}
+      {scope !== 'history' && hasAnyPoints && (
         <div className="podium-card">
           <div className="podium-container">
             {/* 2nd Place (Silver) */}
-            <div className={`podium-col second ${String(podiumTop3.second?.id) === String(pinnedStudentId) ? 'is-me' : ''}`}>
-              {podiumTop3.second ? (
+            <div className={`podium-col second ${isSecondMe ? 'is-me' : ''}`}>
+              {podiumTop3.second.length > 0 ? (
                 <>
                   <div className="podium-student-meta">
-                    <div className="podium-avatar-wrap">
-                      <div className="podium-avatar silver">
-                        {podiumTop3.second.name ? podiumTop3.second.name.charAt(0).toUpperCase() : '2'}
-                      </div>
+                    <div className="podium-avatar-wrap podium-avatar-group">
+                      {podiumTop3.second.slice(0, 2).map((st) => (
+                        <div key={st.id} className="podium-avatar silver avatar-stacked" title={st.name}>
+                          {st.name ? st.name.charAt(0).toUpperCase() : '2'}
+                        </div>
+                      ))}
+                      {podiumTop3.second.length > 2 && (
+                        <div className="podium-avatar silver avatar-more" title={podiumTop3.second.slice(2).map((s) => s.name).join(', ')}>
+                          +{podiumTop3.second.length - 2}
+                        </div>
+                      )}
                       <span className="podium-medal">🥈</span>
                     </div>
-                    <span className="podium-name" title={podiumTop3.second.name}>{podiumTop3.second.name}</span>
+
+                    {podiumTop3.second.length === 1 ? (
+                      <span className="podium-name" title={podiumTop3.second[0].name}>
+                        {podiumTop3.second[0].name}
+                      </span>
+                    ) : (
+                      <div className="podium-tied-names" title={podiumTop3.second.map((s) => s.name).join(', ')}>
+                        <span className="podium-name-item">
+                          {podiumTop3.second.slice(0, 2).map((s) => s.name).join(', ')}
+                        </span>
+                        {podiumTop3.second.length > 2 && (
+                          <span className="podium-tie-count">+{podiumTop3.second.length - 2} ta</span>
+                        )}
+                        <span className="podium-tie-pill">Durang</span>
+                      </div>
+                    )}
+
                     <div className="podium-score-pill">
-                      <span>{podiumTop3.second.score}</span>
+                      <span>{podiumTop3.second[0].score}</span>
                       <span className="unit">ball</span>
                     </div>
                   </div>
@@ -253,25 +333,48 @@ export default function StudentRatingView({
             </div>
 
             {/* 1st Place (Gold) */}
-            <div className={`podium-col first ${String(podiumTop3.first?.id) === String(pinnedStudentId) ? 'is-me' : ''}`}>
-              {podiumTop3.first ? (
+            <div className={`podium-col first ${isFirstMe ? 'is-me' : ''}`}>
+              {podiumTop3.first.length > 0 ? (
                 <>
                   <div className="podium-student-meta">
-                    {timeframe === 'today' && podiumTop3.first.score > 0 && (
+                    {timeframe === 'today' && podiumTop3.first[0].score > 0 && (
                       <div className="podium-today-star-badge">
                         <span className="star-icon">⭐</span>
                         <span className="star-text">Dars yulduzi</span>
                       </div>
                     )}
-                    <div className="podium-avatar-wrap">
-                      <div className="podium-avatar gold">
-                        {podiumTop3.first.name ? podiumTop3.first.name.charAt(0).toUpperCase() : '1'}
-                      </div>
+                    <div className="podium-avatar-wrap podium-avatar-group">
+                      {podiumTop3.first.slice(0, 2).map((st) => (
+                        <div key={st.id} className="podium-avatar gold avatar-stacked" title={st.name}>
+                          {st.name ? st.name.charAt(0).toUpperCase() : '1'}
+                        </div>
+                      ))}
+                      {podiumTop3.first.length > 2 && (
+                        <div className="podium-avatar gold avatar-more" title={podiumTop3.first.slice(2).map((s) => s.name).join(', ')}>
+                          +{podiumTop3.first.length - 2}
+                        </div>
+                      )}
                       <span className="podium-medal">🥇</span>
                     </div>
-                    <span className="podium-name" title={podiumTop3.first.name}>{podiumTop3.first.name}</span>
+
+                    {podiumTop3.first.length === 1 ? (
+                      <span className="podium-name" title={podiumTop3.first[0].name}>
+                        {podiumTop3.first[0].name}
+                      </span>
+                    ) : (
+                      <div className="podium-tied-names" title={podiumTop3.first.map((s) => s.name).join(', ')}>
+                        <span className="podium-name-item">
+                          {podiumTop3.first.slice(0, 2).map((s) => s.name).join(', ')}
+                        </span>
+                        {podiumTop3.first.length > 2 && (
+                          <span className="podium-tie-count">+{podiumTop3.first.length - 2} ta</span>
+                        )}
+                        <span className="podium-tie-pill">Durang</span>
+                      </div>
+                    )}
+
                     <div className="podium-score-pill gold-pill">
-                      <span>{podiumTop3.first.score}</span>
+                      <span>{podiumTop3.first[0].score}</span>
                       <span className="unit">ball</span>
                     </div>
                   </div>
@@ -285,19 +388,42 @@ export default function StudentRatingView({
             </div>
 
             {/* 3rd Place (Bronze) */}
-            <div className={`podium-col third ${String(podiumTop3.third?.id) === String(pinnedStudentId) ? 'is-me' : ''}`}>
-              {podiumTop3.third ? (
+            <div className={`podium-col third ${isThirdMe ? 'is-me' : ''}`}>
+              {podiumTop3.third.length > 0 ? (
                 <>
                   <div className="podium-student-meta">
-                    <div className="podium-avatar-wrap">
-                      <div className="podium-avatar bronze">
-                        {podiumTop3.third.name ? podiumTop3.third.name.charAt(0).toUpperCase() : '3'}
-                      </div>
+                    <div className="podium-avatar-wrap podium-avatar-group">
+                      {podiumTop3.third.slice(0, 2).map((st) => (
+                        <div key={st.id} className="podium-avatar bronze avatar-stacked" title={st.name}>
+                          {st.name ? st.name.charAt(0).toUpperCase() : '3'}
+                        </div>
+                      ))}
+                      {podiumTop3.third.length > 2 && (
+                        <div className="podium-avatar bronze avatar-more" title={podiumTop3.third.slice(2).map((s) => s.name).join(', ')}>
+                          +{podiumTop3.third.length - 2}
+                        </div>
+                      )}
                       <span className="podium-medal">🥉</span>
                     </div>
-                    <span className="podium-name" title={podiumTop3.third.name}>{podiumTop3.third.name}</span>
+
+                    {podiumTop3.third.length === 1 ? (
+                      <span className="podium-name" title={podiumTop3.third[0].name}>
+                        {podiumTop3.third[0].name}
+                      </span>
+                    ) : (
+                      <div className="podium-tied-names" title={podiumTop3.third.map((s) => s.name).join(', ')}>
+                        <span className="podium-name-item">
+                          {podiumTop3.third.slice(0, 2).map((s) => s.name).join(', ')}
+                        </span>
+                        {podiumTop3.third.length > 2 && (
+                          <span className="podium-tie-count">+{podiumTop3.third.length - 2} ta</span>
+                        )}
+                        <span className="podium-tie-pill">Durang</span>
+                      </div>
+                    )}
+
                     <div className="podium-score-pill">
-                      <span>{podiumTop3.third.score}</span>
+                      <span>{podiumTop3.third[0].score}</span>
                       <span className="unit">ball</span>
                     </div>
                   </div>
@@ -317,12 +443,26 @@ export default function StudentRatingView({
       {pinnedStudentRankInfo && scope !== 'history' && !isTodayEmpty && (
         <div className="student-my-standing-banner">
           <div className="my-standing-left">
-            <span className={`my-standing-rank-badge ${pinnedStudentRankInfo.rank <= 3 ? `top-${pinnedStudentRankInfo.rank}` : ''}`}>
-              {pinnedStudentRankInfo.rank === 1 ? '🥇' : pinnedStudentRankInfo.rank === 2 ? '🥈' : pinnedStudentRankInfo.rank === 3 ? '🥉' : `#${pinnedStudentRankInfo.rank}`}
+            <span className={`my-standing-rank-badge ${pinnedStudentRankInfo.rank && pinnedStudentRankInfo.rank <= 3 && pinnedStudentRankInfo.score > 0 ? `top-${pinnedStudentRankInfo.rank}` : 'rank-unranked'}`}>
+              {pinnedStudentRankInfo.rank === 1 && pinnedStudentRankInfo.score > 0
+                ? '🥇'
+                : pinnedStudentRankInfo.rank === 2 && pinnedStudentRankInfo.score > 0
+                ? '🥈'
+                : pinnedStudentRankInfo.rank === 3 && pinnedStudentRankInfo.score > 0
+                ? '🥉'
+                : pinnedStudentRankInfo.rank && pinnedStudentRankInfo.score > 0
+                ? `#${pinnedStudentRankInfo.rank}`
+                : '—'}
             </span>
             <div className="my-standing-text-wrap">
               <div className="my-standing-title-row">
-                <span className="my-standing-title">Siz <strong>{pinnedStudentRankInfo.rank}-o'rinda</strong>siz</span>
+                <span className="my-standing-title">
+                  {pinnedStudentRankInfo.score > 0 && pinnedStudentRankInfo.rank ? (
+                    <>Siz <strong>{pinnedStudentRankInfo.rank}-o'rinda</strong>siz</>
+                  ) : (
+                    <span>Hozircha ball to'planmagan</span>
+                  )}
+                </span>
                 <span className="my-standing-tag">Siz</span>
               </div>
               <span className="my-standing-sub">
@@ -384,8 +524,16 @@ export default function StudentRatingView({
                 return (
                   <div key={st.id} className={`ranking-row ${isMe ? 'is-me' : ''} ${isDailyStar ? 'is-daily-star' : ''}`}>
                     <div className="rank-num-col">
-                      <span className={`rank-badge ${st.rank <= 3 ? `top-${st.rank}` : ''}`}>
-                        {st.rank === 1 ? '🥇' : st.rank === 2 ? '🥈' : st.rank === 3 ? '🥉' : `#${st.rank}`}
+                      <span className={`rank-badge ${st.rank && st.rank <= 3 && st.score > 0 ? `top-${st.rank}` : 'rank-unranked'}`}>
+                        {st.rank === 1 && st.score > 0
+                          ? '🥇'
+                          : st.rank === 2 && st.score > 0
+                          ? '🥈'
+                          : st.rank === 3 && st.score > 0
+                          ? '🥉'
+                          : st.rank && st.score > 0
+                          ? `#${st.rank}`
+                          : '—'}
                       </span>
                     </div>
                     <div className="rank-name-col">
@@ -778,6 +926,103 @@ export default function StudentRatingView({
           max-width: 100%;
         }
 
+        .podium-avatar-group {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+        }
+
+        .podium-avatar-group .avatar-stacked:not(:first-child) {
+          margin-left: -12px;
+        }
+
+        .podium-avatar.avatar-more {
+          background: rgba(0, 0, 0, 0.55);
+          border: 2px solid #ffffff;
+          font-size: 0.72rem;
+          font-weight: 700;
+          margin-left: -12px;
+          color: #ffffff;
+        }
+
+        .podium-tied-names {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 1px;
+          max-width: 100%;
+          width: 100%;
+          line-height: 1.15;
+        }
+
+        .podium-name-item {
+          font-size: 0.76rem;
+          font-weight: 700;
+          color: var(--text-primary);
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          max-width: 100%;
+          display: block;
+        }
+
+        .podium-tie-count {
+          font-size: 0.68rem;
+          color: var(--text-tertiary);
+          font-weight: 600;
+        }
+
+        .podium-tie-pill {
+          display: inline-block;
+          font-size: 0.6rem;
+          font-weight: 700;
+          padding: 1px 5px;
+          border-radius: 4px;
+          background: rgba(0, 0, 0, 0.06);
+          color: var(--text-secondary);
+          margin-top: 2px;
+          text-transform: uppercase;
+          letter-spacing: 0.02em;
+        }
+
+        .rating-no-points-card {
+          display: flex;
+          align-items: center;
+          gap: 14px;
+          background: var(--bg-card);
+          border: 1px dashed var(--border-color);
+          border-radius: var(--radius-xl);
+          padding: 18px 20px;
+          margin-bottom: 20px;
+          box-shadow: var(--shadow-sm);
+        }
+
+        .no-points-icon {
+          font-size: 1.8rem;
+          line-height: 1;
+          flex-shrink: 0;
+        }
+
+        .no-points-content {
+          display: flex;
+          flex-direction: column;
+          gap: 3px;
+        }
+
+        .no-points-title {
+          font-size: 0.92rem;
+          font-weight: 700;
+          color: var(--text-primary);
+          margin: 0;
+        }
+
+        .no-points-desc {
+          font-size: 0.78rem;
+          color: var(--text-secondary);
+          margin: 0;
+          line-height: 1.4;
+        }
+
         .podium-score-pill {
           display: inline-flex;
           align-items: baseline;
@@ -904,6 +1149,14 @@ export default function StudentRatingView({
           background: transparent;
           font-size: 1.3rem;
           box-shadow: none;
+        }
+
+        .my-standing-rank-badge.rank-unranked {
+          background: var(--bg-secondary, rgba(0, 0, 0, 0.05));
+          color: var(--text-tertiary);
+          box-shadow: none;
+          border: 1px solid var(--border-color);
+          font-size: 1rem;
         }
 
         .my-standing-text-wrap {
@@ -1354,6 +1607,23 @@ export default function StudentRatingView({
             font-size: 0.95rem;
           }
 
+          .podium-avatar-group .avatar-stacked {
+            width: 26px !important;
+            height: 26px !important;
+            font-size: 0.72rem !important;
+            margin-left: -8px;
+          }
+
+          .podium-avatar-group .avatar-stacked.gold {
+            width: 30px !important;
+            height: 30px !important;
+            font-size: 0.78rem !important;
+          }
+
+          .podium-name-item {
+            font-size: 0.7rem;
+          }
+
           .podium-pedestal.p-1 {
             height: 52px;
           }
@@ -1527,6 +1797,22 @@ export default function StudentRatingView({
 
         [data-theme="dark"] .history-amount.negative {
           color: #F28B82;
+        }
+
+        [data-theme="dark"] .rating-no-points-card {
+          background: var(--bg-card);
+          border-color: var(--border-color);
+        }
+
+        [data-theme="dark"] .podium-tie-pill {
+          background: rgba(255, 255, 255, 0.1);
+          color: var(--text-secondary);
+        }
+
+        [data-theme="dark"] .my-standing-rank-badge.rank-unranked {
+          background: rgba(255, 255, 255, 0.05);
+          border-color: rgba(255, 255, 255, 0.1);
+          color: var(--text-tertiary);
         }
       `}</style>
     </div>
