@@ -147,7 +147,6 @@ const Settings = ({
   const [deleteConfirmModal, setDeleteConfirmModal] = useState(null); // { type: 'group'|'student', id, name }
   const [rollbackConfirmModal, setRollbackConfirmModal] = useState(null); // { snapshot }
   const [showResetConfirm, setShowResetConfirm] = useState(false);
-  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
   // Memos
   const deletedGroups = useMemo(() => groups.filter((g) => g.deleted), [groups]);
@@ -185,7 +184,6 @@ const Settings = ({
         setEditingTagIndex(null);
         setDeleteConfirmModal(null);
         setRollbackConfirmModal(null);
-        setShowLogoutConfirm(false);
       }
     };
     window.addEventListener('keydown', handleKeyDown);
@@ -353,39 +351,13 @@ const Settings = ({
             <div className="settings-divider" />
 
             <div className="student-profile-actions">
-              <button className="btn btn-danger scale-active" onClick={() => setShowLogoutConfirm(true)}>
+              <button className="btn btn-danger scale-active" onClick={onLogout}>
                 <IconLogOut size={16} />
                 <span>Tizimdan chiqish</span>
               </button>
             </div>
           </section>
         </div>
-
-        {/* Logout Confirmation Modal */}
-        {showLogoutConfirm && createPortal(
-          <div className="modal-overlay" onClick={() => setShowLogoutConfirm(false)}>
-            <div className="modal-content glass" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '420px' }}>
-              <button type="button" className="modal-close-btn" onClick={() => setShowLogoutConfirm(false)}>
-                <IconX />
-              </button>
-              <h3 className="modal-title" style={{ fontSize: '1.18rem', fontWeight: 700, marginBottom: '12px' }}>
-                Tizimdan chiqmoqchimisiz?
-              </h3>
-              <p className="modal-desc" style={{ fontSize: '0.88rem', color: 'var(--text-secondary)', lineHeight: 1.5, marginBottom: '20px' }}>
-                Akkauntdan chiqishni tasdiqlang. Keyingi safar kirish uchun guruh parolini qayta kiritishingiz kerak bo'ladi.
-              </p>
-              <div className="modal-actions" style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
-                <button type="button" className="btn btn-secondary scale-active" onClick={() => setShowLogoutConfirm(false)}>
-                  Bekor qilish
-                </button>
-                <button type="button" className="btn btn-danger scale-active" onClick={onLogout}>
-                  Ha, chiqish
-                </button>
-              </div>
-            </div>
-          </div>,
-          document.body
-        )}
       </div>
     );
   }
@@ -467,7 +439,7 @@ const Settings = ({
           <button
             type="button"
             className="btn btn-danger scale-active hero-logout-btn"
-            onClick={() => setShowLogoutConfirm(true)}
+            onClick={onLogout}
           >
             <IconLogOut size={15} />
             <span>Chiqish</span>
@@ -1060,31 +1032,6 @@ const Settings = ({
         document.body
       )}
 
-      {/* MODAL 5: Logout Confirmation Modal */}
-      {showLogoutConfirm && createPortal(
-        <div className="modal-overlay" onClick={() => setShowLogoutConfirm(false)}>
-          <div className="modal-content glass" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '420px' }}>
-            <button type="button" className="modal-close-btn" onClick={() => setShowLogoutConfirm(false)}>
-              <IconX />
-            </button>
-            <h3 className="modal-title" style={{ fontSize: '1.18rem', fontWeight: 700, marginBottom: '12px' }}>
-              Tizimdan chiqmoqchimisiz?
-            </h3>
-            <p style={{ fontSize: '0.88rem', color: 'var(--text-secondary)', lineHeight: 1.5, marginBottom: '20px' }}>
-              Boshqaruv panelidan chiqishni tasdiqlang.
-            </p>
-            <div className="modal-actions" style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
-              <button type="button" className="btn btn-secondary scale-active" onClick={() => setShowLogoutConfirm(false)}>
-                Bekor qilish
-              </button>
-              <button type="button" className="btn btn-danger scale-active" onClick={onLogout}>
-                Ha, chiqish
-              </button>
-            </div>
-          </div>
-        </div>,
-        document.body
-      )}
 
       {/* Scoped Apple Minimalist / Brutalist Styles for Settings */}
       <style>{`

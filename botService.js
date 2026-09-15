@@ -168,10 +168,6 @@ export const createBotService = ({
       }
     });
 
-    // Also ensure reply keyboard is active at the bottom
-    await sendTelegramMessage(chatId, `Pastdagi tugma orqali ham ilovani ochishingiz mumkin 👇`, {
-      reply_markup: STUDENT_REPLY_KEYBOARD
-    });
   };
 
   return {

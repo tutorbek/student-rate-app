@@ -325,8 +325,35 @@ export default function StudentShopComingSoon({
 
   return (
     <div className="student-shop-page">
-      {/* Top Wallet & Status Header */}
-      <div className="shop-wallet-banner">
+      {/* Blur Curtain Veil Overlay covering entire shop */}
+      <div className="shop-curtain-overlay" aria-hidden="true" />
+
+      {/* Banner at the top of the page */}
+      <div className="shop-curtain-banner-top" aria-hidden="true">
+        <div className="shop-curtain-banner">
+          <div className="shop-curtain-icon-wrap">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z" />
+              <line x1="3" y1="6" x2="21" y2="6" />
+              <path d="M16 10a4 4 0 0 1-8 0" />
+            </svg>
+            <span className="shop-curtain-sparkle">✨</span>
+          </div>
+          <div className="shop-curtain-badge-tag">
+            <span className="shop-curtain-dot" />
+            <span>Kutilmoqda</span>
+          </div>
+          <h2 className="shop-curtain-title">Do'kon Tez orada ishga tushadi</h2>
+          <p className="shop-curtain-desc">
+            To'plangan Like ballaringizni turli xil sovg'alar va imtiyozlarga almashtirish bo'limi tez kunda taqdim etiladi.
+          </p>
+        </div>
+      </div>
+
+      {/* Locked Shop Content (Blurred & Unclickable) */}
+      <div className="shop-content-locked">
+        {/* Top Wallet & Status Header */}
+        <div className="shop-wallet-banner">
         <div className="wallet-left">
           <div className="wallet-like-badge" title="Jonli Like hamyoni">
             <span className="wallet-like-heart">
@@ -659,6 +686,7 @@ export default function StudentShopComingSoon({
           </div>
         )}
       </div>
+      </div>
 
       {/* Reward Detail Modal */}
       {selectedReward && typeof document !== 'undefined' && createPortal(
@@ -865,10 +893,141 @@ export default function StudentShopComingSoon({
 
       <style>{`
         .student-shop-page {
+          position: relative;
           display: flex;
           flex-direction: column;
           gap: 14px;
           padding-bottom: 24px;
+        }
+
+        /* Locked Background Content (Visible, blurred, unclickable) */
+        .shop-content-locked {
+          display: flex;
+          flex-direction: column;
+          gap: 14px;
+          filter: blur(2.5px);
+          -webkit-filter: blur(2.5px);
+          opacity: 0.72;
+          pointer-events: none !important;
+          user-select: none !important;
+          -webkit-user-select: none !important;
+          transition: filter 0.3s ease, opacity 0.3s ease;
+        }
+
+        /* Blur Curtain Veil Overlay covering entire shop */
+        .shop-curtain-overlay {
+          position: absolute;
+          inset: -4px;
+          z-index: 10;
+          pointer-events: none;
+          background: rgba(255, 255, 255, 0.32);
+          backdrop-filter: blur(5px);
+          -webkit-backdrop-filter: blur(5px);
+          border-radius: var(--radius-2xl, 24px);
+          border: 1px solid rgba(0, 113, 227, 0.1);
+        }
+
+        /* Banner at the top of the page */
+        .shop-curtain-banner-top {
+          position: relative;
+          z-index: 25;
+          display: flex;
+          justify-content: center;
+          width: 100%;
+          margin-bottom: 8px;
+        }
+
+        /* Modern Apple-style Glassmorphism Card */
+        .shop-curtain-banner {
+          pointer-events: none;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          text-align: center;
+          width: 100%;
+          max-width: 520px;
+          padding: 22px 20px 20px;
+          background: rgba(255, 255, 255, 0.92);
+          backdrop-filter: blur(20px) saturate(180%);
+          -webkit-backdrop-filter: blur(20px) saturate(180%);
+          border: 1.5px solid rgba(0, 113, 227, 0.28);
+          border-radius: 22px;
+          box-shadow: 0 12px 32px -8px rgba(0, 113, 227, 0.18), 0 0 0 1px rgba(255, 255, 255, 0.9) inset;
+        }
+
+        @keyframes curtainFloat {
+          0% {
+            transform: translateY(0);
+          }
+          100% {
+            transform: translateY(-4px);
+          }
+        }
+
+        .shop-curtain-icon-wrap {
+          position: relative;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          width: 46px;
+          height: 46px;
+          border-radius: 16px;
+          background: linear-gradient(135deg, rgba(0, 113, 227, 0.15), rgba(245, 158, 11, 0.18));
+          color: var(--apple-blue, #0071E3);
+          margin-bottom: 10px;
+        }
+
+        .shop-curtain-sparkle {
+          position: absolute;
+          top: -5px;
+          right: -5px;
+          font-size: 13px;
+        }
+
+        .shop-curtain-badge-tag {
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          font-size: 0.72rem;
+          font-weight: 700;
+          text-transform: uppercase;
+          letter-spacing: 0.05em;
+          padding: 3px 10px;
+          border-radius: 999px;
+          background: rgba(0, 113, 227, 0.1);
+          color: var(--apple-blue, #0071E3);
+          margin-bottom: 8px;
+        }
+
+        .shop-curtain-dot {
+          width: 6px;
+          height: 6px;
+          border-radius: 50%;
+          background: #f59e0b;
+          box-shadow: 0 0 6px #f59e0b;
+          animation: curtainPulse 1.8s ease-in-out infinite;
+        }
+
+        @keyframes curtainPulse {
+          0%, 100% { opacity: 1; transform: scale(1); }
+          50% { opacity: 0.35; transform: scale(0.8); }
+        }
+
+        .shop-curtain-title {
+          margin: 0 0 6px;
+          font-size: 1.15rem;
+          font-weight: 700;
+          color: var(--text-primary, #1d1d1f);
+          letter-spacing: -0.01em;
+          line-height: 1.3;
+        }
+
+        .shop-curtain-desc {
+          margin: 0;
+          font-size: 0.84rem;
+          line-height: 1.45;
+          color: var(--text-secondary, #6e6e73);
+          max-width: 360px;
         }
 
         /* Wallet Banner */
@@ -2013,6 +2172,53 @@ export default function StudentShopComingSoon({
         [data-theme="dark"] .reward-squircle-box.theme-gold {
           background: linear-gradient(135deg, rgba(255, 214, 10, 0.35), rgba(255, 149, 0, 0.25)) !important;
           color: #FBBF24 !important;
+        }
+
+        /* Dark mode overrides for blur curtain */
+        [data-theme="dark"] .shop-curtain-overlay {
+          background: rgba(15, 23, 42, 0.45);
+          border-color: rgba(138, 180, 248, 0.15);
+        }
+        [data-theme="dark"] .shop-curtain-banner {
+          background: rgba(26, 34, 52, 0.88);
+          border-color: rgba(138, 180, 248, 0.35);
+          box-shadow: 0 16px 36px -10px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.1) inset;
+        }
+        [data-theme="dark"] .shop-curtain-icon-wrap {
+          background: linear-gradient(135deg, rgba(138, 180, 248, 0.2), rgba(245, 158, 11, 0.2));
+          color: #8ab4f8;
+        }
+        [data-theme="dark"] .shop-curtain-badge-tag {
+          background: rgba(138, 180, 248, 0.15);
+          color: #8ab4f8;
+        }
+        [data-theme="dark"] .shop-curtain-title {
+          color: #f1f5f9;
+        }
+        [data-theme="dark"] .shop-curtain-desc {
+          color: #94a3b8;
+        }
+
+        /* Responsive Mobile adjustments */
+        @media (max-width: 540px) {
+          .shop-curtain-banner-top {
+            margin-bottom: 6px;
+          }
+          .shop-curtain-banner {
+            padding: 18px 14px 16px;
+            border-radius: 18px;
+          }
+          .shop-curtain-title {
+            font-size: 1.05rem;
+          }
+          .shop-curtain-desc {
+            font-size: 0.8rem;
+          }
+          .shop-curtain-icon-wrap {
+            width: 42px;
+            height: 42px;
+            margin-bottom: 8px;
+          }
         }
       `}</style>
     </div>
