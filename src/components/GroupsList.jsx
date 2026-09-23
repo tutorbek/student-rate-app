@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { generateUniqueGroupPassword } from '../utils/db';
+import { generateUniqueGroupPassword, getGroupCategory } from '../utils/db';
 import { GROUP_SVG_ICONS, GROUP_COLOR_OPTIONS, renderGroupIcon } from '../utils/groupIcons';
 import { AVATAR_GALLERY_IMAGES, isGalleryImage, compressUploadedImage } from '../utils/avatarGallery';
 import { isGroupLessonActive } from '../utils/scheduleUtils';
@@ -118,6 +118,31 @@ const GroupsList = ({
     setShowScheduleModal(true);
   };
 
+  const [categoryModalGroup, setCategoryModalGroup] = useState(null);
+  const [modalCategoryValue, setModalCategoryValue] = useState('teens');
+
+  const handleOpenCategoryModal = (group) => {
+    setCategoryModalGroup(group);
+    setModalCategoryValue(group.category || getGroupCategory(group));
+  };
+
+  const handleSaveCategoryModal = async () => {
+    if (!categoryModalGroup) return;
+    const success = await onUpdateGroup(
+      categoryModalGroup.id,
+      categoryModalGroup.name,
+      categoryModalGroup.icon,
+      categoryModalGroup.password,
+      categoryModalGroup.color,
+      categoryModalGroup.schedule,
+      modalCategoryValue
+    );
+    if (success) {
+      setCategoryModalGroup(null);
+      showToast("Guruh toifasi muvaffaqiyatli yangilandi!", "success");
+    }
+  };
+
   const [newGroupName, setNewGroupName] = useState('');
   const [showAddModal, setShowAddModal] = useState(false);
   const [confirmDeleteId, setConfirmDeleteId] = useState(null);
@@ -146,6 +171,10 @@ const GroupsList = ({
   const [editGroupEndTime, setEditGroupEndTime] = useState('');
   const [editGroupRoom, setEditGroupRoom] = useState('');
 
+  // Category fields (Kids | Teens)
+  const [newGroupCategory, setNewGroupCategory] = useState('teens');
+  const [editGroupCategory, setEditGroupCategory] = useState('teens');
+
   useEffect(() => {
     if (showAddModal) {
       setNewGroupPassword('Yuklanmoqda...');
@@ -158,12 +187,14 @@ const GroupsList = ({
       setNewGroupStartTime('');
       setNewGroupEndTime('');
       setNewGroupRoom('');
+      setNewGroupCategory('teens');
     }
   }, [showAddModal]);
 
   useEffect(() => {
     if (editingGroup) {
       setEditGroupPassword(editingGroup.password || '');
+      setEditGroupCategory(editingGroup.category || getGroupCategory(editingGroup));
       if (editingGroup.schedule && editingGroup.schedule.startTime) {
         setEditGroupName(editingGroup.name);
         setEditGroupDays(editingGroup.schedule?.days || []);
@@ -188,7 +219,7 @@ const GroupsList = ({
         setConfirmDeleteId(null);
         setEditingGroup(null);
         setShowScheduleModal(false);
-        setScheduleTargetGroupId(null);
+        setCategoryModalGroup(null);
       }
     };
     window.addEventListener('keydown', handleKeyDown);
@@ -213,7 +244,7 @@ const GroupsList = ({
       room: newGroupRoom.trim(),
     } : null;
 
-    const success = await onAddGroup(newGroupName, newGroupIcon, newGroupPassword, newGroupColor, schedule);
+    const success = await onAddGroup(newGroupName, newGroupIcon, newGroupPassword, newGroupColor, schedule, newGroupCategory);
     if (success) {
       setNewGroupName('');
       setNewGroupIcon(GROUP_SVG_ICONS[0].id);
@@ -223,6 +254,7 @@ const GroupsList = ({
       setNewGroupStartTime('');
       setNewGroupEndTime('');
       setNewGroupRoom('');
+      setNewGroupCategory('teens');
       setShowAddModal(false);
       showToast("Yangi guruh muvaffaqiyatli qo'shildi!", "success");
     }
@@ -252,7 +284,7 @@ const GroupsList = ({
       room: editGroupRoom.trim(),
     } : null;
 
-    const success = await onUpdateGroup(editingGroup.id, editGroupName, editGroupIcon, editGroupPassword, editGroupColor, schedule);
+    const success = await onUpdateGroup(editingGroup.id, editGroupName, editGroupIcon, editGroupPassword, editGroupColor, schedule, editGroupCategory);
     if (success) {
       setEditingGroup(null);
       setEditGroupName('');
@@ -263,6 +295,7 @@ const GroupsList = ({
       setEditGroupStartTime('');
       setEditGroupEndTime('');
       setEditGroupRoom('');
+      setEditGroupCategory('teens');
       showToast("Guruh ma'lumotlari yangilandi!", "success");
     }
   };
@@ -283,6 +316,7 @@ const GroupsList = ({
           {groups.map((group) => {
             const colorOption = GROUP_COLOR_OPTIONS.find(c => c.value === group.color) || GROUP_COLOR_OPTIONS[0];
             const isCurrentLesson = isGroupLessonActive(group);
+            const category = getGroupCategory(group);
             return (
               <div
                 key={group.id}
@@ -301,6 +335,16 @@ const GroupsList = ({
                   <div className="group-item-info">
                     <div className="group-title-schedule-row">
                       <h3 className="group-item-title">{group.name}</h3>
+                      <span 
+                        className={`group-category-pill group-category-${category} scale-active`}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleOpenCategoryModal(group);
+                        }}
+                        title="Guruh toifasini o'zgartirish uchun bosing"
+                      >
+                        {category === 'kids' ? 'Kids' : 'Teens'}
+                      </span>
                       {isCurrentLesson && (
                         <span className="current-lesson-live-dot" title="Ayni paytda dars vaqti oralig'i (15 daqiqalik bufer bilan)">
                           <span className="live-dot-circle" />
@@ -330,43 +374,35 @@ const GroupsList = ({
                 </div>
 
                 <div className="group-item-actions">
+                  <button
+                    type="button"
+                    className="btn btn-secondary scale-active btn-sm btn-icon-only"
+                    onClick={() => {
+                      setEditingGroup(group);
+                      setEditGroupIcon(group.icon || AVATAR_GALLERY_IMAGES[0].path);
+                      setEditGroupColor(group.color || GROUP_COLOR_OPTIONS[0].value);
+                      const icon = group.icon || '';
+                      if (!icon) {
+                        setEditGroupIconTab('gallery');
+                      } else if (isGalleryImage(icon)) {
+                        setEditGroupIconTab('gallery');
+                      } else if (icon.startsWith('data:image')) {
+                        setEditGroupIconTab('file');
+                      } else {
+                        setEditGroupIconTab('svg');
+                      }
+                    }}
+                    title="Guruhni tahrirlash"
+                    aria-label="Guruhni tahrirlash"
+                  >
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                      <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                    </svg>
+                  </button>
                   <button className="btn btn-secondary scale-active btn-sm" onClick={() => onSelectGroup(group.id)}>
                     Ochish ➔
                   </button>
-                  <div className="group-item-action-btns">
-                    <button
-                      className="btn btn-secondary scale-active btn-sm btn-icon-only"
-                      onClick={() => {
-                        setEditingGroup(group);
-                        setEditGroupIcon(group.icon || AVATAR_GALLERY_IMAGES[0].path);
-                        setEditGroupColor(group.color || GROUP_COLOR_OPTIONS[0].value);
-                        const icon = group.icon || '';
-                        if (!icon) {
-                          setEditGroupIconTab('gallery');
-                        } else if (isGalleryImage(icon)) {
-                          setEditGroupIconTab('gallery');
-                        } else if (icon.startsWith('data:image')) {
-                          setEditGroupIconTab('file');
-                        } else {
-                          setEditGroupIconTab('svg');
-                        }
-                      }}
-                    >
-                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-                      </svg>
-                    </button>
-                    <button
-                      className="btn btn-danger scale-active btn-sm btn-icon-only"
-                      onClick={() => setConfirmDeleteId(group.id)}
-                    >
-                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                        <polyline points="3 6 5 6 21 6" />
-                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-                      </svg>
-                    </button>
-                  </div>
                 </div>
               </div>
             );
@@ -398,6 +434,74 @@ const GroupsList = ({
         modalOnly={true}
       />
 
+      {/* Category Change Modal (Pop oyna) */}
+      {categoryModalGroup && createPortal(
+        <div className="modal-overlay" onClick={() => setCategoryModalGroup(null)}>
+          <div className="modal-content glass" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '400px' }}>
+            <button
+              type="button"
+              className="modal-close-btn"
+              onClick={() => setCategoryModalGroup(null)}
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18" />
+                <line x1="6" y1="6" x2="18" y2="18" />
+              </svg>
+            </button>
+            <h3 className="modal-title">Guruh Toifasi</h3>
+            <p style={{ margin: '0 0 16px 0', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+              <strong>{categoryModalGroup.name}</strong> guruhi uchun toifani tanlang:
+            </p>
+
+            <div className="category-modal-cards">
+              <div
+                className={`category-modal-card scale-active ${modalCategoryValue === 'teens' ? 'selected' : ''}`}
+                onClick={() => setModalCategoryValue('teens')}
+              >
+                <div className="category-modal-info">
+                  <div className="category-modal-header-row">
+                    <span className="category-modal-title">Teens</span>
+                    {modalCategoryValue === 'teens' && (
+                      <span className="category-selected-tag">Tanlangan</span>
+                    )}
+                  </div>
+                  <span className="category-modal-desc">Kattalar va o'smirlar guruhlari uchun</span>
+                </div>
+              </div>
+
+              <div
+                className={`category-modal-card scale-active ${modalCategoryValue === 'kids' ? 'selected' : ''}`}
+                onClick={() => setModalCategoryValue('kids')}
+              >
+                <div className="category-modal-info">
+                  <div className="category-modal-header-row">
+                    <span className="category-modal-title">Kids</span>
+                    {modalCategoryValue === 'kids' && (
+                      <span className="category-selected-tag">Tanlangan</span>
+                    )}
+                  </div>
+                  <span className="category-modal-desc">Kichik yoshdagi bolalar guruhlari uchun</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="modal-actions" style={{ marginTop: '20px' }}>
+              <button type="button" className="btn btn-secondary scale-active" onClick={() => setCategoryModalGroup(null)}>
+                Bekor qilish
+              </button>
+              <button
+                type="button"
+                className="btn btn-primary scale-active"
+                onClick={handleSaveCategoryModal}
+              >
+                Saqlash
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+
       {/* Add Group Modal */}
       {showAddModal && createPortal(
         <div className="modal-overlay" onClick={() => setShowAddModal(false)}>
@@ -424,6 +528,26 @@ const GroupsList = ({
                   onChange={(e) => setNewGroupName(e.target.value)}
                   autoFocus
                 />
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">Toifa</label>
+                <div className="group-category-toggle-wrap">
+                  <button
+                    type="button"
+                    className={`group-category-toggle-btn ${newGroupCategory === 'teens' ? 'active' : ''}`}
+                    onClick={() => setNewGroupCategory('teens')}
+                  >
+                    Teens
+                  </button>
+                  <button
+                    type="button"
+                    className={`group-category-toggle-btn ${newGroupCategory === 'kids' ? 'active' : ''}`}
+                    onClick={() => setNewGroupCategory('kids')}
+                  >
+                    Kids
+                  </button>
+                </div>
               </div>
 
               {/* Schedule Section */}
@@ -705,7 +829,13 @@ const GroupsList = ({
             </button>
             <h3 className="modal-title text-red">Guruhni o'chirish</h3>
             <p className="modal-warning-text">
-              Ushbu guruhni o'chirishni tasdiqlaysizmi? Xavotir olmang, uni istalgan vaqt Sozlamalar &gt; Savat bo'limidan qayta tiklashingiz mumkin.
+              {confirmDeleteId && groups.find((g) => g.id === confirmDeleteId) ? (
+                <>
+                  <strong>"{groups.find((g) => g.id === confirmDeleteId)?.name}"</strong> guruhini o'chirishni tasdiqlaysizmi? Xavotir olmang, uni istalgan vaqt Sozlamalar &gt; Savat bo'limidan qayta tiklashingiz mumkin.
+                </>
+              ) : (
+                "Ushbu guruhni o'chirishni tasdiqlaysizmi? Xavotir olmang, uni istalgan vaqt Sozlamalar > Savat bo'limidan qayta tiklashingiz mumkin."
+              )}
             </p>
             <div className="modal-actions">
               <button className="btn btn-secondary scale-active" onClick={() => setConfirmDeleteId(null)}>
@@ -736,7 +866,7 @@ const GroupsList = ({
                 <line x1="6" y1="6" x2="18" y2="18" />
               </svg>
             </button>
-            <h3 className="modal-title">Guruh Nomini O'zgartirish</h3>
+            <h3 className="modal-title">Guruhni Tahrirlash</h3>
             <form onSubmit={handleEditSubmit}>
               <div className="form-group">
                 <label className="form-label">Guruh nomi</label>
@@ -748,6 +878,26 @@ const GroupsList = ({
                   onChange={(e) => setEditGroupName(e.target.value)}
                   autoFocus
                 />
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">Toifa</label>
+                <div className="group-category-toggle-wrap">
+                  <button
+                    type="button"
+                    className={`group-category-toggle-btn ${editGroupCategory === 'teens' ? 'active' : ''}`}
+                    onClick={() => setEditGroupCategory('teens')}
+                  >
+                    Teens
+                  </button>
+                  <button
+                    type="button"
+                    className={`group-category-toggle-btn ${editGroupCategory === 'kids' ? 'active' : ''}`}
+                    onClick={() => setEditGroupCategory('kids')}
+                  >
+                    Kids
+                  </button>
+                </div>
               </div>
 
               {/* Schedule Section */}
@@ -995,13 +1145,31 @@ const GroupsList = ({
                 </div>
               </div>
 
-              <div className="modal-actions">
-                <button type="button" className="btn btn-secondary scale-active" onClick={() => setEditingGroup(null)}>
-                  Bekor qilish
+              <div className="modal-actions modal-actions-edit-group">
+                <button
+                  type="button"
+                  className="btn btn-danger scale-active edit-group-delete-btn"
+                  onClick={() => {
+                    const idToDelete = editingGroup.id;
+                    setEditingGroup(null);
+                    setConfirmDeleteId(idToDelete);
+                  }}
+                  title="Guruhni o'chirish"
+                >
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="3 6 5 6 21 6" />
+                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                  </svg>
+                  <span>Guruhni o'chirish</span>
                 </button>
-                <button type="submit" className="btn btn-primary scale-active">
-                  Saqlash
-                </button>
+                <div className="modal-actions-edit-group-right">
+                  <button type="button" className="btn btn-secondary scale-active" onClick={() => setEditingGroup(null)}>
+                    Bekor qilish
+                  </button>
+                  <button type="submit" className="btn btn-primary scale-active">
+                    Saqlash
+                  </button>
+                </div>
               </div>
             </form>
           </div>
@@ -1068,6 +1236,198 @@ const GroupsList = ({
           align-items: center;
           gap: 10px;
           flex-wrap: wrap;
+        }
+
+        .group-category-pill {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          min-width: 58px;
+          height: 22px;
+          box-sizing: border-box;
+          text-align: center;
+          font-size: 0.72rem;
+          font-weight: 700;
+          letter-spacing: 0.03em;
+          padding: 0 8px;
+          border-radius: var(--radius-full, 9999px);
+          user-select: none;
+          white-space: nowrap;
+          text-transform: uppercase;
+          cursor: pointer;
+          transition: all var(--transition-fast);
+          flex-shrink: 0;
+        }
+
+        .group-category-pill:hover {
+          transform: translateY(-1px);
+          box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
+        }
+
+        .group-category-pill:active {
+          transform: scale(0.96);
+        }
+
+        .group-category-pill.group-category-kids {
+          background: rgba(255, 149, 0, 0.12);
+          color: #d97706;
+          border: 1px solid rgba(255, 149, 0, 0.3);
+        }
+
+        .group-category-pill.group-category-kids:hover {
+          background: rgba(255, 149, 0, 0.22);
+          border-color: rgba(255, 149, 0, 0.5);
+        }
+
+        .group-category-pill.group-category-teens {
+          background: rgba(88, 86, 214, 0.12);
+          color: #4f46e5;
+          border: 1px solid rgba(88, 86, 214, 0.3);
+        }
+
+        .group-category-pill.group-category-teens:hover {
+          background: rgba(88, 86, 214, 0.22);
+          border-color: rgba(88, 86, 214, 0.5);
+        }
+
+        [data-theme="dark"] .group-category-pill.group-category-kids {
+          background: rgba(255, 159, 10, 0.18);
+          color: #fbbf24;
+          border-color: rgba(255, 159, 10, 0.35);
+        }
+
+        [data-theme="dark"] .group-category-pill.group-category-kids:hover {
+          background: rgba(255, 159, 10, 0.28);
+          border-color: rgba(255, 159, 10, 0.55);
+        }
+
+        [data-theme="dark"] .group-category-pill.group-category-teens {
+          background: rgba(99, 102, 241, 0.18);
+          color: #818cf8;
+          border-color: rgba(99, 102, 241, 0.35);
+        }
+
+        [data-theme="dark"] .group-category-pill.group-category-teens:hover {
+          background: rgba(99, 102, 241, 0.28);
+          border-color: rgba(99, 102, 241, 0.55);
+        }
+
+        .category-modal-cards {
+          display: flex;
+          flex-direction: column;
+          gap: 10px;
+        }
+
+        .category-modal-card {
+          padding: 14px 16px;
+          border-radius: var(--radius-md, 12px);
+          border: 1.5px solid var(--border-color, rgba(0, 0, 0, 0.08));
+          background: var(--bg-segment, rgba(0, 0, 0, 0.03));
+          cursor: pointer;
+          transition: all var(--transition-fast);
+          display: flex;
+          flex-direction: column;
+        }
+
+        .category-modal-card:hover {
+          border-color: rgba(0, 113, 227, 0.4);
+          background: var(--bg-card, #ffffff);
+          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+        }
+
+        .category-modal-card.selected {
+          border-color: var(--apple-blue, #0071e3);
+          background: rgba(0, 113, 227, 0.06);
+          box-shadow: 0 0 0 1px var(--apple-blue, #0071e3);
+        }
+
+        [data-theme="dark"] .category-modal-card {
+          background: rgba(255, 255, 255, 0.04);
+          border-color: rgba(255, 255, 255, 0.1);
+        }
+
+        [data-theme="dark"] .category-modal-card:hover {
+          background: rgba(255, 255, 255, 0.08);
+          border-color: rgba(138, 180, 248, 0.4);
+        }
+
+        [data-theme="dark"] .category-modal-card.selected {
+          border-color: var(--apple-blue, #8ab4f8);
+          background: rgba(138, 180, 248, 0.12);
+          box-shadow: 0 0 0 1px var(--apple-blue, #8ab4f8);
+        }
+
+        .category-modal-header-row {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          margin-bottom: 3px;
+        }
+
+        .category-modal-title {
+          font-size: 1rem;
+          font-weight: 700;
+          color: var(--text-primary);
+        }
+
+        .category-selected-tag {
+          font-size: 0.72rem;
+          font-weight: 700;
+          padding: 2px 7px;
+          border-radius: var(--radius-sm, 6px);
+          background: var(--apple-blue, #0071e3);
+          color: #ffffff;
+        }
+
+        [data-theme="dark"] .category-selected-tag {
+          background: var(--apple-blue, #8ab4f8);
+          color: #202124;
+        }
+
+        .category-modal-desc {
+          font-size: 0.8rem;
+          color: var(--text-secondary);
+        }
+
+        .group-category-toggle-wrap {
+          display: flex;
+          background: var(--bg-segment, rgba(0, 0, 0, 0.05));
+          padding: 3px;
+          border-radius: var(--radius-md, 10px);
+          gap: 4px;
+          border: 1px solid var(--border-color, rgba(0, 0, 0, 0.08));
+        }
+
+        [data-theme="dark"] .group-category-toggle-wrap {
+          background: rgba(255, 255, 255, 0.06);
+          border-color: rgba(255, 255, 255, 0.1);
+        }
+
+        .group-category-toggle-btn {
+          flex: 1;
+          padding: 7px 14px;
+          font-size: 0.85rem;
+          font-weight: 600;
+          border: none;
+          background: transparent;
+          color: var(--text-secondary);
+          border-radius: var(--radius-sm, 7px);
+          cursor: pointer;
+          transition: all var(--transition-fast, 0.2s ease);
+          text-align: center;
+        }
+
+        .group-category-toggle-btn.active {
+          background: var(--bg-card, #ffffff);
+          color: var(--text-primary);
+          box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+          font-weight: 700;
+        }
+
+        [data-theme="dark"] .group-category-toggle-btn.active {
+          background: #3a3b3e;
+          color: #ffffff;
+          box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
         }
 
         .group-schedule-pill {
@@ -1629,6 +1989,65 @@ const GroupsList = ({
           display: flex;
           justify-content: flex-end;
           gap: 12px;
+        }
+
+        .modal-actions-edit-group {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 12px;
+          margin-top: 24px;
+          padding-top: 16px;
+          border-top: 1px solid var(--border-color);
+        }
+
+        .modal-actions-edit-group .edit-group-delete-btn {
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          padding: 8px 14px;
+          font-family: var(--font-family);
+          font-size: 0.82rem;
+          font-weight: 600;
+          border-radius: var(--radius-md);
+          flex: 0 0 auto;
+          cursor: pointer;
+        }
+
+        .modal-actions-edit-group-right {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          margin-left: auto;
+        }
+
+        .modal-actions-edit-group-right .btn {
+          flex: 0 0 auto;
+          min-width: 90px;
+        }
+
+        @media (max-width: 600px) {
+          .modal-actions-edit-group {
+            flex-direction: column-reverse;
+            align-items: stretch;
+            gap: 10px;
+          }
+
+          .modal-actions-edit-group .edit-group-delete-btn {
+            width: 100%;
+            justify-content: center;
+          }
+
+          .modal-actions-edit-group-right {
+            width: 100%;
+            display: flex;
+            gap: 10px;
+            margin-left: 0;
+          }
+
+          .modal-actions-edit-group-right .btn {
+            flex: 1;
+          }
         }
       `}</style>
     </div>

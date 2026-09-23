@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { getStudentScore, normalizeQuickTags } from '../utils/db';
+import { getStudentScore, normalizeQuickTags, getGroupCategory } from '../utils/db';
 import { renderGroupIcon } from '../utils/groupIcons';
 import { STUDENT_AVATARS, renderStudentAvatar as renderAvatar } from '../utils/studentAvatars';
 import { AVATAR_GALLERY_IMAGES, isGalleryImage, compressUploadedImage } from '../utils/avatarGallery';
@@ -97,7 +97,7 @@ const formatScheduleText = (schedule) => {
   return daysText || timeText || null;
 };
 
-const GroupDetail = ({ group, allGroups = [], students, transactions, quickTags, onBack, onAddStudent, onUpdateStudent, onTransferStudent, onDeleteStudent, onAwardPoints, onDeleteTransaction, onResetStudentPin, onResetStudentDevice, showToast, userRole }) => {
+const GroupDetail = ({ group, allGroups = [], students, transactions, quickTags, onBack, onUpdateGroup, onAddStudent, onUpdateStudent, onTransferStudent, onDeleteStudent, onAwardPoints, onDeleteTransaction, onResetStudentPin, onResetStudentDevice, showToast, userRole }) => {
   const [profileStudent, setProfileStudent] = useState(null);
   const [showPassword, setShowPassword] = useState(false);
   const [editingStudent, setEditingStudent] = useState(null);
@@ -109,6 +109,31 @@ const GroupDetail = ({ group, allGroups = [], students, transactions, quickTags,
   const [targetGroupId, setTargetGroupId] = useState('');
   const [avatarTab, setAvatarTab] = useState('gallery');
   const [editAvatarTab, setEditAvatarTab] = useState('gallery');
+
+  const [showCategoryModal, setShowCategoryModal] = useState(false);
+  const [modalCategoryValue, setModalCategoryValue] = useState('teens');
+
+  const handleOpenCategoryModal = () => {
+    setModalCategoryValue(group.category || getGroupCategory(group));
+    setShowCategoryModal(true);
+  };
+
+  const handleSaveCategoryModal = async () => {
+    if (!onUpdateGroup) return;
+    const success = await onUpdateGroup(
+      group.id,
+      group.name,
+      group.icon,
+      group.password,
+      group.color,
+      group.schedule,
+      modalCategoryValue
+    );
+    if (success) {
+      setShowCategoryModal(false);
+      showToast("Guruh toifasi muvaffaqiyatli yangilandi!", "success");
+    }
+  };
 
   const otherGroups = useMemo(() => {
     return (allGroups || []).filter(g => !g.deleted && g.id !== group.id);
@@ -127,6 +152,7 @@ const GroupDetail = ({ group, allGroups = [], students, transactions, quickTags,
         setProfileStudent(null);
         setEditingStudent(null);
         setTransferringStudent(null);
+        setShowCategoryModal(false);
       }
     };
     window.addEventListener('keydown', handleKeyDown);
@@ -267,7 +293,27 @@ const GroupDetail = ({ group, allGroups = [], students, transactions, quickTags,
               <div className="avatar-circle group-folder-icon" style={{ width: 38, height: 38, display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', padding: 0, border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', background: 'var(--bg-segment)', boxShadow: 'none' }}>
                 {renderGroupIcon(group.icon, 20)}
               </div>
-              <span>{group.name}</span>
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: '10px' }}>
+                {group.name}
+                <span 
+                  className={`group-category-pill group-category-${getGroupCategory(group)} scale-active`}
+                  style={{
+                    fontSize: '0.72rem',
+                    fontWeight: 700,
+                    letterSpacing: '0.03em',
+                    padding: '2px 8px',
+                    borderRadius: '9999px',
+                    textTransform: 'uppercase',
+                    userSelect: 'none',
+                    whiteSpace: 'nowrap',
+                    cursor: onUpdateGroup ? 'pointer' : 'default'
+                  }}
+                  onClick={onUpdateGroup ? handleOpenCategoryModal : undefined}
+                  title={onUpdateGroup ? "Guruh toifasini o'zgartirish uchun bosing" : undefined}
+                >
+                  {getGroupCategory(group) === 'kids' ? 'Kids' : 'Teens'}
+                </span>
+              </span>
             </h2>
             <div className="page-subtitle-container" style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
               <p className="page-subtitle" style={{ margin: 0 }}>Talabalar ro'yxati va ularni baholash</p>
@@ -1219,7 +1265,225 @@ const GroupDetail = ({ group, allGroups = [], students, transactions, quickTags,
         </div>,
         document.body
       )}
+
+      {/* Category Change Modal (Pop oyna) */}
+      {showCategoryModal && createPortal(
+        <div className="modal-overlay" onClick={() => setShowCategoryModal(false)}>
+          <div className="modal-content glass" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '400px' }}>
+            <button
+              type="button"
+              className="modal-close-btn"
+              onClick={() => setShowCategoryModal(false)}
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18" />
+                <line x1="6" y1="6" x2="18" y2="18" />
+              </svg>
+            </button>
+            <h3 className="modal-title">Guruh Toifasi</h3>
+            <p style={{ margin: '0 0 16px 0', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+              <strong>{group.name}</strong> guruhi uchun toifani tanlang:
+            </p>
+
+            <div className="category-modal-cards">
+              <div
+                className={`category-modal-card scale-active ${modalCategoryValue === 'teens' ? 'selected' : ''}`}
+                onClick={() => setModalCategoryValue('teens')}
+              >
+                <div className="category-modal-info">
+                  <div className="category-modal-header-row">
+                    <span className="category-modal-title">Teens</span>
+                    {modalCategoryValue === 'teens' && (
+                      <span className="category-selected-tag">Tanlangan</span>
+                    )}
+                  </div>
+                  <span className="category-modal-desc">Kattalar va o'smirlar guruhlari uchun</span>
+                </div>
+              </div>
+
+              <div
+                className={`category-modal-card scale-active ${modalCategoryValue === 'kids' ? 'selected' : ''}`}
+                onClick={() => setModalCategoryValue('kids')}
+              >
+                <div className="category-modal-info">
+                  <div className="category-modal-header-row">
+                    <span className="category-modal-title">Kids</span>
+                    {modalCategoryValue === 'kids' && (
+                      <span className="category-selected-tag">Tanlangan</span>
+                    )}
+                  </div>
+                  <span className="category-modal-desc">Kichik yoshdagi bolalar guruhlari uchun</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="modal-actions" style={{ marginTop: '20px' }}>
+              <button type="button" className="btn btn-secondary scale-active" onClick={() => setShowCategoryModal(false)}>
+                Bekor qilish
+              </button>
+              <button
+                type="button"
+                className="btn btn-primary scale-active"
+                onClick={handleSaveCategoryModal}
+              >
+                Saqlash
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
       <style>{`
+        .group-category-pill {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          min-width: 58px;
+          height: 22px;
+          box-sizing: border-box;
+          text-align: center;
+          font-size: 0.72rem;
+          font-weight: 700;
+          letter-spacing: 0.03em;
+          padding: 0 8px;
+          border-radius: var(--radius-full, 9999px);
+          user-select: none;
+          white-space: nowrap;
+          text-transform: uppercase;
+          transition: all var(--transition-fast);
+          flex-shrink: 0;
+        }
+
+        .group-category-pill:hover {
+          transform: translateY(-1px);
+          box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
+        }
+
+        .group-category-pill:active {
+          transform: scale(0.96);
+        }
+
+        .group-category-pill.group-category-kids {
+          background: rgba(255, 149, 0, 0.12);
+          color: #d97706;
+          border: 1px solid rgba(255, 149, 0, 0.3);
+        }
+
+        .group-category-pill.group-category-kids:hover {
+          background: rgba(255, 149, 0, 0.22);
+          border-color: rgba(255, 149, 0, 0.5);
+        }
+
+        .group-category-pill.group-category-teens {
+          background: rgba(88, 86, 214, 0.12);
+          color: #4f46e5;
+          border: 1px solid rgba(88, 86, 214, 0.3);
+        }
+
+        .group-category-pill.group-category-teens:hover {
+          background: rgba(88, 86, 214, 0.22);
+          border-color: rgba(88, 86, 214, 0.5);
+        }
+
+        [data-theme="dark"] .group-category-pill.group-category-kids {
+          background: rgba(255, 159, 10, 0.18);
+          color: #fbbf24;
+          border-color: rgba(255, 159, 10, 0.35);
+        }
+
+        [data-theme="dark"] .group-category-pill.group-category-kids:hover {
+          background: rgba(255, 159, 10, 0.28);
+          border-color: rgba(255, 159, 10, 0.55);
+        }
+
+        [data-theme="dark"] .group-category-pill.group-category-teens {
+          background: rgba(99, 102, 241, 0.18);
+          color: #818cf8;
+          border-color: rgba(99, 102, 241, 0.35);
+        }
+
+        [data-theme="dark"] .group-category-pill.group-category-teens:hover {
+          background: rgba(99, 102, 241, 0.28);
+          border-color: rgba(99, 102, 241, 0.55);
+        }
+
+        .category-modal-cards {
+          display: flex;
+          flex-direction: column;
+          gap: 10px;
+        }
+
+        .category-modal-card {
+          padding: 14px 16px;
+          border-radius: var(--radius-md, 12px);
+          border: 1.5px solid var(--border-color, rgba(0, 0, 0, 0.08));
+          background: var(--bg-segment, rgba(0, 0, 0, 0.03));
+          cursor: pointer;
+          transition: all var(--transition-fast);
+          display: flex;
+          flex-direction: column;
+        }
+
+        .category-modal-card:hover {
+          border-color: rgba(0, 113, 227, 0.4);
+          background: var(--bg-card, #ffffff);
+          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+        }
+
+        .category-modal-card.selected {
+          border-color: var(--apple-blue, #0071e3);
+          background: rgba(0, 113, 227, 0.06);
+          box-shadow: 0 0 0 1px var(--apple-blue, #0071e3);
+        }
+
+        [data-theme="dark"] .category-modal-card {
+          background: rgba(255, 255, 255, 0.04);
+          border-color: rgba(255, 255, 255, 0.1);
+        }
+
+        [data-theme="dark"] .category-modal-card:hover {
+          background: rgba(255, 255, 255, 0.08);
+          border-color: rgba(138, 180, 248, 0.4);
+        }
+
+        [data-theme="dark"] .category-modal-card.selected {
+          border-color: var(--apple-blue, #8ab4f8);
+          background: rgba(138, 180, 248, 0.12);
+          box-shadow: 0 0 0 1px var(--apple-blue, #8ab4f8);
+        }
+
+        .category-modal-header-row {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          margin-bottom: 3px;
+        }
+
+        .category-modal-title {
+          font-size: 1rem;
+          font-weight: 700;
+          color: var(--text-primary);
+        }
+
+        .category-selected-tag {
+          font-size: 0.72rem;
+          font-weight: 700;
+          padding: 2px 7px;
+          border-radius: var(--radius-sm, 6px);
+          background: var(--apple-blue, #0071e3);
+          color: #ffffff;
+        }
+
+        [data-theme="dark"] .category-selected-tag {
+          background: var(--apple-blue, #8ab4f8);
+          color: #202124;
+        }
+
+        .category-modal-desc {
+          font-size: 0.8rem;
+          color: var(--text-secondary);
+        }
+
         .group-detail-container {
           display: flex;
           flex-direction: column;

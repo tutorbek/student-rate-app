@@ -124,8 +124,18 @@ export const getEndOfLastMonth = () => {
   return new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59, 999);
 };
 
+// Helper: Get Group Category ('kids' | 'teens') with backward compatibility
+export const getGroupCategory = (group) => {
+  if (!group) return 'teens';
+  if (group.category === 'kids' || group.category === 'teens') {
+    return group.category;
+  }
+  const name = (group.name || '').toLowerCase();
+  return (name.includes('kid') || name.includes('kichik')) ? 'kids' : 'teens';
+};
+
 // --- Groups API ---
-export const addGroup = (groups, name, icon, password, color, schedule = null) => {
+export const addGroup = (groups, name, icon, password, color, schedule = null, category = 'teens') => {
   const newGroup = {
     id: generateId(),
     name: name.trim(),
@@ -133,13 +143,14 @@ export const addGroup = (groups, name, icon, password, color, schedule = null) =
     password: password ? password.trim().toLowerCase() : '',
     color: color || '#FFFFFF',
     schedule: schedule || null,
+    category: category === 'kids' ? 'kids' : 'teens',
     createdAt: new Date().toISOString(),
   };
   const updatedGroups = [...groups, newGroup];
   return { newGroup, updatedGroups };
 };
 
-export const updateGroup = (groups, groupId, newName, newIcon, newPassword, newColor, newSchedule) => {
+export const updateGroup = (groups, groupId, newName, newIcon, newPassword, newColor, newSchedule, newCategory) => {
   let updatedGroup = null;
   const updatedGroups = groups.map((g) => {
     if (g.id === groupId) {
@@ -150,6 +161,7 @@ export const updateGroup = (groups, groupId, newName, newIcon, newPassword, newC
         password: newPassword !== undefined ? newPassword.trim().toLowerCase() : g.password,
         color: newColor !== undefined ? newColor : (g.color || '#FFFFFF'),
         schedule: newSchedule !== undefined ? newSchedule : (g.schedule || null),
+        category: newCategory !== undefined ? (newCategory === 'kids' ? 'kids' : 'teens') : (g.category || getGroupCategory(g)),
       };
       return updatedGroup;
     }

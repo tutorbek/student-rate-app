@@ -20,6 +20,13 @@ const IconMoon = ({ size = 15 }) => (
   </svg>
 );
 
+const IconSettings = ({ size = 16 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="12" cy="12" r="3" />
+    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l-.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06-.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
+  </svg>
+);
+
 const Navbar = ({ activeTab, setActiveTab, userRole, onLogout, theme, toggleTheme }) => {
   const menuItems = [
     {
@@ -84,12 +91,7 @@ const Navbar = ({ activeTab, setActiveTab, userRole, onLogout, theme, toggleThem
     {
       id: 'settings',
       label: 'Sozlamalar',
-      icon: (
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
-          <circle cx="12" cy="12" r="3" />
-          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l-.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06-.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
-        </svg>
-      ),
+      icon: <IconSettings size={20} />,
     },
   ];
 
@@ -158,8 +160,20 @@ const Navbar = ({ activeTab, setActiveTab, userRole, onLogout, theme, toggleThem
                   className="btn btn-secondary scale-active theme-toggle-btn"
                   onClick={toggleTheme}
                   aria-label="Mavzuni o'zgartirish"
+                  title="Mavzuni o'zgartirish"
                 >
                   {theme === 'dark' ? <IconSun size={15} /> : <IconMoon size={15} />}
+                </button>
+              )}
+              {filteredMenuItems.some((item) => item.id === 'settings') && (
+                <button
+                  type="button"
+                  className={`btn btn-secondary scale-active navbar-settings-btn ${activeTab === 'settings' ? 'active' : ''}`}
+                  onClick={() => setActiveTab('settings')}
+                  aria-label="Sozlamalar"
+                  title="Sozlamalar"
+                >
+                  <IconSettings size={16} />
                 </button>
               )}
               <nav className="navbar-nav-desktop">
@@ -199,19 +213,21 @@ const Navbar = ({ activeTab, setActiveTab, userRole, onLogout, theme, toggleThem
       {/* Fixed Mobile & Tablet Bottom Navigation Bar (Teachers Only, as Students have full-screen view) */}
       {userRole !== 'student' && (
         <nav className="mobile-bottom-navbar">
-          {filteredMenuItems.map((item) => (
-            <button
-              key={item.id}
-              type="button"
-              className={`mobile-tab-btn scale-active ${activeTab === item.id ? 'active' : ''}`}
-              onClick={() => setActiveTab(item.id)}
-            >
-              <div className="mobile-tab-icon-wrap">
-                {item.icon}
-              </div>
-              <span className="mobile-tab-label">{item.label}</span>
-            </button>
-          ))}
+          {filteredMenuItems
+            .filter((item) => item.id !== 'settings')
+            .map((item) => (
+              <button
+                key={item.id}
+                type="button"
+                className={`mobile-tab-btn scale-active ${activeTab === item.id ? 'active' : ''}`}
+                onClick={() => setActiveTab(item.id)}
+              >
+                <div className="mobile-tab-icon-wrap">
+                  {item.icon}
+                </div>
+                <span className="mobile-tab-label">{item.label}</span>
+              </button>
+            ))}
         </nav>
       )}
 
@@ -441,6 +457,10 @@ const Navbar = ({ activeTab, setActiveTab, userRole, onLogout, theme, toggleThem
           font-weight: 700;
         }
 
+        .navbar-settings-btn {
+          display: none;
+        }
+
         /* Mobile and Tablet Breakpoints (<= 900px) */
         @media (max-width: 900px) {
           .navbar-nav-desktop {
@@ -449,6 +469,30 @@ const Navbar = ({ activeTab, setActiveTab, userRole, onLogout, theme, toggleThem
 
           .navbar-inner {
             padding: 10px 16px;
+          }
+
+          .navbar-settings-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 36px;
+            height: 36px;
+            padding: 0;
+            border-radius: var(--radius-md);
+            cursor: pointer;
+            transition: all var(--transition-fast);
+            color: var(--text-secondary);
+            flex-shrink: 0;
+          }
+
+          .navbar-settings-btn:hover {
+            color: var(--text-primary);
+          }
+
+          .navbar-settings-btn.active {
+            background: #1D1D1F;
+            color: #FFFFFF;
+            border-color: #1D1D1F;
           }
 
           .mobile-bottom-navbar {
@@ -512,6 +556,25 @@ const Navbar = ({ activeTab, setActiveTab, userRole, onLogout, theme, toggleThem
           background: #303134;
           color: #FFE082;
           border-color: rgba(255, 255, 255, 0.2);
+        }
+
+        [data-theme="dark"] .navbar-settings-btn {
+          background: #202124;
+          color: #9AA0A6;
+          border-color: #3C4043;
+        }
+
+        [data-theme="dark"] .navbar-settings-btn:hover {
+          background: #303134;
+          color: #E8EAED;
+          border-color: rgba(255, 255, 255, 0.2);
+        }
+
+        [data-theme="dark"] .navbar-settings-btn.active {
+          background: #3C4043;
+          color: #FFFFFF;
+          border-color: #5F6368;
+          box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
         }
 
         [data-theme="dark"] .mobile-bottom-navbar {

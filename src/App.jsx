@@ -890,9 +890,9 @@ function App() {
     return updatedRecord;
   };
 
-  const handleAddGroup = async (name, icon, password, color, schedule = null) => {
+  const handleAddGroup = async (name, icon, password, color, schedule = null, category = 'teens') => {
     const cleanPwd = password.trim().toLowerCase();
-    const { newGroup, updatedGroups } = addGroup(groups, name, icon, cleanPwd, color, schedule);
+    const { newGroup, updatedGroups } = addGroup(groups, name, icon, cleanPwd, color, schedule, category);
 
     // Register password globally in Supabase registry
     const success = await registerGroupPassword(cleanPwd, teacherId, newGroup.id);
@@ -1128,7 +1128,7 @@ function App() {
     }
   }, [teacherId, studentGroups, showToast]);
 
-  const handleUpdateGroup = async (id, name, icon, password, color, schedule) => {
+  const handleUpdateGroup = async (id, name, icon, password, color, schedule, category) => {
     const group = groups.find((g) => g.id === id);
     const oldPassword = group ? group.password : '';
     const cleanNewPassword = password !== undefined ? password.trim().toLowerCase() : oldPassword;
@@ -1144,7 +1144,7 @@ function App() {
       }
     }
 
-    const { updatedGroup, updatedGroups } = updateGroup(groups, id, name, icon, cleanNewPassword, color, schedule);
+    const { updatedGroup, updatedGroups } = updateGroup(groups, id, name, icon, cleanNewPassword, color, schedule, category);
     setGroups(updatedGroups);
     return true;
   };
@@ -1424,6 +1424,7 @@ function App() {
               transactions={filteredTransactions}
               quickTags={quickTags}
               onBack={() => setSelectedGroupId(null)}
+              onUpdateGroup={handleUpdateGroup}
               onAddStudent={handleAddStudent}
               onUpdateStudent={handleUpdateStudent}
               onTransferStudent={handleTransferStudent}

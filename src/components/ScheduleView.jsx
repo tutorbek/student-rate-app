@@ -2,6 +2,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { renderGroupIcon, GROUP_COLOR_OPTIONS } from '../utils/groupIcons';
 import { renderAvatar } from '../utils/studentAvatars';
+import { getGroupCategory } from '../utils/db';
 import Time24Input from './Time24Input';
 
 const WEEKDAYS = [
@@ -379,15 +380,8 @@ const ScheduleView = ({
                           </div>
 
                           <div className="lesson-card-footer">
-                            <span
-                              className="lesson-edit-hint"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleOpenEdit(group);
-                              }}
-                              title="Dars vaqtini tahrirlash"
-                            >
-                              Tahrirlash
+                            <span className={`group-category-pill group-category-${getGroupCategory(group)}`}>
+                              {getGroupCategory(group) === 'kids' ? 'Kids' : 'Teens'}
                             </span>
                           </div>
                         </div>
@@ -451,6 +445,9 @@ const ScheduleView = ({
                     {activeGroup ? (
                       <>
                         <span className="schedule-select-group-name">{activeGroup.name}</span>
+                        <span className={`group-category-pill group-category-${getGroupCategory(activeGroup)}`}>
+                          {getGroupCategory(activeGroup) === 'kids' ? 'Kids' : 'Teens'}
+                        </span>
                         <span className="schedule-select-student-count">({getStudentCount(activeGroup.id)} talaba)</span>
                       </>
                     ) : (
@@ -479,6 +476,9 @@ const ScheduleView = ({
                           >
                             <div className="schedule-item-left">
                               <span className="schedule-item-name">{g.name}</span>
+                              <span className={`group-category-pill group-category-${getGroupCategory(g)}`}>
+                                {getGroupCategory(g) === 'kids' ? 'Kids' : 'Teens'}
+                              </span>
                               <span className="schedule-item-count">({count} talaba)</span>
                             </div>
                             {isSelected && (
@@ -636,6 +636,9 @@ const ScheduleView = ({
                 <div className="student-list-header-info">
                   <div className="student-list-title-row">
                     <h3 className="student-list-group-name">{selectedGroupForStudents.name}</h3>
+                    <span className={`group-category-pill group-category-${getGroupCategory(selectedGroupForStudents)}`}>
+                      {getGroupCategory(selectedGroupForStudents) === 'kids' ? 'Kids' : 'Teens'}
+                    </span>
                     <span className="student-list-count-badge">
                       {selectedGroupStudents.length} ta talaba
                     </span>
@@ -1180,6 +1183,50 @@ const ScheduleView = ({
           display: flex;
           align-items: center;
           gap: 8px;
+          min-width: 0;
+        }
+
+        .group-category-pill {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          min-width: 52px;
+          height: 20px;
+          box-sizing: border-box;
+          text-align: center;
+          font-size: 0.68rem;
+          font-weight: 700;
+          letter-spacing: 0.03em;
+          padding: 0 6px;
+          border-radius: var(--radius-full, 9999px);
+          user-select: none;
+          white-space: nowrap;
+          text-transform: uppercase;
+          flex-shrink: 0;
+        }
+
+        .group-category-pill.group-category-kids {
+          background: rgba(255, 149, 0, 0.12);
+          color: #d97706;
+          border: 1px solid rgba(255, 149, 0, 0.3);
+        }
+
+        .group-category-pill.group-category-teens {
+          background: rgba(88, 86, 214, 0.12);
+          color: #4f46e5;
+          border: 1px solid rgba(88, 86, 214, 0.3);
+        }
+
+        [data-theme="dark"] .group-category-pill.group-category-kids {
+          background: rgba(255, 159, 10, 0.18);
+          color: #fbbf24;
+          border-color: rgba(255, 159, 10, 0.35);
+        }
+
+        [data-theme="dark"] .group-category-pill.group-category-teens {
+          background: rgba(99, 102, 241, 0.18);
+          color: #818cf8;
+          border-color: rgba(99, 102, 241, 0.35);
         }
 
         .lesson-group-icon {
@@ -1213,7 +1260,7 @@ const ScheduleView = ({
         .lesson-card-footer {
           display: flex;
           align-items: center;
-          justify-content: flex-end;
+          justify-content: flex-start;
           padding-top: 4px;
           border-top: 1px dashed rgba(0, 0, 0, 0.06);
         }

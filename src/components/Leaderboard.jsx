@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { getStudentScore, getStartOfToday, getStartOfMonth, getStartOfLastMonth, getEndOfLastMonth } from '../utils/db';
+import { getStudentScore, getStartOfToday, getStartOfMonth, getStartOfLastMonth, getEndOfLastMonth, getGroupCategory } from '../utils/db';
 import { getCurrentActiveLessonGroup, isGroupLessonActive } from '../utils/scheduleUtils';
 import { renderAvatar } from '../utils/studentAvatars';
 
@@ -87,6 +87,7 @@ const Leaderboard = ({
 
   const [selectedGroupId, setSelectedGroupId] = useState(initialGroupId);
   const [selectedHistoryStudentId, setSelectedHistoryStudentId] = useState('all');
+  const [selectedCategory, setSelectedCategory] = useState('all'); // 'all' | 'kids' | 'teens'
 
   useEffect(() => {
     if (userRole === 'student') {
@@ -150,6 +151,38 @@ const Leaderboard = ({
     return map;
   }, [activeGroupsPool]);
 
+  // Student's own group category ('kids' | 'teens')
+  const studentCategory = useMemo(() => {
+    if (userRole !== 'student') return 'teens';
+    const myGroup = groups && groups.length > 0 ? groups[0] : null;
+    return myGroup ? getGroupCategory(myGroup) : 'teens';
+  }, [userRole, groups]);
+
+  // Fast group category map O(G)
+  const groupCategoryMap = useMemo(() => {
+    const map = new Map();
+    for (let i = 0; i < activeGroupsPool.length; i++) {
+      map.set(activeGroupsPool[i].id, getGroupCategory(activeGroupsPool[i]));
+    }
+    return map;
+  }, [activeGroupsPool]);
+
+  // Groups available in teacher dropdown based on selected category
+  const availableGroupsForDropdown = useMemo(() => {
+    if (selectedCategory === 'all') return groups;
+    return groups.filter((g) => getGroupCategory(g) === selectedCategory);
+  }, [groups, selectedCategory]);
+
+  const handleCategoryChange = (cat) => {
+    setSelectedCategory(cat);
+    if (cat !== 'all' && selectedGroupId !== 'all' && selectedGroupId !== 'top10_all') {
+      const currentGrp = groups.find(g => g.id === selectedGroupId);
+      if (currentGrp && getGroupCategory(currentGrp) !== cat) {
+        setSelectedGroupId('all');
+      }
+    }
+  };
+
   // Fast pre-calculated scores map in O(T) single pass
   const studentScoreMap = useMemo(() => {
     const map = new Map();
@@ -204,11 +237,15 @@ const Leaderboard = ({
   }, [selectedGroupId, selectedHistoryStudentId, activeStudentsPool]);
 
   const filteredStudentsForDropdown = useMemo(() => {
-    if (selectedGroupId === 'all' || selectedGroupId === 'top10_all') {
-      return activeStudentsPool;
+    let pool = activeStudentsPool;
+    if (userRole !== 'student' && selectedCategory !== 'all') {
+      pool = pool.filter((s) => groupCategoryMap.get(s.groupId) === selectedCategory);
     }
-    return activeStudentsPool.filter((s) => s.groupId === selectedGroupId);
-  }, [activeStudentsPool, selectedGroupId]);
+    if (selectedGroupId === 'all' || selectedGroupId === 'top10_all') {
+      return pool;
+    }
+    return pool.filter((s) => s.groupId === selectedGroupId);
+  }, [activeStudentsPool, selectedGroupId, selectedCategory, userRole, groupCategoryMap]);
 
   const studentTxs = useMemo(() => {
     if (!profileStudent) return [];
@@ -235,6 +272,12 @@ const Leaderboard = ({
       if (selectedGroupId !== 'all' && selectedGroupId !== 'top10_all' && groupId !== selectedGroupId) {
         continue;
       }
+      if (userRole === 'student' && selectedGroupId === 'top10_all' && groupCategoryMap.get(groupId) !== studentCategory) {
+        continue;
+      }
+      if (userRole !== 'student' && selectedGroupId === 'all' && selectedCategory !== 'all' && groupCategoryMap.get(groupId) !== selectedCategory) {
+        continue;
+      }
       if (selectedHistoryStudentId !== 'all' && tx.studentId !== selectedHistoryStudentId) {
         continue;
       }
@@ -250,7 +293,7 @@ const Leaderboard = ({
     }
 
     return data;
-  }, [activeTab, activeTransactionsPool, activeStudentsPool, groupNameMap, selectedGroupId, selectedHistoryStudentId]);
+  }, [activeTab, activeTransactionsPool, activeStudentsPool, groupNameMap, selectedGroupId, selectedHistoryStudentId, userRole, selectedCategory, studentCategory, groupCategoryMap]);
 
   const HISTORY_PAGE_SIZE = 20;
   const [visibleHistoryCount, setVisibleHistoryCount] = useState(HISTORY_PAGE_SIZE);
@@ -295,8 +338,12 @@ const Leaderboard = ({
     const isStudentTop10 = userRole === 'student' && selectedGroupId === 'top10_all';
 
     let data = activeStudentsPool;
-    if (!isStudentTop10 && selectedGroupId !== 'all') {
+    if (isStudentTop10) {
+      data = data.filter((s) => groupCategoryMap.get(s.groupId) === studentCategory);
+    } else if (selectedGroupId !== 'all') {
       data = data.filter((s) => s.groupId === selectedGroupId);
+    } else if (selectedCategory !== 'all') {
+      data = data.filter((s) => groupCategoryMap.get(s.groupId) === selectedCategory);
     }
 
     const scored = data.map((s) => {
@@ -328,7 +375,7 @@ const Leaderboard = ({
         rank: currentRank,
       };
     });
-  }, [activeStudentsPool, groupNameMap, studentScoreMap, selectedGroupId, userRole]);
+  }, [activeStudentsPool, groupNameMap, studentScoreMap, selectedGroupId, userRole, selectedCategory, studentCategory, groupCategoryMap]);
 
   const hasAnyPoints = useMemo(() => {
     return standings.some((s) => s.score !== 0);
@@ -387,7 +434,7 @@ const Leaderboard = ({
                 className={`student-scope-btn scale-active ${selectedGroupId === 'top10_all' ? 'active' : ''}`}
                 onClick={() => setSelectedGroupId('top10_all')}
               >
-                Umumiy TOP 10
+                {studentCategory === 'kids' ? 'Kids TOP 10' : 'Teens TOP 10'}
               </button>
               <button
                 type="button"
@@ -399,72 +446,115 @@ const Leaderboard = ({
             </div>
           </div>
         ) : (
-          <div className="filter-item">
-            <label className="form-label">Guruh</label>
-            <div className="custom-dropdown-container">
-              <button 
-                type="button" 
-                className="filter-select-btn" 
-                onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-              >
-                <span style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
-                  {selectedGroupId === 'all' ? 'Barcha guruhlar' : (groups.find(g => g.id === selectedGroupId)?.name || 'Guruhsiz')}
-                  {selectedGroupId !== 'all' && (() => {
-                    const selG = groups.find(g => g.id === selectedGroupId);
-                    return selG && isGroupLessonActive(selG) ? (
-                      <span className="current-lesson-live-dot" style={{ fontSize: '0.68rem', padding: '1px 6px' }}>
-                        <span className="live-dot-circle" />
-                        Hozir darsda
-                      </span>
-                    ) : null;
-                  })()}
-                </span>
-                <span className="dropdown-arrow">
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="6 9 12 15 18 9"/></svg>
-                </span>
-              </button>
-              {isDropdownOpen && (
-                <>
-                  <div className="custom-select-overlay" onClick={() => setIsDropdownOpen(false)} />
-                  <div className="custom-dropdown-list glass">
-                    <div 
-                      className={`custom-dropdown-item ${selectedGroupId === 'all' ? 'active' : ''}`}
-                      onClick={() => {
-                        hasUserManuallySelectedGroupRef.current = true;
-                        setSelectedGroupId('all');
-                        setIsDropdownOpen(false);
-                      }}
-                    >
-                      Barcha guruhlar
-                    </div>
-                    {groups.map((g) => {
-                      const isLive = isGroupLessonActive(g);
-                      return (
-                        <div 
-                          key={g.id} 
-                          className={`custom-dropdown-item ${selectedGroupId === g.id ? 'active' : ''}`}
-                          style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}
-                          onClick={() => {
-                            hasUserManuallySelectedGroupRef.current = true;
-                            setSelectedGroupId(g.id);
-                            setIsDropdownOpen(false);
-                          }}
-                        >
-                          <span>{g.name}</span>
-                          {isLive && (
+          <>
+            <div className="filter-item category-filter-item">
+              <label className="form-label">Toifa</label>
+              <div className="category-toggle">
+                <button
+                  type="button"
+                  className={`category-btn scale-active ${selectedCategory === 'all' ? 'active' : ''}`}
+                  onClick={() => handleCategoryChange('all')}
+                >
+                  Barchasi
+                </button>
+                <button
+                  type="button"
+                  className={`category-btn scale-active ${selectedCategory === 'kids' ? 'active' : ''}`}
+                  onClick={() => handleCategoryChange('kids')}
+                >
+                  Kids
+                </button>
+                <button
+                  type="button"
+                  className={`category-btn scale-active ${selectedCategory === 'teens' ? 'active' : ''}`}
+                  onClick={() => handleCategoryChange('teens')}
+                >
+                  Teens
+                </button>
+              </div>
+            </div>
+
+            <div className="filter-item">
+              <label className="form-label">Guruh</label>
+              <div className="custom-dropdown-container">
+                <button 
+                  type="button" 
+                  className="filter-select-btn" 
+                  onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                >
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
+                    {selectedGroupId === 'all' ? 'Barcha guruhlar' : (groups.find(g => g.id === selectedGroupId)?.name || 'Guruhsiz')}
+                    {selectedGroupId !== 'all' && (() => {
+                      const selG = groups.find(g => g.id === selectedGroupId);
+                      const cat = selG ? getGroupCategory(selG) : null;
+                      return selG ? (
+                        <>
+                          <span className={`group-category-pill group-category-${cat}`}>
+                            {cat === 'kids' ? 'Kids' : 'Teens'}
+                          </span>
+                          {isGroupLessonActive(selG) && (
                             <span className="current-lesson-live-dot" style={{ fontSize: '0.68rem', padding: '1px 6px' }}>
                               <span className="live-dot-circle" />
                               Hozir darsda
                             </span>
                           )}
-                        </div>
-                      );
-                    })}
-                  </div>
-                </>
-              )}
+                        </>
+                      ) : null;
+                    })()}
+                  </span>
+                  <span className="dropdown-arrow">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+                  </span>
+                </button>
+                {isDropdownOpen && (
+                  <>
+                    <div className="custom-select-overlay" onClick={() => setIsDropdownOpen(false)} />
+                    <div className="custom-dropdown-list glass">
+                      <div 
+                        className={`custom-dropdown-item ${selectedGroupId === 'all' ? 'active' : ''}`}
+                        onClick={() => {
+                          hasUserManuallySelectedGroupRef.current = true;
+                          setSelectedGroupId('all');
+                          setIsDropdownOpen(false);
+                        }}
+                      >
+                        Barcha guruhlar
+                      </div>
+                      {availableGroupsForDropdown.map((g) => {
+                        const isLive = isGroupLessonActive(g);
+                        const cat = getGroupCategory(g);
+                        return (
+                          <div 
+                            key={g.id} 
+                            className={`custom-dropdown-item ${selectedGroupId === g.id ? 'active' : ''}`}
+                            style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}
+                            onClick={() => {
+                              hasUserManuallySelectedGroupRef.current = true;
+                              setSelectedGroupId(g.id);
+                              setIsDropdownOpen(false);
+                            }}
+                          >
+                            <span>{g.name}</span>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                              <span className={`group-category-pill group-category-${cat}`}>
+                                {cat === 'kids' ? 'Kids' : 'Teens'}
+                              </span>
+                              {isLive && (
+                                <span className="current-lesson-live-dot" style={{ fontSize: '0.68rem', padding: '1px 6px' }}>
+                                  <span className="live-dot-circle" />
+                                  Hozir darsda
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </>
+                )}
+              </div>
             </div>
-          </div>
+          </>
         )}
 
         {activeTab === 'standings' ? (
@@ -1032,6 +1122,106 @@ const Leaderboard = ({
           flex: 0 0 auto;
           min-width: unset;
           max-width: none;
+        }
+
+        .category-filter-item {
+          flex: 0 0 auto;
+          min-width: unset;
+          max-width: none;
+        }
+
+        .category-toggle {
+          display: inline-flex;
+          align-items: center;
+          background: #F5F5F7;
+          border-radius: var(--radius-md);
+          padding: 3px;
+          border: 1px solid rgba(0, 0, 0, 0.04);
+          gap: 2px;
+        }
+
+        [data-theme="dark"] .category-toggle {
+          background: rgba(255, 255, 255, 0.06);
+          border-color: rgba(255, 255, 255, 0.08);
+        }
+
+        .category-btn {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          padding: 7px 14px;
+          border: none;
+          background: transparent;
+          font-family: var(--font-family);
+          font-weight: 600;
+          font-size: 0.84rem;
+          cursor: pointer;
+          color: var(--text-secondary);
+          border-radius: var(--radius-sm);
+          transition: background-color var(--transition-fast), color var(--transition-fast), box-shadow var(--transition-fast);
+          touch-action: manipulation;
+          box-sizing: border-box;
+          white-space: nowrap;
+        }
+
+        .category-btn:hover {
+          color: var(--text-primary);
+        }
+
+        .category-btn.active {
+          background: #FFFFFF;
+          color: var(--text-primary);
+          box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+          font-weight: 700;
+        }
+
+        [data-theme="dark"] .category-btn.active {
+          background: #3A3B3E;
+          color: #FFFFFF;
+          box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
+        }
+
+        .group-category-pill {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          min-width: 54px;
+          height: 20px;
+          box-sizing: border-box;
+          text-align: center;
+          font-size: 0.68rem;
+          font-weight: 700;
+          letter-spacing: 0.03em;
+          padding: 0 6px;
+          border-radius: var(--radius-full, 9999px);
+          user-select: none;
+          white-space: nowrap;
+          text-transform: uppercase;
+          flex-shrink: 0;
+        }
+
+        .group-category-pill.group-category-kids {
+          background: rgba(255, 149, 0, 0.12);
+          color: #d97706;
+          border: 1px solid rgba(255, 149, 0, 0.3);
+        }
+
+        .group-category-pill.group-category-teens {
+          background: rgba(88, 86, 214, 0.12);
+          color: #4f46e5;
+          border: 1px solid rgba(88, 86, 214, 0.3);
+        }
+
+        [data-theme="dark"] .group-category-pill.group-category-kids {
+          background: rgba(255, 159, 10, 0.18);
+          color: #fbbf24;
+          border-color: rgba(255, 159, 10, 0.35);
+        }
+
+        [data-theme="dark"] .group-category-pill.group-category-teens {
+          background: rgba(99, 102, 241, 0.18);
+          color: #818cf8;
+          border-color: rgba(99, 102, 241, 0.35);
         }
 
         .student-scope-toggle {

@@ -1427,6 +1427,10 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
   border-radius: var(--radius-md);
 }
 
+.navbar-settings-btn {
+  display: none;
+}
+
 @media (max-width: 900px) {
   .navbar-nav-desktop {
     display: none;
@@ -1434,6 +1438,30 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 
   .navbar-inner {
     padding: 10px 16px;
+  }
+
+  .navbar-settings-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    color: var(--text-secondary);
+    flex-shrink: 0;
+  }
+
+  .navbar-settings-btn:hover {
+    color: var(--text-primary);
+  }
+
+  .navbar-settings-btn.active {
+    background: #1D1D1F;
+    color: #FFFFFF;
+    border-color: #1D1D1F;
   }
 }
 
@@ -1531,6 +1559,25 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
   background: #303134;
   color: #FFE082;
   border-color: rgba(255, 255, 255, 0.2);
+}
+
+[data-theme="dark"] .app-navbar .navbar-settings-btn {
+  background: #202124;
+  color: #9AA0A6;
+  border-color: #3C4043;
+}
+
+[data-theme="dark"] .app-navbar .navbar-settings-btn:hover {
+  background: #303134;
+  color: #E8EAED;
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+[data-theme="dark"] .app-navbar .navbar-settings-btn.active {
+  background: #3C4043;
+  color: #FFFFFF;
+  border-color: #5F6368;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
 }
 
 [data-theme="dark"] .mobile-bottom-navbar {

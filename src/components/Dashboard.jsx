@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { getStudentScore } from '../utils/db';
+import { getStudentScore, getGroupCategory } from '../utils/db';
 import { renderGroupIcon } from '../utils/groupIcons';
 import { renderAvatar } from '../utils/studentAvatars';
 import { calculateStudentAttendanceStats } from '../utils/attendanceUtils';
@@ -45,6 +45,30 @@ const Dashboard = ({ setActiveTab, onSelectGroup, onOpenSchedule, groups = [], s
   // Stats
   const totalGroups = groups.length;
   const totalStudents = students.length;
+
+  const groupCategoryMap = useMemo(() => {
+    const map = {};
+    groups.forEach((g) => {
+      map[g.id] = getGroupCategory(g);
+    });
+    return map;
+  }, [groups]);
+
+  const kidsStudentsCount = useMemo(() => {
+    return students.filter((s) => !s.deleted && groupCategoryMap[s.groupId] === 'kids').length;
+  }, [students, groupCategoryMap]);
+
+  const teensStudentsCount = useMemo(() => {
+    return students.filter((s) => !s.deleted && groupCategoryMap[s.groupId] !== 'kids').length;
+  }, [students, groupCategoryMap]);
+
+  const kidsGroupsCount = useMemo(() => {
+    return groups.filter((g) => getGroupCategory(g) === 'kids').length;
+  }, [groups]);
+
+  const teensGroupsCount = useMemo(() => {
+    return groups.filter((g) => getGroupCategory(g) !== 'kids').length;
+  }, [groups]);
 
   // Find Spotlight: Most Absent Student (Eng ko'p dars qoldirgan o'quvchi)
   const mostAbsentSpotlight = useMemo(() => {
@@ -255,7 +279,17 @@ const Dashboard = ({ setActiveTab, onSelectGroup, onOpenSchedule, groups = [], s
                 )}
               </button>
             </div>
-            <p className="stat-value">{showGroupCount ? totalGroups : '••••'}</p>
+            <div className="stat-value-container">
+              <p className="stat-value">{showGroupCount ? totalGroups : '••••'}</p>
+              <div className="stat-category-pills">
+                <span className="stat-cat-pill stat-cat-kids">
+                  Kids: {showGroupCount ? kidsGroupsCount : '••'}
+                </span>
+                <span className="stat-cat-pill stat-cat-teens">
+                  Teens: {showGroupCount ? teensGroupsCount : '••'}
+                </span>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -284,7 +318,17 @@ const Dashboard = ({ setActiveTab, onSelectGroup, onOpenSchedule, groups = [], s
                 )}
               </button>
             </div>
-            <p className="stat-value">{showStudentCount ? totalStudents : '••••'}</p>
+            <div className="stat-value-container">
+              <p className="stat-value">{showStudentCount ? totalStudents : '••••'}</p>
+              <div className="stat-category-pills">
+                <span className="stat-cat-pill stat-cat-kids">
+                  Kids: {showStudentCount ? kidsStudentsCount : '••'}
+                </span>
+                <span className="stat-cat-pill stat-cat-teens">
+                  Teens: {showStudentCount ? teensStudentsCount : '••'}
+                </span>
+              </div>
+            </div>
           </div>
         </div>
       </section>
@@ -489,13 +533,55 @@ const Dashboard = ({ setActiveTab, onSelectGroup, onOpenSchedule, groups = [], s
           color: var(--text-primary);
         }
 
+        .stat-value-container {
+          display: flex;
+          align-items: baseline;
+          justify-content: space-between;
+          gap: 8px;
+          flex-wrap: wrap;
+          margin-top: 4px;
+        }
+
         .stat-value {
           font-size: 1.45rem;
           font-weight: 700;
-          margin-top: 2px;
+          margin: 0;
           color: var(--text-primary);
           letter-spacing: -0.02em;
           line-height: 1.1;
+        }
+
+        .stat-category-pills {
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          flex-wrap: wrap;
+        }
+
+        .stat-cat-pill {
+          display: inline-flex;
+          align-items: center;
+          gap: 3px;
+          font-size: 0.72rem;
+          font-weight: 700;
+          padding: 2px 7px;
+          border-radius: var(--radius-full, 9999px);
+          user-select: none;
+          line-height: 1.25;
+          letter-spacing: 0.02em;
+          white-space: nowrap;
+        }
+
+        .stat-cat-pill.stat-cat-kids {
+          background: rgba(255, 149, 0, 0.12);
+          color: #d97706;
+          border: 1px solid rgba(255, 149, 0, 0.28);
+        }
+
+        .stat-cat-pill.stat-cat-teens {
+          background: rgba(88, 86, 214, 0.12);
+          color: #4f46e5;
+          border: 1px solid rgba(88, 86, 214, 0.28);
         }
 
         @media (max-width: 600px) {
@@ -522,6 +608,11 @@ const Dashboard = ({ setActiveTab, onSelectGroup, onOpenSchedule, groups = [], s
 
           .stat-value {
             font-size: 1.2rem;
+          }
+
+          .stat-cat-pill {
+            font-size: 0.68rem;
+            padding: 2px 6px;
           }
 
           .stat-label {
@@ -721,6 +812,18 @@ const Dashboard = ({ setActiveTab, onSelectGroup, onOpenSchedule, groups = [], s
 
         [data-theme="dark"] .stat-toggle-btn:hover {
           color: #E8EAED;
+        }
+
+        [data-theme="dark"] .stat-cat-pill.stat-cat-kids {
+          background: rgba(255, 159, 10, 0.16);
+          color: #fbbf24;
+          border-color: rgba(255, 159, 10, 0.35);
+        }
+
+        [data-theme="dark"] .stat-cat-pill.stat-cat-teens {
+          background: rgba(99, 102, 241, 0.16);
+          color: #a5b4fc;
+          border-color: rgba(99, 102, 241, 0.35);
         }
 
         [data-theme="dark"] .spotlight-card {
