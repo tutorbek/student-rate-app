@@ -335,12 +335,6 @@ const GroupsList = ({
                   <div className="group-item-info">
                     <div className="group-title-schedule-row">
                       <h3 className="group-item-title">{group.name}</h3>
-                      {isCurrentLesson && (
-                        <span className="current-lesson-live-dot" title="Ayni paytda dars vaqti oralig'i (15 daqiqalik bufer bilan)">
-                          <span className="live-dot-circle" />
-                          Hozir darsda
-                        </span>
-                      )}
                       {formatGroupScheduleBadge(group.schedule, () => handleOpenScheduleForGroup(group.id))}
                     </div>
                     <div className="group-item-meta-row">
@@ -364,16 +358,24 @@ const GroupsList = ({
                 </div>
 
                 <div className="group-item-actions">
-                  <span 
-                    className={`group-category-pill group-category-${category} scale-active`}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleOpenCategoryModal(group);
-                    }}
-                    title="Guruh toifasini o'zgartirish uchun bosing"
-                  >
-                    {category === 'kids' ? 'Kids' : 'Teens'}
-                  </span>
+                  <div className="group-item-badges-left">
+                    <span 
+                      className={`group-category-pill group-category-${category} scale-active`}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleOpenCategoryModal(group);
+                      }}
+                      title="Guruh toifasini o'zgartirish uchun bosing"
+                    >
+                      {category === 'kids' ? 'Kids' : 'Teens'}
+                    </span>
+                    {isCurrentLesson && (
+                      <span className="current-lesson-live-dot" title="Ayni paytda dars vaqti oralig'i (15 daqiqalik bufer bilan)">
+                        <span className="live-dot-circle" />
+                        Hozir darsda
+                      </span>
+                    )}
+                  </div>
                   <div className="group-item-action-btns">
                     <button
                       type="button"
@@ -1743,10 +1745,14 @@ const GroupsList = ({
           color: #248A3D;
           background: rgba(52, 199, 89, 0.12);
           border: 1px solid rgba(52, 199, 89, 0.3);
-          padding: 1px 7px;
+          padding: 0 8px;
+          height: 22px;
+          box-sizing: border-box;
           border-radius: var(--radius-full);
           letter-spacing: 0.01em;
           white-space: nowrap;
+          user-select: none;
+          flex-shrink: 0;
         }
 
         .live-dot-circle {
@@ -1842,6 +1848,13 @@ const GroupsList = ({
           align-items: center;
           gap: 12px;
           flex-shrink: 0;
+        }
+
+        .group-item-badges-left {
+          display: inline-flex;
+          align-items: center;
+          gap: 8px;
+          flex-wrap: wrap;
         }
 
         .group-item-action-btns {
