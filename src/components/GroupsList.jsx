@@ -335,16 +335,6 @@ const GroupsList = ({
                   <div className="group-item-info">
                     <div className="group-title-schedule-row">
                       <h3 className="group-item-title">{group.name}</h3>
-                      <span 
-                        className={`group-category-pill group-category-${category} scale-active`}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleOpenCategoryModal(group);
-                        }}
-                        title="Guruh toifasini o'zgartirish uchun bosing"
-                      >
-                        {category === 'kids' ? 'Kids' : 'Teens'}
-                      </span>
                       {isCurrentLesson && (
                         <span className="current-lesson-live-dot" title="Ayni paytda dars vaqti oralig'i (15 daqiqalik bufer bilan)">
                           <span className="live-dot-circle" />
@@ -374,35 +364,47 @@ const GroupsList = ({
                 </div>
 
                 <div className="group-item-actions">
-                  <button
-                    type="button"
-                    className="btn btn-secondary scale-active btn-sm btn-icon-only"
-                    onClick={() => {
-                      setEditingGroup(group);
-                      setEditGroupIcon(group.icon || AVATAR_GALLERY_IMAGES[0].path);
-                      setEditGroupColor(group.color || GROUP_COLOR_OPTIONS[0].value);
-                      const icon = group.icon || '';
-                      if (!icon) {
-                        setEditGroupIconTab('gallery');
-                      } else if (isGalleryImage(icon)) {
-                        setEditGroupIconTab('gallery');
-                      } else if (icon.startsWith('data:image')) {
-                        setEditGroupIconTab('file');
-                      } else {
-                        setEditGroupIconTab('svg');
-                      }
+                  <span 
+                    className={`group-category-pill group-category-${category} scale-active`}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleOpenCategoryModal(group);
                     }}
-                    title="Guruhni tahrirlash"
-                    aria-label="Guruhni tahrirlash"
+                    title="Guruh toifasini o'zgartirish uchun bosing"
                   >
-                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-                      <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-                    </svg>
-                  </button>
-                  <button className="btn btn-secondary scale-active btn-sm" onClick={() => onSelectGroup(group.id)}>
-                    Ochish ➔
-                  </button>
+                    {category === 'kids' ? 'Kids' : 'Teens'}
+                  </span>
+                  <div className="group-item-action-btns">
+                    <button
+                      type="button"
+                      className="btn btn-secondary scale-active btn-sm btn-icon-only"
+                      onClick={() => {
+                        setEditingGroup(group);
+                        setEditGroupIcon(group.icon || AVATAR_GALLERY_IMAGES[0].path);
+                        setEditGroupColor(group.color || GROUP_COLOR_OPTIONS[0].value);
+                        const icon = group.icon || '';
+                        if (!icon) {
+                          setEditGroupIconTab('gallery');
+                        } else if (isGalleryImage(icon)) {
+                          setEditGroupIconTab('gallery');
+                        } else if (icon.startsWith('data:image')) {
+                          setEditGroupIconTab('file');
+                        } else {
+                          setEditGroupIconTab('svg');
+                        }
+                      }}
+                      title="Guruhni tahrirlash"
+                      aria-label="Guruhni tahrirlash"
+                    >
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                      </svg>
+                    </button>
+                    <button className="btn btn-secondary scale-active btn-sm" onClick={() => onSelectGroup(group.id)}>
+                      Ochish ➔
+                    </button>
+                  </div>
                 </div>
               </div>
             );
@@ -1838,7 +1840,7 @@ const GroupsList = ({
         .group-item-actions {
           display: flex;
           align-items: center;
-          gap: 10px;
+          gap: 12px;
           flex-shrink: 0;
         }
 
@@ -1860,13 +1862,17 @@ const GroupsList = ({
             flex: none;
           }
 
-          .group-item-badge-wrap {
-            display: flex;
-            align-items: center;
+          .group-item-title {
+            white-space: normal;
+            word-break: break-word;
           }
 
           .group-item-actions {
-            margin-left: auto;
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-left: 0;
           }
         }
 
