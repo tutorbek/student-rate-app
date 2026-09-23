@@ -34,22 +34,6 @@ export function isStudentInGroupAtDate(student, lessonDateStr, groupId = null) {
     return false;
   }
 
-  // Determine earliest enrollment date in school
-  let earliestDate = (student.createdAt || '').slice(0, 10);
-  if (Array.isArray(student.groupHistory) && student.groupHistory.length > 0) {
-    student.groupHistory.forEach((h) => {
-      const hJoin = (h.joinedAt || '').slice(0, 10);
-      if (hJoin && (!earliestDate || hJoin < earliestDate)) {
-        earliestDate = hJoin;
-      }
-    });
-  }
-
-  // Before student joined the school -> false
-  if (earliestDate && cleanDate < earliestDate) {
-    return false;
-  }
-
   // If student was soft deleted and lesson date is after deletion -> false
   if (student.deleted && student.deletedAt && cleanDate > student.deletedAt.slice(0, 10)) {
     return false;
@@ -72,23 +56,13 @@ export function wasStudentInGroupDuringMonth(student, groupId, year, month) {
   if (!student || !groupId) return false;
   if (student.groupId !== groupId) return false;
 
-  const m = String(month + 1).padStart(2, '0');
-  const lastDay = new Date(year, month + 1, 0).getDate();
-  const monthEnd = `${year}-${m}-${String(lastDay).padStart(2, '0')}`;
-
-  let earliestDate = (student.createdAt || '').slice(0, 10);
-  if (Array.isArray(student.groupHistory) && student.groupHistory.length > 0) {
-    student.groupHistory.forEach((h) => {
-      const hJoin = (h.joinedAt || '').slice(0, 10);
-      if (hJoin && (!earliestDate || hJoin < earliestDate)) {
-        earliestDate = hJoin;
-      }
-    });
-  }
-
-  // If student was only created in a future month (relative to monthEnd):
-  if (earliestDate && earliestDate > monthEnd) {
-    return false;
+  // If student was soft deleted before this month started:
+  if (student.deleted && student.deletedAt) {
+    const m = String(month + 1).padStart(2, '0');
+    const monthStart = `${year}-${m}-01`;
+    if (student.deletedAt.slice(0, 10) < monthStart) {
+      return false;
+    }
   }
 
   return true;
@@ -159,9 +133,7 @@ export function calculateSessionAttendance(rec, students = [], groupStudents = [
     }
 
     const student = studentMap.get(String(sId));
-    // If student does not exist, is deleted, or was not in this group on this date:
-    // Exclude from this group's session!
-    if (!student || student.deleted) {
+    if (!student) {
       return;
     }
     if (!isStudentInGroupAtDate(student, rec.date, rec.groupId)) {

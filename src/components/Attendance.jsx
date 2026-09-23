@@ -417,7 +417,10 @@ const Attendance = ({ groups = [], students = [], attendance = [], onSaveAttenda
   };
 
   const currentGroupStudents = useMemo(() => students.filter((s) => s.groupId === selectedGroupId && !s.deleted), [students, selectedGroupId]);
-  const currentRecord = useMemo(() => attendance.find((r) => r.groupId === selectedGroupId && r.date === selectedDate), [attendance, selectedGroupId, selectedDate]);
+  const currentRecord = useMemo(() => {
+    const cleanSelected = sanitizeAttendanceDate(selectedDate);
+    return attendance.find((r) => r.groupId === selectedGroupId && sanitizeAttendanceDate(r.date) === cleanSelected);
+  }, [attendance, selectedGroupId, selectedDate]);
   const isDateExplicitlyMarked = !!(currentRecord && currentRecord.records && Object.keys(currentRecord.records).length > 0);
 
   // Return only explicitly saved records for this session from DB
@@ -649,9 +652,11 @@ const Attendance = ({ groups = [], students = [], attendance = [], onSaveAttenda
     attendance
       .filter((r) => r.groupId === selectedGroupId)
       .forEach((rec) => {
+        const cleanDate = sanitizeAttendanceDate(rec.date);
         const breakdown = calculateSessionAttendance(rec, students, groupStudents);
-        map[rec.date] = {
+        map[cleanDate] = {
           ...rec,
+          date: cleanDate,
           records: breakdown.effectiveRecords,
           studentsList: breakdown.studentsList,
           present: breakdown.present,
@@ -1853,6 +1858,7 @@ const Attendance = ({ groups = [], students = [], attendance = [], onSaveAttenda
                           setSelectedDate(fullDateStr);
                           setCalendarViewYear(d.year);
                           setCalendarViewMonth(d.month);
+                          setDraftRecords(null);
                           setActiveTab('mark');
                         }
                       }}
@@ -2178,6 +2184,7 @@ const Attendance = ({ groups = [], students = [], attendance = [], onSaveAttenda
                   const targetDate = sanitizeAttendanceDate(selectedDayDetail.date);
                   setSelectedDate(targetDate);
                   syncCalendarViewWithDate(targetDate);
+                  setDraftRecords(null);
                   setActiveTab('mark');
                   setSelectedDayDetail(null);
                 }}
