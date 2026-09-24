@@ -359,7 +359,7 @@ export default function StudentRatingView({
               <div className="hero-history-stat-box stat-box-center highlight">
                 <div className="stat-box-icon-ring ring-gold">
                   {activePinnedStudent ? (
-                    <div style={{ width: 44, height: 44, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <div className="stat-box-avatar-inner">
                       {renderAvatar(activePinnedStudent.emoji, 44)}
                     </div>
                   ) : (
@@ -397,7 +397,7 @@ export default function StudentRatingView({
               {podiumTop3.second ? (
                 <div className="podium-card">
                   <div className="podium-avatar-ring ring-silver">
-                    <div className="podium-avatar-inner" style={{ width: 56, height: 56 }}>
+                    <div className="podium-avatar-inner inner-2">
                       {renderAvatar(podiumTop3.second.emoji, 56)}
                     </div>
                   </div>
@@ -440,7 +440,7 @@ export default function StudentRatingView({
               {podiumTop3.first ? (
                 <div className="podium-card champion-card">
                   <div className="podium-avatar-ring ring-gold">
-                    <div className="podium-avatar-inner" style={{ width: 68, height: 68 }}>
+                    <div className="podium-avatar-inner inner-1">
                       {renderAvatar(podiumTop3.first.emoji, 68)}
                     </div>
                   </div>
@@ -483,7 +483,7 @@ export default function StudentRatingView({
               {podiumTop3.third ? (
                 <div className="podium-card">
                   <div className="podium-avatar-ring ring-bronze">
-                    <div className="podium-avatar-inner" style={{ width: 52, height: 52 }}>
+                    <div className="podium-avatar-inner inner-3">
                       {renderAvatar(podiumTop3.third.emoji, 52)}
                     </div>
                   </div>
