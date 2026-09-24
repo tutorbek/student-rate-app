@@ -1,5 +1,5 @@
 import React from 'react';
-import { normalizeIconUrl } from './avatarGallery';
+import { normalizeIconUrl, AVATAR_GALLERY_IMAGES } from './avatarGallery';
 
 // Ultra-vibrant, high-detail, expressive SVG avatars for students
 export const STUDENT_AVATARS = [
@@ -892,7 +892,23 @@ export const renderStudentAvatar = (avatarKey, size = 24) => {
 
   // If it's a URL, gallery image path, or base64 image
   if (typeof normalizedKey === 'string' && (normalizedKey.startsWith('http') || normalizedKey.startsWith('data:image') || normalizedKey.includes('/') || normalizedKey.includes('.'))) {
-    return <img src={normalizedKey} alt="avatar" loading="lazy" decoding="async" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />;
+    const galleryMatch = AVATAR_GALLERY_IMAGES.find((img) => img.path === normalizedKey || img.cdnPath === normalizedKey || (img.name && normalizedKey.includes(img.name)));
+    const cdnFallback = galleryMatch?.cdnPath;
+
+    return (
+      <img
+        src={normalizedKey}
+        alt="avatar"
+        loading="lazy"
+        decoding="async"
+        onError={(e) => {
+          if (cdnFallback && e.currentTarget.src !== cdnFallback) {
+            e.currentTarget.src = cdnFallback;
+          }
+        }}
+        style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+      />
+    );
   }
 
   // Check if it's a legacy emoji

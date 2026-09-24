@@ -370,7 +370,7 @@ const GroupsList = ({
                       {category === 'kids' ? 'Kids' : 'Teens'}
                     </span>
                     {isCurrentLesson && (
-                      <span className="current-lesson-live-dot" title="Ayni paytda dars vaqti oralig'i (15 daqiqalik bufer bilan)">
+                      <span className="current-lesson-live-dot" title="Ayni paytda dars vaqti oralig'i (5 daqiqalik bufer bilan)">
                         <span className="live-dot-circle" />
                         Hozir darsda
                       </span>
@@ -718,23 +718,37 @@ const GroupsList = ({
 
                 {groupIconTab === 'gallery' && (
                   <div className="avatar-gallery-picker-grid">
-                    {AVATAR_GALLERY_IMAGES.map((img) => (
-                      <button
-                        key={img.id}
-                        type="button"
-                        className={`avatar-gallery-item-btn scale-active ${newGroupIcon === img.path ? 'selected' : ''}`}
-                        onClick={() => setNewGroupIcon(img.path)}
-                      >
-                        <img src={img.path} alt={img.label} loading="lazy" decoding="async" className="gallery-thumb-img" />
-                        {newGroupIcon === img.path && (
-                          <div className="gallery-selected-badge">
-                            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round">
-                              <polyline points="20 6 9 17 4 12" />
-                            </svg>
-                          </div>
-                        )}
-                      </button>
-                    ))}
+                    {AVATAR_GALLERY_IMAGES.map((img) => {
+                      const isSelected = newGroupIcon === img.path || newGroupIcon === img.cdnPath || (newGroupIcon && newGroupIcon.includes(img.name));
+                      return (
+                        <button
+                          key={img.id}
+                          type="button"
+                          className={`avatar-gallery-item-btn scale-active ${isSelected ? 'selected' : ''}`}
+                          onClick={() => setNewGroupIcon(img.path)}
+                        >
+                          <img
+                            src={img.path}
+                            alt={img.label}
+                            loading="lazy"
+                            decoding="async"
+                            className="gallery-thumb-img"
+                            onError={(e) => {
+                              if (img.cdnPath && e.currentTarget.src !== img.cdnPath) {
+                                e.currentTarget.src = img.cdnPath;
+                              }
+                            }}
+                          />
+                          {isSelected && (
+                            <div className="gallery-selected-badge">
+                              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round">
+                                <polyline points="20 6 9 17 4 12" />
+                              </svg>
+                            </div>
+                          )}
+                        </button>
+                      );
+                    })}
                   </div>
                 )}
 
@@ -1064,23 +1078,37 @@ const GroupsList = ({
 
                 {editGroupIconTab === 'gallery' && (
                   <div className="avatar-gallery-picker-grid">
-                    {AVATAR_GALLERY_IMAGES.map((img) => (
-                      <button
-                        key={img.id}
-                        type="button"
-                        className={`avatar-gallery-item-btn scale-active ${editGroupIcon === img.path ? 'selected' : ''}`}
-                        onClick={() => setEditGroupIcon(img.path)}
-                      >
-                        <img src={img.path} alt={img.label} loading="lazy" decoding="async" className="gallery-thumb-img" />
-                        {editGroupIcon === img.path && (
-                          <div className="gallery-selected-badge">
-                            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round">
-                              <polyline points="20 6 9 17 4 12" />
-                            </svg>
-                          </div>
-                        )}
-                      </button>
-                    ))}
+                    {AVATAR_GALLERY_IMAGES.map((img) => {
+                      const isSelected = editGroupIcon === img.path || editGroupIcon === img.cdnPath || (editGroupIcon && editGroupIcon.includes(img.name));
+                      return (
+                        <button
+                          key={img.id}
+                          type="button"
+                          className={`avatar-gallery-item-btn scale-active ${isSelected ? 'selected' : ''}`}
+                          onClick={() => setEditGroupIcon(img.path)}
+                        >
+                          <img
+                            src={img.path}
+                            alt={img.label}
+                            loading="lazy"
+                            decoding="async"
+                            className="gallery-thumb-img"
+                            onError={(e) => {
+                              if (img.cdnPath && e.currentTarget.src !== img.cdnPath) {
+                                e.currentTarget.src = img.cdnPath;
+                              }
+                            }}
+                          />
+                          {isSelected && (
+                            <div className="gallery-selected-badge">
+                              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round">
+                                <polyline points="20 6 9 17 4 12" />
+                              </svg>
+                            </div>
+                          )}
+                        </button>
+                      );
+                    })}
                   </div>
                 )}
 

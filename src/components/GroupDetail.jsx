@@ -143,11 +143,19 @@ const GroupDetail = ({ group, allGroups = [], students, transactions, quickTags,
     return formatScheduleText(group?.schedule);
   }, [group?.schedule]);
 
+  const [studentSearchQuery, setStudentSearchQuery] = useState('');
+
+  useEffect(() => {
+    setStudentSearchQuery('');
+  }, [group?.id]);
+
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (e.key === 'Escape') {
+        setStudentSearchQuery('');
         setShowAddStudentModal(false);
         setConfirmDeleteId(null);
+        setPinResetTarget(null);
         setScoringStudent(null);
         setProfileStudent(null);
         setEditingStudent(null);
@@ -164,6 +172,25 @@ const GroupDetail = ({ group, allGroups = [], students, transactions, quickTags,
   const [selectedEmoji, setSelectedEmoji] = useState(AVATAR_GALLERY_IMAGES[0].path);
   const [selectedColor, setSelectedColor] = useState(COLOR_OPTIONS[0].value);
   const [confirmDeleteId, setConfirmDeleteId] = useState(null);
+  const [pinResetTarget, setPinResetTarget] = useState(null);
+
+  const handleConfirmResetPin = () => {
+    if (!pinResetTarget) return;
+    const { id, name } = pinResetTarget;
+    if (onResetStudentPin) {
+      onResetStudentPin(id, name);
+    } else if (onResetStudentDevice) {
+      onResetStudentDevice(id, name);
+    }
+    if (profileStudent && String(profileStudent.id) === String(id)) {
+      setProfileStudent((prev) => prev ? { ...prev, pin: null, deviceId: null } : null);
+    }
+    if (editingStudent && String(editingStudent.id) === String(id)) {
+      setEditingStudent((prev) => prev ? { ...prev, pin: null, deviceId: null } : null);
+    }
+    setPinResetTarget(null);
+    showToast?.(`${name} ning PIN-kodi bekor qilindi va begona qurilmalar chiqarildi!`, "success");
+  };
 
   // Like modal states
   const [scoringStudent, setScoringStudent] = useState(null);
@@ -183,6 +210,13 @@ const GroupDetail = ({ group, allGroups = [], students, transactions, quickTags,
         totalScore: getStudentScore(transactions, s.id, 'all'),
       }));
   }, [students, group.id, transactions]);
+
+  // Filter students by search query
+  const filteredStudents = useMemo(() => {
+    if (!studentSearchQuery.trim()) return groupStudents;
+    const q = studentSearchQuery.toLowerCase().trim();
+    return groupStudents.filter((s) => s.name.toLowerCase().includes(q));
+  }, [groupStudents, studentSearchQuery]);
 
   // Filter transactions for profile student
   const studentTxs = useMemo(() => {
@@ -411,9 +445,49 @@ const GroupDetail = ({ group, allGroups = [], students, transactions, quickTags,
         </div>
       </div>
 
+      {/* Student Search Bar */}
+      {groupStudents.length > 0 && (
+        <div className="student-search-bar-wrap">
+          <div className="student-search-input-box">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="student-search-icon">
+              <circle cx="11" cy="11" r="8" />
+              <line x1="21" y1="21" x2="16.65" y2="16.65" />
+            </svg>
+            <input
+              type="text"
+              className="student-search-input"
+              placeholder="Talabani ismi bo'yicha qidirish..."
+              value={studentSearchQuery}
+              onChange={(e) => setStudentSearchQuery(e.target.value)}
+              aria-label="Talabani ismi bo'yicha qidirish"
+            />
+            {studentSearchQuery && (
+              <button
+                type="button"
+                className="student-search-clear-btn scale-active"
+                onClick={() => setStudentSearchQuery('')}
+                title="Qidiruvni tozalash"
+                aria-label="Qidiruvni tozalash"
+              >
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="18" y1="6" x2="6" y2="18" />
+                  <line x1="6" y1="6" x2="18" y2="18" />
+                </svg>
+              </button>
+            )}
+          </div>
+          {studentSearchQuery && (
+            <span className="student-search-count-pill">
+              {filteredStudents.length} ta topildi
+            </span>
+          )}
+        </div>
+      )}
+
       {groupStudents.length > 0 ? (
-        <div className="students-vertical-list">
-          {groupStudents.map((student) => (
+        filteredStudents.length > 0 ? (
+          <div className="students-vertical-list">
+            {filteredStudents.map((student) => (
             <div key={student.id} className="glass-card student-list-item">
               <div className="student-item-header-row">
                 <div 
@@ -505,7 +579,27 @@ const GroupDetail = ({ group, allGroups = [], students, transactions, quickTags,
               </div>
             </div>
           ))}
-        </div>
+          </div>
+        ) : (
+          <div className="glass-card empty-students-placeholder" style={{ padding: '36px 20px', textAlign: 'center' }}>
+            <div className="placeholder-icon" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.8rem', marginBottom: '8px' }}>
+              🔍
+            </div>
+            <h3 style={{ margin: '0 0 6px 0', fontSize: '1.05rem', fontWeight: 700, color: 'var(--text-primary)' }}>
+              "{studentSearchQuery}" bo'yicha talaba topilmadi
+            </h3>
+            <p style={{ margin: '0 0 16px 0', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+              Ism to'g'ri yozilganligini tekshiring yoki qidiruv so'zini tozalang.
+            </p>
+            <button
+              type="button"
+              className="btn btn-secondary btn-sm scale-active"
+              onClick={() => setStudentSearchQuery('')}
+            >
+              Qidiruvni tozalash
+            </button>
+          </div>
+        )
       ) : (
         <div className="glass-card empty-students-placeholder">
           <div className="placeholder-icon" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -569,23 +663,37 @@ const GroupDetail = ({ group, allGroups = [], students, transactions, quickTags,
 
                 {avatarTab === 'gallery' && (
                   <div className="avatar-gallery-picker-grid">
-                    {AVATAR_GALLERY_IMAGES.map((img) => (
-                      <button
-                        key={img.id}
-                        type="button"
-                        className={`avatar-gallery-item-btn scale-active ${selectedEmoji === img.path ? 'selected' : ''}`}
-                        onClick={() => setSelectedEmoji(img.path)}
-                      >
-                        <img src={img.path} alt={img.label} loading="lazy" decoding="async" className="gallery-thumb-img" />
-                        {selectedEmoji === img.path && (
-                          <div className="gallery-selected-badge">
-                            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round">
-                              <polyline points="20 6 9 17 4 12" />
-                            </svg>
-                          </div>
-                        )}
-                      </button>
-                    ))}
+                    {AVATAR_GALLERY_IMAGES.map((img) => {
+                      const isSelected = selectedEmoji === img.path || selectedEmoji === img.cdnPath || (selectedEmoji && selectedEmoji.includes(img.name));
+                      return (
+                        <button
+                          key={img.id}
+                          type="button"
+                          className={`avatar-gallery-item-btn scale-active ${isSelected ? 'selected' : ''}`}
+                          onClick={() => setSelectedEmoji(img.path)}
+                        >
+                          <img
+                            src={img.path}
+                            alt={img.label}
+                            loading="lazy"
+                            decoding="async"
+                            className="gallery-thumb-img"
+                            onError={(e) => {
+                              if (img.cdnPath && e.currentTarget.src !== img.cdnPath) {
+                                e.currentTarget.src = img.cdnPath;
+                              }
+                            }}
+                          />
+                          {isSelected && (
+                            <div className="gallery-selected-badge">
+                              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round">
+                                <polyline points="20 6 9 17 4 12" />
+                              </svg>
+                            </div>
+                          )}
+                        </button>
+                      );
+                    })}
                   </div>
                 )}
 
@@ -885,14 +993,26 @@ const GroupDetail = ({ group, allGroups = [], students, transactions, quickTags,
               </div>
             </div>
 
-            <div className="profile-device-bound-card">
-              <div className="profile-device-left">
-                <span className="profile-device-icon">{profileStudent.pin ? '🔒' : '🔓'}</span>
-                <div>
-                  <span className="profile-device-title">
+            <div className={`teacher-pin-detail-card ${profileStudent.pin ? 'is-protected' : 'is-open'}`}>
+              <div className="teacher-pin-detail-left">
+                <div className="teacher-pin-detail-icon-wrap">
+                  {profileStudent.pin ? (
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                      <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                      <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                    </svg>
+                  ) : (
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                      <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                      <path d="M7 11V7a5 5 0 0 1 9.9-1" />
+                    </svg>
+                  )}
+                </div>
+                <div className="teacher-pin-detail-text">
+                  <span className="teacher-pin-detail-title">
                     {profileStudent.pin ? "PIN-kod o'rnatilgan" : "PIN-kod belgilanmagan"}
                   </span>
-                  <span className="profile-device-subtitle">
+                  <span className="teacher-pin-detail-subtitle">
                     {profileStudent.pin 
                       ? "O'quvchi o'z profiliga 4 xonali PIN bilan kiradi" 
                       : "O'quvchi birinchi kirganida o'ziga PIN o'rnatadi"}
@@ -902,21 +1022,17 @@ const GroupDetail = ({ group, allGroups = [], students, transactions, quickTags,
               {profileStudent.pin && (onResetStudentPin || onResetStudentDevice) && (
                 <button
                   type="button"
-                  className="btn btn-secondary btn-sm scale-active"
-                  style={{ fontSize: '0.78rem', padding: '5px 12px' }}
+                  className="teacher-pin-reset-action-btn sm scale-active"
                   onClick={() => {
-                    if (window.confirm(`${profileStudent.name} ning PIN-kodini bekor qilmoqchimisiz? O'quvchi keyingi kirishida yangi PIN o'rnatishi mumkin bo'ladi.`)) {
-                      if (onResetStudentPin) {
-                        onResetStudentPin(profileStudent.id, profileStudent.name);
-                      } else if (onResetStudentDevice) {
-                        onResetStudentDevice(profileStudent.id, profileStudent.name);
-                      }
-                      setProfileStudent((prev) => prev ? { ...prev, pin: null, deviceId: null } : null);
-                      showToast?.("PIN-kod muvaffaqiyatli bekor qilindi!", "success");
-                    }
+                    setPinResetTarget({ id: profileStudent.id, name: profileStudent.name });
                   }}
+                  title="PIN-kodni bekor qilish"
                 >
-                  PINni bekor qilish (Reset)
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+                    <path d="M3 3v5h5" />
+                  </svg>
+                  <span>PINni bekor qilish (Reset)</span>
                 </button>
               )}
             </div>
@@ -977,23 +1093,37 @@ const GroupDetail = ({ group, allGroups = [], students, transactions, quickTags,
 
                 {editAvatarTab === 'gallery' && (
                   <div className="avatar-gallery-picker-grid">
-                    {AVATAR_GALLERY_IMAGES.map((img) => (
-                      <button
-                        key={img.id}
-                        type="button"
-                        className={`avatar-gallery-item-btn scale-active ${editStudentEmoji === img.path ? 'selected' : ''}`}
-                        onClick={() => setEditStudentEmoji(img.path)}
-                      >
-                        <img src={img.path} alt={img.label} loading="lazy" decoding="async" className="gallery-thumb-img" />
-                        {editStudentEmoji === img.path && (
-                          <div className="gallery-selected-badge">
-                            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round">
-                              <polyline points="20 6 9 17 4 12" />
-                            </svg>
-                          </div>
-                        )}
-                      </button>
-                    ))}
+                    {AVATAR_GALLERY_IMAGES.map((img) => {
+                      const isSelected = editStudentEmoji === img.path || editStudentEmoji === img.cdnPath || (editStudentEmoji && editStudentEmoji.includes(img.name));
+                      return (
+                        <button
+                          key={img.id}
+                          type="button"
+                          className={`avatar-gallery-item-btn scale-active ${isSelected ? 'selected' : ''}`}
+                          onClick={() => setEditStudentEmoji(img.path)}
+                        >
+                          <img
+                            src={img.path}
+                            alt={img.label}
+                            loading="lazy"
+                            decoding="async"
+                            className="gallery-thumb-img"
+                            onError={(e) => {
+                              if (img.cdnPath && e.currentTarget.src !== img.cdnPath) {
+                                e.currentTarget.src = img.cdnPath;
+                              }
+                            }}
+                          />
+                          {isSelected && (
+                            <div className="gallery-selected-badge">
+                              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round">
+                                <polyline points="20 6 9 17 4 12" />
+                              </svg>
+                            </div>
+                          )}
+                        </button>
+                      );
+                    })}
                   </div>
                 )}
 
@@ -1077,54 +1207,74 @@ const GroupDetail = ({ group, allGroups = [], students, transactions, quickTags,
               )}
 
               {/* Device Binding Status & Reset (Teacher control) */}
-              <div className="form-group device-binding-group">
-                <label className="form-label" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <span>🔒 Profil xavfsizligi (PIN-kod)</span>
+              <div className="form-group teacher-pin-management-group">
+                <div className="teacher-pin-group-header">
+                  <div className="teacher-pin-title-wrap">
+                    <span className="teacher-pin-title-icon">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                      </svg>
+                    </span>
+                    <span className="teacher-pin-title-text">Profil xavfsizligi (PIN-kod)</span>
+                  </div>
                   {editingStudent.pin ? (
-                    <span className="badge-bound-indicator">🔒 PIN o'rnatilgan</span>
+                    <span className="teacher-pin-status-badge bound">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                        <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                        <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                      </svg>
+                      PIN o'rnatilgan
+                    </span>
                   ) : (
-                    <span className="badge-unbound-indicator">PIN belgilanmagan</span>
+                    <span className="teacher-pin-status-badge unbound">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                        <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                        <path d="M7 11V7a5 5 0 0 1 9.9-1" />
+                      </svg>
+                      PIN belgilanmagan
+                    </span>
                   )}
-                </label>
-                <div className="device-binding-box">
+                </div>
+
+                <div className="teacher-pin-card-box">
                   {editingStudent.pin ? (
-                    <div className="device-binding-row">
-                      <div className="device-binding-info">
-                        <p className="device-binding-text">
+                    <div className="teacher-pin-card-content">
+                      <div className="teacher-pin-info-col">
+                        <p className="teacher-pin-desc-text">
                           O'quvchi ushbu profil uchun 4 xonali shaxsiy PIN-kod o'rnatgan. Boshqa o'quvchilar uning profiliga kira olmaydi.
                         </p>
-                        <span className="device-binding-id" style={{ color: 'var(--accent-blue, #0071E3)', fontWeight: 600 }}>
-                          Holat: 🔒 PIN faol
-                        </span>
+                        <div className="teacher-pin-state-pill">
+                          <span className="teacher-pin-state-dot"></span>
+                          <span className="teacher-pin-state-label">Holat: <strong>PIN faol</strong></span>
+                        </div>
                       </div>
+
                       {(onResetStudentPin || onResetStudentDevice) && (
                         <button
                           type="button"
-                          className="btn btn-secondary scale-active reset-device-btn"
+                          className="teacher-pin-reset-action-btn scale-active"
                           onClick={() => {
-                            if (window.confirm(`${editingStudent.name} ning PIN-kodini bekor qilmoqchimisiz? O'quvchi keyingi kirishida yangi PIN o'rnatishi mumkin bo'ladi.`)) {
-                              if (onResetStudentPin) {
-                                onResetStudentPin(editingStudent.id, editingStudent.name);
-                              } else if (onResetStudentDevice) {
-                                onResetStudentDevice(editingStudent.id, editingStudent.name);
-                              }
-                              setEditingStudent((prev) => prev ? { ...prev, pin: null, deviceId: null } : null);
-                              showToast?.("PIN-kod muvaffaqiyatli bekor qilindi!", "success");
-                            }
+                            setPinResetTarget({ id: editingStudent.id, name: editingStudent.name });
                           }}
+                          title="PIN-kodni bekor qilish va begona qurilmalarni chiqarish"
                         >
-                          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                            <path d="M18.36 6.64a9 9 0 1 1-12.73 0"/>
-                            <line x1="12" y1="2" x2="12" y2="12"/>
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+                            <path d="M3 3v5h5" />
                           </svg>
-                          PINni bekor qilish (Reset)
+                          <span>PINni bekor qilish (Reset)</span>
                         </button>
                       )}
                     </div>
                   ) : (
-                    <p className="device-binding-hint">
-                      O'quvchi hali PIN-kod o'rnatmagan. Tizimga birinchi marta kirganida o'zi 4 xonali PIN tanlaydi.
-                    </p>
+                    <div className="teacher-pin-empty-state">
+                      <p className="teacher-pin-desc-text">
+                        O'quvchi hali PIN-kod o'rnatmagan. Tizimga birinchi marta kirganida o'zi 4 xonali shaxsiy PIN tanlaydi.
+                      </p>
+                      <span className="teacher-pin-open-hint">
+                        Bitta qurilmadan faqat 1 ta o'quvchiga PIN o'rnatish cheklovi faol
+                      </span>
+                    </div>
                   )}
                 </div>
               </div>
@@ -1333,6 +1483,85 @@ const GroupDetail = ({ group, allGroups = [], students, transactions, quickTags,
         </div>,
         document.body
       )}
+
+      {/* PIN Reset Confirmation Modal (Loyixa dizaynidagi custom modal) */}
+      {pinResetTarget && createPortal(
+        <div 
+          className="modal-overlay pin-reset-modal-overlay" 
+          onClick={() => setPinResetTarget(null)}
+        >
+          <div 
+            className="modal-content glass pin-reset-modal-content" 
+            onClick={(e) => e.stopPropagation()}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="pin-reset-dialog-title"
+          >
+            <button 
+              type="button" 
+              className="modal-close-btn" 
+              onClick={() => setPinResetTarget(null)}
+              aria-label="Yopish"
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18" />
+                <line x1="6" y1="6" x2="18" y2="18" />
+              </svg>
+            </button>
+
+            <div className="pin-reset-modal-header">
+              <div className="pin-reset-modal-icon-badge">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                  <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                  <line x1="8" y1="16" x2="16" y2="16" />
+                </svg>
+              </div>
+              <div className="pin-reset-modal-title-wrap">
+                <h3 id="pin-reset-dialog-title" className="modal-title pin-reset-modal-title">
+                  PIN-kodni bekor qilish
+                </h3>
+                <span className="pin-reset-student-pill">{pinResetTarget.name}</span>
+              </div>
+            </div>
+
+            <div className="pin-reset-modal-body">
+              <p className="pin-reset-main-question">
+                <strong>{pinResetTarget.name}</strong> ning PIN-kodini bekor qilmoqchimisiz?
+              </p>
+
+              <div className="pin-reset-notice-card">
+                <div className="pin-reset-notice-icon">⚠️</div>
+                <div className="pin-reset-notice-text">
+                  <strong>Diqqat:</strong> Ushbu profilga ulangan begona qurilmalar avtomatik chiqarib yuboriladi va haqiqiy o'quvchi o'ziga yangi PIN-kod o'rnatishi mumkin bo'ladi.
+                </div>
+              </div>
+            </div>
+
+            <div className="modal-actions pin-reset-modal-actions">
+              <button 
+                type="button" 
+                className="btn btn-secondary scale-active" 
+                onClick={() => setPinResetTarget(null)}
+              >
+                Bekor qilish
+              </button>
+              <button 
+                type="button" 
+                className="btn btn-danger scale-active pin-reset-confirm-action-btn" 
+                onClick={handleConfirmResetPin}
+              >
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M18.36 6.64a9 9 0 1 1-12.73 0" />
+                  <line x1="12" y1="2" x2="12" y2="12" />
+                </svg>
+                Ha, bekor qilinsin
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
       <style>{`
         .group-category-pill {
           display: inline-flex;
@@ -1508,6 +1737,124 @@ const GroupDetail = ({ group, allGroups = [], students, transactions, quickTags,
 
         .student-grid {
           margin-top: 16px;
+        }
+
+        .student-search-bar-wrap {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          margin-top: 14px;
+          margin-bottom: 12px;
+          width: 100%;
+        }
+
+        .student-search-input-box {
+          position: relative;
+          display: flex;
+          align-items: center;
+          flex: 1;
+          background: #FFFFFF;
+          border: 1px solid rgba(0, 0, 0, 0.08);
+          border-radius: var(--radius-md, 12px);
+          box-shadow: var(--shadow-sm, 0 1px 3px rgba(0, 0, 0, 0.04));
+          transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+          overflow: hidden;
+        }
+
+        .student-search-input-box:focus-within {
+          border-color: var(--apple-blue);
+          box-shadow: 0 0 0 3px rgba(0, 113, 227, 0.14), var(--shadow-sm);
+        }
+
+        .student-search-icon {
+          position: absolute;
+          left: 14px;
+          top: 50%;
+          transform: translateY(-50%);
+          color: var(--text-tertiary, #86868B);
+          pointer-events: none;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          transition: color var(--transition-fast);
+        }
+
+        .student-search-input-box:focus-within .student-search-icon {
+          color: var(--apple-blue);
+        }
+
+        .student-search-input {
+          width: 100%;
+          height: 42px;
+          padding: 0 40px 0 44px;
+          font-family: inherit;
+          font-size: 0.92rem;
+          color: var(--text-primary);
+          background: transparent !important;
+          border: none !important;
+          outline: none !important;
+          box-shadow: none !important;
+          border-radius: inherit;
+          -webkit-appearance: none;
+          appearance: none;
+        }
+
+        .student-search-input:focus,
+        .student-search-input:focus-visible,
+        .student-search-input:active {
+          outline: none !important;
+          outline-width: 0 !important;
+          outline-color: transparent !important;
+          box-shadow: none !important;
+          border: none !important;
+          border-color: transparent !important;
+          --tw-ring-color: transparent !important;
+          --tw-ring-shadow: none !important;
+          --tw-ring-offset-shadow: none !important;
+          --tw-ring-offset-width: 0px !important;
+        }
+
+        .student-search-input::placeholder {
+          color: var(--text-tertiary);
+          font-weight: 400;
+          opacity: 0.85;
+        }
+
+        .student-search-clear-btn {
+          position: absolute;
+          right: 11px;
+          top: 50%;
+          transform: translateY(-50%);
+          width: 22px;
+          height: 22px;
+          border-radius: 50%;
+          border: none;
+          background: rgba(0, 0, 0, 0.06);
+          color: var(--text-secondary);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
+          padding: 0;
+          transition: background var(--transition-fast), color var(--transition-fast);
+        }
+
+        .student-search-clear-btn:hover {
+          background: rgba(0, 0, 0, 0.12);
+          color: var(--text-primary);
+        }
+
+        .student-search-count-pill {
+          display: inline-flex;
+          align-items: center;
+          padding: 6px 12px;
+          font-size: 0.78rem;
+          font-weight: 600;
+          color: var(--apple-blue);
+          background: rgba(0, 113, 227, 0.08);
+          border-radius: 9999px;
+          white-space: nowrap;
+          border: 1px solid rgba(0, 113, 227, 0.15);
         }
 
         .students-vertical-list {
@@ -2045,6 +2392,37 @@ const GroupDetail = ({ group, allGroups = [], students, transactions, quickTags,
           border-color: #3C4043;
         }
 
+        [data-theme="dark"] .student-search-input-box {
+          background: #292A2D;
+          border-color: rgba(255, 255, 255, 0.08);
+          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
+        }
+
+        [data-theme="dark"] .student-search-input-box:focus-within {
+          border-color: #8AB4F8;
+          box-shadow: 0 0 0 3px rgba(138, 180, 248, 0.18);
+        }
+
+        [data-theme="dark"] .student-search-input {
+          color: #E8EAED;
+        }
+
+        [data-theme="dark"] .student-search-clear-btn {
+          background: rgba(255, 255, 255, 0.1);
+          color: #9AA0A6;
+        }
+
+        [data-theme="dark"] .student-search-clear-btn:hover {
+          background: rgba(255, 255, 255, 0.18);
+          color: #E8EAED;
+        }
+
+        [data-theme="dark"] .student-search-count-pill {
+          color: #8AB4F8;
+          background: rgba(138, 180, 248, 0.12);
+          border-color: rgba(138, 180, 248, 0.25);
+        }
+
         [data-theme="dark"] .student-list-item {
           background: #292A2D;
           border-color: #3C4043;
@@ -2354,6 +2732,433 @@ const GroupDetail = ({ group, allGroups = [], students, transactions, quickTags,
 
         [data-theme="dark"] .reset-device-btn:hover {
           background: rgba(255, 69, 58, 0.2) !important;
+        }
+
+        /* Teacher PIN Management Card (No emojis, Apple Clean UI) */
+        .teacher-pin-management-group {
+          margin-top: 18px;
+        }
+
+        .teacher-pin-group-header {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 10px;
+          margin-bottom: 8px;
+        }
+
+        .teacher-pin-title-wrap {
+          display: inline-flex;
+          align-items: center;
+          gap: 7px;
+          font-size: 0.88rem;
+          font-weight: 600;
+          color: var(--text-primary);
+        }
+
+        .teacher-pin-title-icon {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          color: var(--accent-blue, #0071E3);
+        }
+
+        .teacher-pin-status-badge {
+          display: inline-flex;
+          align-items: center;
+          gap: 5px;
+          font-size: 0.72rem;
+          font-weight: 600;
+          padding: 3px 9px;
+          border-radius: 9999px;
+          line-height: 1.2;
+          white-space: nowrap;
+        }
+
+        .teacher-pin-status-badge.bound {
+          color: #248A3D;
+          background: rgba(52, 199, 89, 0.12);
+          border: 1px solid rgba(52, 199, 89, 0.28);
+        }
+
+        .teacher-pin-status-badge.unbound {
+          color: var(--text-tertiary);
+          background: rgba(0, 0, 0, 0.05);
+          border: 1px solid var(--border-color);
+        }
+
+        .teacher-pin-card-box {
+          background: rgba(0, 0, 0, 0.02);
+          border: 1px solid var(--border-color);
+          border-radius: var(--radius-lg, 14px);
+          padding: 14px 16px;
+          transition: all 0.2s ease;
+        }
+
+        .teacher-pin-card-content {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 16px;
+          flex-wrap: wrap;
+        }
+
+        .teacher-pin-info-col {
+          flex: 1;
+          min-width: 200px;
+        }
+
+        .teacher-pin-desc-text {
+          margin: 0 0 8px 0;
+          font-size: 0.84rem;
+          color: var(--text-secondary);
+          line-height: 1.45;
+        }
+
+        .teacher-pin-state-pill {
+          display: inline-flex;
+          align-items: center;
+          gap: 7px;
+          background: rgba(0, 113, 227, 0.07);
+          border: 1px solid rgba(0, 113, 227, 0.18);
+          border-radius: 8px;
+          padding: 3px 10px;
+        }
+
+        .teacher-pin-state-dot {
+          width: 7px;
+          height: 7px;
+          border-radius: 50%;
+          background: #34C759;
+          box-shadow: 0 0 0 2px rgba(52, 199, 89, 0.25);
+          display: inline-block;
+        }
+
+        .teacher-pin-state-label {
+          font-size: 0.74rem;
+          color: var(--text-primary);
+        }
+
+        .teacher-pin-state-label strong {
+          color: var(--accent-blue, #0071E3);
+          font-weight: 700;
+        }
+
+        .teacher-pin-reset-action-btn {
+          display: inline-flex;
+          align-items: center;
+          gap: 7px;
+          font-size: 0.8rem;
+          font-weight: 600;
+          color: #FF3B30;
+          background: rgba(255, 59, 48, 0.08);
+          border: 1px solid rgba(255, 59, 48, 0.28);
+          padding: 8px 14px;
+          border-radius: var(--radius-md, 10px);
+          cursor: pointer;
+          white-space: nowrap;
+          transition: all 0.15s ease;
+        }
+
+        .teacher-pin-reset-action-btn:hover {
+          background: rgba(255, 59, 48, 0.14);
+          border-color: rgba(255, 59, 48, 0.4);
+          transform: translateY(-1px);
+        }
+
+        .teacher-pin-reset-action-btn.sm {
+          padding: 6px 12px;
+          font-size: 0.76rem;
+        }
+
+        .teacher-pin-empty-state {
+          display: flex;
+          flex-direction: column;
+          gap: 6px;
+        }
+
+        .teacher-pin-open-hint {
+          font-size: 0.72rem;
+          color: var(--text-tertiary);
+          font-style: italic;
+        }
+
+        /* Student Detail Modal PIN Card */
+        .teacher-pin-detail-card {
+          margin-top: 14px;
+          padding: 12px 16px;
+          border-radius: var(--radius-md, 12px);
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 14px;
+          flex-wrap: wrap;
+          transition: all 0.2s ease;
+        }
+
+        .teacher-pin-detail-card.is-protected {
+          background: rgba(52, 199, 89, 0.07);
+          border: 1px solid rgba(52, 199, 89, 0.22);
+        }
+
+        .teacher-pin-detail-card.is-open {
+          background: rgba(0, 0, 0, 0.02);
+          border: 1px solid var(--border-color);
+        }
+
+        .teacher-pin-detail-left {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          flex: 1;
+          min-width: 180px;
+        }
+
+        .teacher-pin-detail-icon-wrap {
+          width: 36px;
+          height: 36px;
+          border-radius: 10px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          flex-shrink: 0;
+        }
+
+        .teacher-pin-detail-card.is-protected .teacher-pin-detail-icon-wrap {
+          background: rgba(52, 199, 89, 0.15);
+          color: #248A3D;
+        }
+
+        .teacher-pin-detail-card.is-open .teacher-pin-detail-icon-wrap {
+          background: rgba(0, 0, 0, 0.05);
+          color: var(--text-tertiary);
+        }
+
+        .teacher-pin-detail-text {
+          display: flex;
+          flex-direction: column;
+          gap: 2px;
+        }
+
+        .teacher-pin-detail-title {
+          font-size: 0.84rem;
+          font-weight: 600;
+          color: var(--text-primary);
+        }
+
+        .teacher-pin-detail-subtitle {
+          font-size: 0.74rem;
+          color: var(--text-secondary);
+        }
+
+        /* Dark mode overrides */
+        [data-theme="dark"] .teacher-pin-title-icon {
+          color: #2997FF;
+        }
+
+        [data-theme="dark"] .teacher-pin-status-badge.bound {
+          color: #4CD964;
+          background: rgba(52, 199, 89, 0.2);
+          border-color: rgba(52, 199, 89, 0.35);
+        }
+
+        [data-theme="dark"] .teacher-pin-status-badge.unbound {
+          color: #9AA0A6;
+          background: rgba(255, 255, 255, 0.06);
+          border-color: rgba(255, 255, 255, 0.1);
+        }
+
+        [data-theme="dark"] .teacher-pin-card-box {
+          background: rgba(255, 255, 255, 0.03);
+          border-color: rgba(255, 255, 255, 0.08);
+        }
+
+        [data-theme="dark"] .teacher-pin-state-pill {
+          background: rgba(41, 151, 255, 0.12);
+          border-color: rgba(41, 151, 255, 0.25);
+        }
+
+        [data-theme="dark"] .teacher-pin-state-label strong {
+          color: #2997FF;
+        }
+
+        [data-theme="dark"] .teacher-pin-reset-action-btn {
+          color: #FF453A;
+          background: rgba(255, 69, 58, 0.12);
+          border-color: rgba(255, 69, 58, 0.35);
+        }
+
+        [data-theme="dark"] .teacher-pin-reset-action-btn:hover {
+          background: rgba(255, 69, 58, 0.2);
+          border-color: rgba(255, 69, 58, 0.5);
+        }
+
+        [data-theme="dark"] .teacher-pin-detail-card.is-protected {
+          background: rgba(52, 199, 89, 0.1);
+          border-color: rgba(52, 199, 89, 0.28);
+        }
+
+        [data-theme="dark"] .teacher-pin-detail-card.is-open {
+          background: rgba(255, 255, 255, 0.03);
+          border-color: rgba(255, 255, 255, 0.08);
+        }
+
+        [data-theme="dark"] .teacher-pin-detail-card.is-protected .teacher-pin-detail-icon-wrap {
+          background: rgba(52, 199, 89, 0.22);
+          color: #4CD964;
+        }
+
+        [data-theme="dark"] .teacher-pin-detail-card.is-open .teacher-pin-detail-icon-wrap {
+          background: rgba(255, 255, 255, 0.06);
+          color: #9AA0A6;
+        }
+
+        /* PIN Reset Confirmation Modal (Loyixa dizaynidagi modal) */
+        .pin-reset-modal-overlay {
+          z-index: 2300 !important;
+          background: rgba(0, 0, 0, 0.45);
+          backdrop-filter: blur(14px);
+          -webkit-backdrop-filter: blur(14px);
+        }
+
+        .pin-reset-modal-content {
+          max-width: 440px !important;
+          padding: 24px 22px 20px !important;
+          border-radius: var(--radius-xl, 18px);
+          box-shadow: 0 24px 60px rgba(0, 0, 0, 0.25);
+        }
+
+        .pin-reset-modal-header {
+          display: flex;
+          align-items: center;
+          gap: 14px;
+          margin-bottom: 16px;
+        }
+
+        .pin-reset-modal-icon-badge {
+          width: 46px;
+          height: 46px;
+          border-radius: 13px;
+          background: rgba(255, 59, 48, 0.1);
+          color: #FF3B30;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          flex-shrink: 0;
+          border: 1px solid rgba(255, 59, 48, 0.2);
+        }
+
+        .pin-reset-modal-title-wrap {
+          display: flex;
+          flex-direction: column;
+          gap: 4px;
+          min-width: 0;
+        }
+
+        .pin-reset-modal-title {
+          margin: 0 !important;
+          padding: 0 !important;
+          border: none !important;
+          font-size: 1.15rem !important;
+          font-weight: 700 !important;
+          color: var(--text-primary);
+          line-height: 1.25;
+        }
+
+        .pin-reset-student-pill {
+          display: inline-block;
+          font-size: 0.74rem;
+          font-weight: 600;
+          color: var(--accent-blue, #0071E3);
+          background: rgba(0, 113, 227, 0.08);
+          padding: 2px 8px;
+          border-radius: 6px;
+          width: fit-content;
+        }
+
+        .pin-reset-modal-body {
+          margin-bottom: 20px;
+        }
+
+        .pin-reset-main-question {
+          margin: 0 0 12px 0;
+          font-size: 0.95rem;
+          color: var(--text-primary);
+          line-height: 1.45;
+        }
+
+        .pin-reset-main-question strong {
+          color: var(--text-primary);
+          font-weight: 700;
+        }
+
+        .pin-reset-notice-card {
+          display: flex;
+          align-items: flex-start;
+          gap: 10px;
+          background: rgba(255, 149, 0, 0.08);
+          border: 1px solid rgba(255, 149, 0, 0.22);
+          border-radius: var(--radius-md, 12px);
+          padding: 12px 14px;
+        }
+
+        .pin-reset-notice-icon {
+          font-size: 1.1rem;
+          line-height: 1.3;
+          flex-shrink: 0;
+        }
+
+        .pin-reset-notice-text {
+          font-size: 0.82rem;
+          color: var(--text-secondary);
+          line-height: 1.45;
+        }
+
+        .pin-reset-notice-text strong {
+          color: #D97706;
+          font-weight: 700;
+        }
+
+        .pin-reset-modal-actions {
+          display: flex;
+          align-items: center;
+          justify-content: flex-end;
+          gap: 10px;
+          margin-top: 0;
+          padding-top: 14px;
+          border-top: 1px solid var(--border-color);
+        }
+
+        .pin-reset-confirm-action-btn {
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          font-weight: 600;
+          padding: 8px 16px;
+        }
+
+        [data-theme="dark"] .pin-reset-modal-overlay {
+          background: rgba(0, 0, 0, 0.75);
+        }
+
+        [data-theme="dark"] .pin-reset-modal-icon-badge {
+          background: rgba(255, 69, 58, 0.15);
+          color: #FF453A;
+          border-color: rgba(255, 69, 58, 0.3);
+        }
+
+        [data-theme="dark"] .pin-reset-student-pill {
+          color: #2997FF;
+          background: rgba(41, 151, 255, 0.16);
+        }
+
+        [data-theme="dark"] .pin-reset-notice-card {
+          background: rgba(255, 159, 10, 0.12);
+          border-color: rgba(255, 159, 10, 0.28);
+        }
+
+        [data-theme="dark"] .pin-reset-notice-text strong {
+          color: #FBBF24;
         }
       `}</style>
     </div>

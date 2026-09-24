@@ -64,13 +64,14 @@ export const extractGroupTimes = (group) => {
 
 /**
  * Checks whether a specific group is currently in its active lesson window.
- * The window includes a 15-minute buffer before the start and 15-minute buffer after the end.
+ * The window includes a 5-minute buffer before the start and 5-minute buffer after the end.
  *
  * @param {Object} group
  * @param {Date} [now=new Date()]
+ * @param {number} [bufferMinutes=5]
  * @returns {boolean}
  */
-export const isGroupLessonActive = (group, now = new Date()) => {
+export const isGroupLessonActive = (group, now = new Date(), bufferMinutes = 5) => {
   if (!group || group.deleted) return false;
 
   const currentDayKey = DAY_KEYS_MAP[now.getDay()];
@@ -86,9 +87,9 @@ export const isGroupLessonActive = (group, now = new Date()) => {
 
   const currentMinutes = now.getHours() * 60 + now.getMinutes();
 
-  // 15-minute buffer before start and after end
-  const windowStart = Math.max(0, startMinutes - 15);
-  const windowEnd = Math.min(1439, endMinutes + 15);
+  // 5-minute buffer before start and after end
+  const windowStart = Math.max(0, startMinutes - bufferMinutes);
+  const windowEnd = Math.min(1439, endMinutes + bufferMinutes);
 
   if (windowEnd >= windowStart) {
     return currentMinutes >= windowStart && currentMinutes <= windowEnd;
@@ -99,17 +100,18 @@ export const isGroupLessonActive = (group, now = new Date()) => {
 };
 
 /**
- * Finds the group currently having a lesson (with 15 min buffer before & after).
+ * Finds the group currently having a lesson (with 5 min buffer before & after).
  * If multiple groups match, returns the one where current time is closest to start time.
  *
  * @param {Array} groups
  * @param {Date} [now=new Date()]
+ * @param {number} [bufferMinutes=5]
  * @returns {Object|null}
  */
-export const getCurrentActiveLessonGroup = (groups = [], now = new Date()) => {
+export const getCurrentActiveLessonGroup = (groups = [], now = new Date(), bufferMinutes = 5) => {
   if (!Array.isArray(groups) || groups.length === 0) return null;
 
-  const activeGroups = groups.filter((g) => g && !g.deleted && isGroupLessonActive(g, now));
+  const activeGroups = groups.filter((g) => g && !g.deleted && isGroupLessonActive(g, now, bufferMinutes));
   if (activeGroups.length === 0) return null;
 
   if (activeGroups.length === 1) return activeGroups[0];

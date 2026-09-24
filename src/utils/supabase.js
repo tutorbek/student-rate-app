@@ -133,7 +133,7 @@ export const updateStudentAvatarInSupabase = async (teacherId, studentId, newAva
 /**
  * Set/update a 4-digit PIN for a student in Supabase.
  */
-export const setStudentPinInSupabase = async (teacherId, studentId, pin, studentName = null) => {
+export const setStudentPinInSupabase = async (teacherId, studentId, pin, studentName = null, deviceId = null) => {
   try {
     if (!teacherId || !studentId || !pin) return false;
 
@@ -159,7 +159,11 @@ export const setStudentPinInSupabase = async (teacherId, studentId, pin, student
       if (matchId || matchName) {
         hasMatch = true;
         const copy = { ...s, pin: cleanPin };
-        delete copy.deviceId; // clean up obsolete deviceId
+        if (deviceId) {
+          copy.deviceId = String(deviceId);
+        } else {
+          delete copy.deviceId;
+        }
         return copy;
       }
       return s;

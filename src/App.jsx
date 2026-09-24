@@ -386,6 +386,8 @@ function App() {
   allTeachersDataRef.current = allTeachersData;
   const groupsRef = useRef(groups);
   groupsRef.current = groups;
+  const attendanceRef = useRef(attendance);
+  attendanceRef.current = attendance;
   const studentGroupsRef = useRef(studentGroups);
   studentGroupsRef.current = studentGroups;
 
@@ -411,6 +413,7 @@ function App() {
       const currentStudentGroups = studentGroupsRef.current;
       const currentAllTeachersData = allTeachersDataRef.current;
       const currentGroups = groupsRef.current;
+      const currentAttendance = attendanceRef.current;
       const currentIsLoaded = isLoadedRef.current;
 
       const studentTeacherIds = userRole === 'student' && Array.isArray(currentStudentGroups)
@@ -482,7 +485,8 @@ function App() {
         !isUserForcedReload &&
         userRole === 'student' &&
         currentIsLoaded &&
-        currentGroups.length > 0
+        currentGroups.length > 0 &&
+        currentAttendance.length > 0
       ) {
         setIsSyncing(false);
         return;
@@ -638,6 +642,7 @@ function App() {
   const allActiveGroups = useMemo(() => sortGroupsNaturally(groups.filter(g => !g.deleted)), [groups]);
   const allActiveStudents = useMemo(() => students.filter(s => !s.deleted), [students]);
   const allActiveTransactions = useMemo(() => transactions.filter(t => !t.deleted), [transactions]);
+  const allActiveAttendance = useMemo(() => attendance || [], [attendance]);
 
   // Aggregated connected groups for students across all teachers
   const allStudentConnectedGroups = useMemo(() => {
@@ -999,9 +1004,10 @@ function App() {
     }
   }, [teacherId, studentGroups]);
 
-  const handleSetStudentPin = useCallback(async (studentId, pin, studentName = null) => {
+  const handleSetStudentPin = useCallback(async (studentId, pin, studentName = null, deviceId = null) => {
     if (!studentId || !pin) return;
     const cleanPin = String(pin).trim();
+    const cleanDeviceId = deviceId ? String(deviceId).trim() : null;
 
     // 1. Optimistic state update
     setStudents((prev) =>
@@ -1010,7 +1016,11 @@ function App() {
         const matchName = studentName && (s.name || '').trim().toLowerCase() === studentName.trim().toLowerCase();
         if (matchId || matchName) {
           const copy = { ...s, pin: cleanPin };
-          delete copy.deviceId;
+          if (cleanDeviceId) {
+            copy.deviceId = cleanDeviceId;
+          } else {
+            delete copy.deviceId;
+          }
           return copy;
         }
         return s;
@@ -1031,7 +1041,11 @@ function App() {
               const matchName = studentName && (s.name || '').trim().toLowerCase() === studentName.trim().toLowerCase();
               if (matchId || matchName) {
                 const sc = { ...s, pin: cleanPin };
-                delete sc.deviceId;
+                if (cleanDeviceId) {
+                  sc.deviceId = cleanDeviceId;
+                } else {
+                  delete sc.deviceId;
+                }
                 return sc;
               }
               return s;
@@ -1054,7 +1068,7 @@ function App() {
 
       await Promise.all(
         Array.from(teachersToUpdate).map((tId) =>
-          setStudentPinInSupabase(tId, studentId, cleanPin, studentName)
+          setStudentPinInSupabase(tId, studentId, cleanPin, studentName, cleanDeviceId)
         )
       );
     } catch (err) {
@@ -1375,10 +1389,13 @@ function App() {
     if (userRole === 'student') {
       return (
         <StudentPortal
-          attendance={filteredAttendance}
+          attendance={allActiveAttendance}
           groups={filteredGroups}
           students={filteredStudents}
           transactions={filteredTransactions}
+          allActiveGroups={allActiveGroups}
+          allActiveStudents={allActiveStudents}
+          allActiveTransactions={allActiveTransactions}
           userRole={userRole}
           studentGroupId={studentGroupId}
           studentGroups={studentGroups}
