@@ -112,6 +112,7 @@ body {
 
 /* Prevent iOS Safari automatic viewport zoom on form inputs */
 @media screen and (max-width: 768px) {
+  input,
   input[type="text"],
   input[type="password"],
   input[type="email"],
@@ -368,63 +369,144 @@ html, body {
   box-shadow: 0 0 0 4px rgba(0, 113, 227, 0.14);
 }
 
-/* Toast Notifications */
-.toast-container {
+/* ==========================================================================
+   TOAST NOTIFICATIONS (APPLE DYNAMIC ISLAND / TOP FLOATING PILL)
+   ========================================================================== */
+
+.toast-container,
+.toast-portal-container {
   position: fixed;
-  bottom: calc(28px + env(safe-area-inset-bottom));
-  right: max(28px, env(safe-area-inset-right));
-  z-index: 9999;
+  top: calc(14px + env(safe-area-inset-top, 0px));
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 999999;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  align-items: center;
   pointer-events: none;
+  width: 100%;
+  max-width: 480px;
+  padding: 0 16px;
+  box-sizing: border-box;
 }
 
 .toast {
   pointer-events: auto;
-  min-width: 280px;
-  padding: 12px 18px;
-  border-radius: var(--radius-md);
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 18px 9px 12px;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(28px) saturate(190%);
+  -webkit-backdrop-filter: blur(28px) saturate(190%);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  box-shadow: 0 10px 30px -4px rgba(0, 0, 0, 0.12), 0 3px 10px rgba(0, 0, 0, 0.05);
+  color: var(--text-primary, #1D1D1F);
+  font-weight: 600;
+  font-size: 0.84rem;
+  letter-spacing: -0.01em;
+  line-height: 1.35;
+  cursor: pointer;
+  user-select: none;
+  animation: toastDropIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  max-width: 100%;
+  box-sizing: border-box;
+  text-align: left;
+}
+
+@keyframes toastDropIn {
+  0% {
+    opacity: 0;
+    transform: translateY(-28px) scale(0.92);
+    filter: blur(4px);
+  }
+  70% {
+    opacity: 1;
+    transform: translateY(2px) scale(1.01);
+    filter: blur(0px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    filter: blur(0px);
+  }
+}
+
+.toast:hover {
+  transform: scale(1.02);
+  transition: transform 0.15s ease;
+}
+
+.toast:active {
+  transform: scale(0.97);
+  transition: transform 0.1s ease;
+}
+
+/* Minimalist Icon Badges */
+.toast-icon-badge {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
   display: flex;
   align-items: center;
-  gap: 12px;
-  background: rgba(255, 255, 255, 0.92);
-  backdrop-filter: blur(20px) saturate(180%);
-  -webkit-backdrop-filter: blur(20px) saturate(180%);
-  border: 1px solid rgba(0, 0, 0, 0.08);
-  box-shadow: var(--shadow-lg);
-  color: var(--text-primary);
-  font-weight: 600;
-  font-size: 0.88rem;
+  justify-content: center;
+  flex-shrink: 0;
 }
 
-.toast-success {
-  border-left: 4px solid var(--apple-green);
+.toast-icon-badge.success {
+  background: #34C759;
+  color: #FFFFFF;
+  box-shadow: 0 2px 8px rgba(52, 199, 89, 0.35);
 }
 
-.toast-error {
-  border-left: 4px solid var(--apple-red);
+.toast-icon-badge.error {
+  background: #FF3B30;
+  color: #FFFFFF;
+  box-shadow: 0 2px 8px rgba(255, 59, 48, 0.35);
 }
 
-.toast-info {
-  border-left: 4px solid var(--apple-blue);
+.toast-icon-badge.warning {
+  background: #FF9500;
+  color: #FFFFFF;
+  box-shadow: 0 2px 8px rgba(255, 149, 0, 0.35);
+}
+
+.toast-icon-badge.info {
+  background: #0071E3;
+  color: #FFFFFF;
+  box-shadow: 0 2px 8px rgba(0, 113, 227, 0.35);
+}
+
+.toast-message {
+  white-space: normal;
+  word-break: break-word;
+}
+
+/* Dark Mode Theme */
+[data-theme="dark"] .toast {
+  background: rgba(28, 28, 30, 0.9);
+  border-color: rgba(255, 255, 255, 0.14);
+  box-shadow: 0 12px 36px -4px rgba(0, 0, 0, 0.5), 0 4px 14px rgba(0, 0, 0, 0.3);
+  color: #F5F5F7;
 }
 
 @media (max-width: 680px) {
-  .toast-container {
-    bottom: calc(72px + env(safe-area-inset-bottom, 0px));
-    left: 16px;
-    right: 16px;
-    align-items: center;
-    z-index: 100002;
+  .toast-container,
+  .toast-portal-container {
+    top: calc(10px + env(safe-area-inset-top, 0px));
+    padding: 0 12px;
   }
+
   .toast {
-    min-width: unset;
-    width: 100%;
-    max-width: 380px;
-    justify-content: center;
-    border-radius: var(--radius-full);
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+    padding: 8px 14px 8px 10px;
+    font-size: 0.8rem;
+    gap: 8px;
+  }
+
+  .toast-icon-badge {
+    width: 22px;
+    height: 22px;
   }
 }
 

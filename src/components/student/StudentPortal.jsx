@@ -1,7 +1,9 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import StudentScheduleCard from './StudentScheduleCard';
+import StudentTeacherShowcase from './StudentTeacherShowcase';
 import StudentAttendanceCalendar from './StudentAttendanceCalendar';
+import StudentCenterAddresses from './StudentCenterAddresses';
 import StudentRatingView from './StudentRatingView';
 import StudentShopComingSoon from './StudentShopComingSoon';
 import StudentAccountView from './StudentAccountView';
@@ -50,6 +52,8 @@ export default function StudentPortal({
   showToast,
   theme = 'light',
   toggleTheme,
+  teacherProfile = null,
+  allTeachersData = {},
 }) {
   // Navigation Tabs: 'main' (Asosiy) | 'rating' (Reyting) | 'shop' (Do'kon) | 'profile' (Profil)
   const [activeTab, setActiveTab] = useState(() => {
@@ -76,6 +80,14 @@ export default function StudentPortal({
     return (allConnectedGroups && allConnectedGroups[0]) ||
       (groups && groups.length > 0 && String(groups[0]?.id) === String(studentGroupId) ? groups[0] : null);
   }, [studentGroupId, allConnectedGroups, groups]);
+
+  // Resolve current active group's teacher profile
+  const currentTeacherProfile = useMemo(() => {
+    if (currentGroup?.teacherId && allTeachersData?.[currentGroup.teacherId]?.teacherProfile) {
+      return allTeachersData[currentGroup.teacherId].teacherProfile;
+    }
+    return teacherProfile || null;
+  }, [currentGroup, allTeachersData, teacherProfile]);
 
   // Unified list of connected groups
   const connectedGroupsList = useMemo(() => {
@@ -542,6 +554,9 @@ export default function StudentPortal({
               </div>
             </div>
 
+            {/* Teacher Showcase Card */}
+            <StudentTeacherShowcase teacherProfile={currentTeacherProfile} />
+
             {/* Active Group Schedule Card */}
             <StudentScheduleCard group={currentGroup} />
 
@@ -552,6 +567,9 @@ export default function StudentPortal({
               pinnedStudent={pinnedStudent}
               onOpenProfilePicker={() => handleTabSelect('profile')}
             />
+
+            {/* Insight Plus Center Addresses & Contact Card */}
+            <StudentCenterAddresses />
           </div>
         )}
 

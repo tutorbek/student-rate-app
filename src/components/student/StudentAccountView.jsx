@@ -833,7 +833,7 @@ export default function StudentAccountView({
                   }}
                 >
                   <div className="student-row-avatar">
-                    {renderAvatar(st.emoji, 40)}
+                    {renderAvatar(st.emoji, 32)}
                   </div>
 
                   <div className="student-row-info">
@@ -841,19 +841,23 @@ export default function StudentAccountView({
                       <span className="student-row-name">{st.name}</span>
                       {hasPin ? (
                         <span className="student-pin-badge protected" title="4 xonali PIN bilan himoyalangan">
-                          🔒 Himoyalangan
+                          <span className="pin-icon" aria-hidden="true">🔒</span>
+                          <span className="pin-text-full">Himoyalangan</span>
+                          <span className="pin-text-short">PIN</span>
                         </span>
                       ) : (
                         <span className="student-pin-badge open" title="PIN belgilanmagan">
-                          🔓 Yangi profil
+                          <span className="pin-icon" aria-hidden="true">🔓</span>
+                          <span className="pin-text-full">Yangi profil</span>
+                          <span className="pin-text-short">Yangi</span>
                         </span>
                       )}
                     </div>
-                    {isSelected && (
-                      <span className="student-row-current-tag">Faol profilingiz</span>
-                    )}
                     {isDeviceClaimed && (
-                      <span className="student-row-device-tag">Bu qurilmadagi profilingiz</span>
+                      <span className="student-row-device-tag">
+                        <span className="device-tag-text-full">Bu qurilmadagi profilingiz</span>
+                        <span className="device-tag-text-short">Bu qurilmada</span>
+                      </span>
                     )}
                   </div>
 
@@ -863,7 +867,8 @@ export default function StudentAccountView({
                         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
                           <polyline points="20 6 9 17 4 12" />
                         </svg>
-                        <span>Sizning profilingiz</span>
+                        <span className="self-badge-text-full">Sizning profilingiz</span>
+                        <span className="self-badge-text-short">Siz</span>
                       </span>
                     ) : isPeer ? (
                       <span className="student-status-badge is-peer">

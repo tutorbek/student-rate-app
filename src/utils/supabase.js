@@ -399,6 +399,7 @@ export const loadAllTeachersFromSupabase = async (teacherIds = ['teacher1', 'tea
         transactions: [],
         quickTags: DEFAULT_DATA.quickTags,
         attendance: [],
+        teacherProfile: null,
         updatedAt: null
       };
     });
@@ -412,6 +413,7 @@ export const loadAllTeachersFromSupabase = async (teacherIds = ['teacher1', 'tea
             transactions: row.data.transactions || [],
             quickTags: row.data.quickTags || DEFAULT_DATA.quickTags,
             attendance: row.data.attendance || [],
+            teacherProfile: row.data.teacherProfile || null,
             updatedAt: row.updated_at || null
           };
         }

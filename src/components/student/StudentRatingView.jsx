@@ -245,8 +245,6 @@ export default function StudentRatingView({
     return map;
   }, [allStudents, students]);
 
-  const [historyFilter, setHistoryFilter] = useState('all'); // 'all' | 'me'
-
   const historyTransactions = useMemo(() => {
     const startOfTodayMs = timeframe === 'today' ? getStartOfToday().getTime() : 0;
     const startOfMonthMs = timeframe === 'month' ? getStartOfMonth().getTime() : 0;
@@ -265,16 +263,16 @@ export default function StudentRatingView({
       return true;
     });
 
-    let filtered = pool;
-    if (historyFilter === 'me' && currentPinnedId) {
-      filtered = pool.filter((tx) => String(tx.studentId) === currentPinnedId);
-    }
+    const filtered = currentPinnedId
+      ? pool.filter((tx) => String(tx.studentId) === currentPinnedId)
+      : [];
+
     return [...filtered].sort((a, b) => {
       const tA = typeof a.timestamp === 'number' ? a.timestamp : new Date(a.timestamp).getTime();
       const tB = typeof b.timestamp === 'number' ? b.timestamp : new Date(b.timestamp).getTime();
       return tB - tA;
     }).slice(0, 80);
-  }, [activeTransactionsPool, activeStudentsPool, historyFilter, currentPinnedId, timeframe]);
+  }, [activeTransactionsPool, activeStudentsPool, currentPinnedId, timeframe]);
 
   const pinnedStudentRankInfo = useMemo(() => {
     if (!currentPinnedId) return null;
@@ -311,19 +309,12 @@ export default function StudentRatingView({
   return (
     <div className="native-rating-container animate-fadeIn">
       {/* Radiant Golden Hero Section for Ranking (Inter Nation vibe) */}
-      <div className="native-rating-hero">
+      <div className={`native-rating-hero ${scope === 'history' ? 'is-history-hero' : ''}`}>
         <div className="native-hero-header">
           <div className="native-hero-title-wrap">
-            <span className="native-hero-eyebrow">
-              {scope === 'top10' 
-                ? `UMUMIY REYTING • ${currentCategory === 'kids' ? 'KIDS' : 'TEENS'}` 
-                : scope === 'history' 
-                ? "LIKELAR VA FAOLLIK" 
-                : "GURUH REYTINGI"}
-            </span>
             <h1 className="native-hero-title">
               {scope === 'top10' 
-                ? `Top 10 Yetakchilar (${currentCategory === 'kids' ? 'Kids' : 'Teens'})` 
+                ? "Top 10 Yetakchilar" 
                 : scope === 'history' 
                 ? "Ballar Tarixi" 
                 : (group?.name ? `${group.name} Yetakchilari` : "Guruh Yetakchilari")}
@@ -338,10 +329,10 @@ export default function StudentRatingView({
         {scope === 'history' ? (
           <div className="native-hero-history-summary">
             <div className="hero-history-stats-grid">
-              {/* Left Column: Total Likes */}
+              {/* Left Column: Group Rank */}
               <div className="hero-history-stat-box stat-box-left">
                 <div className="stat-box-icon-ring ring-silver">
-                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                     <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6" />
                     <path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18" />
                     <path d="M4 22h16" />
@@ -350,30 +341,42 @@ export default function StudentRatingView({
                     <path d="M6 4h12a2 2 0 0 1 2 2v3a6 6 0 0 1-6 6h-4a6 6 0 0 1-6-6V6a2 2 0 0 1 2-2z" />
                   </svg>
                 </div>
-                <span className="hero-stat-value">{totalLikesInTimeframe}</span>
-                <span className="hero-stat-label">Jami Like'lar</span>
-                <span className="stat-box-sub-pill">Umumiy yig'indi</span>
+                <div className="stat-box-data">
+                  <span className="hero-stat-value">
+                    {pinnedStudentRankInfo?.rank ? `${pinnedStudentRankInfo.rank}-o'rin` : '—'}
+                  </span>
+                  <span className="hero-stat-label">Guruhda o'rningiz</span>
+                </div>
+                <span className="stat-box-sub-pill">
+                  {pinnedStudentRankInfo?.rank === 1
+                    ? "Peshqadam"
+                    : pinnedStudentRankInfo?.rank && pinnedStudentRankInfo.rank <= 3
+                    ? "Top 3 talik"
+                    : (group?.name || "Guruh a'zosi")}
+                </span>
               </div>
 
-              {/* Center Column: Your Balance (Elevated Champion Card) */}
+              {/* Center Column: Earned Likes */}
               <div className="hero-history-stat-box stat-box-center highlight">
                 <div className="stat-box-icon-ring ring-gold">
                   {activePinnedStudent ? (
                     <div className="stat-box-avatar-inner">
-                      {renderAvatar(activePinnedStudent.emoji, 44)}
+                      {renderAvatar(activePinnedStudent.emoji, 40)}
                     </div>
                   ) : (
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" strokeWidth="1" aria-hidden="true">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" strokeWidth="1" aria-hidden="true">
                       <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
                     </svg>
                   )}
                 </div>
-                <span className="hero-stat-value champion-val">
-                  {pinnedStudentRankInfo ? pinnedStudentRankInfo.score : '—'}
-                </span>
-                <span className="hero-stat-label champion-lbl">Sizning balansingiz</span>
+                <div className="stat-box-data">
+                  <span className="hero-stat-value champion-val">
+                    {pinnedStudentRankInfo ? pinnedStudentRankInfo.score : 0}
+                  </span>
+                  <span className="hero-stat-label champion-lbl">To'plangan Like</span>
+                </div>
                 <span className="stat-box-sub-pill champion-pill">
-                  {pinnedStudentRankInfo ? (activePinnedStudent?.name ? activePinnedStudent.name.split(' ')[0] : 'Shaxsiy hisob') : 'Profil tanlang'}
+                  {activePinnedStudent?.name ? activePinnedStudent.name.split(' ')[0] : 'Profil'}
                 </span>
               </div>
 
@@ -384,8 +387,10 @@ export default function StudentRatingView({
                     <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
                   </svg>
                 </div>
-                <span className="hero-stat-value">{historyTransactions.length}</span>
-                <span className="hero-stat-label">Operatsiyalar</span>
+                <div className="stat-box-data">
+                  <span className="hero-stat-value">{historyTransactions.length}</span>
+                  <span className="hero-stat-label">Faolliklar soni</span>
+                </div>
                 <span className="stat-box-sub-pill">Dars yozuvlari</span>
               </div>
             </div>
@@ -918,26 +923,9 @@ export default function StudentRatingView({
 
             {activePinnedStudent && (
               <div className="history-filter-toggle">
-                <button
-                  type="button"
-                  className={`history-toggle-btn ${historyFilter === 'all' ? 'active' : ''}`}
-                  onClick={() => {
-                    triggerHaptic('light');
-                    setHistoryFilter('all');
-                  }}
-                >
-                  Barchasi
-                </button>
-                <button
-                  type="button"
-                  className={`history-toggle-btn ${historyFilter === 'me' ? 'active' : ''}`}
-                  onClick={() => {
-                    triggerHaptic('light');
-                    setHistoryFilter('me');
-                  }}
-                >
+                <span className="history-toggle-btn active" style={{ cursor: 'default' }}>
                   Mening Like'larim
-                </button>
+                </span>
               </div>
             )}
           </div>
@@ -948,7 +936,7 @@ export default function StudentRatingView({
                 const amountNum = Number(tx.amount) || 0;
                 const isPositive = amountNum > 0;
                 const studentName = studentMap.get(String(tx.studentId))?.name;
-                const isMeTx = pinnedStudentId && String(tx.studentId) === String(pinnedStudentId);
+                const isMeTx = currentPinnedId && String(tx.studentId) === currentPinnedId;
 
                 return (
                   <div key={tx.id} className={`history-row ${isMeTx ? 'is-me-history' : ''}`}>
@@ -972,8 +960,14 @@ export default function StudentRatingView({
               })
             ) : (
               <div className="native-empty-box">
-                <span className="empty-box-title">Yozuvlar yo'q</span>
-                <p className="empty-box-text">Hozircha bu guruhda berilgan Like'lar mavjud emas.</p>
+                <span className="empty-box-title">
+                  {currentPinnedId ? "Yozuvlar yo'q" : "Profil tanlanmagan"}
+                </span>
+                <p className="empty-box-text">
+                  {currentPinnedId
+                    ? "Tanlangan davrda sizga berilgan Like'lar mavjud emas."
+                    : "O'z Like'laringiz tarixini ko'rish uchun profilingizni tanlang."}
+                </p>
               </div>
             )}
           </div>

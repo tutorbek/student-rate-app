@@ -371,6 +371,25 @@ function App() {
   const [transactions, setTransactions] = useState([]);
   const [quickTags, setQuickTags] = useState([]);
   const [attendance, setAttendance] = useState([]);
+  const [teacherProfile, setTeacherProfile] = useState(() => {
+    try {
+      const tId = localStorage.getItem('rsa_teacher_id');
+      if (tId) {
+        const cached = localStorage.getItem(`rsa_teacher_profile_${tId}`);
+        if (cached) return JSON.parse(cached);
+      }
+    } catch (_) {}
+    return {
+      fullName: '',
+      title: '',
+      avatar: '',
+      education: '',
+      motto: '',
+      achievements: [],
+      certificates: [],
+      social: { telegram: '', instagram: '' }
+    };
+  });
   const [allTeachersData, setAllTeachersData] = useState({});
   const [selectedAdminTeacherFilter, setSelectedAdminTeacherFilter] = useState('all');
   const [isLoaded, setIsLoaded] = useState(false);
@@ -452,7 +471,8 @@ function App() {
               students: (t.students || []).map(s => ({ ...s, emoji: normalizeIconUrl(s.emoji) })),
               transactions: t.transactions || [],
               quickTags: normalizeQuickTags(t.quickTags),
-              attendance: t.attendance || []
+              attendance: t.attendance || [],
+              teacherProfile: t.teacherProfile || null
             };
           });
           setAllTeachersData(normalized);
@@ -465,6 +485,9 @@ function App() {
               setTransactions(currentT.transactions || []);
               setAttendance(currentT.attendance || []);
               setQuickTags(currentT.quickTags || DEFAULT_DATA.quickTags);
+              if (currentT.teacherProfile) {
+                setTeacherProfile(currentT.teacherProfile);
+              }
             }
           }
 
@@ -534,13 +557,22 @@ function App() {
         setQuickTags(loadedQuickTags);
         setAttendance(syncedAttendance);
 
+        const loadedTeacherProfile = data.teacherProfile || null;
+        if (loadedTeacherProfile) {
+          setTeacherProfile(loadedTeacherProfile);
+          try {
+            localStorage.setItem(`rsa_teacher_profile_${teacherId}`, JSON.stringify(loadedTeacherProfile));
+          } catch {}
+        }
+
         // Update the ref so we don't accidentally re-save on mount
         const dbState = {
           groups: loadedGroups,
           students: loadedStudents,
           transactions: loadedTransactions,
           quickTags: loadedQuickTags,
-          attendance: syncedAttendance
+          attendance: syncedAttendance,
+          teacherProfile: loadedTeacherProfile
         };
         lastSavedDataRef.current = JSON.stringify(dbState);
 
@@ -682,6 +714,9 @@ function App() {
         setStudents(tData.students || []);
         setTransactions(tData.transactions || []);
         setAttendance(tData.attendance || []);
+        if (tData.teacherProfile) {
+          setTeacherProfile(tData.teacherProfile);
+        }
       } else {
         loadAllTeachersFromSupabase([target.teacherId]).then((fetched) => {
           if (fetched && fetched[target.teacherId]) {
@@ -692,13 +727,17 @@ function App() {
               students: (t.students || []).map(s => ({ ...s, emoji: normalizeIconUrl(s.emoji) })),
               transactions: t.transactions || [],
               quickTags: normalizeQuickTags(t.quickTags),
-              attendance: t.attendance || []
+              attendance: t.attendance || [],
+              teacherProfile: t.teacherProfile || null
             };
             setAllTeachersData(prev => ({ ...prev, [target.teacherId]: normalizedTeacher }));
             setGroups(normalizedTeacher.groups || []);
             setStudents(normalizedTeacher.students || []);
             setTransactions(normalizedTeacher.transactions || []);
             setAttendance(normalizedTeacher.attendance || []);
+            if (normalizedTeacher.teacherProfile) {
+              setTeacherProfile(normalizedTeacher.teacherProfile);
+            }
           }
         });
       }
@@ -760,7 +799,7 @@ function App() {
     if (!isLoaded || !isAuthenticated || !teacherId) return;
     if (userRole === 'student' || userRole === 'admin') return;
 
-    const db = { groups, students, transactions, quickTags, attendance };
+    const db = { groups, students, transactions, quickTags, attendance, teacherProfile };
     const dbStr = JSON.stringify(db);
 
     // Instant (0ms) local cache backup to localStorage for offline protection!
@@ -816,7 +855,7 @@ function App() {
     }, 1500); // 1.5 second debounce
 
     return () => clearTimeout(timer);
-  }, [groups, students, transactions, quickTags, attendance, isLoaded, isAuthenticated, teacherId, userRole]);
+  }, [groups, students, transactions, quickTags, attendance, teacherProfile, isLoaded, isAuthenticated, teacherId, userRole]);
 
   // Clear toast after timeout
   useEffect(() => {
@@ -826,6 +865,45 @@ function App() {
     }, 3000);
     return () => clearTimeout(timer);
   }, [toast]);
+
+  const handleSaveTeacherProfile = useCallback(async (updatedProfile) => {
+    setTeacherProfile(updatedProfile);
+    if (!teacherId) return false;
+
+    try {
+      localStorage.setItem(`rsa_teacher_profile_${teacherId}`, JSON.stringify(updatedProfile));
+    } catch {}
+
+    const db = {
+      groups,
+      students,
+      transactions,
+      quickTags,
+      attendance,
+      teacherProfile: updatedProfile,
+      lastModified: new Date().toISOString()
+    };
+
+    setSyncStatus('saving');
+    const success = await saveToFirestore(teacherId, db);
+    if (success) {
+      setSyncStatus('saved');
+      lastSavedDataRef.current = JSON.stringify(db);
+      setAllTeachersData(prev => ({
+        ...prev,
+        [teacherId]: {
+          ...(prev[teacherId] || {}),
+          teacherProfile: updatedProfile
+        }
+      }));
+      showToast("Ustoz profili muvaffaqiyatli saqlandi! 🎉", "success");
+      return true;
+    } else {
+      setSyncStatus('offline');
+      showToast("Internet sekin, ma'lumotlar qurilmada saqlandi", "warning");
+      return false;
+    }
+  }, [groups, students, transactions, quickTags, attendance, teacherId]);
 
 
 
@@ -1409,6 +1487,8 @@ function App() {
           showToast={showToast}
           theme={theme}
           toggleTheme={toggleTheme}
+          teacherProfile={teacherProfile}
+          allTeachersData={allTeachersData}
         />
       );
     }
@@ -1526,6 +1606,8 @@ function App() {
             isSyncing={isSyncing}
             theme={theme}
             setTheme={handleSetTheme}
+            teacherProfile={teacherProfile}
+            onSaveTeacherProfile={handleSaveTeacherProfile}
           />
         );
       default:
@@ -1563,10 +1645,36 @@ function App() {
         )}
 
         {toast && (
-          <div className="toast-container">
-            <div className={`toast toast-${toast.type}`}>
-              <span className="toast-icon">
-                {toast.type === 'success' ? '✓' : toast.type === 'error' ? '⚠️' : 'ℹ️'}
+          <div className="toast-portal-container">
+            <div
+              className={`toast toast-${toast.type || 'info'}`}
+              onClick={() => setToast(null)}
+              role="alert"
+              title="Yopish"
+            >
+              <span className={`toast-icon-badge ${toast.type || 'info'}`}>
+                {toast.type === 'success' ? (
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <polyline points="20 6 9 17 4 12" />
+                  </svg>
+                ) : toast.type === 'error' ? (
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <line x1="18" y1="6" x2="6" y2="18" />
+                    <line x1="6" y1="6" x2="18" y2="18" />
+                  </svg>
+                ) : toast.type === 'warning' ? (
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <circle cx="12" cy="12" r="10" />
+                    <line x1="12" y1="8" x2="12" y2="12" />
+                    <line x1="12" y1="16" x2="12.01" y2="16" />
+                  </svg>
+                ) : (
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <circle cx="12" cy="12" r="10" />
+                    <line x1="12" y1="16" x2="12" y2="12" />
+                    <line x1="12" y1="8" x2="12.01" y2="8" />
+                  </svg>
+                )}
               </span>
               <span className="toast-message">{toast.message}</span>
             </div>
@@ -1636,10 +1744,36 @@ function App() {
 
       {/* Toast Notification Popups */}
       {toast && (
-        <div className="toast-container">
-          <div className={`toast toast-${toast.type}`}>
-            <span className="toast-icon">
-              {toast.type === 'success' ? '✓' : toast.type === 'error' ? '⚠️' : 'ℹ️'}
+        <div className="toast-portal-container">
+          <div
+            className={`toast toast-${toast.type || 'info'}`}
+            onClick={() => setToast(null)}
+            role="alert"
+            title="Yopish"
+          >
+            <span className={`toast-icon-badge ${toast.type || 'info'}`}>
+              {toast.type === 'success' ? (
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <polyline points="20 6 9 17 4 12" />
+                </svg>
+              ) : toast.type === 'error' ? (
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <line x1="18" y1="6" x2="6" y2="18" />
+                  <line x1="6" y1="6" x2="18" y2="18" />
+                </svg>
+              ) : toast.type === 'warning' ? (
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <circle cx="12" cy="12" r="10" />
+                  <line x1="12" y1="8" x2="12" y2="12" />
+                  <line x1="12" y1="16" x2="12.01" y2="16" />
+                </svg>
+              ) : (
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <circle cx="12" cy="12" r="10" />
+                  <line x1="12" y1="16" x2="12" y2="12" />
+                  <line x1="12" y1="8" x2="12.01" y2="8" />
+                </svg>
+              )}
             </span>
             <span className="toast-message">{toast.message}</span>
           </div>

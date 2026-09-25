@@ -1,6 +1,9 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { exportDatabase, DEFAULT_QUICK_TAGS, normalizeQuickTags } from '../utils/db';
+import { renderAvatar } from '../utils/studentAvatars';
+import { AVATAR_GALLERY_IMAGES } from '../utils/avatarGallery';
+import StudentTeacherShowcase from './student/StudentTeacherShowcase';
 
 // Minimalist SVG Icons
 const IconTag = ({ size = 15, strokeWidth = 2.2 }) => (
@@ -127,10 +130,150 @@ const Settings = ({
   syncStatus = 'saved',
   isSyncing = false,
   theme: _theme,
-  setTheme: _setTheme
+  setTheme: _setTheme,
+  teacherProfile = null,
+  onSaveTeacherProfile
 }) => {
-  // Tabs: 'tags', 'trash', 'backup', 'danger'
-  const [activeTab, setActiveTab] = useState('tags');
+  // Tabs: 'profile', 'tags', 'trash', 'backup', 'danger'
+  const [activeTab, setActiveTab] = useState('profile');
+
+  // Teacher Profile State
+  const [profileFullName, setProfileFullName] = useState(teacherProfile?.fullName || '');
+  const [profileTitle, setProfileTitle] = useState(teacherProfile?.title || '');
+  const [profileAvatar, setProfileAvatar] = useState(teacherProfile?.avatar || '');
+  const [profileEducation, setProfileEducation] = useState(teacherProfile?.education || '');
+  const [profileMotto, setProfileMotto] = useState(teacherProfile?.motto || '');
+  const [profileAchievements, setProfileAchievements] = useState(teacherProfile?.achievements || []);
+  const [profileCertificates, setProfileCertificates] = useState(teacherProfile?.certificates || []);
+  const [profileTelegram, setProfileTelegram] = useState(teacherProfile?.social?.telegram || '');
+  const [profileInstagram, setProfileInstagram] = useState(teacherProfile?.social?.instagram || '');
+
+  const [newAchievementText, setNewAchievementText] = useState('');
+  const [showGalleryModal, setShowGalleryModal] = useState(false);
+  const [showAddCertModal, setShowAddCertModal] = useState(false);
+  const [certTitleInput, setCertTitleInput] = useState('');
+  const [certYearInput, setCertYearInput] = useState('');
+  const [certImageInput, setCertImageInput] = useState('');
+  const [isSavingProfile, setIsSavingProfile] = useState(false);
+
+  useEffect(() => {
+    if (teacherProfile) {
+      setProfileFullName(teacherProfile.fullName || '');
+      setProfileTitle(teacherProfile.title || '');
+      setProfileAvatar(teacherProfile.avatar || '');
+      setProfileEducation(teacherProfile.education || '');
+      setProfileMotto(teacherProfile.motto || '');
+      setProfileAchievements(teacherProfile.achievements || []);
+      setProfileCertificates(teacherProfile.certificates || []);
+      setProfileTelegram(teacherProfile.social?.telegram || '');
+      setProfileInstagram(teacherProfile.social?.instagram || '');
+    }
+  }, [teacherProfile]);
+
+  const handleAvatarFileUpload = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 2 * 1024 * 1024) {
+      showToast("Rasm hajmi 2MB dan oshmasligi kerak", "error");
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const dataUrl = event.target?.result;
+      if (typeof dataUrl === 'string') {
+        setProfileAvatar(dataUrl);
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleCertFileUpload = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 3 * 1024 * 1024) {
+      showToast("Sertifikat rasmi 3MB dan oshmasligi kerak", "error");
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const dataUrl = event.target?.result;
+      if (typeof dataUrl === 'string') {
+        setCertImageInput(dataUrl);
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleAddAchievement = (e) => {
+    if (e && e.preventDefault) e.preventDefault();
+    const clean = newAchievementText.trim();
+    if (!clean) return;
+    if (profileAchievements.includes(clean)) {
+      showToast("Ushbu yutuq allaqachon qo'shilgan", "info");
+      return;
+    }
+    setProfileAchievements([...profileAchievements, clean]);
+    setNewAchievementText('');
+  };
+
+  const handleAddSuggestedAchievement = (text) => {
+    if (profileAchievements.includes(text)) {
+      showToast("Ushbu yutuq allaqachon mavjud", "info");
+      return;
+    }
+    setProfileAchievements([...profileAchievements, text]);
+  };
+
+  const handleRemoveAchievement = (index) => {
+    setProfileAchievements(profileAchievements.filter((_, i) => i !== index));
+  };
+
+  const handleAddCertificateSubmit = () => {
+    if (!certTitleInput.trim() && !certImageInput) {
+      showToast("Sertifikat nomi yoki rasmini kiriting", "warning");
+      return;
+    }
+    const newCert = {
+      id: `cert_${Date.now()}`,
+      title: certTitleInput.trim(),
+      year: certYearInput.trim(),
+      image: certImageInput
+    };
+    setProfileCertificates([...profileCertificates, newCert]);
+    setCertTitleInput('');
+    setCertYearInput('');
+    setCertImageInput('');
+    setShowAddCertModal(false);
+  };
+
+  const handleRemoveCertificate = (index) => {
+    setProfileCertificates(profileCertificates.filter((_, i) => i !== index));
+  };
+
+  const handleSaveProfile = async () => {
+    if (!profileFullName.trim()) {
+      showToast("Iltimos, ism-familiyangizni kiriting!", "warning");
+      return;
+    }
+    setIsSavingProfile(true);
+    const updated = {
+      fullName: profileFullName.trim(),
+      title: profileTitle.trim(),
+      avatar: profileAvatar,
+      education: profileEducation.trim(),
+      motto: profileMotto.trim(),
+      achievements: profileAchievements.filter(Boolean),
+      certificates: profileCertificates.filter(Boolean),
+      social: {
+        telegram: profileTelegram.trim(),
+        instagram: profileInstagram.trim()
+      }
+    };
+    if (onSaveTeacherProfile) {
+      await onSaveTeacherProfile(updated);
+    }
+    setIsSavingProfile(false);
+  };
 
   // Quick Tags State
   const [newTagText, setNewTagText] = useState('');
@@ -374,6 +517,13 @@ const Settings = ({
         <div className="tab-control-brutalist">
           <button
             type="button"
+            className={`tab-btn-brutalist ${activeTab === 'profile' ? 'active' : ''}`}
+            onClick={() => setActiveTab('profile')}
+          >
+            <span>👤 Profil</span>
+          </button>
+          <button
+            type="button"
             className={`tab-btn-brutalist ${activeTab === 'tags' ? 'active' : ''}`}
             onClick={() => setActiveTab('tags')}
           >
@@ -410,13 +560,13 @@ const Settings = ({
       <section className="glass-card settings-hero-banner">
         <div className="hero-left-profile">
           <div className="profile-avatar-box">
-            <IconUser size={22} />
+            {profileAvatar ? renderAvatar(profileAvatar, 32) : <IconUser size={22} />}
           </div>
           <div className="profile-details">
             <div className="profile-role-row">
               <span className="role-pill-badge">{userRole === 'admin' ? 'Administrator' : "O'qituvchi"}</span>
               <span className="stats-mini-summary">
-                {activeGroups.length} ta faol guruh • {activeStudents.length} ta o'quvchi
+                {profileFullName ? `${profileFullName} • ` : ''}{activeGroups.length} ta faol guruh • {activeStudents.length} ta o'quvchi
               </span>
             </div>
           </div>
@@ -446,6 +596,334 @@ const Settings = ({
           </button>
         </div>
       </section>
+
+      {/* Tab 0: Ustoz Shaxsiy Portfoliosi va Profili */}
+      {activeTab === 'profile' && (
+        <div className="settings-tab-content fade-in">
+          {/* 1. Asosiy Ma'lumotlar Card */}
+          <section className="glass-card settings-card">
+            <div className="card-header-flex">
+              <div>
+                <h3 className="card-title">Ustoz Profili va Vizitkasi</h3>
+                <p className="card-desc">
+                  Ushbu ma'lumotlar studentlar tizimiga kirganda ularning Asosiy sahifasida ko'rinadi
+                </p>
+              </div>
+              <button
+                type="button"
+                className="save-profile-header-btn"
+                onClick={handleSaveProfile}
+                disabled={isSavingProfile}
+              >
+                {isSavingProfile ? "Saqlanmoqda..." : "💾 Saqlash"}
+              </button>
+            </div>
+
+            {/* Avatar Section */}
+            <div className="profile-edit-avatar-section">
+              <div className="profile-edit-avatar-preview">
+                {renderAvatar(profileAvatar || '👤', 76)}
+              </div>
+              <div className="profile-edit-avatar-actions">
+                <span className="profile-edit-avatar-label">Profil surati / Avatari</span>
+                <div className="profile-avatar-buttons-row">
+                  <label className="profile-avatar-upload-btn">
+                    <span>📁 Rasm yuklash</span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleAvatarFileUpload}
+                      style={{ display: 'none' }}
+                    />
+                  </label>
+                  <button
+                    type="button"
+                    className="profile-avatar-gallery-btn"
+                    onClick={() => setShowGalleryModal(true)}
+                  >
+                    🎨 Galereyadan tanlash
+                  </button>
+                </div>
+                {profileAvatar && (
+                  <button
+                    type="button"
+                    className="profile-avatar-remove-btn"
+                    onClick={() => setProfileAvatar('')}
+                  >
+                    Suratni olib tashlash
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* Inputs Grid */}
+            <div className="profile-fields-grid">
+              <div className="profile-field-item">
+                <label className="input-field-label">Ism va Familiya *</label>
+                <input
+                  type="text"
+                  className="modern-text-input"
+                  placeholder="Masalan: Bekzod Raxmonov"
+                  value={profileFullName}
+                  onChange={(e) => setProfileFullName(e.target.value)}
+                />
+              </div>
+
+              <div className="profile-field-item">
+                <label className="input-field-label">Mutaxassislik / Unvon</label>
+                <input
+                  type="text"
+                  className="modern-text-input"
+                  placeholder="Masalan: Katta Matematika va Mantiq ustozi"
+                  value={profileTitle}
+                  onChange={(e) => setProfileTitle(e.target.value)}
+                />
+              </div>
+
+              <div className="profile-field-item full-width">
+                <label className="input-field-label">O'qigan joyi (Universitet / Ta'lim)</label>
+                <input
+                  type="text"
+                  className="modern-text-input"
+                  placeholder="Masalan: O'zbekiston Milliy Universiteti, Magistratura"
+                  value={profileEducation}
+                  onChange={(e) => setProfileEducation(e.target.value)}
+                />
+              </div>
+
+              <div className="profile-field-item full-width">
+                <label className="input-field-label">Motivatsion shior / Fikringiz</label>
+                <textarea
+                  className="modern-textarea-input"
+                  rows={2}
+                  placeholder="O'quvchilaringizga ilhom beruvchi shior yoki fikringiz..."
+                  value={profileMotto}
+                  onChange={(e) => setProfileMotto(e.target.value)}
+                />
+              </div>
+            </div>
+          </section>
+
+          {/* 2. Yutuqlar va Tajriba (Achievements) */}
+          <section className="glass-card settings-card">
+            <div className="card-header-flex">
+              <div>
+                <h3 className="card-title">🏆 Yutuqlar va Tajriba</h3>
+                <p className="card-desc">
+                  O'quvchilarga taqdim etiladigan asosiy yutuqlar, nishonlar va tajriba yillari
+                </p>
+              </div>
+            </div>
+
+            {/* Existing achievements list */}
+            <div className="achievements-editor-chips-wrap">
+              {profileAchievements.map((ach, idx) => (
+                <span key={idx} className="achievement-edit-pill">
+                  <span>✨ {ach}</span>
+                  <button
+                    type="button"
+                    className="achievement-remove-x"
+                    onClick={() => handleRemoveAchievement(idx)}
+                    aria-label="O'chirish"
+                  >
+                    ✕
+                  </button>
+                </span>
+              ))}
+              {profileAchievements.length === 0 && (
+                <span className="achievements-empty-hint">
+                  Hali yutuqlar qo'shilmadi. Quyidan yozing yoki tavsiyalardan tanlang!
+                </span>
+              )}
+            </div>
+
+            {/* Add new achievement row */}
+            <form onSubmit={handleAddAchievement} className="add-achievement-row">
+              <input
+                type="text"
+                className="modern-text-input flex-1"
+                placeholder="Yangi yutuq (masalan: 6+ yil tajriba)"
+                value={newAchievementText}
+                onChange={(e) => setNewAchievementText(e.target.value)}
+              />
+              <button
+                type="submit"
+                className="add-achievement-submit-btn"
+                disabled={!newAchievementText.trim()}
+              >
+                + Qo'shish
+              </button>
+            </form>
+
+            {/* Fast-pick recommendations */}
+            <div className="achievement-suggestions-block">
+              <span className="suggestions-label">Tezkor tavsiyalar:</span>
+              <div className="suggestions-chips-row">
+                {[
+                  "5+ yil tajriba",
+                  "500+ bitiruvchilar",
+                  "IELTS 8.5",
+                  "Xalqaro olimpiada murabbiyi",
+                  "Magistr darajasi",
+                  "Top universitetlar talabasi",
+                  "Sertifikatlangan mutaxassis"
+                ].map((sug, i) => (
+                  <button
+                    key={i}
+                    type="button"
+                    className="suggestion-chip-btn"
+                    onClick={() => handleAddSuggestedAchievement(sug)}
+                  >
+                    + {sug}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </section>
+
+          {/* 3. Sertifikatlar va Diplomlar Galereyasi */}
+          <section className="glass-card settings-card">
+            <div className="card-header-flex">
+              <div>
+                <h3 className="card-title">📜 Sertifikat va Diplomlar</h3>
+                <p className="card-desc">
+                  Erishgan sertifikat, diplom yoki tashakkurnomalaringiz
+                </p>
+              </div>
+              <button
+                type="button"
+                className="add-cert-trigger-btn"
+                onClick={() => setShowAddCertModal(true)}
+              >
+                + Sertifikat qo'shish
+              </button>
+            </div>
+
+            <div className="certificates-edit-grid">
+              {profileCertificates.map((cert, index) => (
+                <div key={cert.id || index} className="cert-edit-item-card">
+                  <div className="cert-edit-thumbnail">
+                    {cert.image ? (
+                      <img src={cert.image} alt={cert.title || 'Sertifikat'} />
+                    ) : (
+                      <span className="cert-placeholder-emoji">📜</span>
+                    )}
+                  </div>
+                  <div className="cert-edit-details">
+                    <h5 className="cert-edit-title">{cert.title || "Nomsiz sertifikat"}</h5>
+                    {cert.year && <span className="cert-edit-year">{cert.year}</span>}
+                  </div>
+                  <button
+                    type="button"
+                    className="cert-edit-delete-btn"
+                    onClick={() => handleRemoveCertificate(index)}
+                    title="O'chirish"
+                  >
+                    ✕
+                  </button>
+                </div>
+              ))}
+              {profileCertificates.length === 0 && (
+                <div className="certificates-empty-box">
+                  <span className="empty-icon">📜</span>
+                  <p>Hozircha sertifikatlar qo'shilmagan.</p>
+                  <button
+                    type="button"
+                    className="add-first-cert-btn"
+                    onClick={() => setShowAddCertModal(true)}
+                  >
+                    + Birinchi sertifikatni qo'shish
+                  </button>
+                </div>
+              )}
+            </div>
+          </section>
+
+          {/* 4. Ijtimoiy Tarmoqlar */}
+          <section className="glass-card settings-card">
+            <div className="card-header-flex">
+              <div>
+                <h3 className="card-title">💬 Ijtimoiy Tarmoqlar va Aloqa</h3>
+                <p className="card-desc">
+                  O'quvchilar siz bilan bog'lanishi yoki kanalingizga a'zo bo'lishi uchun havolalar
+                </p>
+              </div>
+            </div>
+
+            <div className="social-inputs-grid">
+              <div className="social-input-item">
+                <label className="input-field-label">Telegram (username yoki kanal)</label>
+                <div className="social-input-wrap">
+                  <span className="social-input-prefix">@</span>
+                  <input
+                    type="text"
+                    className="social-clean-input"
+                    placeholder="username yoki t.me/havola"
+                    value={profileTelegram}
+                    onChange={(e) => setProfileTelegram(e.target.value)}
+                  />
+                </div>
+              </div>
+
+              <div className="social-input-item">
+                <label className="input-field-label">Instagram (username)</label>
+                <div className="social-input-wrap">
+                  <span className="social-input-prefix">@</span>
+                  <input
+                    type="text"
+                    className="social-clean-input"
+                    placeholder="username"
+                    value={profileInstagram}
+                    onChange={(e) => setProfileInstagram(e.target.value)}
+                  />
+                </div>
+              </div>
+            </div>
+          </section>
+
+          {/* 5. Jonli Ko'rinish (Live Preview) */}
+          <section className="glass-card settings-card live-preview-section">
+            <div className="card-header-flex">
+              <div>
+                <h3 className="card-title">
+                  <span className="preview-live-indicator" /> Studentga qanday ko'rinadi (Jonli namoyish):
+                </h3>
+                <p className="card-desc">
+                  O'quvchi ushbu kartochkani ko'radi va ustiga bosganda to'liq vizitkangiz ochiladi
+                </p>
+              </div>
+            </div>
+
+            <div className="preview-container-box">
+              <StudentTeacherShowcase
+                teacherProfile={{
+                  fullName: profileFullName || "Ism Familiya",
+                  title: profileTitle || "Ustoz unvoni va mutaxassisligi",
+                  avatar: profileAvatar,
+                  education: profileEducation,
+                  motto: profileMotto,
+                  achievements: profileAchievements.length > 0 ? profileAchievements : ["5+ yil tajriba", "Sertifikatlangan ustoz"],
+                  certificates: profileCertificates,
+                  social: { telegram: profileTelegram, instagram: profileInstagram }
+                }}
+                isPreview={true}
+              />
+            </div>
+          </section>
+
+          {/* 6. Bottom Save Action Bar */}
+          <div className="settings-profile-sticky-footer">
+            <button
+              type="button"
+              className="settings-save-profile-large-btn"
+              onClick={handleSaveProfile}
+              disabled={isSavingProfile}
+            >
+              {isSavingProfile ? "Saqlanmoqda..." : "💾 O'zgarishlarni saqlash"}
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Tab 1: Tezkor Izoh Shablonlari */}
       {activeTab === 'tags' && (
@@ -1027,6 +1505,133 @@ const Settings = ({
                 </button>
               </div>
             </form>
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {/* MODAL 5: Yangi sertifikat qo'shish */}
+      {showAddCertModal && typeof document !== 'undefined' && createPortal(
+        <div className="sheet-backdrop animate-backdropFadeIn" onClick={() => setShowAddCertModal(false)}>
+          <div className="sheet-container cert-add-dialog animate-slideUp" onClick={(e) => e.stopPropagation()}>
+            <div className="cert-modal-header">
+              <h3 className="cert-modal-title">Yangi sertifikat qo'shish</h3>
+              <button
+                type="button"
+                className="sheet-close-x-btn"
+                onClick={() => setShowAddCertModal(false)}
+                aria-label="Yopish"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="cert-modal-body">
+              {/* Image Preview & Upload */}
+              <div className="cert-upload-area">
+                {certImageInput ? (
+                  <div className="cert-upload-preview">
+                    <img src={certImageInput} alt="Preview" />
+                    <button
+                      type="button"
+                      className="cert-upload-change-btn"
+                      onClick={() => setCertImageInput('')}
+                    >
+                      Boshqa rasm tanlash
+                    </button>
+                  </div>
+                ) : (
+                  <label className="cert-dropzone-label">
+                    <span className="dropzone-icon">📷</span>
+                    <span className="dropzone-text">Sertifikat rasmini yuklang</span>
+                    <span className="dropzone-sub">PNG, JPG, WEBP (maks. 3MB)</span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleCertFileUpload}
+                      style={{ display: 'none' }}
+                    />
+                  </label>
+                )}
+              </div>
+
+              <div className="cert-form-field">
+                <label className="input-field-label">Sertifikat yoki diplom nomi *</label>
+                <input
+                  type="text"
+                  className="modern-text-input"
+                  placeholder="Masalan: IELTS 8.5 yoki Yil O'qituvchisi"
+                  value={certTitleInput}
+                  onChange={(e) => setCertTitleInput(e.target.value)}
+                />
+              </div>
+
+              <div className="cert-form-field">
+                <label className="input-field-label">Yil / Berilgan tashkilot (ixtiyoriy)</label>
+                <input
+                  type="text"
+                  className="modern-text-input"
+                  placeholder="Masalan: 2024, British Council"
+                  value={certYearInput}
+                  onChange={(e) => setCertYearInput(e.target.value)}
+                />
+              </div>
+            </div>
+
+            <div className="cert-modal-actions">
+              <button
+                type="button"
+                className="dialog-btn cancel"
+                onClick={() => setShowAddCertModal(false)}
+              >
+                Bekor qilish
+              </button>
+              <button
+                type="button"
+                className="dialog-btn confirm"
+                onClick={handleAddCertificateSubmit}
+                disabled={!certTitleInput.trim() && !certImageInput}
+              >
+                Qo'shish
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {/* MODAL 6: Avatar Galereyasi */}
+      {showGalleryModal && typeof document !== 'undefined' && createPortal(
+        <div className="sheet-backdrop animate-backdropFadeIn" onClick={() => setShowGalleryModal(false)}>
+          <div className="sheet-container avatar-gallery-dialog animate-slideUp" onClick={(e) => e.stopPropagation()}>
+            <div className="cert-modal-header">
+              <h3 className="cert-modal-title">Galereyadan surat tanlang</h3>
+              <button
+                type="button"
+                className="sheet-close-x-btn"
+                onClick={() => setShowGalleryModal(false)}
+                aria-label="Yopish"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="settings-gallery-grid">
+              {AVATAR_GALLERY_IMAGES.map((img) => (
+                <button
+                  key={img.id}
+                  type="button"
+                  className={`settings-gallery-item ${profileAvatar === img.path ? 'is-selected' : ''}`}
+                  onClick={() => {
+                    setProfileAvatar(img.path);
+                    setShowGalleryModal(false);
+                  }}
+                  title={img.label}
+                >
+                  <img src={img.path} alt={img.label} loading="lazy" />
+                </button>
+              ))}
+            </div>
           </div>
         </div>,
         document.body
@@ -1875,6 +2480,693 @@ const Settings = ({
           margin: 0;
         }
 
+        /* Profile & Showcase Editor Styles */
+        .save-profile-header-btn {
+          background: var(--apple-blue, #0071E3);
+          color: #FFFFFF;
+          border: none;
+          border-radius: var(--radius-full, 9999px);
+          padding: 8px 18px;
+          font-size: 0.82rem;
+          font-weight: 600;
+          cursor: pointer;
+          transition: all var(--transition-fast, 0.2s ease);
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          box-shadow: 0 2px 6px rgba(0, 113, 227, 0.25);
+        }
+
+        .save-profile-header-btn:hover:not(:disabled) {
+          opacity: 0.92;
+          transform: translateY(-1px);
+        }
+
+        .save-profile-header-btn:disabled {
+          opacity: 0.6;
+          cursor: not-allowed;
+        }
+
+        .profile-edit-avatar-section {
+          display: flex;
+          align-items: center;
+          gap: 20px;
+          padding: 16px 20px;
+          background: #FAFAFC;
+          border: 1px solid rgba(0, 0, 0, 0.05);
+          border-radius: var(--radius-md, 12px);
+          margin-bottom: 20px;
+          flex-wrap: wrap;
+        }
+
+        .profile-edit-avatar-preview {
+          width: 76px;
+          height: 76px;
+          border-radius: 50%;
+          overflow: hidden;
+          background: #FFFFFF;
+          border: 2px solid rgba(0, 0, 0, 0.08);
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          flex-shrink: 0;
+        }
+
+        .profile-edit-avatar-preview img {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+        }
+
+        .profile-edit-avatar-actions {
+          display: flex;
+          flex-direction: column;
+          gap: 8px;
+          flex: 1;
+          min-width: 200px;
+        }
+
+        .profile-edit-avatar-label {
+          font-size: 0.85rem;
+          font-weight: 700;
+          color: var(--text-primary);
+        }
+
+        .profile-avatar-buttons-row {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          flex-wrap: wrap;
+        }
+
+        .profile-avatar-upload-btn,
+        .profile-avatar-gallery-btn {
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          padding: 7px 14px;
+          font-size: 0.8rem;
+          font-weight: 600;
+          border-radius: var(--radius-sm, 8px);
+          background: #FFFFFF;
+          border: 1px solid rgba(0, 0, 0, 0.12);
+          color: var(--text-primary);
+          cursor: pointer;
+          transition: all var(--transition-fast, 0.2s ease);
+        }
+
+        .profile-avatar-upload-btn:hover,
+        .profile-avatar-gallery-btn:hover {
+          background: #F5F5F7;
+          border-color: rgba(0, 0, 0, 0.2);
+        }
+
+        .profile-avatar-remove-btn {
+          align-self: flex-start;
+          background: none;
+          border: none;
+          color: var(--apple-red, #EF4444);
+          font-size: 0.76rem;
+          font-weight: 600;
+          cursor: pointer;
+          padding: 2px 0;
+          text-decoration: underline;
+        }
+
+        .profile-fields-grid {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 14px;
+        }
+
+        .profile-field-item {
+          display: flex;
+          flex-direction: column;
+          gap: 4px;
+        }
+
+        .profile-field-item.full-width {
+          grid-column: 1 / -1;
+        }
+
+        .modern-text-input,
+        .modern-textarea-input {
+          width: 100%;
+          padding: 10px 14px;
+          font-size: 0.88rem;
+          font-family: inherit;
+          color: var(--text-primary);
+          background: #FFFFFF;
+          border: 1px solid rgba(0, 0, 0, 0.12);
+          border-radius: var(--radius-sm, 8px);
+          outline: none;
+          box-sizing: border-box;
+          transition: border-color var(--transition-fast, 0.2s ease), box-shadow var(--transition-fast, 0.2s ease);
+        }
+
+        .modern-text-input:focus,
+        .modern-textarea-input:focus {
+          border-color: var(--apple-blue, #0071E3);
+          box-shadow: 0 0 0 3px rgba(0, 113, 227, 0.12);
+        }
+
+        .modern-textarea-input {
+          resize: vertical;
+          min-height: 60px;
+        }
+
+        /* Achievements Editor */
+        .achievements-editor-chips-wrap {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 8px;
+          padding: 12px 14px;
+          background: #FAFAFC;
+          border: 1px solid rgba(0, 0, 0, 0.05);
+          border-radius: var(--radius-md, 10px);
+          margin-bottom: 14px;
+          min-height: 48px;
+          align-items: center;
+        }
+
+        .achievement-edit-pill {
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          padding: 5px 12px;
+          font-size: 0.82rem;
+          font-weight: 600;
+          background: #FFFFFF;
+          border: 1px solid rgba(0, 0, 0, 0.08);
+          border-radius: var(--radius-full, 9999px);
+          color: var(--text-primary);
+          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+        }
+
+        .achievement-remove-x {
+          background: none;
+          border: none;
+          cursor: pointer;
+          color: var(--text-tertiary, #86868B);
+          font-size: 0.72rem;
+          padding: 2px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          border-radius: 50%;
+          transition: color 0.15s ease, background 0.15s ease;
+        }
+
+        .achievement-remove-x:hover {
+          color: var(--apple-red, #EF4444);
+          background: rgba(239, 68, 68, 0.1);
+        }
+
+        .achievements-empty-hint {
+          font-size: 0.82rem;
+          color: var(--text-secondary);
+          font-style: italic;
+        }
+
+        .add-achievement-row {
+          display: flex;
+          gap: 10px;
+          align-items: center;
+          margin-bottom: 14px;
+        }
+
+        .add-achievement-submit-btn {
+          padding: 10px 18px;
+          background: var(--apple-blue, #0071E3);
+          color: #FFFFFF;
+          border: none;
+          border-radius: var(--radius-sm, 8px);
+          font-weight: 600;
+          font-size: 0.82rem;
+          cursor: pointer;
+          white-space: nowrap;
+          transition: all var(--transition-fast, 0.2s ease);
+        }
+
+        .add-achievement-submit-btn:hover:not(:disabled) {
+          opacity: 0.9;
+        }
+
+        .add-achievement-submit-btn:disabled {
+          opacity: 0.45;
+          cursor: not-allowed;
+        }
+
+        .achievement-suggestions-block {
+          display: flex;
+          flex-direction: column;
+          gap: 6px;
+        }
+
+        .suggestions-label {
+          font-size: 0.76rem;
+          font-weight: 600;
+          color: var(--text-tertiary);
+        }
+
+        .suggestions-chips-row {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 6px;
+        }
+
+        .suggestion-chip-btn {
+          padding: 4px 10px;
+          font-size: 0.76rem;
+          font-weight: 600;
+          background: #F5F5F7;
+          border: 1px solid rgba(0, 0, 0, 0.05);
+          border-radius: var(--radius-full, 9999px);
+          color: var(--text-secondary);
+          cursor: pointer;
+          transition: all var(--transition-fast, 0.2s ease);
+        }
+
+        .suggestion-chip-btn:hover {
+          background: #E8EAED;
+          color: var(--apple-blue, #0071E3);
+          border-color: rgba(0, 113, 227, 0.2);
+        }
+
+        /* Certificates Manager */
+        .add-cert-trigger-btn {
+          padding: 7px 14px;
+          font-size: 0.8rem;
+          font-weight: 600;
+          background: #F0FDF4;
+          color: var(--apple-green, #10B981);
+          border: 1px solid rgba(16, 185, 129, 0.25);
+          border-radius: var(--radius-full, 9999px);
+          cursor: pointer;
+          transition: all var(--transition-fast, 0.2s ease);
+        }
+
+        .add-cert-trigger-btn:hover {
+          background: #DCFCE7;
+        }
+
+        .certificates-edit-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+          gap: 12px;
+        }
+
+        .cert-edit-item-card {
+          position: relative;
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          padding: 10px 14px;
+          background: #FAFAFC;
+          border: 1px solid rgba(0, 0, 0, 0.06);
+          border-radius: var(--radius-md, 10px);
+          transition: border-color var(--transition-fast, 0.2s ease);
+        }
+
+        .cert-edit-item-card:hover {
+          border-color: rgba(0, 0, 0, 0.15);
+        }
+
+        .cert-edit-thumbnail {
+          width: 48px;
+          height: 48px;
+          border-radius: var(--radius-sm, 6px);
+          overflow: hidden;
+          background: #FFFFFF;
+          border: 1px solid rgba(0, 0, 0, 0.06);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          flex-shrink: 0;
+        }
+
+        .cert-edit-thumbnail img {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+        }
+
+        .cert-placeholder-emoji {
+          font-size: 1.4rem;
+        }
+
+        .cert-edit-details {
+          flex: 1;
+          min-width: 0;
+        }
+
+        .cert-edit-title {
+          font-size: 0.86rem;
+          font-weight: 700;
+          color: var(--text-primary);
+          margin: 0 0 2px;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+
+        .cert-edit-year {
+          font-size: 0.74rem;
+          color: var(--text-secondary);
+        }
+
+        .cert-edit-delete-btn {
+          background: none;
+          border: none;
+          cursor: pointer;
+          color: var(--text-tertiary);
+          font-size: 0.82rem;
+          padding: 4px;
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          transition: all 0.15s ease;
+        }
+
+        .cert-edit-delete-btn:hover {
+          color: var(--apple-red, #EF4444);
+          background: rgba(239, 68, 68, 0.1);
+        }
+
+        .certificates-empty-box {
+          grid-column: 1 / -1;
+          text-align: center;
+          padding: 24px 16px;
+          background: #FAFAFC;
+          border: 1px dashed rgba(0, 0, 0, 0.12);
+          border-radius: var(--radius-md, 10px);
+          color: var(--text-secondary);
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 8px;
+        }
+
+        .certificates-empty-box .empty-icon {
+          font-size: 2rem;
+        }
+
+        .certificates-empty-box p {
+          margin: 0;
+          font-size: 0.84rem;
+        }
+
+        .add-first-cert-btn {
+          margin-top: 4px;
+          padding: 8px 16px;
+          font-size: 0.82rem;
+          font-weight: 600;
+          background: #FFFFFF;
+          border: 1px solid rgba(0, 0, 0, 0.12);
+          border-radius: var(--radius-full, 9999px);
+          cursor: pointer;
+          color: var(--text-primary);
+          transition: all var(--transition-fast, 0.2s ease);
+        }
+
+        .add-first-cert-btn:hover {
+          background: #F5F5F7;
+          border-color: rgba(0, 0, 0, 0.25);
+        }
+
+        /* Social Inputs */
+        .social-inputs-grid {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 14px;
+        }
+
+        .social-input-item {
+          display: flex;
+          flex-direction: column;
+          gap: 4px;
+        }
+
+        .social-input-wrap {
+          display: flex;
+          align-items: center;
+          background: #FFFFFF;
+          border: 1px solid rgba(0, 0, 0, 0.12);
+          border-radius: var(--radius-sm, 8px);
+          overflow: hidden;
+          transition: border-color var(--transition-fast, 0.2s ease), box-shadow var(--transition-fast, 0.2s ease);
+        }
+
+        .social-input-wrap:focus-within {
+          border-color: var(--apple-blue, #0071E3);
+          box-shadow: 0 0 0 3px rgba(0, 113, 227, 0.12);
+        }
+
+        .social-input-prefix {
+          padding: 10px 12px;
+          background: #F5F5F7;
+          color: var(--text-secondary);
+          font-weight: 700;
+          font-size: 0.85rem;
+          border-right: 1px solid rgba(0, 0, 0, 0.08);
+        }
+
+        .social-clean-input {
+          flex: 1;
+          border: none;
+          outline: none;
+          padding: 10px 12px;
+          font-size: 0.88rem;
+          font-family: inherit;
+          color: var(--text-primary);
+          background: transparent;
+        }
+
+        /* Live Preview Container */
+        .live-preview-section {
+          border: 1px solid rgba(0, 113, 227, 0.2);
+          background: #FBFDFF;
+        }
+
+        .preview-live-indicator {
+          display: inline-block;
+          width: 9px;
+          height: 9px;
+          background: #10B981;
+          border-radius: 50%;
+          margin-right: 6px;
+          box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.2);
+          animation: pulse 1.8s infinite;
+        }
+
+        .preview-container-box {
+          padding: 16px;
+          background: #F5F5F7;
+          border-radius: var(--radius-md, 14px);
+          border: 1px solid rgba(0, 0, 0, 0.06);
+        }
+
+        /* Bottom Sticky Save Button */
+        .settings-profile-sticky-footer {
+          display: flex;
+          justify-content: flex-end;
+          padding: 16px 0 8px;
+        }
+
+        .settings-save-profile-large-btn {
+          padding: 13px 28px;
+          background: var(--apple-blue, #0071E3);
+          color: #FFFFFF;
+          border: none;
+          border-radius: var(--radius-md, 12px);
+          font-size: 0.95rem;
+          font-weight: 700;
+          cursor: pointer;
+          transition: all var(--transition-fast, 0.2s ease);
+          box-shadow: 0 4px 14px rgba(0, 113, 227, 0.3);
+        }
+
+        .settings-save-profile-large-btn:hover:not(:disabled) {
+          opacity: 0.92;
+          transform: translateY(-1px);
+          box-shadow: 0 6px 18px rgba(0, 113, 227, 0.35);
+        }
+
+        .settings-save-profile-large-btn:disabled {
+          opacity: 0.55;
+          cursor: not-allowed;
+        }
+
+        /* Profile Dialogs (Certificates & Avatar Gallery) */
+        .cert-add-dialog {
+          max-width: 480px;
+          width: 90%;
+          background: #FFFFFF;
+          border-radius: 20px;
+          padding: 22px;
+          box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+          display: flex;
+          flex-direction: column;
+          gap: 16px;
+        }
+
+        .cert-modal-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+        }
+
+        .cert-modal-title {
+          font-size: 1.1rem;
+          font-weight: 700;
+          color: var(--text-primary);
+          margin: 0;
+        }
+
+        .cert-modal-body {
+          display: flex;
+          flex-direction: column;
+          gap: 14px;
+        }
+
+        .cert-upload-area {
+          display: flex;
+          flex-direction: column;
+        }
+
+        .cert-dropzone-label {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          padding: 24px 16px;
+          background: #FAFAFC;
+          border: 2px dashed rgba(0, 0, 0, 0.12);
+          border-radius: var(--radius-md, 12px);
+          cursor: pointer;
+          transition: all 0.2s ease;
+          text-align: center;
+        }
+
+        .cert-dropzone-label:hover {
+          background: #F5F5F7;
+          border-color: var(--apple-blue, #0071E3);
+        }
+
+        .dropzone-icon {
+          font-size: 2rem;
+          margin-bottom: 6px;
+        }
+
+        .dropzone-text {
+          font-size: 0.88rem;
+          font-weight: 700;
+          color: var(--text-primary);
+        }
+
+        .dropzone-sub {
+          font-size: 0.74rem;
+          color: var(--text-tertiary);
+          margin-top: 3px;
+        }
+
+        .cert-upload-preview {
+          position: relative;
+          border-radius: var(--radius-md, 10px);
+          overflow: hidden;
+          max-height: 200px;
+          border: 1px solid rgba(0, 0, 0, 0.08);
+        }
+
+        .cert-upload-preview img {
+          width: 100%;
+          max-height: 200px;
+          object-fit: cover;
+          display: block;
+        }
+
+        .cert-upload-change-btn {
+          position: absolute;
+          bottom: 8px;
+          right: 8px;
+          background: rgba(0, 0, 0, 0.7);
+          color: #FFFFFF;
+          border: none;
+          border-radius: var(--radius-full, 9999px);
+          padding: 5px 12px;
+          font-size: 0.74rem;
+          font-weight: 600;
+          cursor: pointer;
+        }
+
+        .cert-form-field {
+          display: flex;
+          flex-direction: column;
+          gap: 4px;
+        }
+
+        .cert-modal-actions {
+          display: flex;
+          justify-content: flex-end;
+          gap: 8px;
+          margin-top: 6px;
+        }
+
+        .avatar-gallery-dialog {
+          max-width: 520px;
+          width: 90%;
+          background: #FFFFFF;
+          border-radius: 20px;
+          padding: 22px;
+          box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+          display: flex;
+          flex-direction: column;
+          gap: 16px;
+        }
+
+        .settings-gallery-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fill, minmax(64px, 1fr));
+          gap: 10px;
+          max-height: 340px;
+          overflow-y: auto;
+          padding: 4px 2px;
+        }
+
+        .settings-gallery-item {
+          width: 64px;
+          height: 64px;
+          border-radius: 50%;
+          border: 2px solid transparent;
+          padding: 2px;
+          background: #FAFAFC;
+          cursor: pointer;
+          transition: all 0.15s ease;
+          overflow: hidden;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+
+        .settings-gallery-item:hover {
+          transform: scale(1.08);
+          border-color: rgba(0, 113, 227, 0.4);
+        }
+
+        .settings-gallery-item.is-selected {
+          border-color: var(--apple-blue, #0071E3);
+          box-shadow: 0 0 0 3px rgba(0, 113, 227, 0.25);
+        }
+
+        .settings-gallery-item img {
+          width: 100%;
+          height: 100%;
+          border-radius: 50%;
+          object-fit: cover;
+        }
+
         /* Mobile Breakpoints */
         @media (max-width: 768px) {
           .settings-page-header {
@@ -1885,7 +3177,7 @@ const Settings = ({
 
           .settings-page-header .tab-control-brutalist {
             display: grid;
-            grid-template-columns: repeat(4, 1fr);
+            grid-template-columns: repeat(5, 1fr);
             width: 100%;
             background: #EEEEF0;
             padding: 3px;
@@ -1896,12 +3188,12 @@ const Settings = ({
           .settings-page-header .tab-btn-brutalist {
             width: 100%;
             min-width: 0;
-            padding: 8px 2px;
-            font-size: 0.74rem;
+            padding: 7px 1px;
+            font-size: 0.7rem;
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 4px;
+            gap: 2px;
             text-align: center;
             box-sizing: border-box;
           }
@@ -2006,6 +3298,29 @@ const Settings = ({
           .snapshot-rollback-btn {
             width: 100%;
             justify-content: center;
+          }
+
+          .profile-fields-grid,
+          .social-inputs-grid {
+            grid-template-columns: 1fr;
+          }
+
+          .profile-edit-avatar-section {
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+          }
+
+          .profile-avatar-buttons-row {
+            justify-content: center;
+          }
+
+          .profile-avatar-remove-btn {
+            align-self: center;
+          }
+
+          .settings-save-profile-large-btn {
+            width: 100%;
           }
         }
 
@@ -2229,6 +3544,127 @@ const Settings = ({
         [data-theme="dark"] .tab-count-badge.badge-red {
           background: rgba(242, 139, 130, 0.2);
           color: #F28B82;
+        }
+
+        /* Dark Mode Profile & Dialogs */
+        [data-theme="dark"] .profile-edit-avatar-section {
+          background: #202124;
+          border-color: #3C4043;
+        }
+
+        [data-theme="dark"] .profile-edit-avatar-preview {
+          background: #292A2D;
+          border-color: #3C4043;
+        }
+
+        [data-theme="dark"] .profile-avatar-upload-btn,
+        [data-theme="dark"] .profile-avatar-gallery-btn {
+          background: #303134;
+          border-color: #5F6368;
+          color: #E8EAED;
+        }
+
+        [data-theme="dark"] .profile-avatar-upload-btn:hover,
+        [data-theme="dark"] .profile-avatar-gallery-btn:hover {
+          background: #3C4043;
+        }
+
+        [data-theme="dark"] .modern-text-input,
+        [data-theme="dark"] .modern-textarea-input {
+          background: #202124;
+          border-color: #3C4043;
+          color: #E8EAED;
+        }
+
+        [data-theme="dark"] .achievements-editor-chips-wrap {
+          background: #202124;
+          border-color: #3C4043;
+        }
+
+        [data-theme="dark"] .achievement-edit-pill {
+          background: #303134;
+          border-color: #3C4043;
+          color: #E8EAED;
+        }
+
+        [data-theme="dark"] .suggestion-chip-btn {
+          background: #303134;
+          border-color: #3C4043;
+          color: #9AA0A6;
+        }
+
+        [data-theme="dark"] .suggestion-chip-btn:hover {
+          background: #3C4043;
+          color: #8AB4F8;
+        }
+
+        [data-theme="dark"] .cert-edit-item-card {
+          background: #202124;
+          border-color: #3C4043;
+        }
+
+        [data-theme="dark"] .cert-edit-thumbnail {
+          background: #292A2D;
+          border-color: #3C4043;
+        }
+
+        [data-theme="dark"] .cert-edit-title {
+          color: #E8EAED;
+        }
+
+        [data-theme="dark"] .certificates-empty-box {
+          background: #202124;
+          border-color: #3C4043;
+        }
+
+        [data-theme="dark"] .add-first-cert-btn {
+          background: #303134;
+          border-color: #3C4043;
+          color: #E8EAED;
+        }
+
+        [data-theme="dark"] .social-input-wrap {
+          background: #202124;
+          border-color: #3C4043;
+        }
+
+        [data-theme="dark"] .social-input-prefix {
+          background: #292A2D;
+          border-color: #3C4043;
+          color: #9AA0A6;
+        }
+
+        [data-theme="dark"] .social-clean-input {
+          color: #E8EAED;
+        }
+
+        [data-theme="dark"] .live-preview-section {
+          background: #202124;
+          border-color: #3C4043;
+        }
+
+        [data-theme="dark"] .preview-container-box {
+          background: #18191B;
+          border-color: #3C4043;
+        }
+
+        [data-theme="dark"] .cert-add-dialog,
+        [data-theme="dark"] .avatar-gallery-dialog {
+          background: #292A2D;
+          color: #E8EAED;
+        }
+
+        [data-theme="dark"] .cert-dropzone-label {
+          background: #202124;
+          border-color: #3C4043;
+        }
+
+        [data-theme="dark"] .dropzone-text {
+          color: #E8EAED;
+        }
+
+        [data-theme="dark"] .settings-gallery-item {
+          background: #202124;
         }
       `}</style>
     </div>

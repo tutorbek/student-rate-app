@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { RewardSquircle } from './StudentIcons';
+import { RewardSquircle, ProjectLikeIcon } from './StudentIcons';
 
 const REWARDS_CATALOG = [
   {
@@ -565,7 +565,7 @@ export default function StudentShopComingSoon({
                 {/* Price Pill at Bottom (Inter Nation Image 2 style) */}
                 <div className="product-price-row">
                   <div className="product-price-pill">
-                    <span className="price-coin-icon">🪙</span>
+                    <ProjectLikeIcon size={14} />
                     <span className="price-points-val">{reward.points.toLocaleString()}</span>
                   </div>
                 </div>
@@ -727,7 +727,7 @@ export default function StudentShopComingSoon({
               </div>
 
               <div className="detail-price-banner">
-                <span className="detail-coin">🪙</span>
+                <ProjectLikeIcon size={20} glow />
                 <span className="detail-price-val">{selectedReward.points} Like</span>
                 <span className="detail-stock-badge">{selectedReward.stock}</span>
               </div>
@@ -815,7 +815,8 @@ export default function StudentShopComingSoon({
                 <strong>"{confirmOrderReward.title}"</strong> sovg'asi uchun ustozingizga so'rov yuboriladi.
               </p>
               <div className="confirm-order-points-badge">
-                🪙 {confirmOrderReward.points} Like sarflanadi
+                <ProjectLikeIcon size={16} />
+                <span>{confirmOrderReward.points} Like sarflanadi</span>
               </div>
             </div>
             <div className="confirm-order-actions">
@@ -877,7 +878,8 @@ export default function StudentShopComingSoon({
                     <div className="req-item-info">
                       <span className="req-item-title">{req.rewardTitle}</span>
                       <span className="req-item-sub">
-                        🪙 {req.points} Like • {new Date(req.timestamp).toLocaleDateString('uz-UZ')}
+                        <ProjectLikeIcon size={13} />
+                        <span>{req.points} Like • {new Date(req.timestamp).toLocaleDateString('uz-UZ')}</span>
                       </span>
                     </div>
                     <div className="req-item-right">
