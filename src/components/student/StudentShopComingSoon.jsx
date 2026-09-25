@@ -374,6 +374,25 @@ export default function StudentShopComingSoon({
     return Math.min(100, Math.round((totalScore / targetReward.points) * 100));
   }, [totalScore, targetReward]);
 
+  const handleCategoryClick = (catKey, e) => {
+    triggerHaptic('light');
+    setActiveCategory(catKey);
+
+    const pill = e?.currentTarget;
+    const wrapper = pill?.closest('.shop-categories-wrapper');
+    if (pill && wrapper) {
+      const wrapperRect = wrapper.getBoundingClientRect();
+      const pillRect = pill.getBoundingClientRect();
+      const currentScroll = wrapper.scrollLeft;
+      const offsetWithinWrapper = pillRect.left - wrapperRect.left + currentScroll;
+      const targetScrollLeft = offsetWithinWrapper - (wrapper.clientWidth / 2) + (pill.clientWidth / 2);
+      wrapper.scrollTo({
+        left: Math.max(0, targetScrollLeft),
+        behavior: 'smooth',
+      });
+    }
+  };
+
   return (
     <div className="native-shop-container animate-fadeIn">
       {/* Top Floating/Sliding Promo Carousel */}
@@ -507,10 +526,7 @@ export default function StudentShopComingSoon({
                 key={cat.key}
                 type="button"
                 className={`shop-category-pill ${isActive ? 'active' : ''}`}
-                onClick={() => {
-                  triggerHaptic('light');
-                  setActiveCategory(cat.key);
-                }}
+                onClick={(e) => handleCategoryClick(cat.key, e)}
                 role="tab"
                 aria-selected={isActive}
               >

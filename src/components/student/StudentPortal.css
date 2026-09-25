@@ -3303,7 +3303,11 @@ html {
 .shop-categories-wrapper {
   overflow-x: auto;
   scrollbar-width: none;
-  padding: 2px 0;
+  -ms-overflow-style: none;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-x: contain;
+  scroll-behavior: smooth;
+  padding: 4px 0;
 }
 
 .shop-categories-wrapper::-webkit-scrollbar {
@@ -3314,34 +3318,57 @@ html {
   display: flex;
   align-items: center;
   gap: 6px;
+  width: max-content;
 }
 
 .shop-category-pill {
-  padding: 5px 12px;
+  flex-shrink: 0;
+  padding: 6px 14px;
   border-radius: 9999px;
-  font-size: 0.75rem;
+  font-size: 0.76rem;
   font-weight: 600;
+  line-height: 1.2;
   color: var(--text-secondary);
   background: var(--bg-card);
   border: 1px solid var(--border-color);
   cursor: pointer;
   white-space: nowrap;
-  transition: all 0.15s;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  outline: none;
+  box-sizing: border-box;
+  transition: background-color 0.18s ease, color 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease, transform 0.12s ease;
 }
 
 @media (max-width: 480px) {
   .shop-category-pill {
-    padding: 4px 10px;
-    font-size: 0.72rem;
+    padding: 5px 12px;
+    font-size: 0.73rem;
   }
+}
+
+.shop-category-pill:active {
+  transform: scale(0.96);
 }
 
 .shop-category-pill.active {
   background: #FFCC00;
   color: #1D1D1F;
   border-color: #FFCC00;
-  font-weight: 700;
+  font-weight: 600;
   box-shadow: 0 2px 8px rgba(255, 204, 0, 0.32);
+}
+
+[data-theme="dark"] .shop-category-pill {
+  background: var(--bg-secondary);
+  border-color: var(--border-color);
+  color: var(--text-secondary);
+}
+
+[data-theme="dark"] .shop-category-pill.active {
+  background: #FFCC00;
+  color: #1D1D1F;
+  border-color: #FFCC00;
 }
 
 /* 2-Column Mobile / Multi-column Desktop Products Grid */
@@ -3349,6 +3376,7 @@ html {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 12px;
+  min-height: 380px;
 }
 
 @media (max-width: 480px) {
