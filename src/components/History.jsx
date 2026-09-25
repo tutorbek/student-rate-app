@@ -1,9 +1,12 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { renderAvatar } from '../utils/studentAvatars';
+import ProjectLikeIcon from './common/ProjectLikeIcon';
+import { useModalDismiss } from '../hooks/useModalDismiss';
 
 const History = ({ groups = [], students = [], transactions = [], onDeleteTransaction, showToast, userRole }) => {
   const [confirmDeleteId, setConfirmDeleteId] = useState(null);
+  useModalDismiss(Boolean(confirmDeleteId), () => setConfirmDeleteId(null));
   const [selectedGroupId, setSelectedGroupId] = useState(() => {
     if (userRole === 'student' && groups.length > 0) {
       return groups[0].id;
@@ -21,13 +24,6 @@ const History = ({ groups = [], students = [], transactions = [], onDeleteTransa
   }, [userRole, groups, selectedGroupId]);
 
   useEffect(() => {
-    const handleKeyDown = (e) => {
-      if (e.key === 'Escape') {
-        setConfirmDeleteId(null);
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-
     const handleOutsideClick = (e) => {
       if (!e.target.closest('.group-filter-dropdown')) {
         setIsGroupDropdownOpen(false);
@@ -39,7 +35,6 @@ const History = ({ groups = [], students = [], transactions = [], onDeleteTransa
     document.addEventListener('click', handleOutsideClick);
 
     return () => {
-      window.removeEventListener('keydown', handleKeyDown);
       document.removeEventListener('click', handleOutsideClick);
     };
   }, []);
@@ -191,7 +186,10 @@ const History = ({ groups = [], students = [], transactions = [], onDeleteTransa
               <span className="th-student">Talaba</span>
               <span className="th-group">Guruh</span>
               <span className="th-comment">Izoh</span>
-              <span className="th-amount text-right">Like</span>
+              <span className="th-amount text-right" style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'flex-end', gap: '3px' }}>
+                <ProjectLikeIcon size={12} />
+                <span>Like</span>
+              </span>
               {userRole !== 'student' && <span className="th-action text-right">Amal</span>}
             </div>
             <div className="history-body">
@@ -216,8 +214,9 @@ const History = ({ groups = [], students = [], transactions = [], onDeleteTransa
                     <span className="td-comment">
                       {tx.comment ? `"${tx.comment}"` : <span className="no-comment">—</span>}
                     </span>
-                    <span className={`td-amount text-right font-bold ${tx.amount >= 0 ? 'text-positive' : 'text-negative'}`}>
-                      {tx.amount >= 0 ? `+${tx.amount}` : tx.amount}
+                    <span className={`td-amount text-right font-bold ${tx.amount >= 0 ? 'text-positive' : 'text-negative'}`} style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'flex-end', gap: '3px' }}>
+                      <ProjectLikeIcon size={12} />
+                      <span>{tx.amount >= 0 ? `+${tx.amount}` : tx.amount}</span>
                     </span>
                     {userRole !== 'student' && (
                       <span className="td-action text-right">
@@ -245,7 +244,7 @@ const History = ({ groups = [], students = [], transactions = [], onDeleteTransa
 
       {confirmDeleteId && createPortal(
         <div className="modal-overlay" onClick={() => setConfirmDeleteId(null)}>
-          <div className="modal-content glass" onClick={(e) => e.stopPropagation()}>
+          <div className="modal-content glass modal-confirm" onClick={(e) => e.stopPropagation()}>
             <button 
               type="button" 
               className="modal-close-btn" 

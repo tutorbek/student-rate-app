@@ -4,6 +4,7 @@ import { renderGroupIcon, GROUP_COLOR_OPTIONS } from '../utils/groupIcons';
 import { renderAvatar } from '../utils/studentAvatars';
 import { getGroupCategory } from '../utils/db';
 import Time24Input from './Time24Input';
+import { useModalDismiss } from '../hooks/useModalDismiss';
 
 const WEEKDAYS = [
   { key: 'mon', name: 'Dushanba', short: 'Du' },
@@ -18,9 +19,67 @@ const SUNDAY = { key: 'sun', name: 'Yakshanba', short: 'Ya' };
 
 const DAY_KEYS_MAP = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
 
+const MONTH_NAMES_SHORT_UZ = [
+  'Yan', 'Fev', 'Mar', 'Apr', 'May', 'Iyun',
+  'Iyul', 'Avg', 'Sen', 'Okt', 'Noy', 'Dek'
+];
+
+const getDayKeyFromDateStr = (dateStr) => {
+  if (!dateStr || typeof dateStr !== 'string') return null;
+  const parts = dateStr.split('-').map(Number);
+  if (parts.length < 3 || isNaN(parts[0]) || isNaN(parts[1]) || isNaN(parts[2])) return null;
+  const dt = new Date(parts[0], parts[1] - 1, parts[2]);
+  return DAY_KEYS_MAP[dt.getDay()];
+};
+
+const getNextDateForDayKey = (dayKey) => {
+  const targetDayIdx = DAY_KEYS_MAP.indexOf(dayKey);
+  const today = new Date();
+  if (targetDayIdx === -1) {
+    return `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+  }
+  const currentDayIdx = today.getDay();
+  let diff = targetDayIdx - currentDayIdx;
+  if (diff < 0) diff += 7;
+  const targetDate = new Date(today);
+  targetDate.setDate(today.getDate() + diff);
+  return `${targetDate.getFullYear()}-${String(targetDate.getMonth() + 1).padStart(2, '0')}-${String(targetDate.getDate()).padStart(2, '0')}`;
+};
+
+const formatExtraLessonDateLabel = (dateStr) => {
+  if (!dateStr) return '';
+  const today = new Date();
+  const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+  
+  const tomorrow = new Date(today);
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  const tomorrowStr = `${tomorrow.getFullYear()}-${String(tomorrow.getMonth() + 1).padStart(2, '0')}-${String(tomorrow.getDate()).padStart(2, '0')}`;
+
+  if (dateStr === todayStr) return 'Bugun';
+  if (dateStr === tomorrowStr) return 'Ertaga';
+
+  const parts = dateStr.split('-');
+  if (parts.length === 3) {
+    const day = parseInt(parts[2], 10);
+    const monthIdx = parseInt(parts[1], 10) - 1;
+    return `${day}-${MONTH_NAMES_SHORT_UZ[monthIdx] || parts[1]}`;
+  }
+  return dateStr;
+};
+
+const getDayNameUzFromDateStr = (dateStr) => {
+  const key = getDayKeyFromDateStr(dateStr);
+  const found = WEEKDAYS.find((w) => w.key === key) || (key === 'sun' ? SUNDAY : null);
+  return found ? found.name : '';
+};
+
 const ScheduleView = ({
   groups = [],
   students = [],
+  extraLessons = [],
+  onAddExtraLesson,
+  onUpdateExtraLesson,
+  onDeleteExtraLesson,
   onSelectGroup,
   onUpdateGroupSchedule,
   showToast,
@@ -42,6 +101,41 @@ const ScheduleView = ({
   const [isGroupDropdownOpen, setIsGroupDropdownOpen] = useState(false);
   const [selectedGroupForStudents, setSelectedGroupForStudents] = useState(null);
   const [studentSearchQuery, setStudentSearchQuery] = useState('');
+
+  // Extra Lesson state
+  const [showExtraLessonModal, setShowExtraLessonModal] = useState(false);
+  const [editingExtraLesson, setEditingExtraLesson] = useState(null);
+  const [extraGroupId, setExtraGroupId] = useState('');
+  const [extraDate, setExtraDate] = useState(() => {
+    const today = new Date();
+    return `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+  });
+  const [extraStartTime, setExtraStartTime] = useState('15:30');
+  const [extraEndTime, setExtraEndTime] = useState('17:00');
+  const [extraRoom, setExtraRoom] = useState('');
+  const [extraTopic, setExtraTopic] = useState('');
+  const [isExtraGroupDropdownOpen, setIsExtraGroupDropdownOpen] = useState(false);
+  const [extraTargetType, setExtraTargetType] = useState('all'); // 'all' | 'custom'
+  const [extraSelectedStudentIds, setExtraSelectedStudentIds] = useState([]);
+  const [extraStudentSearch, setExtraStudentSearch] = useState('');
+
+  // Students belonging to the group currently selected in the Extra Lesson modal
+  const modalGroupStudents = useMemo(() => {
+    if (!extraGroupId) return [];
+    return students
+      .filter((s) => String(s.groupId) === String(extraGroupId) && !s.deleted)
+      .sort((a, b) => {
+        const nameA = a.name || '';
+        const nameB = b.name || '';
+        return nameA.localeCompare(nameB, undefined, { numeric: true, sensitivity: 'base' });
+      });
+  }, [students, extraGroupId]);
+
+  const filteredModalStudents = useMemo(() => {
+    if (!extraStudentSearch.trim()) return modalGroupStudents;
+    const q = extraStudentSearch.toLowerCase().trim();
+    return modalGroupStudents.filter((s) => (s.name || '').toLowerCase().includes(q));
+  }, [modalGroupStudents, extraStudentSearch]);
 
   // Reset search when modal opens/closes
   useEffect(() => {
@@ -76,8 +170,10 @@ const ScheduleView = ({
 
   // Check if Sunday has any classes scheduled
   const hasSundayClasses = useMemo(() => {
-    return groups.some((g) => g.schedule?.days?.includes('sun'));
-  }, [groups]);
+    const hasRegularSun = groups.some((g) => g.schedule?.days?.includes('sun'));
+    const hasExtraSun = (extraLessons || []).some((el) => el && el.date && getDayKeyFromDateStr(el.date) === 'sun');
+    return hasRegularSun || hasExtraSun;
+  }, [groups, extraLessons]);
 
   const activeWeekdays = useMemo(() => {
     return hasSundayClasses ? [...WEEKDAYS, SUNDAY] : WEEKDAYS;
@@ -119,24 +215,24 @@ const ScheduleView = ({
     return groups.find((g) => g.id === activeGroupId) || null;
   }, [groups, activeGroupId]);
 
-  // Close group dropdown, student modal and edit modal on Escape key
-  useEffect(() => {
-    const handleKeyDown = (e) => {
-      if (e.key === 'Escape') {
-        if (isGroupDropdownOpen) {
-          setIsGroupDropdownOpen(false);
-          e.stopPropagation();
-        } else if (selectedGroupForStudents) {
-          setSelectedGroupForStudents(null);
-          e.stopPropagation();
-        } else if (showModal) {
-          setShowModal(false);
-        }
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isGroupDropdownOpen, selectedGroupForStudents, showModal, setShowModal]);
+  // Escape key and background scroll lock handler for all modals and dropdowns
+  const isAnyScheduleModalOpen = Boolean(
+    showModal || showExtraLessonModal || selectedGroupForStudents
+  );
+
+  useModalDismiss(isAnyScheduleModalOpen, () => {
+    if (isGroupDropdownOpen) {
+      setIsGroupDropdownOpen(false);
+    } else if (isExtraGroupDropdownOpen) {
+      setIsExtraGroupDropdownOpen(false);
+    } else if (selectedGroupForStudents) {
+      setSelectedGroupForStudents(null);
+    } else if (showExtraLessonModal) {
+      setShowExtraLessonModal(false);
+    } else if (showModal) {
+      setShowModal(false);
+    }
+  });
 
   // Close dropdown whenever modal closes
   useEffect(() => {
@@ -251,17 +347,131 @@ const ScheduleView = ({
     showToast("Dars jadvali muvaffaqiyatli saqlandi!", "success");
   };
 
+  const handleOpenCreateExtraLesson = (defaultDayKey = null) => {
+    setEditingExtraLesson(null);
+    const targetGroupId = groups.length > 0 ? groups[0].id : '';
+    setExtraGroupId(targetGroupId);
 
-  // Lessons mapped by weekday
+    if (defaultDayKey) {
+      setExtraDate(getNextDateForDayKey(defaultDayKey));
+    } else {
+      const today = new Date();
+      setExtraDate(`${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`);
+    }
+
+    const grp = groups.find((g) => String(g.id) === String(targetGroupId));
+    setExtraStartTime(grp?.schedule?.startTime || '15:30');
+    setExtraEndTime(grp?.schedule?.endTime || '17:00');
+    setExtraRoom(grp?.schedule?.room || '');
+    setExtraTopic('');
+    setExtraTargetType('all');
+    setExtraSelectedStudentIds([]);
+    setExtraStudentSearch('');
+    setIsExtraGroupDropdownOpen(false);
+    setShowExtraLessonModal(true);
+  };
+
+  const handleOpenEditExtraLesson = (lesson) => {
+    setEditingExtraLesson(lesson);
+    setExtraGroupId(lesson.groupId);
+    setExtraDate(lesson.date);
+    setExtraStartTime(lesson.startTime || '15:30');
+    setExtraEndTime(lesson.endTime || '17:00');
+    setExtraRoom(lesson.room || '');
+    setExtraTopic(lesson.topic || '');
+    setExtraTargetType(lesson.targetType === 'custom' ? 'custom' : 'all');
+    setExtraSelectedStudentIds(Array.isArray(lesson.studentIds) ? lesson.studentIds : []);
+    setExtraStudentSearch('');
+    setIsExtraGroupDropdownOpen(false);
+    setShowExtraLessonModal(true);
+  };
+
+  const handleSaveExtraLesson = () => {
+    if (!extraGroupId) {
+      showToast("Iltimos, guruhni tanlang!", "error");
+      return;
+    }
+    if (!extraDate) {
+      showToast("Iltimos, dars sanasini tanlang!", "error");
+      return;
+    }
+    if (!extraStartTime || !extraEndTime) {
+      showToast("Dars boshlanish va tugash vaqtlarini kiriting!", "error");
+      return;
+    }
+    if (extraStartTime >= extraEndTime) {
+      showToast("Tugash vaqti boshlanish vaqtidan keyin bo'lishi kerak!", "error");
+      return;
+    }
+    if (extraTargetType === 'custom' && extraSelectedStudentIds.length === 0) {
+      showToast("Iltimos, kamida bitta talabani tanlang!", "error");
+      return;
+    }
+
+    const payload = {
+      groupId: extraGroupId,
+      date: extraDate,
+      startTime: extraStartTime,
+      endTime: extraEndTime,
+      room: extraRoom.trim(),
+      topic: extraTopic.trim(),
+      targetType: extraTargetType,
+      studentIds: extraTargetType === 'custom' ? extraSelectedStudentIds : [],
+    };
+
+    if (editingExtraLesson) {
+      onUpdateExtraLesson?.(editingExtraLesson.id, payload);
+      showToast("Extra Lesson yangilandi!", "success");
+    } else {
+      onAddExtraLesson?.(payload);
+      showToast("Extra Lesson muvaffaqiyatli qo'shildi!", "success");
+    }
+    setShowExtraLessonModal(false);
+  };
+
+  const extraSelectedGroup = useMemo(() => {
+    return groups.find((g) => String(g.id) === String(extraGroupId)) || null;
+  }, [groups, extraGroupId]);
+
+  // Lessons mapped by weekday (Combines regular group schedule + Extra Lessons)
   const scheduleByDay = useMemo(() => {
     const map = {};
     activeWeekdays.forEach((day) => {
-      map[day.key] = groups
+      // 1. Regular weekly classes
+      const regularClasses = groups
         .filter((g) => g.schedule?.days?.includes(day.key))
-        .sort((a, b) => (a.schedule?.startTime || '00:00').localeCompare(b.schedule?.startTime || '00:00'));
+        .map((g) => ({
+          type: 'regular',
+          key: `reg_${g.id}_${day.key}`,
+          startTime: g.schedule?.startTime || '00:00',
+          endTime: g.schedule?.endTime || '',
+          room: g.schedule?.room || '',
+          group: g,
+        }));
+
+      // 2. Standalone Extra Lessons matching this weekday
+      const extraClasses = (extraLessons || [])
+        .filter((el) => el && el.date && getDayKeyFromDateStr(el.date) === day.key)
+        .map((el) => {
+          const matchedGroup = groups.find((g) => g.id === el.groupId);
+          return {
+            type: 'extra',
+            key: `extra_${el.id}`,
+            startTime: el.startTime || '00:00',
+            endTime: el.endTime || '',
+            room: el.room || '',
+            extraLesson: el,
+            group: matchedGroup || { id: el.groupId, name: 'Guruh', color: '#8B5CF6' },
+          };
+        });
+
+      // Combine and sort chronologically by startTime
+      map[day.key] = [...regularClasses, ...extraClasses].sort((a, b) =>
+        (a.startTime || '00:00').localeCompare(b.startTime || '00:00')
+      );
     });
     return map;
-  }, [groups, activeWeekdays]);
+  }, [groups, activeWeekdays, extraLessons]);
 
   // Helper to get group styling
   const getGroupStyle = (colorValue) => {
@@ -288,17 +498,13 @@ const ScheduleView = ({
               className="btn btn-primary scale-active"
               onClick={() => {
                 if (groups.length === 0) {
-                  showToast("Dars qo'shish uchun dastlab guruh yarating!", "error");
+                  showToast("Extra dars qo'shish uchun dastlab guruh yarating!", "error");
                   return;
                 }
-                const targetGroup = groups[0];
-                if (targetGroup) {
-                  populateFormForGroup(targetGroup);
-                }
-                setShowModal(true);
+                handleOpenCreateExtraLesson();
               }}
             >
-              <span>+ Dars qo'shish</span>
+              <span>+ Extra Dars</span>
             </button>
           </div>
 
@@ -351,12 +557,132 @@ const ScheduleView = ({
                 {/* Day Classes List */}
                 <div className="day-col-content">
                   {dayClasses.length > 0 ? (
-                    dayClasses.map((group) => {
+                    dayClasses.map((item) => {
+                      if (item.type === 'extra') {
+                        const extraLesson = item.extraLesson;
+                        const group = item.group;
+
+                        return (
+                          <div
+                            key={item.key}
+                            className="schedule-lesson-card extra-lesson-card scale-active"
+                            onClick={() => setSelectedGroupForStudents(group)}
+                            title="Guruh talabalari ro'yxatini ko'rish uchun bosing"
+                          >
+                            <div className="extra-lesson-top-row">
+                              <span className="extra-lesson-badge">
+                                <span className="extra-lesson-badge-pulse" />
+                                ⚡ Extra Lesson
+                              </span>
+                              <span className="extra-lesson-date-pill">
+                                {formatExtraLessonDateLabel(extraLesson.date)}
+                              </span>
+                            </div>
+
+                            <div className="lesson-time-and-actions">
+                              <span className="lesson-time-range">
+                                {item.startTime}
+                                {item.endTime ? ` - ${item.endTime}` : ''}
+                              </span>
+                              <div className="extra-actions-group">
+                                {item.room && (
+                                  <span className="lesson-room-pill">{item.room}</span>
+                                )}
+                                <button
+                                  type="button"
+                                  className="extra-action-icon-btn edit-btn"
+                                  title="Extra Lessonni tahrirlash"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleOpenEditExtraLesson(extraLesson);
+                                  }}
+                                >
+                                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                                  </svg>
+                                </button>
+                                <button
+                                  type="button"
+                                  className="extra-action-icon-btn delete-btn"
+                                  title="Extra Lessonni o'chirish"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    if (window.confirm("Haqiqatan ham ushbu qo'shimcha darsni (Extra Lesson) o'chirmoqchimisiz?")) {
+                                      onDeleteExtraLesson?.(extraLesson.id);
+                                    }
+                                  }}
+                                >
+                                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                                    <polyline points="3 6 5 6 21 6" />
+                                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                                  </svg>
+                                </button>
+                              </div>
+                            </div>
+
+                            <div className="lesson-group-main">
+                              <div className="lesson-group-icon avatar-circle">
+                                {renderGroupIcon(group.icon, 16)}
+                              </div>
+                              <span className="lesson-group-title">{group.name}</span>
+                            </div>
+
+                            {/* Targeted Students Display on Card */}
+                            {extraLesson.targetType === 'custom' && Array.isArray(extraLesson.studentIds) && extraLesson.studentIds.length > 0 ? (() => {
+                              const targetedList = students.filter(
+                                (s) => extraLesson.studentIds.some((id) => String(id) === String(s.id)) && !s.deleted
+                              );
+                              const fullNamesTitle = targetedList.map((s) => s.name).join(', ');
+                              return (
+                                <div className="extra-lesson-target-badge individual" title={`Tanlangan talabalar: ${fullNamesTitle}`}>
+                                  <div className="extra-target-avatar-stack">
+                                    {targetedList.slice(0, 3).map((st) => (
+                                      <div key={st.id} className="extra-target-mini-avatar" title={st.name}>
+                                        {st.avatar ? (
+                                          <img src={st.avatar} alt={st.name} />
+                                        ) : (
+                                          <span>{(st.name || '?')[0].toUpperCase()}</span>
+                                        )}
+                                      </div>
+                                    ))}
+                                  </div>
+                                  <span className="extra-target-label">
+                                    {targetedList.length === 1
+                                      ? targetedList[0].name
+                                      : `${targetedList.length} ta talaba: ${targetedList.slice(0, 2).map((s) => s.name.split(' ')[0]).join(', ')}${targetedList.length > 2 ? ` +${targetedList.length - 2}` : ''}`}
+                                  </span>
+                                </div>
+                              );
+                            })() : (
+                              <div className="extra-lesson-target-badge all-group" title={`Guruhning barcha talabalari uchun (${getStudentCount(group.id)} ta)`}>
+                                <span className="extra-target-icon">👥</span>
+                                <span className="extra-target-label">Butun guruh ({getStudentCount(group.id)})</span>
+                              </div>
+                            )}
+
+                            {extraLesson.topic && (
+                              <div className="extra-lesson-topic-box" title={extraLesson.topic}>
+                                <span className="extra-topic-icon">🎯</span>
+                                <span className="extra-topic-text">{extraLesson.topic}</span>
+                              </div>
+                            )}
+
+                            <div className="lesson-card-footer">
+                              <span className={`group-category-pill group-category-${getGroupCategory(group)}`}>
+                                {getGroupCategory(group) === 'kids' ? 'Kids' : 'Teens'}
+                              </span>
+                            </div>
+                          </div>
+                        );
+                      }
+
+                      const group = item.group;
                       const cardStyles = getGroupStyle(group.color);
 
                       return (
                         <div
-                          key={group.id}
+                          key={item.key}
                           className="schedule-lesson-card scale-active"
                           style={cardStyles}
                           onClick={() => setSelectedGroupForStudents(group)}
@@ -364,12 +690,28 @@ const ScheduleView = ({
                         >
                           <div className="lesson-time-header">
                             <span className="lesson-time-range">
-                              {group.schedule?.startTime}
-                              {group.schedule?.endTime ? ` - ${group.schedule.endTime}` : ''}
+                              {item.startTime}
+                              {item.endTime ? ` - ${item.endTime}` : ''}
                             </span>
-                            {group.schedule?.room && (
-                              <span className="lesson-room-pill">{group.schedule.room}</span>
-                            )}
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                              {item.room && (
+                                <span className="lesson-room-pill">{item.room}</span>
+                              )}
+                              <button
+                                type="button"
+                                className="lesson-card-action-btn"
+                                title="Doimiy dars jadvalini tahrirlash"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleOpenEdit(group);
+                                }}
+                              >
+                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                                  <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                                  <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                                </svg>
+                              </button>
+                            </div>
                           </div>
 
                           <div className="lesson-group-main">
@@ -392,15 +734,15 @@ const ScheduleView = ({
                       className="day-empty-slot"
                       onClick={() => {
                         if (groups.length > 0) {
-                          handleOpenEdit(groups[0], day.key);
+                          handleOpenCreateExtraLesson(day.key);
                         } else {
                           showToast("Dastlab guruh yarating!", "error");
                         }
                       }}
-                      title="Ushbu kunga dars biriktirish uchun bosing"
+                      title="Ushbu kunga Extra Dars biriktirish uchun bosing"
                     >
                       <span className="empty-slot-text">Dars yo'q</span>
-                      <span className="empty-slot-plus">+ Dars qo'shish</span>
+                      <span className="empty-slot-plus">+ Extra Dars</span>
                     </div>
                   )}
                 </div>
@@ -427,13 +769,16 @@ const ScheduleView = ({
               </svg>
             </button>
 
-            <h3 className="modal-title">Dars Vaqtini Belgilash</h3>
-            <p className="modal-sub-info">
-              Guruh uchun dars kunlari, boshlanish va tugash vaqtlarini kiriting.
-            </p>
+            <div className="modal-header-fixed">
+              <h3 className="modal-title">Dars Vaqtini Belgilash</h3>
+              <p className="modal-sub-info" style={{ margin: 0 }}>
+                Guruh uchun dars kunlari, boshlanish va tugash vaqtlarini kiriting.
+              </p>
+            </div>
 
-            {/* Select Group (Custom Project Styled Popover) */}
-            <div className="form-group schedule-group-picker-form-group">
+            <div className="modal-body-scrollable">
+              {/* Select Group (Custom Project Styled Popover) */}
+              <div className="form-group schedule-group-picker-form-group">
               <label className="form-label">Guruh</label>
               <div className="custom-dropdown-container schedule-group-dropdown-wrap">
                 <button
@@ -444,6 +789,9 @@ const ScheduleView = ({
                   <div className="schedule-select-val">
                     {activeGroup ? (
                       <>
+                        <div className="schedule-group-pill-icon">
+                          {renderGroupIcon(activeGroup.icon, 16)}
+                        </div>
                         <span className="schedule-select-group-name">{activeGroup.name}</span>
                         <span className={`group-category-pill group-category-${getGroupCategory(activeGroup)}`}>
                           {getGroupCategory(activeGroup) === 'kids' ? 'Kids' : 'Teens'}
@@ -466,7 +814,7 @@ const ScheduleView = ({
                     <div className="schedule-select-backdrop" onClick={() => setIsGroupDropdownOpen(false)} />
                     <div className="custom-dropdown-list glass schedule-custom-dropdown-list">
                       {groups.map((g) => {
-                        const isSelected = g.id === activeGroupId;
+                        const isSelected = String(g.id) === String(activeGroupId);
                         const count = getStudentCount(g.id);
                         return (
                           <div
@@ -475,6 +823,9 @@ const ScheduleView = ({
                             onClick={() => handleSelectGroup(g.id)}
                           >
                             <div className="schedule-item-left">
+                              <div className="schedule-group-pill-icon">
+                                {renderGroupIcon(g.icon, 16)}
+                              </div>
                               <span className="schedule-item-name">{g.name}</span>
                               <span className={`group-category-pill group-category-${getGroupCategory(g)}`}>
                                 {getGroupCategory(g) === 'kids' ? 'Kids' : 'Teens'}
@@ -595,10 +946,11 @@ const ScheduleView = ({
                 value={room}
                 onChange={(e) => setRoom(e.target.value)}
               />
+              </div>
             </div>
 
             {/* Modal Actions */}
-            <div className="modal-actions">
+            <div className="modal-actions-fixed">
               <button
                 type="button"
                 className="btn btn-secondary scale-active"
@@ -613,6 +965,326 @@ const ScheduleView = ({
               >
                 Saqlash
               </button>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {/* Extra Lesson Modal (Standalone Date-Specific Lesson) */}
+      {showExtraLessonModal && createPortal(
+        <div className="modal-overlay" onClick={() => setShowExtraLessonModal(false)}>
+          <div className="modal-content glass schedule-modal-box extra-lesson-modal-box" onClick={(e) => e.stopPropagation()}>
+            <button
+              type="button"
+              className="modal-close-btn"
+              onClick={() => setShowExtraLessonModal(false)}
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18" />
+                <line x1="6" y1="6" x2="18" y2="18" />
+              </svg>
+            </button>
+
+            <div className="modal-header-fixed extra-modal-header" style={{ marginBottom: '14px' }}>
+              <span className="extra-modal-badge">Mustaqil Dars</span>
+              <h3 className="modal-title">
+                {editingExtraLesson ? "Extra Lessonni Tahrirlash" : "Yangi Extra Lesson Qo'shish"}
+              </h3>
+              <p className="modal-sub-info" style={{ margin: 0 }}>
+                Doimiy dars jadvalidan mustaqil ravishda alohida sana va vaqt uchun qo'shimcha dars belgilash.
+              </p>
+            </div>
+
+            <div className="modal-body-scrollable">
+              {/* Select Group */}
+              <div className="form-group schedule-group-picker-form-group">
+              <label className="form-label">Guruh</label>
+              <div className="custom-dropdown-container schedule-group-dropdown-wrap">
+                <button
+                  type="button"
+                  className={`filter-select-btn schedule-custom-select-btn ${isExtraGroupDropdownOpen ? 'active' : ''}`}
+                  onClick={() => setIsExtraGroupDropdownOpen((prev) => !prev)}
+                >
+                  <div className="schedule-select-val">
+                    {extraSelectedGroup ? (
+                      <>
+                        <div className="schedule-group-pill-icon">
+                          {renderGroupIcon(extraSelectedGroup.icon, 16)}
+                        </div>
+                        <span className="schedule-select-group-name">{extraSelectedGroup.name}</span>
+                        <span className={`group-category-pill group-category-${getGroupCategory(extraSelectedGroup)}`}>
+                          {getGroupCategory(extraSelectedGroup) === 'kids' ? 'Kids' : 'Teens'}
+                        </span>
+                        <span className="schedule-select-student-count">({getStudentCount(extraSelectedGroup.id)} talaba)</span>
+                      </>
+                    ) : (
+                      <span className="schedule-select-placeholder">Guruhni tanlang...</span>
+                    )}
+                  </div>
+                  <span className={`dropdown-arrow ${isExtraGroupDropdownOpen ? 'rotated' : ''}`}>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="6 9 12 15 18 9" />
+                    </svg>
+                  </span>
+                </button>
+
+                {isExtraGroupDropdownOpen && (
+                  <>
+                    <div className="schedule-select-backdrop" onClick={() => setIsExtraGroupDropdownOpen(false)} />
+                    <div className="custom-dropdown-list glass schedule-custom-dropdown-list">
+                      {groups.map((g) => {
+                        const isSelected = String(g.id) === String(extraGroupId);
+                        const count = getStudentCount(g.id);
+                        return (
+                          <div
+                            key={g.id}
+                            className={`custom-dropdown-item schedule-dropdown-item ${isSelected ? 'active' : ''}`}
+                            onClick={() => {
+                              setExtraGroupId(g.id);
+                              setIsExtraGroupDropdownOpen(false);
+                              if (extraTargetType === 'custom') {
+                                setExtraSelectedStudentIds([]);
+                              }
+                              if (!editingExtraLesson && g.schedule) {
+                                if (g.schedule.startTime) setExtraStartTime(g.schedule.startTime);
+                                if (g.schedule.endTime) setExtraEndTime(g.schedule.endTime);
+                                if (g.schedule.room) setExtraRoom(g.schedule.room);
+                              }
+                            }}
+                          >
+                            <div className="schedule-item-left">
+                              <div className="schedule-group-pill-icon">
+                                {renderGroupIcon(g.icon, 16)}
+                              </div>
+                              <span className="schedule-item-name">{g.name}</span>
+                              <span className={`group-category-pill group-category-${getGroupCategory(g)}`}>
+                                {getGroupCategory(g) === 'kids' ? 'Kids' : 'Teens'}
+                              </span>
+                              <span className="schedule-item-count">({count} talaba)</span>
+                            </div>
+                            {isSelected && (
+                              <span className="schedule-item-check">
+                                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                  <polyline points="20 6 9 17 4 12" />
+                                </svg>
+                              </span>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </>
+                )}
+              </div>
+            </div>
+
+            {/* Target Scope: All group vs Custom students */}
+            <div className="form-group">
+              <label className="form-label">Dars qamrovi</label>
+              <div className="extra-target-segmented">
+                <button
+                  type="button"
+                  className={`extra-target-seg-btn ${extraTargetType === 'all' ? 'active' : ''}`}
+                  onClick={() => setExtraTargetType('all')}
+                >
+                  Butun guruh ({modalGroupStudents.length})
+                </button>
+                <button
+                  type="button"
+                  className={`extra-target-seg-btn ${extraTargetType === 'custom' ? 'active' : ''}`}
+                  onClick={() => setExtraTargetType('custom')}
+                >
+                  Alohida talabalar {extraSelectedStudentIds.length > 0 ? `(${extraSelectedStudentIds.length})` : ''}
+                </button>
+              </div>
+
+              {extraTargetType === 'custom' && (
+                <div className="extra-student-picker-card">
+                  <div className="extra-student-picker-header">
+                    <div className="extra-student-search-wrap">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                        <circle cx="11" cy="11" r="8" />
+                        <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                      </svg>
+                      <input
+                        type="text"
+                        className="extra-student-search-input"
+                        placeholder="Talaba ismini qidirish..."
+                        value={extraStudentSearch}
+                        onChange={(e) => setExtraStudentSearch(e.target.value)}
+                      />
+                      {extraStudentSearch && (
+                        <button
+                          type="button"
+                          className="extra-student-search-clear"
+                          onClick={() => setExtraStudentSearch('')}
+                        >
+                          ✕
+                        </button>
+                      )}
+                    </div>
+
+                    <button
+                      type="button"
+                      className="extra-student-select-all-btn"
+                      onClick={() => {
+                        if (extraSelectedStudentIds.length === modalGroupStudents.length && modalGroupStudents.length > 0) {
+                          setExtraSelectedStudentIds([]);
+                        } else {
+                          setExtraSelectedStudentIds(modalGroupStudents.map((s) => s.id));
+                        }
+                      }}
+                    >
+                      {extraSelectedStudentIds.length === modalGroupStudents.length && modalGroupStudents.length > 0 ? "Tozalash" : "Barchasini tanlash"}
+                    </button>
+                  </div>
+
+                  <div className="extra-student-picker-list">
+                    {filteredModalStudents.length > 0 ? (
+                      filteredModalStudents.map((s) => {
+                        const isChecked = extraSelectedStudentIds.some((id) => String(id) === String(s.id));
+                        return (
+                          <label key={s.id} className={`extra-student-picker-item ${isChecked ? 'selected' : ''}`}>
+                            <input
+                              type="checkbox"
+                              className="extra-student-checkbox"
+                              checked={isChecked}
+                              onChange={() => {
+                                if (isChecked) {
+                                  setExtraSelectedStudentIds(extraSelectedStudentIds.filter((id) => String(id) !== String(s.id)));
+                                } else {
+                                  setExtraSelectedStudentIds([...extraSelectedStudentIds, s.id]);
+                                }
+                              }}
+                            />
+                            <span className="extra-student-name">{s.name}</span>
+                          </label>
+                        );
+                      })
+                    ) : (
+                      <div className="extra-student-empty-text">
+                        {extraStudentSearch ? "Talaba topilmadi" : "Bu guruhda hali talabalar mavjud emas"}
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="extra-student-picker-footer">
+                    <span>Tanlandi: <strong>{extraSelectedStudentIds.length}</strong> / {modalGroupStudents.length} ta talaba</span>
+                    {extraSelectedStudentIds.length === 0 && (
+                      <span className="extra-student-warning-text">Kamida 1 ta talaba tanlanishi shart</span>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Date Input */}
+            <div className="form-group">
+              <label className="form-label">Sana (Kalendar kuni)</label>
+              <input
+                type="date"
+                className="form-input modal-date-input"
+                value={extraDate}
+                onChange={(e) => setExtraDate(e.target.value)}
+                required
+              />
+              {extraDate && (
+                <span className="field-hint-text">
+                  Tanlangan kun: <strong>{getDayNameUzFromDateStr(extraDate) || "Noma'lum"} ({formatExtraLessonDateLabel(extraDate)})</strong>
+                </span>
+              )}
+            </div>
+
+            {/* Start and End Times */}
+            <div className="schedule-time-row">
+              <div className="form-group flex-1">
+                <label className="form-label">Boshlanish vaqti</label>
+                <Time24Input
+                  value={extraStartTime}
+                  onChange={(val) => {
+                    setExtraStartTime(val);
+                    if (val && (!extraEndTime || extraEndTime <= val)) {
+                      const [h, m] = val.split(':').map(Number);
+                      if (!isNaN(h) && !isNaN(m)) {
+                        const totalMinutes = h * 60 + m + 90;
+                        const newH = Math.floor(totalMinutes / 60) % 24;
+                        const newM = totalMinutes % 60;
+                        setExtraEndTime(`${String(newH).padStart(2, '0')}:${String(newM).padStart(2, '0')}`);
+                      }
+                    }
+                  }}
+                />
+              </div>
+              <div className="form-group flex-1">
+                <label className="form-label">Tugash vaqti</label>
+                <Time24Input
+                  value={extraEndTime}
+                  onChange={setExtraEndTime}
+                />
+              </div>
+            </div>
+
+            {/* Room */}
+            <div className="form-group">
+              <label className="form-label">Xona (Ixtiyoriy)</label>
+              <input
+                type="text"
+                className="form-input"
+                placeholder="Masalan: 204-xona, Lab 1..."
+                value={extraRoom}
+                onChange={(e) => setExtraRoom(e.target.value)}
+                maxLength={40}
+              />
+            </div>
+
+            {/* Topic / Note */}
+            <div className="form-group">
+              <label className="form-label">Dars Mavzusi / Izoh (Ixtiyoriy)</label>
+              <input
+                type="text"
+                className="form-input"
+                placeholder="Masalan: Oraliq nazoratga tayyorgarlik, qo'shimcha amaliyot..."
+                value={extraTopic}
+                onChange={(e) => setExtraTopic(e.target.value)}
+                maxLength={120}
+              />
+              </div>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="modal-actions-footer modal-actions-fixed">
+              {editingExtraLesson && (
+                <button
+                  type="button"
+                  className="btn-danger-outline scale-active"
+                  onClick={() => {
+                    if (window.confirm("Haqiqatan ham ushbu Extra Lessonni o'chirmoqchimisiz?")) {
+                      onDeleteExtraLesson?.(editingExtraLesson.id);
+                      setShowExtraLessonModal(false);
+                    }
+                  }}
+                >
+                  O'chirish
+                </button>
+              )}
+              <div className="modal-actions-right">
+                <button
+                  type="button"
+                  className="btn btn-secondary scale-active"
+                  onClick={() => setShowExtraLessonModal(false)}
+                >
+                  Bekor qilish
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-primary scale-active"
+                  style={{ background: 'linear-gradient(135deg, #7C3AED 0%, #4F46E5 100%)', border: 'none' }}
+                  onClick={handleSaveExtraLesson}
+                >
+                  <span>{editingExtraLesson ? "O'zgarishlarni Saqlash" : "Darsni Qo'shish"}</span>
+                </button>
+              </div>
             </div>
           </div>
         </div>,
@@ -1150,6 +1822,557 @@ const ScheduleView = ({
           box-shadow: var(--shadow-md);
         }
 
+        /* Extra Lesson Card Styling */
+        .schedule-lesson-card.extra-lesson-card {
+          background: linear-gradient(135deg, rgba(124, 58, 237, 0.07) 0%, rgba(245, 158, 11, 0.05) 100%), #FFFFFF !important;
+          border: 1.5px solid rgba(124, 58, 237, 0.4) !important;
+          box-shadow: 0 2px 10px rgba(124, 58, 237, 0.08);
+          position: relative;
+        }
+
+        [data-theme="dark"] .schedule-lesson-card.extra-lesson-card {
+          background: linear-gradient(135deg, rgba(124, 58, 237, 0.16) 0%, rgba(245, 158, 11, 0.09) 100%), #25262B !important;
+          border: 1.5px solid rgba(167, 139, 250, 0.5) !important;
+          box-shadow: 0 2px 12px rgba(124, 58, 237, 0.18);
+        }
+
+        .schedule-lesson-card.extra-lesson-card:hover {
+          border-color: rgba(124, 58, 237, 0.8) !important;
+          box-shadow: 0 4px 16px rgba(124, 58, 237, 0.22);
+        }
+
+        .extra-lesson-top-row {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          width: 100%;
+          gap: 6px;
+          margin-bottom: 2px;
+        }
+
+        .extra-lesson-badge {
+          display: inline-flex;
+          align-items: center;
+          gap: 5px;
+          padding: 2px 7px;
+          border-radius: 999px;
+          font-size: 0.66rem;
+          font-weight: 800;
+          letter-spacing: 0.03em;
+          text-transform: uppercase;
+          background: rgba(124, 58, 237, 0.12);
+          color: #7C3AED;
+          border: 1px solid rgba(124, 58, 237, 0.25);
+        }
+
+        [data-theme="dark"] .extra-lesson-badge {
+          background: rgba(167, 139, 250, 0.18);
+          color: #C4B5FD;
+          border-color: rgba(167, 139, 250, 0.35);
+        }
+
+        .extra-lesson-badge-pulse {
+          width: 5px;
+          height: 5px;
+          border-radius: 50%;
+          background: #7C3AED;
+          box-shadow: 0 0 6px #7C3AED;
+        }
+
+        [data-theme="dark"] .extra-lesson-badge-pulse {
+          background: #A78BFA;
+          box-shadow: 0 0 6px #A78BFA;
+        }
+
+        .extra-lesson-date-pill {
+          font-size: 0.67rem;
+          font-weight: 700;
+          padding: 2px 6px;
+          border-radius: 4px;
+          background: rgba(245, 158, 11, 0.12);
+          color: #D97706;
+          border: 1px solid rgba(245, 158, 11, 0.25);
+        }
+
+        [data-theme="dark"] .extra-lesson-date-pill {
+          background: rgba(245, 158, 11, 0.2);
+          color: #FBBF24;
+          border-color: rgba(245, 158, 11, 0.35);
+        }
+
+        .lesson-time-and-actions {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          width: 100%;
+          gap: 6px;
+        }
+
+        .extra-actions-group {
+          display: flex;
+          align-items: center;
+          gap: 4px;
+        }
+
+        .extra-action-icon-btn {
+          width: 22px;
+          height: 22px;
+          border-radius: 5px;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          background: transparent;
+          border: none;
+          cursor: pointer;
+          color: var(--text-tertiary);
+          transition: all 0.15s ease;
+          padding: 0;
+        }
+
+        .extra-action-icon-btn:hover {
+          color: var(--text-primary);
+          background: rgba(0, 0, 0, 0.06);
+        }
+
+        [data-theme="dark"] .extra-action-icon-btn:hover {
+          background: rgba(255, 255, 255, 0.1);
+        }
+
+        .extra-action-icon-btn.delete-btn:hover {
+          color: #EF4444;
+          background: rgba(239, 68, 68, 0.12);
+        }
+
+        .lesson-card-action-btn {
+          width: 22px;
+          height: 22px;
+          border-radius: 5px;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          background: transparent;
+          border: none;
+          cursor: pointer;
+          color: var(--text-tertiary);
+          transition: all 0.15s ease;
+          padding: 0;
+        }
+
+        .lesson-card-action-btn:hover {
+          color: var(--text-primary);
+          background: rgba(0, 0, 0, 0.06);
+        }
+
+        [data-theme="dark"] .lesson-card-action-btn:hover {
+          background: rgba(255, 255, 255, 0.1);
+        }
+
+        .extra-lesson-topic-box {
+          font-size: 0.72rem;
+          font-weight: 600;
+          color: var(--text-secondary);
+          background: rgba(0, 0, 0, 0.03);
+          border-left: 2px solid #8B5CF6;
+          padding: 3px 6px;
+          border-radius: 0 4px 4px 0;
+          display: flex;
+          align-items: center;
+          gap: 4px;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+        }
+
+        [data-theme="dark"] .extra-lesson-topic-box {
+          background: rgba(255, 255, 255, 0.04);
+          border-left-color: #A78BFA;
+        }
+
+        .extra-topic-icon {
+          font-size: 0.8rem;
+          flex-shrink: 0;
+        }
+
+        .extra-modal-header {
+          display: flex;
+          flex-direction: column;
+          gap: 4px;
+          margin-bottom: 16px;
+        }
+
+        .extra-modal-badge {
+          display: inline-flex;
+          align-items: center;
+          align-self: flex-start;
+          gap: 4px;
+          padding: 3px 8px;
+          border-radius: 999px;
+          font-size: 0.7rem;
+          font-weight: 800;
+          text-transform: uppercase;
+          background: rgba(124, 58, 237, 0.12);
+          color: #7C3AED;
+        }
+
+        [data-theme="dark"] .extra-modal-badge {
+          background: rgba(167, 139, 250, 0.18);
+          color: #C4B5FD;
+        }
+
+        .modal-date-input {
+          font-family: inherit;
+          color-scheme: light dark;
+        }
+
+        .field-hint-text {
+          font-size: 0.75rem;
+          color: var(--text-secondary);
+          margin-top: 4px;
+          display: block;
+        }
+
+        .modal-actions-footer {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 12px;
+          margin-top: 24px;
+          padding-top: 16px;
+          border-top: 1px solid var(--border-color);
+        }
+
+        .modal-actions-right {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          margin-left: auto;
+        }
+
+        .btn-danger-outline {
+          background: transparent;
+          color: #EF4444;
+          border: 1px solid rgba(239, 68, 68, 0.3);
+          border-radius: var(--radius-md);
+          padding: 8px 14px;
+          font-size: 0.82rem;
+          font-weight: 600;
+          cursor: pointer;
+          transition: all 0.15s ease;
+        }
+
+        .btn-danger-outline:hover {
+          background: rgba(239, 68, 68, 0.1);
+          border-color: #EF4444;
+        }
+
+        /* Extra Lesson Target Scope Segmented */
+        .extra-target-segmented {
+          display: flex;
+          background: rgba(0, 0, 0, 0.04);
+          border-radius: var(--radius-sm, 8px);
+          padding: 3px;
+          gap: 4px;
+          border: 1px solid var(--border-color);
+        }
+
+        [data-theme="dark"] .extra-target-segmented {
+          background: rgba(255, 255, 255, 0.05);
+          border-color: #3C4043;
+        }
+
+        .extra-target-seg-btn {
+          flex: 1;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 6px;
+          padding: 8px 12px;
+          font-size: 0.85rem;
+          font-weight: 600;
+          color: var(--text-secondary);
+          background: transparent;
+          border: none;
+          border-radius: 6px;
+          cursor: pointer;
+          transition: all 0.15s ease;
+        }
+
+        .extra-target-seg-btn:hover {
+          color: var(--text-primary);
+        }
+
+        .extra-target-seg-btn.active {
+          background: #FFFFFF;
+          color: var(--apple-blue, #0071E3);
+          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        [data-theme="dark"] .extra-target-seg-btn.active {
+          background: #35363A;
+          color: #8AB4F8;
+          box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        /* Student Picker Card inside Modal */
+        .extra-student-picker-card {
+          margin-top: 8px;
+          background: rgba(0, 0, 0, 0.02);
+          border: 1px solid var(--border-color);
+          border-radius: var(--radius-md, 10px);
+          padding: 8px;
+          display: flex;
+          flex-direction: column;
+          gap: 8px;
+        }
+
+        [data-theme="dark"] .extra-student-picker-card {
+          background: rgba(255, 255, 255, 0.02);
+          border-color: #3C4043;
+        }
+
+        .extra-student-picker-header {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 8px;
+        }
+
+        .extra-student-search-wrap {
+          flex: 1;
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          background: #FFFFFF;
+          border: 1px solid var(--border-color);
+          border-radius: var(--radius-sm, 6px);
+          padding: 6px 10px;
+          color: var(--text-secondary);
+          transition: all 0.15s ease;
+        }
+
+        .extra-student-search-wrap:focus-within {
+          border-color: var(--apple-blue, #0071E3);
+          box-shadow: 0 0 0 2px rgba(0, 113, 227, 0.15);
+        }
+
+        [data-theme="dark"] .extra-student-search-wrap {
+          background: #202124;
+          border-color: #3C4043;
+        }
+
+        [data-theme="dark"] .extra-student-search-wrap:focus-within {
+          border-color: #8AB4F8;
+          box-shadow: 0 0 0 2px rgba(138, 180, 248, 0.2);
+        }
+
+        .extra-student-search-input {
+          flex: 1;
+          border: none !important;
+          outline: none !important;
+          box-shadow: none !important;
+          background: transparent !important;
+          padding: 0 !important;
+          font-size: 0.85rem;
+          color: var(--text-primary);
+          font-family: inherit;
+        }
+
+        .extra-student-search-input:focus {
+          border: none !important;
+          outline: none !important;
+          box-shadow: none !important;
+        }
+
+        .extra-student-search-clear {
+          background: transparent;
+          border: none;
+          color: var(--text-tertiary);
+          cursor: pointer;
+          font-size: 0.75rem;
+          padding: 0 2px;
+        }
+
+        .extra-student-select-all-btn {
+          background: transparent;
+          border: none;
+          font-size: 0.78rem;
+          font-weight: 600;
+          color: var(--apple-blue, #0071E3);
+          cursor: pointer;
+          padding: 4px 6px;
+          white-space: nowrap;
+        }
+
+        [data-theme="dark"] .extra-student-select-all-btn {
+          color: #8AB4F8;
+        }
+
+        .extra-student-picker-list {
+          max-height: 180px;
+          overflow-y: auto;
+          display: flex;
+          flex-direction: column;
+          gap: 2px;
+          padding-right: 4px;
+        }
+
+        .extra-student-picker-item {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          padding: 8px 10px;
+          border-radius: 6px;
+          cursor: pointer;
+          transition: background 0.12s ease;
+          user-select: none;
+        }
+
+        .extra-student-picker-item:hover {
+          background: rgba(0, 0, 0, 0.04);
+        }
+
+        [data-theme="dark"] .extra-student-picker-item:hover {
+          background: rgba(255, 255, 255, 0.05);
+        }
+
+        .extra-student-picker-item.selected {
+          background: rgba(0, 113, 227, 0.08);
+        }
+
+        [data-theme="dark"] .extra-student-picker-item.selected {
+          background: rgba(138, 180, 248, 0.12);
+        }
+
+        .extra-student-checkbox {
+          cursor: pointer;
+          accent-color: var(--apple-blue, #0071E3);
+          width: 16px;
+          height: 16px;
+          flex-shrink: 0;
+          margin: 0;
+        }
+
+        .extra-student-name {
+          flex: 1;
+          font-size: 0.88rem;
+          font-weight: 500;
+          color: var(--text-primary);
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+
+        .extra-student-picker-item.selected .extra-student-name {
+          font-weight: 600;
+          color: var(--apple-blue, #0071E3);
+        }
+
+        [data-theme="dark"] .extra-student-picker-item.selected .extra-student-name {
+          color: #8AB4F8;
+        }
+
+        .extra-student-empty-text {
+          padding: 16px;
+          text-align: center;
+          font-size: 0.8rem;
+          color: var(--text-tertiary);
+        }
+
+        .extra-student-picker-footer {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          font-size: 0.74rem;
+          color: var(--text-secondary);
+          padding-top: 4px;
+          border-top: 1px solid var(--border-color);
+        }
+
+        .extra-student-warning-text {
+          color: #EF4444;
+          font-weight: 600;
+        }
+
+        /* Targeted Student Badge on Schedule Grid Cards */
+        .extra-lesson-target-badge {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          font-size: 0.74rem;
+          padding: 3px 6px;
+          border-radius: 5px;
+          background: rgba(0, 0, 0, 0.03);
+          margin-top: 2px;
+          overflow: hidden;
+        }
+
+        [data-theme="dark"] .extra-lesson-target-badge {
+          background: rgba(255, 255, 255, 0.04);
+        }
+
+        .extra-lesson-target-badge.individual {
+          background: rgba(124, 58, 237, 0.08);
+          border: 1px solid rgba(124, 58, 237, 0.2);
+          color: #6D28D9;
+        }
+
+        [data-theme="dark"] .extra-lesson-target-badge.individual {
+          background: rgba(167, 139, 250, 0.12);
+          border-color: rgba(167, 139, 250, 0.25);
+          color: #C4B5FD;
+        }
+
+        .extra-target-avatar-stack {
+          display: flex;
+          align-items: center;
+          flex-shrink: 0;
+        }
+
+        .extra-target-mini-avatar {
+          width: 18px;
+          height: 18px;
+          border-radius: 50%;
+          border: 1.5px solid #FFFFFF;
+          margin-left: -5px;
+          overflow: hidden;
+          background: #E5E7EB;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 0.55rem;
+          font-weight: 700;
+          color: #374151;
+        }
+
+        .extra-target-mini-avatar:first-child {
+          margin-left: 0;
+        }
+
+        .extra-target-mini-avatar img {
+          width: 100% !important;
+          height: 100% !important;
+          object-fit: cover !important;
+        }
+
+        [data-theme="dark"] .extra-target-mini-avatar {
+          border-color: #292A2D;
+          background: #4B5563;
+          color: #F3F4F6;
+        }
+
+        .extra-target-label {
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          font-weight: 600;
+          min-width: 0;
+        }
+
+        .extra-target-icon {
+          font-size: 0.8rem;
+          flex-shrink: 0;
+        }
+
         .lesson-time-header {
           display: flex;
           align-items: center;
@@ -1370,26 +2593,68 @@ const ScheduleView = ({
         .schedule-select-val {
           display: flex;
           align-items: center;
-          gap: 6px;
+          gap: 8px;
           overflow: hidden;
           text-overflow: ellipsis;
           white-space: nowrap;
+          min-width: 0;
+          flex: 1;
         }
 
         .schedule-select-group-name {
           font-weight: 600;
           color: var(--text-primary);
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
         }
 
         .schedule-select-student-count {
           font-size: 0.82rem;
           font-weight: 500;
           color: var(--text-secondary);
+          flex-shrink: 0;
         }
 
         .schedule-select-placeholder {
           color: var(--text-tertiary, #86868B);
           font-weight: 500;
+        }
+
+        .schedule-group-pill-icon {
+          width: 22px;
+          height: 22px;
+          min-width: 22px;
+          max-width: 22px;
+          border-radius: 6px;
+          background: rgba(0, 0, 0, 0.05);
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          overflow: hidden;
+          flex-shrink: 0;
+        }
+
+        .schedule-group-pill-icon img {
+          width: 100% !important;
+          height: 100% !important;
+          max-width: 100% !important;
+          max-height: 100% !important;
+          object-fit: cover !important;
+          border-radius: 6px !important;
+          display: block;
+        }
+
+        [data-theme="dark"] .schedule-group-pill-icon {
+          background: rgba(255, 255, 255, 0.08);
+        }
+
+        .schedule-custom-dropdown-list img,
+        .schedule-custom-select-btn img {
+          max-width: 100% !important;
+          max-height: 100% !important;
+          object-fit: cover !important;
+          border-radius: inherit;
         }
 
         .schedule-select-backdrop {
@@ -1446,17 +2711,23 @@ const ScheduleView = ({
         .schedule-item-left {
           display: flex;
           align-items: center;
-          gap: 6px;
+          gap: 8px;
+          min-width: 0;
+          flex: 1;
         }
 
         .schedule-item-name {
           font-weight: 600;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
         }
 
         .schedule-item-count {
           font-size: 0.8rem;
           color: var(--text-secondary);
           font-weight: 400;
+          flex-shrink: 0;
         }
 
         .schedule-dropdown-item.active .schedule-item-count {
@@ -1690,18 +2961,19 @@ const ScheduleView = ({
 
         /* Roster Students List Modal */
         .student-list-modal-box {
-          max-width: 480px;
-          width: 92%;
-          padding: 22px 24px;
+          max-width: 500px;
+          width: 100%;
+          padding: 22px 24px 20px;
           display: flex;
           flex-direction: column;
           gap: 14px;
-          border-radius: var(--radius-lg);
+          border-radius: var(--radius-xl);
           box-shadow: 0 24px 60px rgba(0, 0, 0, 0.2);
           position: relative;
           background: var(--bg-card);
           border: 1px solid var(--border-color);
-          max-height: 85vh;
+          max-height: min(620px, calc(100dvh - 48px));
+          height: auto;
         }
 
         [data-theme="dark"] .student-list-modal-box {
@@ -1893,7 +3165,9 @@ const ScheduleView = ({
         }
 
         .student-list-modal-body {
-          max-height: 275px;
+          flex: 1 1 auto;
+          min-height: 0;
+          max-height: 380px;
           overflow-y: auto;
           overflow-x: hidden;
           padding-right: 4px;
@@ -2044,6 +3318,8 @@ const ScheduleView = ({
         }
 
         .student-list-modal-footer {
+          margin-top: auto;
+          flex-shrink: 0;
           display: flex;
           align-items: center;
           justify-content: space-between;

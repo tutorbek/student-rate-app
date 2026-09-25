@@ -1,122 +1,14 @@
 /* eslint-disable react-refresh/only-export-components */
 import React from 'react';
 
-// Common Core SVGs
-export const HeartIcon = ({ size = 16, className = '', color = '#FF2D55' }) => (
-  <svg
-    width={size}
-    height={size}
-    viewBox="0 0 24 24"
-    fill={color}
-    stroke={color}
-    strokeWidth="1"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    className={className}
-    style={{ verticalAlign: 'middle', display: 'inline-block' }}
-  >
-    <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
-  </svg>
-);
+import ProjectLikeIcon from '../common/ProjectLikeIcon';
 
-export const LikeIcon = ({ size = 16, className = '', color = '#0071E3', filled = true }) => {
-  if (!filled) {
-    return (
-      <svg
-        width={size}
-        height={size}
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke={color}
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        className={className}
-        style={{ verticalAlign: 'middle', display: 'inline-block', flexShrink: 0 }}
-      >
-        <path d="M7 10v12" />
-        <path d="M15 5.88 14 10h5.83a2 2 0 0 1 1.92 2.56l-2.33 8A2 2 0 0 1 17.5 22H4a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2h3" />
-      </svg>
-    );
-  }
-
-  return (
-    <svg
-      width={size}
-      height={size}
-      viewBox="0 0 24 24"
-      fill={color}
-      stroke={color}
-      strokeWidth="0.8"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className={className}
-      style={{ verticalAlign: 'middle', display: 'inline-block', flexShrink: 0 }}
-    >
-      <rect x="2" y="10" width="3.5" height="12" rx="1" />
-      <path d="M7 10.5V22h10.5a2 2 0 0 0 1.92-1.44l2.33-8A2 2 0 0 0 19.83 10H14l.8-4.2a2 2 0 0 0-1.95-2.4 2 2 0 0 0-1.85 1.25L7 10.5z" />
-    </svg>
-  );
-};
-
-export const ThumbsUpIcon = LikeIcon;
-
-export const ProjectLikeIcon = ({ size = 16, className = '', glow = false }) => (
-  <svg
-    width={size}
-    height={size}
-    viewBox="0 0 24 24"
-    fill="none"
-    className={`project-like-icon ${className}`}
-    style={{
-      verticalAlign: 'middle',
-      display: 'inline-block',
-      flexShrink: 0,
-      filter: glow ? 'drop-shadow(0 2px 6px rgba(255, 184, 0, 0.45))' : 'drop-shadow(0 1px 2px rgba(217, 119, 6, 0.25))'
-    }}
-    aria-hidden="true"
-  >
-    <defs>
-      <linearGradient id="projectLikeGoldGrad" x1="2" y1="2" x2="22" y2="22" gradientUnits="userSpaceOnUse">
-        <stop offset="0%" stopColor="#FFE066" />
-        <stop offset="45%" stopColor="#FFB800" />
-        <stop offset="100%" stopColor="#F59E0B" />
-      </linearGradient>
-      <linearGradient id="projectLikeCuffGrad" x1="2" y1="10" x2="7" y2="22" gradientUnits="userSpaceOnUse">
-        <stop offset="0%" stopColor="#FFCC00" />
-        <stop offset="100%" stopColor="#D97706" />
-      </linearGradient>
-    </defs>
-    {/* Base Cuff / Sleeve */}
-    <rect
-      x="2"
-      y="10.5"
-      width="4"
-      height="10.5"
-      rx="1.5"
-      fill="url(#projectLikeCuffGrad)"
-    />
-    {/* Thumb & Hand */}
-    <path
-      d="M7.5 11.2V21h8.8c1.1 0 2.1-.7 2.4-1.8l2-7.2c.4-1.4-.7-2.8-2.2-2.8h-4.6c.3-1.6.8-3.9.5-5.2-.4-1.6-1.8-2-2.7-1.8-.7.2-1.2.9-1.3 1.6-.2 1.3-.7 3.3-2.9 6.2Z"
-      fill="url(#projectLikeGoldGrad)"
-    />
-    {/* Subtle highlight sheen */}
-    <path
-      d="M13.2 2.8c-.3 0-.6.2-.7.6-.2 1.3-.7 3.3-2.9 6.2l-.6.8v2.6l1.2-1.6c2.2-2.8 2.8-4.8 3-6.2.1-.8.6-1.5 1.3-1.7-.4-.5-.9-.7-1.3-.7Z"
-      fill="#FFFFFF"
-      opacity="0.45"
-    />
-    {/* Finger separator accents */}
-    <path
-      d="M15 11.5h3.5M14.5 14.5h3.8M14 17.5h3.5"
-      stroke="#B45309"
-      strokeWidth="0.8"
-      strokeLinecap="round"
-      opacity="0.35"
-    />
-  </svg>
-);
+// Re-export ProjectLikeIcon as the standard, sole Like icon across the project
+export { ProjectLikeIcon };
+// Safeguard: Alias legacy HeartIcon, LikeIcon, and ThumbsUpIcon to ProjectLikeIcon so no heart/alternate icon can appear
+export const HeartIcon = ProjectLikeIcon;
+export const LikeIcon = ProjectLikeIcon;
+export const ThumbsUpIcon = ProjectLikeIcon;
 
 export const CrownIcon = ({ size = 18, className = '', color = '#F59E0B' }) => (
   <svg

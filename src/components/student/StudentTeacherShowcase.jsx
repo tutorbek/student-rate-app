@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { renderAvatar } from '../../utils/studentAvatars';
+import { lockBodyScroll, unlockBodyScroll } from '../../utils/scrollLock';
 
 export default function StudentTeacherShowcase({ teacherProfile, isPreview = false }) {
   const [isOpen, setIsOpen] = useState(false);
@@ -51,9 +52,12 @@ export default function StudentTeacherShowcase({ teacherProfile, isPreview = fal
     setTouchStartY(null);
   };
 
-  // Close modal on Escape key
+  // Close modal on Escape key and lock background scroll
   useEffect(() => {
     if (!isOpen && !lightboxCert) return;
+
+    lockBodyScroll();
+
     const handleKeyDown = (e) => {
       if (e.key === 'Escape') {
         if (lightboxCert) {
@@ -64,7 +68,10 @@ export default function StudentTeacherShowcase({ teacherProfile, isPreview = fal
       }
     };
     window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      unlockBodyScroll();
+    };
   }, [isOpen, isClosing, lightboxCert]);
 
   // If teacher profile is not filled out, do not display anything!

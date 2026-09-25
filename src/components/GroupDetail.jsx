@@ -4,6 +4,8 @@ import { getStudentScore, normalizeQuickTags, getGroupCategory } from '../utils/
 import { renderGroupIcon } from '../utils/groupIcons';
 import { STUDENT_AVATARS, renderStudentAvatar as renderAvatar } from '../utils/studentAvatars';
 import { AVATAR_GALLERY_IMAGES, isGalleryImage, compressUploadedImage } from '../utils/avatarGallery';
+import ProjectLikeIcon from './common/ProjectLikeIcon';
+import { useModalDismiss } from '../hooks/useModalDismiss';
 
 const COLOR_OPTIONS = [
   { name: 'Burnt Sienna', value: '#E35336' },
@@ -149,24 +151,6 @@ const GroupDetail = ({ group, allGroups = [], students, transactions, quickTags,
     setStudentSearchQuery('');
   }, [group?.id]);
 
-  useEffect(() => {
-    const handleKeyDown = (e) => {
-      if (e.key === 'Escape') {
-        setStudentSearchQuery('');
-        setShowAddStudentModal(false);
-        setConfirmDeleteId(null);
-        setPinResetTarget(null);
-        setScoringStudent(null);
-        setProfileStudent(null);
-        setEditingStudent(null);
-        setTransferringStudent(null);
-        setShowCategoryModal(false);
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []);
-
   const [showAddStudentModal, setShowAddStudentModal] = useState(false);
   const [newStudentName, setNewStudentName] = useState('');
   const [selectedEmoji, setSelectedEmoji] = useState(AVATAR_GALLERY_IMAGES[0].path);
@@ -196,6 +180,38 @@ const GroupDetail = ({ group, allGroups = [], students, transactions, quickTags,
   const [scoringStudent, setScoringStudent] = useState(null);
   const [scoreAmount, setScoreAmount] = useState(''); // string for free editing
   const [customComment, setCustomComment] = useState('');
+
+  // Escape key and background scroll lock handler for all modals in GroupDetail
+  const isAnyGroupDetailModalOpen = Boolean(
+    showAddStudentModal ||
+    confirmDeleteId ||
+    pinResetTarget ||
+    scoringStudent ||
+    profileStudent ||
+    editingStudent ||
+    transferringStudent ||
+    showCategoryModal
+  );
+
+  useModalDismiss(isAnyGroupDetailModalOpen, () => {
+    if (confirmDeleteId) {
+      setConfirmDeleteId(null);
+    } else if (pinResetTarget) {
+      setPinResetTarget(null);
+    } else if (showCategoryModal) {
+      setShowCategoryModal(false);
+    } else if (transferringStudent) {
+      setTransferringStudent(null);
+    } else if (editingStudent) {
+      setEditingStudent(null);
+    } else if (profileStudent) {
+      setProfileStudent(null);
+    } else if (scoringStudent) {
+      setScoringStudent(null);
+    } else if (showAddStudentModal) {
+      setShowAddStudentModal(false);
+    }
+  });
 
   const normalizedTags = useMemo(() => {
     return normalizeQuickTags(quickTags);
@@ -500,8 +516,9 @@ const GroupDetail = ({ group, allGroups = [], students, transactions, quickTags,
                   <div className="student-item-info">
                     <h3 className="student-name">{student.name}</h3>
                     <div className="student-score-badge">
+                      <ProjectLikeIcon size={12} />
                       <span className="score-num">{student.totalScore >= 0 ? `+${student.totalScore}` : student.totalScore}</span>
-                      <span className="score-label">Likelar</span>
+                      <span className="score-label">Like</span>
                       {student.pin ? (
                         <span className="student-device-bound-pill" title="4 xonali PIN o'rnatilgan">
                           🔒 PIN faol
@@ -630,128 +647,132 @@ const GroupDetail = ({ group, allGroups = [], students, transactions, quickTags,
                 <line x1="6" y1="6" x2="18" y2="18" />
               </svg>
             </button>
-            <h3 className="modal-title">Yangi talaba qo'shish</h3>
+            <div className="modal-header-fixed">
+              <h3 className="modal-title">Yangi talaba qo'shish</h3>
+            </div>
             <form onSubmit={handleAddStudentSubmit}>
-              <div className="form-group">
-                <label className="form-label">Talaba ismi va familiyasi</label>
-                <input
-                  type="text"
-                  className="form-input"
-                  placeholder="Masalan: Asadbek Karimov"
-                  value={newStudentName}
-                  onChange={(e) => setNewStudentName(e.target.value)}
-                  autoFocus
-                />
-              </div>
+              <div className="modal-body-scrollable">
+                <div className="form-group">
+                  <label className="form-label">Talaba ismi va familiyasi</label>
+                  <input
+                    type="text"
+                    className="form-input"
+                    placeholder="Masalan: Asadbek Karimov"
+                    value={newStudentName}
+                    onChange={(e) => setNewStudentName(e.target.value)}
+                    autoFocus
+                  />
+                </div>
 
-              {/* SVG Avatar Picker Tabs */}
-              <div className="form-group">
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
-                  <label className="form-label" style={{ margin: 0 }}>Talaba Avatari</label>
-                  <div className="avatar-preview-badge" style={{ display: 'inline-flex', alignItems: 'center' }}>
-                    <span style={{ fontSize: '0.72rem', fontWeight: 800, textTransform: 'uppercase', marginRight: '6px' }}>Tanlandi:</span>
-                    <div className="avatar-circle" style={{ width: 32, height: 32, background: selectedColor, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', padding: 0, border: '1px solid rgba(0,0,0,0.08)', borderRadius: 'var(--radius-sm)' }}>
-                      {renderAvatar(selectedEmoji)}
+                {/* SVG Avatar Picker Tabs */}
+                <div className="form-group">
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
+                    <label className="form-label" style={{ margin: 0 }}>Talaba Avatari</label>
+                    <div className="avatar-preview-badge" style={{ display: 'inline-flex', alignItems: 'center' }}>
+                      <span style={{ fontSize: '0.72rem', fontWeight: 800, textTransform: 'uppercase', marginRight: '6px' }}>Tanlandi:</span>
+                      <div className="avatar-circle" style={{ width: 32, height: 32, background: selectedColor, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', padding: 0, border: '1px solid rgba(0,0,0,0.08)', borderRadius: 'var(--radius-sm)' }}>
+                        {renderAvatar(selectedEmoji)}
+                      </div>
                     </div>
                   </div>
-                </div>
-                <div className="avatar-tabs-header">
-                  <button type="button" className={`avatar-tab-btn ${avatarTab === 'gallery' ? 'active' : ''}`} onClick={() => setAvatarTab('gallery')}>Rasmlar</button>
-                  <button type="button" className={`avatar-tab-btn ${avatarTab === 'svg' ? 'active' : ''}`} onClick={() => setAvatarTab('svg')}>SVG Ikonkalar</button>
-                  <button type="button" className={`avatar-tab-btn ${avatarTab === 'file' ? 'active' : ''}`} onClick={() => setAvatarTab('file')}>Rasm yuklash</button>
-                </div>
-
-                {avatarTab === 'gallery' && (
-                  <div className="avatar-gallery-picker-grid">
-                    {AVATAR_GALLERY_IMAGES.map((img) => {
-                      const isSelected = selectedEmoji === img.path || selectedEmoji === img.cdnPath || (selectedEmoji && selectedEmoji.includes(img.name));
-                      return (
-                        <button
-                          key={img.id}
-                          type="button"
-                          className={`avatar-gallery-item-btn scale-active ${isSelected ? 'selected' : ''}`}
-                          onClick={() => setSelectedEmoji(img.path)}
-                        >
-                          <img
-                            src={img.path}
-                            alt={img.label}
-                            loading="lazy"
-                            decoding="async"
-                            className="gallery-thumb-img"
-                            onError={(e) => {
-                              if (img.cdnPath && e.currentTarget.src !== img.cdnPath) {
-                                e.currentTarget.src = img.cdnPath;
-                              }
-                            }}
-                          />
-                          {isSelected && (
-                            <div className="gallery-selected-badge">
-                              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round">
-                                <polyline points="20 6 9 17 4 12" />
-                              </svg>
-                            </div>
-                          )}
-                        </button>
-                      );
-                    })}
+                  <div className="avatar-tabs-header">
+                    <button type="button" className={`avatar-tab-btn ${avatarTab === 'gallery' ? 'active' : ''}`} onClick={() => setAvatarTab('gallery')}>Rasmlar</button>
+                    <button type="button" className={`avatar-tab-btn ${avatarTab === 'svg' ? 'active' : ''}`} onClick={() => setAvatarTab('svg')}>SVG Ikonkalar</button>
+                    <button type="button" className={`avatar-tab-btn ${avatarTab === 'file' ? 'active' : ''}`} onClick={() => setAvatarTab('file')}>Rasm yuklash</button>
                   </div>
-                )}
 
-                {avatarTab === 'svg' && (
-                  <div className="student-svg-picker-grid">
-                    {STUDENT_AVATARS.map((item) => (
+                  {avatarTab === 'gallery' && (
+                    <div className="avatar-gallery-picker-grid">
+                      {AVATAR_GALLERY_IMAGES.map((img) => {
+                        const isSelected = selectedEmoji === img.path || selectedEmoji === img.cdnPath || (selectedEmoji && selectedEmoji.includes(img.name));
+                        return (
+                          <button
+                            key={img.id}
+                            type="button"
+                            className={`avatar-gallery-item-btn scale-active ${isSelected ? 'selected' : ''}`}
+                            onClick={() => setSelectedEmoji(img.path)}
+                          >
+                            <img
+                              src={img.path}
+                              alt={img.label}
+                              loading="lazy"
+                              decoding="async"
+                              className="gallery-thumb-img"
+                              onError={(e) => {
+                                if (img.cdnPath && e.currentTarget.src !== img.cdnPath) {
+                                  e.currentTarget.src = img.cdnPath;
+                                }
+                              }}
+                            />
+                            {isSelected && (
+                              <div className="gallery-selected-badge">
+                                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round">
+                                  <polyline points="20 6 9 17 4 12" />
+                                </svg>
+                              </div>
+                            )}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+
+                  {avatarTab === 'svg' && (
+                    <div className="student-svg-picker-grid">
+                      {STUDENT_AVATARS.map((item) => (
+                        <button
+                          key={item.id}
+                          type="button"
+                          className={`student-svg-btn scale-active ${selectedEmoji === item.id ? 'selected' : ''}`}
+                          onClick={() => setSelectedEmoji(item.id)}
+                        >
+                          {item.svg(26)}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+
+                  {avatarTab === 'file' && (
+                    <div>
+                      <label className="form-label" style={{ fontSize: '0.75rem', opacity: 0.8 }}>Kompyuterdan rasm yuklash</label>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="form-input"
+                        onChange={async (e) => {
+                          const file = e.target.files[0];
+                          if (file) {
+                            try {
+                              const compressed = await compressUploadedImage(file);
+                              if (compressed) setSelectedEmoji(compressed);
+                            } catch (err) {
+                              console.error('Failed to compress image:', err);
+                            }
+                          }
+                        }}
+                      />
+                    </div>
+                  )}
+                </div>
+
+                {/* Color Picker */}
+                <div className="form-group" style={{ marginBottom: 4 }}>
+                  <label className="form-label">Avatar Rangi</label>
+                  <div className="color-picker-grid">
+                    {COLOR_OPTIONS.map((color) => (
                       <button
-                        key={item.id}
+                        key={color.value}
                         type="button"
-                        className={`student-svg-btn scale-active ${selectedEmoji === item.id ? 'selected' : ''}`}
-                        onClick={() => setSelectedEmoji(item.id)}
-                      >
-                        {item.svg(26)}
-                      </button>
+                        className={`color-btn ${selectedColor === color.value ? 'selected' : ''}`}
+                        style={{ background: color.value }}
+                        onClick={() => setSelectedColor(color.value)}
+                      />
                     ))}
                   </div>
-                )}
-
-                {avatarTab === 'file' && (
-                  <div>
-                    <label className="form-label" style={{ fontSize: '0.75rem', opacity: 0.8 }}>Kompyuterdan rasm yuklash</label>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      className="form-input"
-                      onChange={async (e) => {
-                        const file = e.target.files[0];
-                        if (file) {
-                          try {
-                            const compressed = await compressUploadedImage(file);
-                            if (compressed) setSelectedEmoji(compressed);
-                          } catch (err) {
-                            console.error('Failed to compress image:', err);
-                          }
-                        }
-                      }}
-                    />
-                  </div>
-                )}
-              </div>
-
-              {/* Color Picker */}
-              <div className="form-group">
-                <label className="form-label">Avatar Rangi</label>
-                <div className="color-picker-grid">
-                  {COLOR_OPTIONS.map((color) => (
-                    <button
-                      key={color.value}
-                      type="button"
-                      className={`color-btn ${selectedColor === color.value ? 'selected' : ''}`}
-                      style={{ background: color.value }}
-                      onClick={() => setSelectedColor(color.value)}
-                    />
-                  ))}
                 </div>
               </div>
 
-              <div className="modal-actions">
+              <div className="modal-actions-fixed">
                 <button type="button" className="btn btn-secondary scale-active" onClick={() => setShowAddStudentModal(false)}>
                   Bekor qilish
                 </button>
@@ -792,8 +813,8 @@ const GroupDetail = ({ group, allGroups = [], students, transactions, quickTags,
                   </div>
                   <div>
                     <h3 className="modal-title" style={{ margin: 0, fontSize: '1.08rem' }}>{scoringStudent.name}</h3>
-                    <p className="score-modal-subtitle" style={{ fontSize: '0.85rem', marginTop: '2px' }}>
-                      Like berish: <span className={Number(scoreAmount) >= 0 ? 'text-positive' : 'text-negative'}>
+                    <p className="score-modal-subtitle" style={{ fontSize: '0.85rem', marginTop: '2px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      Like berish: <ProjectLikeIcon size={14} /> <span className={Number(scoreAmount) >= 0 ? 'text-positive' : 'text-negative'}>
                         {scoreAmount !== '' ? (Number(scoreAmount) >= 0 ? `+${scoreAmount}` : scoreAmount) : '—'}
                       </span>
                     </p>
@@ -836,11 +857,12 @@ const GroupDetail = ({ group, allGroups = [], students, transactions, quickTags,
                   </button>
                   <button 
                     className="btn btn-primary scale-active" 
-                    style={{ flex: 1, padding: '8px 12px', fontSize: '0.8rem', whiteSpace: 'nowrap', justifyContent: 'center' }}
+                    style={{ flex: 1, padding: '8px 12px', fontSize: '0.8rem', whiteSpace: 'nowrap', justifyContent: 'center', display: 'inline-flex', alignItems: 'center', gap: '5px' }}
                     onClick={() => handleAwardPoints()}
                     disabled={scoreAmount === '' || isNaN(Number(scoreAmount))}
                   >
-                    Likeni tasdiqlash
+                    <ProjectLikeIcon size={14} />
+                    <span>Likeni tasdiqlash</span>
                   </button>
                 </div>
               </div>
@@ -848,7 +870,9 @@ const GroupDetail = ({ group, allGroups = [], students, transactions, quickTags,
               {/* Right Column: Quick Comment Templates with badges */}
               {normalizedTags.length > 0 && (
                 <div className="score-modal-right">
-                  <label className="form-label" style={{ fontSize: '0.75rem', marginBottom: '8px' }}>Tezkor izoh shablonlari</label>
+                  <div className="score-modal-right-header">
+                    <label className="form-label" style={{ fontSize: '0.75rem', margin: 0 }}>Tezkor izoh shablonlari</label>
+                  </div>
                   <div className="quick-tags-list">
                     {normalizedTags.map((tagObj, idx) => {
                       const isSelected = customComment === tagObj.text && String(scoreAmount) === String(tagObj.points);
@@ -857,6 +881,7 @@ const GroupDetail = ({ group, allGroups = [], students, transactions, quickTags,
                           key={idx}
                           type="button"
                           className={`quick-tag-card scale-active ${isSelected ? 'selected' : ''}`}
+                          title={`${tagObj.text} (${tagObj.points >= 0 ? '+' : ''}${tagObj.points} Like)`}
                           onClick={() => {
                             setScoreAmount(String(tagObj.points));
                             setCustomComment(tagObj.text);
@@ -881,7 +906,7 @@ const GroupDetail = ({ group, allGroups = [], students, transactions, quickTags,
       {/* Delete Student Confirmation Modal */}
       {confirmDeleteId && createPortal(
         <div className="modal-overlay" onClick={() => setConfirmDeleteId(null)}>
-          <div className="modal-content glass" onClick={(e) => e.stopPropagation()}>
+          <div className="modal-content glass modal-confirm" onClick={(e) => e.stopPropagation()}>
             <button 
               type="button" 
               className="modal-close-btn" 
@@ -927,7 +952,7 @@ const GroupDetail = ({ group, allGroups = [], students, transactions, quickTags,
               </svg>
             </button>
             {/* Profile Header */}
-            <div className="profile-modal-header">
+            <div className="modal-header-fixed profile-modal-header" style={{ marginBottom: '12px' }}>
               <div className="avatar-circle profile-avatar" style={{ background: profileStudent.color, overflow: 'hidden' }}>
                 {renderAvatar(profileStudent.emoji)}
               </div>
@@ -935,109 +960,121 @@ const GroupDetail = ({ group, allGroups = [], students, transactions, quickTags,
               <p className="profile-modal-group">{group.name} Guruhi</p>
             </div>
 
-            {/* Profile Stats Grid */}
-            <div className="profile-stats-grid">
-              <div className="profile-stat-box">
-                <span className="profile-stat-val">{getStudentScore(transactions, profileStudent.id, 'month')}</span>
-                <span className="profile-stat-lbl">Bu Oy</span>
+            <div className="modal-body-scrollable">
+              {/* Profile Stats Grid */}
+              <div className="profile-stats-grid">
+                <div className="profile-stat-box">
+                  <span className="profile-stat-val" style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>
+                    <ProjectLikeIcon size={14} />
+                    <span>{getStudentScore(transactions, profileStudent.id, 'month')}</span>
+                  </span>
+                  <span className="profile-stat-lbl">Bu Oy</span>
+                </div>
+                <div className="profile-stat-box">
+                  <span className="profile-stat-val" style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>
+                    <ProjectLikeIcon size={14} />
+                    <span>{getStudentScore(transactions, profileStudent.id, 'lastMonth')}</span>
+                  </span>
+                  <span className="profile-stat-lbl">O'tgan Oy</span>
+                </div>
+                <div className="profile-stat-box">
+                  <span className="profile-stat-val" style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>
+                    <ProjectLikeIcon size={14} />
+                    <span>{getStudentScore(transactions, profileStudent.id, 'all')}</span>
+                  </span>
+                  <span className="profile-stat-lbl">Kurs Davomida</span>
+                </div>
               </div>
-              <div className="profile-stat-box">
-                <span className="profile-stat-val">{getStudentScore(transactions, profileStudent.id, 'lastMonth')}</span>
-                <span className="profile-stat-lbl">O'tgan Oy</span>
-              </div>
-              <div className="profile-stat-box">
-                <span className="profile-stat-val">{getStudentScore(transactions, profileStudent.id, 'all')}</span>
-                <span className="profile-stat-lbl">Kurs Davomida</span>
-              </div>
-            </div>
 
-            {/* Timeline / History */}
-            <div className="profile-timeline-section">
-              <h4 className="profile-timeline-title">Baholash Tarixi</h4>
-              <div className="profile-timeline-list">
-                {studentTxs.length > 0 ? (
-                  studentTxs.map((tx) => {
-                    const date = new Date(tx.timestamp);
-                    const formattedDate = date.toLocaleDateString() + ' ' + date.toLocaleTimeString('uz-UZ', { hour: '2-digit', minute: '2-digit', hour12: false });
-                    return (
-                      <div key={tx.id} className="profile-timeline-item">
-                        <div className="profile-timeline-item-meta">
-                          <span className="profile-timeline-time">{formattedDate}</span>
-                          <span className="profile-timeline-amount font-bold">
-                            {tx.amount >= 0 ? `+${tx.amount}` : tx.amount}
-                          </span>
+              {/* Timeline / History */}
+              <div className="profile-timeline-section">
+                <h4 className="profile-timeline-title">Baholash Tarixi</h4>
+                <div className="profile-timeline-list">
+                  {studentTxs.length > 0 ? (
+                    studentTxs.map((tx) => {
+                      const date = new Date(tx.timestamp);
+                      const formattedDate = date.toLocaleDateString() + ' ' + date.toLocaleTimeString('uz-UZ', { hour: '2-digit', minute: '2-digit', hour12: false });
+                      return (
+                        <div key={tx.id} className="profile-timeline-item">
+                          <div className="profile-timeline-item-meta">
+                            <span className="profile-timeline-time">{formattedDate}</span>
+                            <span className="profile-timeline-amount font-bold" style={{ display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
+                              <ProjectLikeIcon size={12} />
+                              <span>{tx.amount >= 0 ? `+${tx.amount}` : tx.amount}</span>
+                            </span>
+                          </div>
+                          <div className="profile-timeline-item-body">
+                            <span className="profile-timeline-comment">
+                              {tx.comment ? `"${tx.comment}"` : '—'}
+                            </span>
+                            <button
+                              className="profile-timeline-item-delete scale-active"
+                              onClick={() => {
+                                onDeleteTransaction(tx.id);
+                                showToast("Baholash harakati bekor qilindi!", "success");
+                              }}
+                            >
+                              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                                <polyline points="3 6 5 6 21 6" />
+                                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                              </svg>
+                            </button>
+                          </div>
                         </div>
-                        <div className="profile-timeline-item-body">
-                          <span className="profile-timeline-comment">
-                            {tx.comment ? `"${tx.comment}"` : '—'}
-                          </span>
-                          <button
-                            className="profile-timeline-item-delete scale-active"
-                            onClick={() => {
-                              onDeleteTransaction(tx.id);
-                              showToast("Baholash harakati bekor qilindi!", "success");
-                            }}
-                          >
-                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                              <polyline points="3 6 5 6 21 6" />
-                              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-                            </svg>
-                          </button>
-                        </div>
-                      </div>
-                    );
-                  })
-                ) : (
-                  <p className="profile-timeline-empty">Hozircha baholash tarixi mavjud emas.</p>
+                      );
+                    })
+                  ) : (
+                    <p className="profile-timeline-empty">Hozircha baholash tarixi mavjud emas.</p>
+                  )}
+                </div>
+              </div>
+
+              <div className={`teacher-pin-detail-card ${profileStudent.pin ? 'is-protected' : 'is-open'}`}>
+                <div className="teacher-pin-detail-left">
+                  <div className="teacher-pin-detail-icon-wrap">
+                    {profileStudent.pin ? (
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                        <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                        <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                      </svg>
+                    ) : (
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                        <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                        <path d="M7 11V7a5 5 0 0 1 9.9-1" />
+                      </svg>
+                    )}
+                  </div>
+                  <div className="teacher-pin-detail-text">
+                    <span className="teacher-pin-detail-title">
+                      {profileStudent.pin ? "PIN-kod o'rnatilgan" : "PIN-kod belgilanmagan"}
+                    </span>
+                    <span className="teacher-pin-detail-subtitle">
+                      {profileStudent.pin 
+                        ? "O'quvchi o'z profiliga 4 xonali PIN bilan kiradi" 
+                        : "O'quvchi birinchi kirganida o'ziga PIN o'rnatadi"}
+                    </span>
+                  </div>
+                </div>
+                {profileStudent.pin && (onResetStudentPin || onResetStudentDevice) && (
+                  <button
+                    type="button"
+                    className="teacher-pin-reset-action-btn sm scale-active"
+                    onClick={() => {
+                      setPinResetTarget({ id: profileStudent.id, name: profileStudent.name });
+                    }}
+                    title="PIN-kodni bekor qilish"
+                  >
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+                      <path d="M3 3v5h5" />
+                    </svg>
+                    <span>PINni bekor qilish (Reset)</span>
+                  </button>
                 )}
               </div>
             </div>
 
-            <div className={`teacher-pin-detail-card ${profileStudent.pin ? 'is-protected' : 'is-open'}`}>
-              <div className="teacher-pin-detail-left">
-                <div className="teacher-pin-detail-icon-wrap">
-                  {profileStudent.pin ? (
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                      <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
-                      <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-                    </svg>
-                  ) : (
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                      <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
-                      <path d="M7 11V7a5 5 0 0 1 9.9-1" />
-                    </svg>
-                  )}
-                </div>
-                <div className="teacher-pin-detail-text">
-                  <span className="teacher-pin-detail-title">
-                    {profileStudent.pin ? "PIN-kod o'rnatilgan" : "PIN-kod belgilanmagan"}
-                  </span>
-                  <span className="teacher-pin-detail-subtitle">
-                    {profileStudent.pin 
-                      ? "O'quvchi o'z profiliga 4 xonali PIN bilan kiradi" 
-                      : "O'quvchi birinchi kirganida o'ziga PIN o'rnatadi"}
-                  </span>
-                </div>
-              </div>
-              {profileStudent.pin && (onResetStudentPin || onResetStudentDevice) && (
-                <button
-                  type="button"
-                  className="teacher-pin-reset-action-btn sm scale-active"
-                  onClick={() => {
-                    setPinResetTarget({ id: profileStudent.id, name: profileStudent.name });
-                  }}
-                  title="PIN-kodni bekor qilish"
-                >
-                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
-                    <path d="M3 3v5h5" />
-                  </svg>
-                  <span>PINni bekor qilish (Reset)</span>
-                </button>
-              )}
-            </div>
-
-            <div className="modal-actions">
+            <div className="modal-actions-fixed">
               <button className="btn btn-secondary scale-active" onClick={() => setProfileStudent(null)}>
                 Yopish
               </button>
@@ -1060,226 +1097,230 @@ const GroupDetail = ({ group, allGroups = [], students, transactions, quickTags,
                 <line x1="6" y1="6" x2="18" y2="18" />
               </svg>
             </button>
-            <h3 className="modal-title">Talaba Ma'lumotlarini Tahrirlash</h3>
+            <div className="modal-header-fixed">
+              <h3 className="modal-title">Talaba Ma'lumotlarini Tahrirlash</h3>
+            </div>
             <form onSubmit={handleEditStudentSubmit}>
-              <div className="form-group">
-                <label className="form-label">Talaba ismi va familiyasi</label>
-                <input
-                  type="text"
-                  className="form-input"
-                  placeholder="Masalan: Asadbek Karimov"
-                  value={editStudentName}
-                  onChange={(e) => setEditStudentName(e.target.value)}
-                  autoFocus
-                />
-              </div>
-
-              {/* SVG Avatar Picker Tabs */}
-              <div className="form-group">
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
-                  <label className="form-label" style={{ margin: 0 }}>Talaba Avatari</label>
-                  <div className="avatar-preview-badge" style={{ display: 'inline-flex', alignItems: 'center' }}>
-                    <span style={{ fontSize: '0.72rem', fontWeight: 800, textTransform: 'uppercase', marginRight: '6px' }}>Tanlandi:</span>
-                    <div className="avatar-circle" style={{ width: 32, height: 32, background: editStudentColor, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', padding: 0, border: '1px solid rgba(0,0,0,0.08)', borderRadius: 'var(--radius-sm)' }}>
-                      {renderAvatar(editStudentEmoji)}
-                    </div>
-                  </div>
-                </div>
-                <div className="avatar-tabs-header">
-                  <button type="button" className={`avatar-tab-btn ${editAvatarTab === 'gallery' ? 'active' : ''}`} onClick={() => setEditAvatarTab('gallery')}>Rasmlar</button>
-                  <button type="button" className={`avatar-tab-btn ${editAvatarTab === 'svg' ? 'active' : ''}`} onClick={() => setEditAvatarTab('svg')}>SVG Ikonkalar</button>
-                  <button type="button" className={`avatar-tab-btn ${editAvatarTab === 'file' ? 'active' : ''}`} onClick={() => setEditAvatarTab('file')}>Rasm yuklash</button>
-                </div>
-
-                {editAvatarTab === 'gallery' && (
-                  <div className="avatar-gallery-picker-grid">
-                    {AVATAR_GALLERY_IMAGES.map((img) => {
-                      const isSelected = editStudentEmoji === img.path || editStudentEmoji === img.cdnPath || (editStudentEmoji && editStudentEmoji.includes(img.name));
-                      return (
-                        <button
-                          key={img.id}
-                          type="button"
-                          className={`avatar-gallery-item-btn scale-active ${isSelected ? 'selected' : ''}`}
-                          onClick={() => setEditStudentEmoji(img.path)}
-                        >
-                          <img
-                            src={img.path}
-                            alt={img.label}
-                            loading="lazy"
-                            decoding="async"
-                            className="gallery-thumb-img"
-                            onError={(e) => {
-                              if (img.cdnPath && e.currentTarget.src !== img.cdnPath) {
-                                e.currentTarget.src = img.cdnPath;
-                              }
-                            }}
-                          />
-                          {isSelected && (
-                            <div className="gallery-selected-badge">
-                              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round">
-                                <polyline points="20 6 9 17 4 12" />
-                              </svg>
-                            </div>
-                          )}
-                        </button>
-                      );
-                    })}
-                  </div>
-                )}
-
-                {editAvatarTab === 'svg' && (
-                  <div className="student-svg-picker-grid">
-                    {STUDENT_AVATARS.map((item) => (
-                      <button
-                        key={item.id}
-                        type="button"
-                        className={`student-svg-btn scale-active ${editStudentEmoji === item.id ? 'selected' : ''}`}
-                        onClick={() => setEditStudentEmoji(item.id)}
-                      >
-                        {item.svg(26)}
-                      </button>
-                    ))}
-                  </div>
-                )}
-
-                {editAvatarTab === 'file' && (
-                  <div>
-                    <label className="form-label" style={{ fontSize: '0.75rem', opacity: 0.8 }}>Kompyuterdan rasm yuklash</label>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      className="form-input"
-                      onChange={async (e) => {
-                        const file = e.target.files[0];
-                        if (file) {
-                          try {
-                            const compressed = await compressUploadedImage(file);
-                            if (compressed) setEditStudentEmoji(compressed);
-                          } catch (err) {
-                            console.error('Failed to compress image:', err);
-                          }
-                        }
-                      }}
-                    />
-                  </div>
-                )}
-              </div>
-
-              {/* Color Picker */}
-              <div className="form-group">
-                <label className="form-label">Avatar Rangi</label>
-                <div className="color-picker-grid">
-                  {COLOR_OPTIONS.map((color) => (
-                    <button
-                      key={color.value}
-                      type="button"
-                      className={`color-btn ${editStudentColor === color.value ? 'selected' : ''}`}
-                      style={{ background: color.value }}
-                      onClick={() => setEditStudentColor(color.value)}
-                    />
-                  ))}
-                </div>
-              </div>
-
-              {/* Group selection */}
-              {userRole === 'teacher' && (allGroups || []).length > 1 && (
+              <div className="modal-body-scrollable">
                 <div className="form-group">
-                  <label className="form-label">Guruh</label>
-                  <select
+                  <label className="form-label">Talaba ismi va familiyasi</label>
+                  <input
+                    type="text"
                     className="form-input"
-                    value={editStudentGroupId}
-                    onChange={(e) => setEditStudentGroupId(e.target.value)}
-                    style={{ cursor: 'pointer', appearance: 'auto' }}
-                  >
-                    <option value={group.id}>{group.name} (Hozirgi guruh)</option>
-                    {otherGroups.map((g) => (
-                      <option key={g.id} value={g.id}>
-                        {g.name}
-                      </option>
-                    ))}
-                  </select>
-                  {editStudentGroupId !== group.id && (
-                    <p style={{ margin: '6px 0 0 0', fontSize: '0.8rem', color: 'var(--primary-color, #007AFF)' }}>
-                      ℹ️ Saqlash bosilgach, talaba ushbu guruhga ko'chiriladi.
-                    </p>
-                  )}
-                </div>
-              )}
-
-              {/* Device Binding Status & Reset (Teacher control) */}
-              <div className="form-group teacher-pin-management-group">
-                <div className="teacher-pin-group-header">
-                  <div className="teacher-pin-title-wrap">
-                    <span className="teacher-pin-title-icon">
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-                      </svg>
-                    </span>
-                    <span className="teacher-pin-title-text">Profil xavfsizligi (PIN-kod)</span>
-                  </div>
-                  {editingStudent.pin ? (
-                    <span className="teacher-pin-status-badge bound">
-                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                        <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
-                        <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-                      </svg>
-                      PIN o'rnatilgan
-                    </span>
-                  ) : (
-                    <span className="teacher-pin-status-badge unbound">
-                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                        <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
-                        <path d="M7 11V7a5 5 0 0 1 9.9-1" />
-                      </svg>
-                      PIN belgilanmagan
-                    </span>
-                  )}
+                    placeholder="Masalan: Asadbek Karimov"
+                    value={editStudentName}
+                    onChange={(e) => setEditStudentName(e.target.value)}
+                    autoFocus
+                  />
                 </div>
 
-                <div className="teacher-pin-card-box">
-                  {editingStudent.pin ? (
-                    <div className="teacher-pin-card-content">
-                      <div className="teacher-pin-info-col">
-                        <p className="teacher-pin-desc-text">
-                          O'quvchi ushbu profil uchun 4 xonali shaxsiy PIN-kod o'rnatgan. Boshqa o'quvchilar uning profiliga kira olmaydi.
-                        </p>
-                        <div className="teacher-pin-state-pill">
-                          <span className="teacher-pin-state-dot"></span>
-                          <span className="teacher-pin-state-label">Holat: <strong>PIN faol</strong></span>
-                        </div>
+                {/* SVG Avatar Picker Tabs */}
+                <div className="form-group">
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
+                    <label className="form-label" style={{ margin: 0 }}>Talaba Avatari</label>
+                    <div className="avatar-preview-badge" style={{ display: 'inline-flex', alignItems: 'center' }}>
+                      <span style={{ fontSize: '0.72rem', fontWeight: 800, textTransform: 'uppercase', marginRight: '6px' }}>Tanlandi:</span>
+                      <div className="avatar-circle" style={{ width: 32, height: 32, background: editStudentColor, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', padding: 0, border: '1px solid rgba(0,0,0,0.08)', borderRadius: 'var(--radius-sm)' }}>
+                        {renderAvatar(editStudentEmoji)}
                       </div>
-
-                      {(onResetStudentPin || onResetStudentDevice) && (
-                        <button
-                          type="button"
-                          className="teacher-pin-reset-action-btn scale-active"
-                          onClick={() => {
-                            setPinResetTarget({ id: editingStudent.id, name: editingStudent.name });
-                          }}
-                          title="PIN-kodni bekor qilish va begona qurilmalarni chiqarish"
-                        >
-                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
-                            <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
-                            <path d="M3 3v5h5" />
-                          </svg>
-                          <span>PINni bekor qilish (Reset)</span>
-                        </button>
-                      )}
                     </div>
-                  ) : (
-                    <div className="teacher-pin-empty-state">
-                      <p className="teacher-pin-desc-text">
-                        O'quvchi hali PIN-kod o'rnatmagan. Tizimga birinchi marta kirganida o'zi 4 xonali shaxsiy PIN tanlaydi.
-                      </p>
-                      <span className="teacher-pin-open-hint">
-                        Bitta qurilmadan faqat 1 ta o'quvchiga PIN o'rnatish cheklovi faol
-                      </span>
+                  </div>
+                  <div className="avatar-tabs-header">
+                    <button type="button" className={`avatar-tab-btn ${editAvatarTab === 'gallery' ? 'active' : ''}`} onClick={() => setEditAvatarTab('gallery')}>Rasmlar</button>
+                    <button type="button" className={`avatar-tab-btn ${editAvatarTab === 'svg' ? 'active' : ''}`} onClick={() => setEditAvatarTab('svg')}>SVG Ikonkalar</button>
+                    <button type="button" className={`avatar-tab-btn ${editAvatarTab === 'file' ? 'active' : ''}`} onClick={() => setEditAvatarTab('file')}>Rasm yuklash</button>
+                  </div>
+
+                  {editAvatarTab === 'gallery' && (
+                    <div className="avatar-gallery-picker-grid">
+                      {AVATAR_GALLERY_IMAGES.map((img) => {
+                        const isSelected = editStudentEmoji === img.path || editStudentEmoji === img.cdnPath || (editStudentEmoji && editStudentEmoji.includes(img.name));
+                        return (
+                          <button
+                            key={img.id}
+                            type="button"
+                            className={`avatar-gallery-item-btn scale-active ${isSelected ? 'selected' : ''}`}
+                            onClick={() => setEditStudentEmoji(img.path)}
+                          >
+                            <img
+                              src={img.path}
+                              alt={img.label}
+                              loading="lazy"
+                              decoding="async"
+                              className="gallery-thumb-img"
+                              onError={(e) => {
+                                if (img.cdnPath && e.currentTarget.src !== img.cdnPath) {
+                                  e.currentTarget.src = img.cdnPath;
+                                }
+                              }}
+                            />
+                            {isSelected && (
+                              <div className="gallery-selected-badge">
+                                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round">
+                                  <polyline points="20 6 9 17 4 12" />
+                                </svg>
+                              </div>
+                            )}
+                          </button>
+                        );
+                      })}
                     </div>
                   )}
+
+                  {editAvatarTab === 'svg' && (
+                    <div className="student-svg-picker-grid">
+                      {STUDENT_AVATARS.map((item) => (
+                        <button
+                          key={item.id}
+                          type="button"
+                          className={`student-svg-btn scale-active ${editStudentEmoji === item.id ? 'selected' : ''}`}
+                          onClick={() => setEditStudentEmoji(item.id)}
+                        >
+                          {item.svg(26)}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+
+                  {editAvatarTab === 'file' && (
+                    <div>
+                      <label className="form-label" style={{ fontSize: '0.75rem', opacity: 0.8 }}>Kompyuterdan rasm yuklash</label>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="form-input"
+                        onChange={async (e) => {
+                          const file = e.target.files[0];
+                          if (file) {
+                            try {
+                              const compressed = await compressUploadedImage(file);
+                              if (compressed) setEditStudentEmoji(compressed);
+                            } catch (err) {
+                              console.error('Failed to compress image:', err);
+                            }
+                          }
+                        }}
+                      />
+                    </div>
+                  )}
+                </div>
+
+                {/* Color Picker */}
+                <div className="form-group">
+                  <label className="form-label">Avatar Rangi</label>
+                  <div className="color-picker-grid">
+                    {COLOR_OPTIONS.map((color) => (
+                      <button
+                        key={color.value}
+                        type="button"
+                        className={`color-btn ${editStudentColor === color.value ? 'selected' : ''}`}
+                        style={{ background: color.value }}
+                        onClick={() => setEditStudentColor(color.value)}
+                      />
+                    ))}
+                  </div>
+                </div>
+
+                {/* Group selection */}
+                {userRole === 'teacher' && (allGroups || []).length > 1 && (
+                  <div className="form-group">
+                    <label className="form-label">Guruh</label>
+                    <select
+                      className="form-input"
+                      value={editStudentGroupId}
+                      onChange={(e) => setEditStudentGroupId(e.target.value)}
+                      style={{ cursor: 'pointer', appearance: 'auto' }}
+                    >
+                      <option value={group.id}>{group.name} (Hozirgi guruh)</option>
+                      {otherGroups.map((g) => (
+                        <option key={g.id} value={g.id}>
+                          {g.name}
+                        </option>
+                      ))}
+                    </select>
+                    {editStudentGroupId !== group.id && (
+                      <p style={{ margin: '6px 0 0 0', fontSize: '0.8rem', color: 'var(--primary-color, #007AFF)' }}>
+                        ℹ️ Saqlash bosilgach, talaba ushbu guruhga ko'chiriladi.
+                      </p>
+                    )}
+                  </div>
+                )}
+
+                {/* Device Binding Status & Reset (Teacher control) */}
+                <div className="form-group teacher-pin-management-group" style={{ marginBottom: 4 }}>
+                  <div className="teacher-pin-group-header">
+                    <div className="teacher-pin-title-wrap">
+                      <span className="teacher-pin-title-icon">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                        </svg>
+                      </span>
+                      <span className="teacher-pin-title-text">Profil xavfsizligi (PIN-kod)</span>
+                    </div>
+                    {editingStudent.pin ? (
+                      <span className="teacher-pin-status-badge bound">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                          <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                          <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                        </svg>
+                        PIN o'rnatilgan
+                      </span>
+                    ) : (
+                      <span className="teacher-pin-status-badge unbound">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                          <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                          <path d="M7 11V7a5 5 0 0 1 9.9-1" />
+                        </svg>
+                        PIN belgilanmagan
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="teacher-pin-card-box">
+                    {editingStudent.pin ? (
+                      <div className="teacher-pin-card-content">
+                        <div className="teacher-pin-info-col">
+                          <p className="teacher-pin-desc-text">
+                            O'quvchi ushbu profil uchun 4 xonali shaxsiy PIN-kod o'rnatgan. Boshqa o'quvchilar uning profiliga kira olmaydi.
+                          </p>
+                          <div className="teacher-pin-state-pill">
+                            <span className="teacher-pin-state-dot"></span>
+                            <span className="teacher-pin-state-label">Holat: <strong>PIN faol</strong></span>
+                          </div>
+                        </div>
+
+                        {(onResetStudentPin || onResetStudentDevice) && (
+                          <button
+                            type="button"
+                            className="teacher-pin-reset-action-btn scale-active"
+                            onClick={() => {
+                              setPinResetTarget({ id: editingStudent.id, name: editingStudent.name });
+                            }}
+                            title="PIN-kodni bekor qilish va begona qurilmalarni chiqarish"
+                          >
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+                              <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+                              <path d="M3 3v5h5" />
+                            </svg>
+                            <span>PINni bekor qilish (Reset)</span>
+                          </button>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="teacher-pin-empty-state">
+                        <p className="teacher-pin-desc-text">
+                          O'quvchi hali PIN-kod o'rnatmagan. Tizimga birinchi marta kirganida o'zi 4 xonali shaxsiy PIN tanlaydi.
+                        </p>
+                        <span className="teacher-pin-open-hint">
+                          Bitta qurilmadan faqat 1 ta o'quvchiga PIN o'rnatish cheklovi faol
+                        </span>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
 
-              <div className="modal-actions">
+              <div className="modal-actions-fixed">
                 <button type="button" className="btn btn-secondary scale-active" onClick={() => setEditingStudent(null)}>
                   Bekor qilish
                 </button>
@@ -1296,7 +1337,7 @@ const GroupDetail = ({ group, allGroups = [], students, transactions, quickTags,
       {/* Transfer Student Modal */}
       {transferringStudent && createPortal(
         <div className="modal-overlay" onClick={() => setTransferringStudent(null)}>
-          <div className="modal-content glass transfer-modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 440 }}>
+          <div className="modal-content glass transfer-modal" onClick={(e) => e.stopPropagation()}>
             <button 
               type="button" 
               className="modal-close-btn" 
@@ -1308,7 +1349,7 @@ const GroupDetail = ({ group, allGroups = [], students, transactions, quickTags,
               </svg>
             </button>
 
-            <div style={{ textAlign: 'center', marginBottom: 16 }}>
+            <div className="modal-header-fixed" style={{ textAlign: 'center', paddingRight: 0 }}>
               <div 
                 className="avatar-circle" 
                 style={{ 
@@ -1334,65 +1375,67 @@ const GroupDetail = ({ group, allGroups = [], students, transactions, quickTags,
 
             {otherGroups.length > 0 ? (
               <form onSubmit={handleTransferSubmit}>
-                <div className="form-group" style={{ marginBottom: 16 }}>
-                  <label className="form-label" style={{ marginBottom: 8 }}>Yangi guruhni tanlang:</label>
-                  <div className="transfer-groups-grid" style={{ display: 'flex', flexDirection: 'column', gap: 8, maxHeight: 220, overflowY: 'auto', paddingRight: 4 }}>
-                    {otherGroups.map((g) => {
-                      const isSelected = targetGroupId === g.id;
-                      return (
-                        <div
-                          key={g.id}
-                          onClick={() => setTargetGroupId(g.id)}
-                          className="scale-active"
-                          style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: 12,
-                            padding: '10px 14px',
-                            borderRadius: 'var(--radius-md)',
-                            border: isSelected ? '2px solid var(--accent-color, #007AFF)' : '1px solid var(--border-color)',
-                            background: isSelected ? 'var(--bg-segment, rgba(0,122,255,0.06))' : 'var(--bg-card, #FFFFFF)',
-                            cursor: 'pointer',
-                            transition: 'all 0.15s ease'
-                          }}
-                        >
-                          <div 
-                            style={{ 
-                              width: 32, 
-                              height: 32, 
-                              borderRadius: 'var(--radius-sm)', 
-                              background: 'var(--bg-segment, #F5F5F7)', 
-                              display: 'flex', 
-                              alignItems: 'center', 
-                              justifyContent: 'center',
-                              flexShrink: 0
+                <div className="modal-body-scrollable">
+                  <div className="form-group" style={{ marginBottom: 16 }}>
+                    <label className="form-label" style={{ marginBottom: 8 }}>Yangi guruhni tanlang:</label>
+                    <div className="transfer-groups-grid" style={{ display: 'flex', flexDirection: 'column', gap: 8, paddingRight: 4 }}>
+                      {otherGroups.map((g) => {
+                        const isSelected = targetGroupId === g.id;
+                        return (
+                          <div
+                            key={g.id}
+                            onClick={() => setTargetGroupId(g.id)}
+                            className="scale-active"
+                            style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: 12,
+                              padding: '10px 14px',
+                              borderRadius: 'var(--radius-md)',
+                              border: isSelected ? '2px solid var(--accent-color, #007AFF)' : '1px solid var(--border-color)',
+                              background: isSelected ? 'var(--bg-segment, rgba(0,122,255,0.06))' : 'var(--bg-card, #FFFFFF)',
+                              cursor: 'pointer',
+                              transition: 'all 0.15s ease'
                             }}
                           >
-                            {renderGroupIcon(g.icon, 16)}
-                          </div>
-                          <div style={{ flex: 1, minWidth: 0 }}>
-                            <div style={{ fontWeight: 600, fontSize: '0.95rem', color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                              {g.name}
+                            <div 
+                              style={{ 
+                                width: 32, 
+                                height: 32, 
+                                borderRadius: 'var(--radius-sm)', 
+                                background: 'var(--bg-segment, #F5F5F7)', 
+                                display: 'flex', 
+                                alignItems: 'center', 
+                                justifyContent: 'center',
+                                flexShrink: 0
+                              }}
+                            >
+                              {renderGroupIcon(g.icon, 16)}
                             </div>
-                          </div>
-                          {isSelected && (
-                            <div style={{ color: 'var(--accent-color, #007AFF)', display: 'flex', alignItems: 'center' }}>
-                              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                                <polyline points="20 6 9 17 4 12" />
-                              </svg>
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                              <div style={{ fontWeight: 600, fontSize: '0.95rem', color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                {g.name}
+                              </div>
                             </div>
-                          )}
-                        </div>
-                      );
-                    })}
+                            {isSelected && (
+                              <div style={{ color: 'var(--accent-color, #007AFF)', display: 'flex', alignItems: 'center' }}>
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                                  <polyline points="20 6 9 17 4 12" />
+                                </svg>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  <div className="transfer-info-box" style={{ padding: '10px 12px', background: 'var(--bg-segment, #F5F5F7)', borderRadius: 'var(--radius-md)', fontSize: '0.82rem', color: 'var(--text-secondary)', marginBottom: 8 }}>
+                    💡 Talabaning to'plagan barcha Like'lari va tranzaksiyalari yangi guruh reytingiga to'liq o'tadi.
                   </div>
                 </div>
 
-                <div className="transfer-info-box" style={{ padding: '10px 12px', background: 'var(--bg-segment, #F5F5F7)', borderRadius: 'var(--radius-md)', fontSize: '0.82rem', color: 'var(--text-secondary)', marginBottom: 20 }}>
-                  💡 Talabaning to'plagan barcha Like'lari va tranzaksiyalari yangi guruh reytingiga to'liq o'tadi.
-                </div>
-
-                <div className="modal-actions">
+                <div className="modal-actions-fixed">
                   <button type="button" className="btn btn-secondary scale-active" onClick={() => setTransferringStudent(null)}>
                     Bekor qilish
                   </button>
@@ -1406,9 +1449,11 @@ const GroupDetail = ({ group, allGroups = [], students, transactions, quickTags,
                 <p style={{ color: 'var(--text-secondary)', fontSize: '0.92rem', marginBottom: 20 }}>
                   Talabani ko'chirish uchun tizimda kamida 2 ta guruh bo'lishi kerak. Boshqa faol guruhlar topilmadi.
                 </p>
-                <button type="button" className="btn btn-secondary scale-active" onClick={() => setTransferringStudent(null)}>
-                  Yopish
-                </button>
+                <div className="modal-actions-fixed" style={{ justifyContent: 'center' }}>
+                  <button type="button" className="btn btn-secondary scale-active" onClick={() => setTransferringStudent(null)}>
+                    Yopish
+                  </button>
+                </div>
               </div>
             )}
           </div>
@@ -1419,7 +1464,7 @@ const GroupDetail = ({ group, allGroups = [], students, transactions, quickTags,
       {/* Category Change Modal (Pop oyna) */}
       {showCategoryModal && createPortal(
         <div className="modal-overlay" onClick={() => setShowCategoryModal(false)}>
-          <div className="modal-content glass" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '400px' }}>
+          <div className="modal-content glass modal-confirm" onClick={(e) => e.stopPropagation()}>
             <button
               type="button"
               className="modal-close-btn"
@@ -1491,7 +1536,7 @@ const GroupDetail = ({ group, allGroups = [], students, transactions, quickTags,
           onClick={() => setPinResetTarget(null)}
         >
           <div 
-            className="modal-content glass pin-reset-modal-content" 
+            className="modal-content glass pin-reset-modal-content modal-confirm" 
             onClick={(e) => e.stopPropagation()}
             role="dialog"
             aria-modal="true"
@@ -2022,11 +2067,17 @@ const GroupDetail = ({ group, allGroups = [], students, transactions, quickTags,
         /* Score Modal Styles */
         .score-modal {
           max-width: 440px;
-          padding: 20px 22px;
+          width: 100%;
+          padding: 22px 24px;
+          display: flex;
+          flex-direction: column;
+          max-height: min(620px, calc(100dvh - 48px));
+          overflow: hidden;
         }
 
         .score-modal.has-quick-tags {
-          max-width: 620px;
+          max-width: 640px;
+          width: 100%;
           padding: 22px 24px;
         }
 
@@ -2034,14 +2085,39 @@ const GroupDetail = ({ group, allGroups = [], students, transactions, quickTags,
           display: flex;
           flex-direction: column;
           gap: 16px;
+          flex: 1 1 auto;
+          min-height: 0;
+          overflow-y: auto;
+          overflow-x: hidden;
+          overscroll-behavior: contain;
+          padding-right: 2px;
+        }
+
+        .score-modal-body::-webkit-scrollbar {
+          width: 5px;
+        }
+
+        .score-modal-body::-webkit-scrollbar-track {
+          background: transparent;
+        }
+
+        .score-modal-body::-webkit-scrollbar-thumb {
+          background: rgba(0, 0, 0, 0.15);
+          border-radius: 999px;
+        }
+
+        [data-theme="dark"] .score-modal-body::-webkit-scrollbar-thumb {
+          background: rgba(255, 255, 255, 0.2);
         }
 
         @media (min-width: 769px) {
           .score-modal.has-quick-tags .score-modal-body {
             display: grid;
-            grid-template-columns: 1fr 1.2fr;
+            grid-template-columns: 1fr 1.15fr;
             gap: 20px;
-            align-items: start;
+            align-items: stretch;
+            overflow-y: hidden;
+            padding-bottom: 4px;
           }
         }
 
@@ -2049,20 +2125,37 @@ const GroupDetail = ({ group, allGroups = [], students, transactions, quickTags,
           display: flex;
           flex-direction: column;
           gap: 12px;
+          min-width: 0;
         }
 
         .score-modal-right {
           display: flex;
           flex-direction: column;
-          gap: 10px;
+          gap: 8px;
           border-left: 1px solid var(--border-color);
           padding-left: 18px;
+          min-width: 0;
+          overflow: hidden;
+        }
+
+        .score-modal-right-header {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          padding-right: 36px;
+          min-height: 24px;
         }
 
         @media (max-width: 768px) {
-          .score-modal {
+          .score-modal,
+          .score-modal.has-quick-tags {
             max-width: 100%;
-            padding: 16px 16px !important;
+            padding: 16px 16px 20px !important;
+          }
+
+          .score-modal-body {
+            overflow-y: auto !important;
+            padding-bottom: 8px;
           }
 
           .score-modal-right {
@@ -2071,6 +2164,15 @@ const GroupDetail = ({ group, allGroups = [], students, transactions, quickTags,
             border-top: 1px dashed var(--border-color);
             padding-top: 12px;
             margin-top: 4px;
+          }
+
+          .score-modal-right-header {
+            padding-right: 0;
+          }
+
+          .quick-tags-list {
+            max-height: 200px;
+            padding-bottom: 12px !important;
           }
         }
 
@@ -2093,17 +2195,20 @@ const GroupDetail = ({ group, allGroups = [], students, transactions, quickTags,
         .quick-tags-list {
           display: flex;
           flex-direction: column;
-          gap: 6px;
-          max-height: 220px;
+          gap: 8px;
+          max-height: 260px;
+          flex: 1 1 auto;
           overflow-y: auto;
-          padding: 2px 2px 2px 0;
+          overflow-x: hidden;
+          padding: 2px 6px 14px 2px;
+          overscroll-behavior: contain;
         }
 
         .quick-tag-card {
           display: flex;
           justify-content: space-between;
           align-items: center;
-          gap: 8px;
+          gap: 10px;
           padding: 8px 12px;
           background: #FFFFFF;
           border: 1px solid rgba(0, 0, 0, 0.08);
@@ -2115,7 +2220,9 @@ const GroupDetail = ({ group, allGroups = [], students, transactions, quickTags,
           font-weight: 600;
           text-align: left;
           color: var(--text-primary);
-          white-space: nowrap;
+          width: 100%;
+          min-width: 0;
+          box-sizing: border-box;
           transition: all var(--transition-fast);
           touch-action: manipulation;
         }
@@ -2130,7 +2237,16 @@ const GroupDetail = ({ group, allGroups = [], students, transactions, quickTags,
           border-color: #1D1D1F;
         }
 
+        .quick-tag-text {
+          flex: 1 1 auto;
+          min-width: 0;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+        }
+
         .quick-tag-badge {
+          flex-shrink: 0;
           font-size: 0.76rem;
           font-weight: 700;
           padding: 2px 8px;
@@ -2178,12 +2294,14 @@ const GroupDetail = ({ group, allGroups = [], students, transactions, quickTags,
         }
 
         .student-modal {
-          max-width: 480px;
+          max-width: 500px;
+          width: 100%;
         }
 
         /* Profile Modal styles */
         .profile-modal {
-          max-width: 460px;
+          max-width: 500px;
+          width: 100%;
           padding: 24px;
         }
 

@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { extractGroupDays, extractGroupTimes } from '../../utils/scheduleUtils';
+import { extractGroupDays, extractGroupTimes, isStudentTargetedByExtraLesson } from '../../utils/scheduleUtils';
 
 const DAY_NAMES_UZ = {
   mon: 'Dushanba',
@@ -32,8 +32,8 @@ const formatDaysList = (days = []) => {
   return sorted.map((d) => DAY_NAMES_UZ[d] || d).join(', ');
 };
 
-const calculateNextLesson = (group) => {
-  if (!group) return { text: 'Belgilanmagan', isToday: false, isLive: false };
+const calculateNextLesson = (group, extraLessons = [], studentId = null) => {
+  if (!group) return { text: 'Belgilanmagan', isToday: false, isLive: false, isExtra: false };
   const schedule = group.schedule;
   const days = extractGroupDays(group);
   const times = extractGroupTimes(group);
@@ -52,44 +52,130 @@ const calculateNextLesson = (group) => {
     endTime = `${h}:${m}`;
   }
 
-  if (days.length === 0 || !startTime) {
-    return { text: 'Belgilanmagan', isToday: false, isLive: false };
-  }
-
   const now = new Date();
   const currentDayIdx = now.getDay();
   const currentKey = DAY_ORDER[currentDayIdx];
+  const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
   const currentTimeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
 
-  // Check today
-  if (days.includes(currentKey)) {
-    if (currentTimeStr < startTime) {
-      return { text: `Bugun soat ${startTime} da`, isToday: true, isLive: false };
-    }
-    if (endTime && currentTimeStr <= endTime) {
-      return { text: `Dars vaqti davom etmoqda (${startTime} — ${endTime})`, isToday: true, isLive: true };
-    }
-    if (!endTime && currentTimeStr <= startTime) {
-      return { text: `Bugun soat ${startTime} da`, isToday: true, isLive: false };
-    }
-  }
+  // 1. Check for upcoming or active Extra Lessons
+  let earliestExtra = null;
+  let earliestExtraDateTime = null;
 
-  // Check upcoming days within next week
-  for (let offset = 1; offset <= 7; offset++) {
-    const nextIdx = (currentDayIdx + offset) % 7;
-    const nextKey = DAY_ORDER[nextIdx];
-    if (days.includes(nextKey)) {
-      if (offset === 1) {
-        return { text: `Ertaga soat ${startTime} da`, isToday: false, isLive: false };
+  if (Array.isArray(extraLessons) && extraLessons.length > 0 && group.id) {
+    const groupExtras = extraLessons
+      .filter((el) => {
+        if (!el || String(el.groupId) !== String(group.id) || el.date < todayStr) return false;
+        if (studentId && !isStudentTargetedByExtraLesson(el, studentId)) return false;
+        return true;
+      })
+      .sort((a, b) => {
+        const c = (a.date || '').localeCompare(b.date || '');
+        if (c !== 0) return c;
+        return (a.startTime || '').localeCompare(b.startTime || '');
+      });
+
+    for (const el of groupExtras) {
+      const elStartTime = el.startTime || '15:30';
+      const elEndTime = el.endTime || '';
+      if (el.date === todayStr) {
+        if (currentTimeStr < elStartTime) {
+          earliestExtra = { el, isToday: true, isLive: false };
+          earliestExtraDateTime = `${el.date}T${elStartTime}`;
+          break;
+        } else if (elEndTime && currentTimeStr <= elEndTime) {
+          earliestExtra = { el, isToday: true, isLive: true };
+          earliestExtraDateTime = `${el.date}T${elStartTime}`;
+          break;
+        }
+      } else {
+        earliestExtra = { el, isToday: false, isLive: false };
+        earliestExtraDateTime = `${el.date}T${elStartTime}`;
+        break;
       }
-      return { text: `${DAY_NAMES_UZ[nextKey]} soat ${startTime} da`, isToday: false, isLive: false };
     }
   }
 
-  return { text: 'Belgilanmagan', isToday: false, isLive: false };
+  // 2. Check regular schedule next lesson
+  let regularNext = null;
+  let regularNextDateTime = null;
+
+  if (days.length > 0 && startTime) {
+    if (days.includes(currentKey)) {
+      if (currentTimeStr < startTime) {
+        regularNext = { text: `Bugun soat ${startTime} da`, isToday: true, isLive: false };
+        regularNextDateTime = `${todayStr}T${startTime}`;
+      } else if (endTime && currentTimeStr <= endTime) {
+        regularNext = { text: `Dars vaqti davom etmoqda (${startTime} — ${endTime})`, isToday: true, isLive: true };
+        regularNextDateTime = `${todayStr}T${startTime}`;
+      } else if (!endTime && currentTimeStr <= startTime) {
+        regularNext = { text: `Bugun soat ${startTime} da`, isToday: true, isLive: false };
+        regularNextDateTime = `${todayStr}T${startTime}`;
+      }
+    }
+
+    if (!regularNext) {
+      for (let offset = 1; offset <= 7; offset++) {
+        const nextIdx = (currentDayIdx + offset) % 7;
+        const nextKey = DAY_ORDER[nextIdx];
+        if (days.includes(nextKey)) {
+          const nextDate = new Date(now);
+          nextDate.setDate(now.getDate() + offset);
+          const nextDateStr = `${nextDate.getFullYear()}-${String(nextDate.getMonth() + 1).padStart(2, '0')}-${String(nextDate.getDate()).padStart(2, '0')}`;
+          regularNextDateTime = `${nextDateStr}T${startTime}`;
+
+          if (offset === 1) {
+            regularNext = { text: `Ertaga soat ${startTime} da`, isToday: false, isLive: false };
+          } else {
+            regularNext = { text: `${DAY_NAMES_UZ[nextKey]} soat ${startTime} da`, isToday: false, isLive: false };
+          }
+          break;
+        }
+      }
+    }
+  }
+
+  // 3. Compare and prioritize Extra Lesson if it's sooner or active
+  if (earliestExtra) {
+    if (earliestExtra.isLive) {
+      return {
+        text: `Qo'shimcha dars davom etmoqda (${earliestExtra.el.startTime} — ${earliestExtra.el.endTime})`,
+        isToday: true,
+        isLive: true,
+        isExtra: true,
+        extraLesson: earliestExtra.el,
+      };
+    }
+
+    const isExtraSooner = !regularNextDateTime || (earliestExtraDateTime && earliestExtraDateTime <= regularNextDateTime);
+    if (isExtraSooner) {
+      let dateLabel = earliestExtra.isToday ? "Bugun" : earliestExtra.el.date;
+      if (!earliestExtra.isToday) {
+        const parts = earliestExtra.el.date.split('-');
+        if (parts.length === 3) {
+          const dt = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
+          const dayName = DAY_NAMES_UZ[DAY_ORDER[dt.getDay()]] || '';
+          dateLabel = `${dayName} (${parts[2]}-${parts[1]})`;
+        }
+      }
+      return {
+        text: `${dateLabel} soat ${earliestExtra.el.startTime} da`,
+        isToday: earliestExtra.isToday,
+        isLive: false,
+        isExtra: true,
+        extraLesson: earliestExtra.el,
+      };
+    }
+  }
+
+  if (regularNext) {
+    return { ...regularNext, isExtra: false };
+  }
+
+  return { text: 'Belgilanmagan', isToday: false, isLive: false, isExtra: false };
 };
 
-export default function StudentScheduleCard({ group }) {
+export default function StudentScheduleCard({ group, extraLessons = [], studentId = null }) {
   const schedule = group?.schedule;
   const extractedDays = useMemo(() => extractGroupDays(group), [group]);
   const times = useMemo(() => extractGroupTimes(group), [group]);
@@ -116,15 +202,19 @@ export default function StudentScheduleCard({ group }) {
   }, [schedule?.startTime, schedule?.endTime, times]);
 
   const nextLessonInfo = useMemo(() => {
-    return calculateNextLesson(group);
-  }, [group]);
+    return calculateNextLesson(group, extraLessons, studentId);
+  }, [group, extraLessons, studentId]);
 
   return (
-    <div className="native-schedule-card" id="student-schedule-card">
+    <div className={`native-schedule-card ${nextLessonInfo.isExtra ? 'has-extra-lesson' : ''}`} id="student-schedule-card">
       {/* Dynamic Status Strip */}
-      <div className={`native-schedule-strip ${nextLessonInfo.isLive ? 'is-live' : nextLessonInfo.isToday ? 'is-today' : ''}`}>
+      <div className={`native-schedule-strip ${nextLessonInfo.isExtra ? 'is-extra-lesson' : ''} ${nextLessonInfo.isLive ? 'is-live' : nextLessonInfo.isToday ? 'is-today' : ''}`}>
         <span className="schedule-status-eyebrow">
-          {nextLessonInfo.isLive ? "DARS DAVOM ETMOQDA" : "KEYINGI DARS"}
+          {nextLessonInfo.isExtra
+            ? (nextLessonInfo.extraLesson?.targetType === 'custom'
+                ? (nextLessonInfo.isLive ? "⚡ SHAXSIY EXTRA LESSON • DARS DAVOM ETMOQDA" : "⚡ SIZ UCHUN ALOHIDA EXTRA LESSON")
+                : (nextLessonInfo.isLive ? "⚡ EXTRA LESSON • DARS DAVOM ETMOQDA" : "⚡ EXTRA LESSON • QO'SHIMCHA DARS"))
+            : (nextLessonInfo.isLive ? "DARS DAVOM ETMOQDA" : "KEYINGI DARS")}
         </span>
         <span className="schedule-status-time">{nextLessonInfo.text}</span>
       </div>
@@ -153,6 +243,33 @@ export default function StudentScheduleCard({ group }) {
         })}
       </div>
 
+      {/* Extra Lesson Detail Callout if upcoming extra lesson exists */}
+      {nextLessonInfo.isExtra && nextLessonInfo.extraLesson && (
+        <div className="student-extra-card-callout">
+          <div className="extra-callout-header">
+            <span className={`extra-callout-badge ${nextLessonInfo.extraLesson.targetType === 'custom' ? 'personal' : ''}`}>
+              {nextLessonInfo.extraLesson.targetType === 'custom'
+                ? "⚡ Siz uchun alohida dars"
+                : "⚡ Belgilangan Qo'shimcha Dars"}
+            </span>
+            <span className="extra-callout-time">
+              {nextLessonInfo.extraLesson.startTime} - {nextLessonInfo.extraLesson.endTime}
+            </span>
+          </div>
+          {nextLessonInfo.extraLesson.topic && (
+            <div className="extra-callout-topic">
+              <span className="extra-topic-icon">🎯</span>
+              <span><strong>Mavzu:</strong> {nextLessonInfo.extraLesson.topic}</span>
+            </div>
+          )}
+          {nextLessonInfo.extraLesson.room && (
+            <div className="extra-callout-room">
+              <span>📍 <strong>Xona:</strong> {nextLessonInfo.extraLesson.room}</span>
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Key Details */}
       <div className="native-schedule-meta-grid">
         <div className="schedule-meta-box">
@@ -160,7 +277,7 @@ export default function StudentScheduleCard({ group }) {
           <span className="meta-value">{timeText}</span>
         </div>
         <div className="schedule-meta-box">
-          <span className="meta-label">Dars kunlari</span>
+          <span className="meta-label">Doimiy kunlar</span>
           <span className="meta-value" title={daysText}>{daysText}</span>
         </div>
       </div>

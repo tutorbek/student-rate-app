@@ -3,6 +3,8 @@ import { createPortal } from 'react-dom';
 import { getStudentScore, getStartOfToday, getStartOfMonth, getStartOfLastMonth, getEndOfLastMonth, getGroupCategory } from '../utils/db';
 import { getCurrentActiveLessonGroup, isGroupLessonActive } from '../utils/scheduleUtils';
 import { renderAvatar } from '../utils/studentAvatars';
+import ProjectLikeIcon from './common/ProjectLikeIcon';
+import useModalDismiss from '../hooks/useModalDismiss';
 
 const IconTrophy = ({ size = 15 }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
@@ -62,14 +64,15 @@ const Leaderboard = ({
   allActiveTransactions,
   userRole,
   onDeleteTransaction,
-  showToast
+  showToast,
+  extraLessons = [],
 }) => {
   const [activeTab, setActiveTab] = useState('standings'); // 'standings' | 'history'
   const hasUserManuallySelectedGroupRef = useRef(false);
 
   // Smart initial timeframe: If active lesson is ongoing OR if points were already awarded today, default to 'today', otherwise 'month'
   const [timeframe, setTimeframe] = useState(() => {
-    const activeLesson = getCurrentActiveLessonGroup(groups);
+    const activeLesson = getCurrentActiveLessonGroup(groups, new Date(), 5, extraLessons);
     if (activeLesson) return 'today';
     const startOfToday = getStartOfToday();
     const hasTodayTx = (transactions || []).some((tx) => !tx.deleted && new Date(tx.timestamp) >= startOfToday);
@@ -80,10 +83,10 @@ const Leaderboard = ({
     if (userRole === 'student') {
       return 'top10_all';
     }
-    const activeLesson = getCurrentActiveLessonGroup(groups);
+    const activeLesson = getCurrentActiveLessonGroup(groups, new Date(), 5, extraLessons);
     if (activeLesson) return activeLesson.id;
     return 'all';
-  }, [userRole, groups]);
+  }, [userRole, groups, extraLessons]);
 
   const [selectedGroupId, setSelectedGroupId] = useState(initialGroupId);
   const [selectedHistoryStudentId, setSelectedHistoryStudentId] = useState('all');
@@ -95,7 +98,7 @@ const Leaderboard = ({
       return;
     }
     if (!hasUserManuallySelectedGroupRef.current) {
-      const activeLesson = getCurrentActiveLessonGroup(groups);
+      const activeLesson = getCurrentActiveLessonGroup(groups, new Date(), 5, extraLessons);
       if (activeLesson) {
         setSelectedGroupId(activeLesson.id);
         setTimeframe('today');
@@ -103,7 +106,7 @@ const Leaderboard = ({
         setSelectedGroupId((prev) => prev || 'all');
       }
     }
-  }, [userRole, groups]);
+  }, [userRole, groups, extraLessons]);
 
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isHistoryStudentDropdownOpen, setIsHistoryStudentDropdownOpen] = useState(false);
@@ -213,11 +216,12 @@ const Leaderboard = ({
     return map;
   }, [activeTransactionsPool, timeframe]);
 
+  useModalDismiss(Boolean(confirmDeleteTxId), () => setConfirmDeleteTxId(null));
+  useModalDismiss(Boolean(profileStudent), () => setSelectedProfileStudent(null));
+
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (e.key === 'Escape') {
-        setSelectedProfileStudent(null);
-        setConfirmDeleteTxId(null);
         setIsDropdownOpen(false);
         setIsHistoryStudentDropdownOpen(false);
         setIsTimeframeDropdownOpen(false);
@@ -697,7 +701,9 @@ const Leaderboard = ({
           <div className="glass-card standings-card">
             {timeframe === 'today' && !hasAnyPoints && (
               <div className="leaderboard-today-empty-banner">
-                <div className="banner-icon">⭐</div>
+                <div className="banner-icon">
+                  <ProjectLikeIcon size={30} glow />
+                </div>
                 <div className="banner-content">
                   <div className="banner-title">Bugungi darsda hali Like'lar berilmadi</div>
                   <div className="banner-desc">
@@ -710,7 +716,10 @@ const Leaderboard = ({
               <span className="th-rank">O'rin</span>
               <span className="th-student">Talaba</span>
               <span className="th-group">Guruh</span>
-              <span className="th-score text-right">Like'lar</span>
+              <span className="th-score text-right" style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'flex-end', gap: '4px' }}>
+                <ProjectLikeIcon size={13} />
+                <span>Like'lar</span>
+              </span>
             </div>
             <div className="standings-body">
               {standings.map((student) => {
@@ -760,8 +769,9 @@ const Leaderboard = ({
                     <span className="td-group">
                       <span className="group-name-text">{student.groupName}</span>
                     </span>
-                    <span className={`td-score text-right font-bold ${student.score >= 0 ? 'text-positive' : 'text-negative'}`}>
-                      {student.score >= 0 ? `+${student.score}` : student.score}
+                    <span className={`td-score text-right font-bold ${student.score >= 0 ? 'text-positive' : 'text-negative'}`} style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'flex-end', gap: '3px' }}>
+                      <ProjectLikeIcon size={12} />
+                      <span>{student.score >= 0 ? `+${student.score}` : student.score}</span>
                     </span>
                   </div>
                 );
@@ -788,7 +798,10 @@ const Leaderboard = ({
                   <span className="th-student">Talaba</span>
                   <span className="th-group">Guruh</span>
                   <span className="th-comment">Izoh</span>
-                  <span className="th-amount text-right">Like</span>
+                  <span className="th-amount text-right" style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'flex-end', gap: '3px' }}>
+                    <ProjectLikeIcon size={12} />
+                    <span>Like</span>
+                  </span>
                   {userRole !== 'student' && <span className="th-action text-right">Amal</span>}
                 </div>
                 <div className="history-body">
@@ -813,8 +826,9 @@ const Leaderboard = ({
                         <span className="td-comment">
                           {tx.comment ? `"${tx.comment}"` : <span className="no-comment">—</span>}
                         </span>
-                        <span className={`td-amount text-right font-bold ${tx.amount >= 0 ? 'text-positive' : 'text-negative'}`}>
-                          {tx.amount >= 0 ? `+${tx.amount}` : tx.amount}
+                        <span className={`td-amount text-right font-bold ${tx.amount >= 0 ? 'text-positive' : 'text-negative'}`} style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'flex-end', gap: '3px' }}>
+                          <ProjectLikeIcon size={12} />
+                          <span>{tx.amount >= 0 ? `+${tx.amount}` : tx.amount}</span>
                         </span>
                         {userRole !== 'student' && (
                           <span className="td-action text-right">
@@ -852,8 +866,9 @@ const Leaderboard = ({
                             <span className="history-mobile-group-tag">{tx.groupName}</span>
                           </div>
                         </div>
-                        <span className={`history-mobile-score font-bold ${tx.amount >= 0 ? 'text-positive' : 'text-negative'}`}>
-                          {tx.amount >= 0 ? `+${tx.amount}` : tx.amount}
+                        <span className={`history-mobile-score font-bold ${tx.amount >= 0 ? 'text-positive' : 'text-negative'}`} style={{ display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
+                          <ProjectLikeIcon size={12} />
+                          <span>{tx.amount >= 0 ? `+${tx.amount}` : tx.amount}</span>
                         </span>
                       </div>
 
@@ -906,7 +921,7 @@ const Leaderboard = ({
 
       {confirmDeleteTxId && createPortal(
         <div className="modal-overlay" onClick={() => setConfirmDeleteTxId(null)}>
-          <div className="modal-content glass" onClick={(e) => e.stopPropagation()}>
+          <div className="modal-content modal-confirm glass" onClick={(e) => e.stopPropagation()}>
             <button 
               type="button" 
               className="modal-close-btn" 
@@ -950,80 +965,95 @@ const Leaderboard = ({
                 <line x1="6" y1="6" x2="18" y2="18" />
               </svg>
             </button>
-            <div className="profile-modal-header">
-              <div className="avatar-circle profile-avatar" style={{ background: profileStudent.color, overflow: 'hidden' }}>
-                {renderAvatar(profileStudent.emoji)}
+            <div className="modal-body-scrollable">
+              <div className="profile-modal-header">
+                <div className="avatar-circle profile-avatar" style={{ background: profileStudent.color, overflow: 'hidden' }}>
+                  {renderAvatar(profileStudent.emoji)}
+                </div>
+                <h3 className="profile-modal-name">{profileStudent.name}</h3>
+                <p className="profile-modal-group">{(groupNameMap.get(profileStudent.groupId) || 'Guruhsiz')} Guruhi</p>
               </div>
-              <h3 className="profile-modal-name">{profileStudent.name}</h3>
-              <p className="profile-modal-group">{(groupNameMap.get(profileStudent.groupId) || 'Guruhsiz')} Guruhi</p>
-            </div>
 
-            <div className="profile-stats-grid">
-              <div className="profile-stat-box">
-                <span className="profile-stat-val">{getStudentScore(activeTransactionsPool, profileStudent.id, 'today')}</span>
-                <span className="profile-stat-lbl">Bugun</span>
+              <div className="profile-stats-grid">
+                <div className="profile-stat-box">
+                  <span className="profile-stat-val" style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>
+                    <ProjectLikeIcon size={14} />
+                    <span>{getStudentScore(activeTransactionsPool, profileStudent.id, 'today')}</span>
+                  </span>
+                  <span className="profile-stat-lbl">Bugun</span>
+                </div>
+                <div className="profile-stat-box">
+                  <span className="profile-stat-val" style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>
+                    <ProjectLikeIcon size={14} />
+                    <span>{getStudentScore(activeTransactionsPool, profileStudent.id, 'month')}</span>
+                  </span>
+                  <span className="profile-stat-lbl">Bu Oy</span>
+                </div>
+                <div className="profile-stat-box">
+                  <span className="profile-stat-val" style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>
+                    <ProjectLikeIcon size={14} />
+                    <span>{getStudentScore(activeTransactionsPool, profileStudent.id, 'lastMonth')}</span>
+                  </span>
+                  <span className="profile-stat-lbl">O'tgan Oy</span>
+                </div>
+                <div className="profile-stat-box">
+                  <span className="profile-stat-val" style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>
+                    <ProjectLikeIcon size={14} />
+                    <span>{getStudentScore(activeTransactionsPool, profileStudent.id, 'all')}</span>
+                  </span>
+                  <span className="profile-stat-lbl">Kurs Davomida</span>
+                </div>
               </div>
-              <div className="profile-stat-box">
-                <span className="profile-stat-val">{getStudentScore(activeTransactionsPool, profileStudent.id, 'month')}</span>
-                <span className="profile-stat-lbl">Bu Oy</span>
-              </div>
-              <div className="profile-stat-box">
-                <span className="profile-stat-val">{getStudentScore(activeTransactionsPool, profileStudent.id, 'lastMonth')}</span>
-                <span className="profile-stat-lbl">O'tgan Oy</span>
-              </div>
-              <div className="profile-stat-box">
-                <span className="profile-stat-val">{getStudentScore(activeTransactionsPool, profileStudent.id, 'all')}</span>
-                <span className="profile-stat-lbl">Kurs Davomida</span>
-              </div>
-            </div>
 
-            <div className="profile-timeline-section">
-              <h4 className="profile-timeline-title">
-                <IconScroll size={15} />
-                <span>Baholash Tarixi</span>
-              </h4>
-              <div className="profile-timeline-list">
-                {studentTxs.length > 0 ? (
-                  studentTxs.map((tx) => {
-                    const date = new Date(tx.timestamp);
-                    const formattedDate = date.toLocaleDateString() + ' ' + date.toLocaleTimeString('uz-UZ', { hour: '2-digit', minute: '2-digit', hour12: false });
-                    return (
-                      <div key={tx.id} className="profile-timeline-item">
-                        <div className="profile-timeline-item-meta">
-                          <span className="profile-timeline-time">{formattedDate}</span>
-                          <span className="profile-timeline-amount font-bold">
-                            {tx.amount >= 0 ? `+${tx.amount}` : tx.amount}
-                          </span>
+              <div className="profile-timeline-section">
+                <h4 className="profile-timeline-title">
+                  <IconScroll size={15} />
+                  <span>Baholash Tarixi</span>
+                </h4>
+                <div className="profile-timeline-list">
+                  {studentTxs.length > 0 ? (
+                    studentTxs.map((tx) => {
+                      const date = new Date(tx.timestamp);
+                      const formattedDate = date.toLocaleDateString() + ' ' + date.toLocaleTimeString('uz-UZ', { hour: '2-digit', minute: '2-digit', hour12: false });
+                      return (
+                        <div key={tx.id} className="profile-timeline-item">
+                          <div className="profile-timeline-item-meta">
+                            <span className="profile-timeline-time">{formattedDate}</span>
+                            <span className="profile-timeline-amount font-bold" style={{ display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
+                              <ProjectLikeIcon size={12} />
+                              <span>{tx.amount >= 0 ? `+${tx.amount}` : tx.amount}</span>
+                            </span>
+                          </div>
+                          <div className="profile-timeline-item-body">
+                            <span className="profile-timeline-comment">
+                              {tx.comment ? `"${tx.comment}"` : '—'}
+                            </span>
+                            {userRole === 'teacher' && (
+                              <button
+                                type="button"
+                                className="profile-timeline-item-delete scale-active"
+                                onClick={() => {
+                                  onDeleteTransaction(tx.id);
+                                  if (showToast) {
+                                    showToast("Baholash harakati bekor qilindi!", "success");
+                                  }
+                                }}
+                              >
+                                <IconTrash size={13} />
+                              </button>
+                            )}
+                          </div>
                         </div>
-                        <div className="profile-timeline-item-body">
-                          <span className="profile-timeline-comment">
-                            {tx.comment ? `"${tx.comment}"` : '—'}
-                          </span>
-                          {userRole === 'teacher' && (
-                            <button
-                              type="button"
-                              className="profile-timeline-item-delete scale-active"
-                              onClick={() => {
-                                onDeleteTransaction(tx.id);
-                                if (showToast) {
-                                  showToast("Baholash harakati bekor qilindi!", "success");
-                                }
-                              }}
-                            >
-                              <IconTrash size={13} />
-                            </button>
-                          )}
-                        </div>
-                      </div>
-                    );
-                  })
-                ) : (
-                  <p className="profile-timeline-empty">Hozircha baholash tarixi mavjud emas.</p>
-                )}
+                      );
+                    })
+                  ) : (
+                    <p className="profile-timeline-empty">Hozircha baholash tarixi mavjud emas.</p>
+                  )}
+                </div>
               </div>
             </div>
 
-            <div className="modal-actions">
+            <div className="modal-actions modal-actions-fixed">
               <button className="btn btn-secondary scale-active" onClick={() => setSelectedProfileStudent(null)}>
                 Yopish
               </button>
@@ -1898,17 +1928,44 @@ const Leaderboard = ({
           font-weight: 700;
         }
 
-        .empty-leaderboard-placeholder, .empty-history {
-          padding: 48px 24px;
+        .empty-history {
+          padding: 60px 24px;
+          text-align: center;
+          background: transparent;
+          border: none;
+          box-shadow: none;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 12px;
+        }
+
+        .empty-leaderboard-placeholder {
+          padding: 60px 24px;
           text-align: center;
           background: #FFFFFF;
           border: 1px solid rgba(0, 0, 0, 0.06);
-          border-radius: var(--radius-xl);
+          border-radius: var(--radius-lg);
           box-shadow: var(--shadow-sm);
           display: flex;
           flex-direction: column;
           align-items: center;
           gap: 12px;
+        }
+
+        .empty-leaderboard-placeholder h3,
+        .empty-history h3 {
+          margin: 0;
+          font-size: 1.15rem;
+          font-weight: 700;
+          color: var(--text-primary);
+        }
+
+        .empty-leaderboard-placeholder p,
+        .empty-history p {
+          margin: 0;
+          font-size: 0.9rem;
+          color: var(--text-secondary);
         }
 
         .placeholder-icon {
@@ -1917,8 +1974,7 @@ const Leaderboard = ({
 
         /* Profile Modal */
         .profile-modal {
-          max-width: 460px;
-          padding: 24px;
+          max-width: 500px;
         }
 
         .profile-modal-header {
@@ -2162,7 +2218,7 @@ const Leaderboard = ({
           }
 
           .profile-modal {
-            padding: 14px 16px;
+            max-width: 100%;
           }
 
           .profile-avatar {
@@ -2264,6 +2320,26 @@ const Leaderboard = ({
         [data-theme="dark"] .history-card {
           background: #292A2D;
           border-color: #3C4043;
+        }
+
+        [data-theme="dark"] .empty-history {
+          background: transparent;
+        }
+
+        [data-theme="dark"] .empty-leaderboard-placeholder {
+          background: #292A2D;
+          border-color: #3C4043;
+          box-shadow: none;
+        }
+
+        [data-theme="dark"] .empty-leaderboard-placeholder h3,
+        [data-theme="dark"] .empty-history h3 {
+          color: #E8EAED;
+        }
+
+        [data-theme="dark"] .empty-leaderboard-placeholder p,
+        [data-theme="dark"] .empty-history p {
+          color: #9AA0A6;
         }
 
         [data-theme="dark"] .history-header {

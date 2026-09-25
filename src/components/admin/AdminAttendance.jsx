@@ -1,8 +1,10 @@
 import React, { useState, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import { renderAvatar } from '../../utils/studentAvatars';
 import { renderGroupIcon } from '../../utils/groupIcons';
 import { sanitizeAttendanceDate } from '../../utils/db';
 import { calculateSessionAttendance, calculateWeightedAttendanceMetrics } from '../../utils/attendanceUtils';
+import { useModalDismiss } from '../../hooks/useModalDismiss';
 
 const UZBEK_MONTHS = [
   'Yanvar', 'Fevral', 'Mart', 'Aprel', 'May', 'Iyun',
@@ -26,6 +28,7 @@ const AdminAttendance = ({
   const [selectedMonth, setSelectedMonth] = useState(() => new Date().getMonth());
   const [selectedYear, setSelectedYear] = useState(() => new Date().getFullYear());
   const [sessionDetailModal, setSessionDetailModal] = useState(null); // { session, teacherLabel, groupName, students }
+  useModalDismiss(Boolean(sessionDetailModal), () => setSessionDetailModal(null));
 
   // Extract all groups based on teacher filter
   const availableGroups = useMemo(() => {
@@ -421,9 +424,9 @@ const AdminAttendance = ({
       </div>
 
       {/* Session Details Modal */}
-      {sessionDetailModal && (
+      {sessionDetailModal && typeof document !== 'undefined' && createPortal(
         <div className="modal-overlay" onClick={() => setSessionDetailModal(null)}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '540px', padding: '24px' }}>
+          <div className="modal-content glass" onClick={(e) => e.stopPropagation()}>
             <button
               type="button"
               className="modal-close-btn"
@@ -435,7 +438,7 @@ const AdminAttendance = ({
               </svg>
             </button>
 
-            <div className="modal-header-section" style={{ marginBottom: '16px' }}>
+            <div className="modal-header-fixed">
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
                 <h3 className="modal-title" style={{ margin: 0, fontSize: '1.2rem' }}>
                   {formatUzbekDate(sessionDetailModal.date)}
@@ -448,7 +451,7 @@ const AdminAttendance = ({
             </div>
 
             {/* Students Presence Status List */}
-            <div className="admin-modal-students-list" style={{ maxHeight: '360px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            <div className="modal-body-scrollable admin-modal-students-list" style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
               {sessionDetailModal.students.length === 0 ? (
                 <p style={{ textAlign: 'center', color: 'var(--text-tertiary)', padding: '20px 0' }}>
                   O'quvchilar ro'yxati topilmadi.
@@ -491,8 +494,19 @@ const AdminAttendance = ({
                 ))
               )}
             </div>
+
+            <div className="modal-actions-fixed">
+              <button
+                type="button"
+                className="btn btn-secondary scale-active"
+                onClick={() => setSessionDetailModal(null)}
+              >
+                Yopish
+              </button>
+            </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* Attendance Styling */}

@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { getStartOfToday, getStartOfMonth, getStartOfLastMonth, getEndOfLastMonth, getGroupCategory } from '../../utils/db';
 import { renderAvatar } from '../../utils/studentAvatars';
+import { ProjectLikeIcon } from './StudentIcons';
 
 const DAY_ORDER = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
 
@@ -364,13 +365,12 @@ export default function StudentRatingView({
                       {renderAvatar(activePinnedStudent.emoji, 40)}
                     </div>
                   ) : (
-                    <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" strokeWidth="1" aria-hidden="true">
-                      <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-                    </svg>
+                    <ProjectLikeIcon size={22} glow />
                   )}
                 </div>
                 <div className="stat-box-data">
-                  <span className="hero-stat-value champion-val">
+                  <span className="hero-stat-value champion-val" style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>
+                    <ProjectLikeIcon size={16} glow />
                     {pinnedStudentRankInfo ? pinnedStudentRankInfo.score : 0}
                   </span>
                   <span className="hero-stat-label champion-lbl">To'plangan Like</span>
@@ -415,7 +415,7 @@ export default function StudentRatingView({
                     </span>
                   )}
                   <span className="podium-points-tag">
-                    {podiumTop3.second.score} Like
+                    <ProjectLikeIcon size={12} /> {podiumTop3.second.score} Like
                   </span>
                   <div className="podium-pedestal pedestal-2">
                     <div className="pedestal-number-circle">
@@ -430,7 +430,9 @@ export default function StudentRatingView({
                   </div>
                   <span className="podium-name empty">—</span>
                   <span className="podium-group-tag empty" style={{ visibility: 'hidden' }}>—</span>
-                  <span className="podium-points-tag empty">0 Like</span>
+                  <span className="podium-points-tag empty">
+                    <ProjectLikeIcon size={12} /> 0 Like
+                  </span>
                   <div className="podium-pedestal pedestal-2 empty">
                     <div className="pedestal-number-circle">
                       <span>2</span>
@@ -458,7 +460,7 @@ export default function StudentRatingView({
                     </span>
                   )}
                   <span className="podium-points-tag champion-tag">
-                    {podiumTop3.first.score} Like
+                    <ProjectLikeIcon size={13} glow /> {podiumTop3.first.score} Like
                   </span>
                   <div className="podium-pedestal pedestal-1">
                     <div className="pedestal-number-circle">
@@ -473,7 +475,9 @@ export default function StudentRatingView({
                   </div>
                   <span className="podium-name empty">—</span>
                   <span className="podium-group-tag empty" style={{ visibility: 'hidden' }}>—</span>
-                  <span className="podium-points-tag empty">0 Like</span>
+                  <span className="podium-points-tag empty">
+                    <ProjectLikeIcon size={12} /> 0 Like
+                  </span>
                   <div className="podium-pedestal pedestal-1 empty">
                     <div className="pedestal-number-circle">
                       <span>1</span>
@@ -501,7 +505,7 @@ export default function StudentRatingView({
                     </span>
                   )}
                   <span className="podium-points-tag">
-                    {podiumTop3.third.score} Like
+                    <ProjectLikeIcon size={12} /> {podiumTop3.third.score} Like
                   </span>
                   <div className="podium-pedestal pedestal-3">
                     <div className="pedestal-number-circle">
@@ -516,7 +520,9 @@ export default function StudentRatingView({
                   </div>
                   <span className="podium-name empty">—</span>
                   <span className="podium-group-tag empty" style={{ visibility: 'hidden' }}>—</span>
-                  <span className="podium-points-tag empty">0 Like</span>
+                  <span className="podium-points-tag empty">
+                    <ProjectLikeIcon size={12} /> 0 Like
+                  </span>
                   <div className="podium-pedestal pedestal-3 empty">
                     <div className="pedestal-number-circle">
                       <span>3</span>
@@ -681,7 +687,10 @@ export default function StudentRatingView({
             </span>
           </div>
           <div className="standing-score-badge">
-            <span className="score-val">{pinnedStudentRankInfo.score}</span>
+            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+              <ProjectLikeIcon size={15} />
+              <span className="score-val">{pinnedStudentRankInfo.score}</span>
+            </div>
             <span className="score-lbl">Like</span>
           </div>
         </div>
@@ -808,6 +817,7 @@ export default function StudentRatingView({
                       {/* Pure Clean Score */}
                       <div className="row-score-col">
                         <div className="score-capsule">
+                          <ProjectLikeIcon size={13} />
                           <span className="score-number">{st.score}</span>
                           <span className="score-unit">Like</span>
                         </div>
@@ -899,6 +909,7 @@ export default function StudentRatingView({
                       {/* Pure Clean Score */}
                       <div className="row-score-col">
                         <div className="score-capsule">
+                          <ProjectLikeIcon size={13} />
                           <span className="score-number">{st.score}</span>
                           <span className="score-unit">Like</span>
                         </div>
@@ -952,6 +963,7 @@ export default function StudentRatingView({
 
                     <div className="history-row-right">
                       <span className={`history-amount-badge ${isPositive ? 'positive' : 'negative'}`}>
+                        <ProjectLikeIcon size={12} />
                         {isPositive ? `+${amountNum}` : `${amountNum}`} Like
                       </span>
                     </div>

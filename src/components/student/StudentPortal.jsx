@@ -9,6 +9,8 @@ import StudentShopComingSoon from './StudentShopComingSoon';
 import StudentAccountView from './StudentAccountView';
 import { renderAvatar } from '../../utils/studentAvatars';
 import { scrollToWithOffset } from '../../utils/scrollOffset';
+import { isStudentTargetedByExtraLesson } from '../../utils/scheduleUtils';
+import { ProjectLikeIcon } from './StudentIcons';
 import './StudentPortal.css';
 
 const triggerHaptic = (style = 'light') => {
@@ -29,6 +31,37 @@ const UZBEK_MONTHS = [
 const UZBEK_WEEKDAYS = [
   'Yakshanba', 'Dushanba', 'Seshanba', 'Chorshanba', 'Payshanba', 'Juma', 'Shanba'
 ];
+
+const formatExtraLessonDateLabel = (dateStr) => {
+  if (!dateStr) return '';
+  const now = new Date();
+  const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+  const tomorrow = new Date(now);
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  const tomorrowStr = `${tomorrow.getFullYear()}-${String(tomorrow.getMonth() + 1).padStart(2, '0')}-${String(tomorrow.getDate()).padStart(2, '0')}`;
+
+  if (dateStr === todayStr) return 'Bugun';
+  if (dateStr === tomorrowStr) return 'Ertaga';
+
+  const parts = dateStr.split('-');
+  if (parts.length === 3) {
+    const mIdx = parseInt(parts[1], 10) - 1;
+    return `${parseInt(parts[2], 10)}-${UZBEK_MONTHS[mIdx] || parts[1]}`;
+  }
+  return dateStr;
+};
+
+const formatExtraLessonFullDate = (dateStr) => {
+  if (!dateStr) return '';
+  const parts = dateStr.split('-');
+  if (parts.length === 3) {
+    const dt = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
+    const dayName = UZBEK_WEEKDAYS[dt.getDay()] || '';
+    const mIdx = parseInt(parts[1], 10) - 1;
+    return `${dayName}, ${parseInt(parts[2], 10)}-${UZBEK_MONTHS[mIdx] || parts[1]}`;
+  }
+  return dateStr;
+};
 
 export default function StudentPortal({
   attendance = [],
@@ -54,6 +87,7 @@ export default function StudentPortal({
   toggleTheme,
   teacherProfile = null,
   allTeachersData = {},
+  extraLessons = [],
 }) {
   // Navigation Tabs: 'main' (Asosiy) | 'rating' (Reyting) | 'shop' (Do'kon) | 'profile' (Profil)
   const [activeTab, setActiveTab] = useState(() => {
@@ -80,6 +114,25 @@ export default function StudentPortal({
     return (allConnectedGroups && allConnectedGroups[0]) ||
       (groups && groups.length > 0 && String(groups[0]?.id) === String(studentGroupId) ? groups[0] : null);
   }, [studentGroupId, allConnectedGroups, groups]);
+
+  // Upcoming Extra Lesson for currentGroup
+  const upcomingGroupExtraLesson = useMemo(() => {
+    if (!currentGroup?.id || !Array.isArray(extraLessons) || extraLessons.length === 0) return null;
+    const now = new Date();
+    const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+    const future = extraLessons
+      .filter((el) => {
+        if (!el || String(el.groupId) !== String(currentGroup.id) || el.date < todayStr) return false;
+        if (pinnedStudent?.id && !isStudentTargetedByExtraLesson(el, pinnedStudent.id)) return false;
+        return true;
+      })
+      .sort((a, b) => {
+        const c = (a.date || '').localeCompare(b.date || '');
+        if (c !== 0) return c;
+        return (a.startTime || '').localeCompare(b.startTime || '');
+      });
+    return future.length > 0 ? future[0] : null;
+  }, [currentGroup?.id, extraLessons, pinnedStudent?.id]);
 
   // Resolve current active group's teacher profile
   const currentTeacherProfile = useMemo(() => {
@@ -430,7 +483,8 @@ export default function StudentPortal({
                         {pinnedStudent.name.split(' ')[0]}
                       </span>
                       <span className="navbar-likes-pill">
-                        {totalPinnedScore} Like
+                        <ProjectLikeIcon size={13} />
+                        <span>{totalPinnedScore} Like</span>
                       </span>
                     </div>
                   </>
@@ -530,8 +584,9 @@ export default function StudentPortal({
                   <span className="stat-card-value">
                     {pinnedStudentRank ? `#${pinnedStudentRank} o'rin` : "—"}
                   </span>
-                  <span className="stat-card-hint">
-                    {totalPinnedScore} Like ›
+                  <span className="stat-card-hint" style={{ display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
+                    <ProjectLikeIcon size={12} />
+                    <span>{totalPinnedScore} Like ›</span>
                   </span>
                 </button>
 
@@ -558,11 +613,48 @@ export default function StudentPortal({
               </div>
             </div>
 
+            {/* Upcoming Extra Lesson Announcement Banner */}
+            {upcomingGroupExtraLesson && (
+              <div className="student-extra-lesson-banner scale-active">
+                <div className="extra-banner-top">
+                  <span className="extra-banner-badge">
+                    <span className="extra-banner-dot" />
+                    ⚡ Qo'shimcha Dars (Extra Lesson)
+                  </span>
+                  <span className="extra-banner-date-badge">
+                    {formatExtraLessonDateLabel(upcomingGroupExtraLesson.date)}
+                  </span>
+                </div>
+                <div className="extra-banner-body">
+                  <h4 className="extra-banner-title">
+                    {upcomingGroupExtraLesson.topic || "Qo'shimcha dars rejalashtirildi"}
+                  </h4>
+                  <div className="extra-banner-meta">
+                    <span className="extra-meta-item">
+                      📅 <strong>{formatExtraLessonFullDate(upcomingGroupExtraLesson.date)}</strong>
+                    </span>
+                    <span className="extra-meta-item">
+                      ⏰ <strong>{upcomingGroupExtraLesson.startTime}{upcomingGroupExtraLesson.endTime ? ` — ${upcomingGroupExtraLesson.endTime}` : ''}</strong>
+                    </span>
+                    {upcomingGroupExtraLesson.room && (
+                      <span className="extra-meta-item">
+                        📍 <strong>{upcomingGroupExtraLesson.room}</strong>
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Teacher Showcase Card */}
             <StudentTeacherShowcase teacherProfile={currentTeacherProfile} />
 
             {/* Active Group Schedule Card */}
-            <StudentScheduleCard group={currentGroup} />
+            <StudentScheduleCard
+              group={currentGroup}
+              extraLessons={extraLessons}
+              studentId={pinnedStudent?.id}
+            />
 
             {/* Monthly Attendance Calendar */}
             <StudentAttendanceCalendar
@@ -570,6 +662,7 @@ export default function StudentPortal({
               group={currentGroup}
               pinnedStudent={pinnedStudent}
               onOpenProfilePicker={() => handleTabSelect('profile')}
+              extraLessons={extraLessons}
             />
 
             {/* Insight Plus Center Addresses & Contact Card */}

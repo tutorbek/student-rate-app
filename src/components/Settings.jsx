@@ -4,6 +4,8 @@ import { exportDatabase, DEFAULT_QUICK_TAGS, normalizeQuickTags } from '../utils
 import { renderAvatar } from '../utils/studentAvatars';
 import { AVATAR_GALLERY_IMAGES } from '../utils/avatarGallery';
 import StudentTeacherShowcase from './student/StudentTeacherShowcase';
+import ProjectLikeIcon from './common/ProjectLikeIcon';
+import { useModalDismiss } from '../hooks/useModalDismiss';
 
 // Minimalist SVG Icons
 const IconTag = ({ size = 15, strokeWidth = 2.2 }) => (
@@ -106,6 +108,11 @@ const IconLogOut = ({ size = 16, strokeWidth = 2.2 }) => (
     <line x1="21" y1="12" x2="9" y2="12" />
   </svg>
 );
+
+const formatMoneyUz = (num) => {
+  const n = Math.round(Number(num) || 0);
+  return n.toLocaleString('uz-UZ').replace(/,/g, ' ') + " so'm";
+};
 
 const POINT_PRESETS = [85, 50, 20, 10, -10, -20, -30, -40];
 
@@ -295,7 +302,88 @@ const Settings = ({
   const deletedGroups = useMemo(() => groups.filter((g) => g.deleted), [groups]);
   const deletedStudents = useMemo(() => students.filter((s) => s.deleted), [students]);
   const activeGroups = useMemo(() => groups.filter((g) => !g.deleted), [groups]);
-  const activeStudents = useMemo(() => students.filter((s) => !s.deleted), [students]);
+
+  // Calculator State & Memos
+  const activeStudentsCount = useMemo(() => students.filter((s) => !s.deleted).length, [students]);
+
+  const [calcStudentCount, setCalcStudentCount] = useState(() => {
+    const saved = localStorage.getItem('teacher_calc_student_count');
+    if (saved !== null && !isNaN(Number(saved)) && Number(saved) > 0) return Number(saved);
+    return 25;
+  });
+
+  const [calcPricePerStudent, setCalcPricePerStudent] = useState(() => {
+    const saved = localStorage.getItem('teacher_calc_price');
+    return (saved !== null && !isNaN(Number(saved)) && Number(saved) > 0) ? Number(saved) : 400000;
+  });
+
+  const [calcTeacherPercent, setCalcTeacherPercent] = useState(() => {
+    const saved = localStorage.getItem('teacher_calc_percent');
+    return (saved !== null && !isNaN(Number(saved)) && Number(saved) >= 0 && Number(saved) <= 100) ? Number(saved) : 50;
+  });
+
+  useEffect(() => {
+    try {
+      if (calcStudentCount !== '' && Number(calcStudentCount) > 0) {
+        localStorage.setItem('teacher_calc_student_count', String(calcStudentCount));
+      }
+    } catch {
+      // ignore
+    }
+  }, [calcStudentCount]);
+
+  useEffect(() => {
+    try {
+      if (calcPricePerStudent !== '') {
+        localStorage.setItem('teacher_calc_price', String(calcPricePerStudent));
+      }
+    } catch {
+      // ignore
+    }
+  }, [calcPricePerStudent]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('teacher_calc_percent', String(calcTeacherPercent));
+    } catch {
+      // ignore
+    }
+  }, [calcTeacherPercent]);
+
+  const grossTotal = Math.max(0, (Number(calcStudentCount) || 0) * (Number(calcPricePerStudent) || 0));
+  const teacherShare = Math.round(grossTotal * ((Number(calcTeacherPercent) || 0) / 100));
+  const centerShare = Math.max(0, grossTotal - teacherShare);
+  const perStudentTeacherShare = Math.round((Number(calcPricePerStudent) || 0) * ((Number(calcTeacherPercent) || 0) / 100));
+  const dailyTeacherShare = Math.round(teacherShare / 30);
+
+  const groupsBreakdown = useMemo(() => {
+    return activeGroups.map((g) => {
+      const gStudents = students.filter((s) => s.groupId === g.id && !s.deleted);
+      const count = gStudents.length;
+      const gGross = count * (Number(calcPricePerStudent) || 0);
+      const gTeacherShare = Math.round(gGross * ((Number(calcTeacherPercent) || 0) / 100));
+      return {
+        id: g.id,
+        name: g.name,
+        icon: g.icon,
+        count,
+        gross: gGross,
+        teacherShare: gTeacherShare,
+      };
+    });
+  }, [activeGroups, students, calcPricePerStudent, calcTeacherPercent]);
+
+  const totalGroupsStudents = useMemo(() => {
+    return groupsBreakdown.reduce((sum, g) => sum + g.count, 0);
+  }, [groupsBreakdown]);
+
+  const totalGroupsTeacherShare = useMemo(() => {
+    return groupsBreakdown.reduce((sum, g) => sum + g.teacherShare, 0);
+  }, [groupsBreakdown]);
+
+  const totalGroupsGross = useMemo(() => {
+    return groupsBreakdown.reduce((sum, g) => sum + g.gross, 0);
+  }, [groupsBreakdown]);
 
   const normalizedTags = useMemo(() => {
     return normalizeQuickTags(quickTags);
@@ -319,19 +407,31 @@ const Settings = ({
 
   const totalTrashCount = deletedGroups.length + deletedStudents.length;
 
-  // Escape key handler for all modals
-  useEffect(() => {
-    const handleKeyDown = (e) => {
-      if (e.key === 'Escape') {
-        setShowResetConfirm(false);
-        setEditingTagIndex(null);
-        setDeleteConfirmModal(null);
-        setRollbackConfirmModal(null);
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []);
+  // Escape key and background scroll lock handler for all modals (including cert and gallery)
+  const isAnySettingsModalOpen = Boolean(
+    showResetConfirm ||
+    deleteConfirmModal ||
+    rollbackConfirmModal ||
+    editingTagIndex !== null ||
+    showAddCertModal ||
+    showGalleryModal
+  );
+
+  useModalDismiss(isAnySettingsModalOpen, () => {
+    if (showGalleryModal) {
+      setShowGalleryModal(false);
+    } else if (showAddCertModal) {
+      setShowAddCertModal(false);
+    } else if (editingTagIndex !== null) {
+      handleCloseEditModal();
+    } else if (rollbackConfirmModal) {
+      setRollbackConfirmModal(null);
+    } else if (deleteConfirmModal) {
+      setDeleteConfirmModal(null);
+    } else if (showResetConfirm) {
+      setShowResetConfirm(false);
+    }
+  });
 
   // Quick Tags Actions
   const handleAddTag = (e) => {
@@ -520,38 +620,34 @@ const Settings = ({
             className={`tab-btn-brutalist ${activeTab === 'profile' ? 'active' : ''}`}
             onClick={() => setActiveTab('profile')}
           >
-            <span>👤 Profil</span>
+            <span className="tab-label-desktop">Profil</span>
+            <span className="tab-label-mobile">Profil</span>
+          </button>
+          <button
+            type="button"
+            className={`tab-btn-brutalist ${activeTab === 'calculator' ? 'active' : ''}`}
+            onClick={() => setActiveTab('calculator')}
+          >
+            <span className="tab-label-desktop">Kalkulyator</span>
+            <span className="tab-label-mobile">Hisob</span>
           </button>
           <button
             type="button"
             className={`tab-btn-brutalist ${activeTab === 'tags' ? 'active' : ''}`}
             onClick={() => setActiveTab('tags')}
           >
-            <span>Izohlar</span>
+            <span className="tab-label-desktop">Izohlar</span>
+            <span className="tab-label-mobile">Izoh</span>
             <span className="tab-count-badge">{normalizedTags.length}</span>
           </button>
           <button
             type="button"
-            className={`tab-btn-brutalist ${activeTab === 'trash' ? 'active' : ''}`}
-            onClick={() => setActiveTab('trash')}
+            className={`tab-btn-brutalist ${activeTab === 'system' ? 'active' : ''}`}
+            onClick={() => setActiveTab('system')}
           >
-            <span>Savat</span>
+            <span className="tab-label-desktop">Tizim & Zaxira</span>
+            <span className="tab-label-mobile">Tizim</span>
             {totalTrashCount > 0 && <span className="tab-count-badge badge-red">{totalTrashCount}</span>}
-          </button>
-          <button
-            type="button"
-            className={`tab-btn-brutalist ${activeTab === 'backup' ? 'active' : ''}`}
-            onClick={() => setActiveTab('backup')}
-          >
-            <span className="tab-label-desktop">Zaxira & Bulut</span>
-            <span className="tab-label-mobile">Zaxira</span>
-          </button>
-          <button
-            type="button"
-            className={`tab-btn-brutalist ${activeTab === 'danger' ? 'active' : ''}`}
-            onClick={() => setActiveTab('danger')}
-          >
-            <span>Xavfsizlik</span>
           </button>
         </div>
       </div>
@@ -560,13 +656,13 @@ const Settings = ({
       <section className="glass-card settings-hero-banner">
         <div className="hero-left-profile">
           <div className="profile-avatar-box">
-            {profileAvatar ? renderAvatar(profileAvatar, 32) : <IconUser size={22} />}
+            {profileAvatar ? renderAvatar(profileAvatar, 48) : <IconUser size={22} />}
           </div>
           <div className="profile-details">
             <div className="profile-role-row">
               <span className="role-pill-badge">{userRole === 'admin' ? 'Administrator' : "O'qituvchi"}</span>
               <span className="stats-mini-summary">
-                {profileFullName ? `${profileFullName} • ` : ''}{activeGroups.length} ta faol guruh • {activeStudents.length} ta o'quvchi
+                {profileFullName ? `${profileFullName} • ` : ''}{activeGroups.length} ta faol guruh
               </span>
             </div>
           </div>
@@ -925,6 +1021,298 @@ const Settings = ({
         </div>
       )}
 
+      {/* Tab: O'qituvchi Daromadi Kalkulyatori */}
+      {activeTab === 'calculator' && (
+        <div className="settings-tab-content fade-in">
+          {/* Main Calculator Card */}
+          <section className="glass-card settings-card calc-main-card">
+            <div className="card-header-flex calc-header-clean">
+              <div>
+                <h3 className="card-title" style={{ margin: 0 }}>Daromad hisobi</h3>
+                <span className="calc-header-sub">Oylik hisob-kitob</span>
+              </div>
+
+              {activeStudentsCount > 0 && (
+                <button
+                  type="button"
+                  className="calc-sync-pill scale-active"
+                  onClick={() => {
+                    setCalcStudentCount(activeStudentsCount);
+                    showToast(`Faol o'quvchilar soni (${activeStudentsCount}) o'rnatildi`, 'success');
+                  }}
+                  title="Tizimdagi faol o'quvchilar sonini kiritish"
+                >
+                  Tizimdan: {activeStudentsCount}
+                </button>
+              )}
+            </div>
+
+            {/* 2-Column Split: Controls on Left, Results on Right */}
+            <div className="calc-split-container">
+              {/* Left Column: Parameter Inputs */}
+              <div className="calc-controls-col">
+                {/* 1. O'quvchilar soni */}
+                <div className="calc-input-block">
+                  <div className="calc-label-row">
+                    <span className="calc-field-title">O'quvchilar soni</span>
+                    <span className="calc-field-val">
+                      {calcStudentCount === '' ? '0 ta' : `${calcStudentCount} ta`}
+                    </span>
+                  </div>
+
+                  <div className="calc-stepper-row">
+                    <button
+                      type="button"
+                      className="calc-step-btn scale-active"
+                      onClick={() => setCalcStudentCount((prev) => Math.max(1, (Number(prev) || 1) - 1))}
+                      disabled={Number(calcStudentCount) <= 1}
+                      aria-label="Kamaytirish"
+                    >
+                      −
+                    </button>
+                    <div className="calc-step-input-wrap">
+                      <input
+                        type="number"
+                        min="1"
+                        max="2000"
+                        className="calc-step-input"
+                        value={calcStudentCount}
+                        placeholder="0"
+                        onFocus={(e) => e.target.select()}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          if (val === '') {
+                            setCalcStudentCount('');
+                            return;
+                          }
+                          const cleanVal = val.replace(/^0+(?=\d)/, '');
+                          const num = parseInt(cleanVal, 10);
+                          setCalcStudentCount(isNaN(num) ? '' : Math.max(0, num));
+                        }}
+                        onBlur={() => {
+                          if (calcStudentCount === '' || Number(calcStudentCount) < 1) {
+                            setCalcStudentCount(1);
+                          }
+                        }}
+                      />
+                    </div>
+                    <button
+                      type="button"
+                      className="calc-step-btn scale-active"
+                      onClick={() => setCalcStudentCount((prev) => (Number(prev) || 0) + 1)}
+                      aria-label="Oshirish"
+                    >
+                      +
+                    </button>
+                  </div>
+
+                  <div className="calc-chips-scroll">
+                    {[10, 15, 20, 25, 30, 40, 50, 75, 100].map((num) => (
+                      <button
+                        key={num}
+                        type="button"
+                        className={`calc-chip-clean scale-active ${Number(calcStudentCount) === num ? 'active' : ''}`}
+                        onClick={() => setCalcStudentCount(num)}
+                      >
+                        {num}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* 2. Oylik to'lov */}
+                <div className="calc-input-block">
+                  <div className="calc-label-row">
+                    <span className="calc-field-title">Oylik to'lov</span>
+                    <span className="calc-field-val">
+                      {formatMoneyUz(Number(calcPricePerStudent) || 0)}
+                    </span>
+                  </div>
+
+                  <div className="calc-price-input-wrap">
+                    <input
+                      type="number"
+                      step="10000"
+                      min="0"
+                      className="calc-price-input"
+                      value={calcPricePerStudent}
+                      placeholder="0"
+                      onFocus={(e) => e.target.select()}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        if (val === '') {
+                          setCalcPricePerStudent('');
+                          return;
+                        }
+                        const cleanVal = val.replace(/^0+(?=\d)/, '');
+                        const num = parseInt(cleanVal, 10);
+                        setCalcPricePerStudent(isNaN(num) ? '' : Math.max(0, num));
+                      }}
+                      onBlur={() => {
+                        if (calcPricePerStudent === '') {
+                          setCalcPricePerStudent(0);
+                        }
+                      }}
+                    />
+                    <span className="calc-suffix-text">so'm</span>
+                  </div>
+
+                  <div className="calc-chips-scroll">
+                    {[
+                      { label: "250k", val: 250000 },
+                      { label: "300k", val: 300000 },
+                      { label: "350k", val: 350000 },
+                      { label: "400k", val: 400000 },
+                      { label: "450k", val: 450000 },
+                      { label: "500k", val: 500000 },
+                      { label: "600k", val: 600000 },
+                      { label: "800k", val: 800000 },
+                      { label: "1M", val: 1000000 }
+                    ].map((preset) => (
+                      <button
+                        key={preset.val}
+                        type="button"
+                        className={`calc-chip-clean scale-active ${Number(calcPricePerStudent) === preset.val ? 'active' : ''}`}
+                        onClick={() => setCalcPricePerStudent(preset.val)}
+                      >
+                        {preset.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* 3. Ulush */}
+                <div className="calc-input-block">
+                  <div className="calc-label-row">
+                    <span className="calc-field-title">O'qituvchi ulushi</span>
+                    <span className="calc-field-val">{calcTeacherPercent}%</span>
+                  </div>
+
+                  <div className="calc-slider-wrap">
+                    <input
+                      type="range"
+                      min="0"
+                      max="100"
+                      step="5"
+                      className="calc-range-slider"
+                      value={calcTeacherPercent}
+                      onChange={(e) => setCalcTeacherPercent(Number(e.target.value))}
+                    />
+                    <div className="calc-slider-ticks">
+                      {[0, 25, 50, 75, 100].map((t) => (
+                        <span
+                          key={t}
+                          className={`calc-tick-mark ${calcTeacherPercent === t ? 'active' : ''}`}
+                          style={{
+                            left: `${t}%`,
+                            transform: t === 0 ? 'none' : t === 100 ? 'translateX(-100%)' : 'translateX(-50%)',
+                          }}
+                          onClick={() => setCalcTeacherPercent(t)}
+                        >
+                          {t}%
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="calc-chips-scroll">
+                    {[30, 40, 50, 60].map((pct) => (
+                      <button
+                        key={pct}
+                        type="button"
+                        className={`calc-chip-clean scale-active ${calcTeacherPercent === pct ? 'active' : ''}`}
+                        onClick={() => setCalcTeacherPercent(pct)}
+                      >
+                        {pct}%
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* Right Column: Calculated Results */}
+              <div className="calc-results-col">
+                {/* Hero Card: Teacher's Take-Home */}
+                <div className="calc-hero-clean">
+                  <div className="calc-hero-top">
+                    <span className="calc-hero-label">O'qituvchi daromadi</span>
+                    <span className="calc-hero-pct">{calcTeacherPercent}%</span>
+                  </div>
+                  <div className="calc-hero-val">
+                    {formatMoneyUz(teacherShare)}
+                  </div>
+                  <div className="calc-hero-meta">
+                    1 o'quvchidan: {formatMoneyUz(perStudentTeacherShare)}
+                  </div>
+                </div>
+
+                {/* Secondary Stats */}
+                <div className="calc-stats-dual">
+                  <div className="calc-stat-clean">
+                    <span className="calc-stat-lbl">Jami tushum</span>
+                    <span className="calc-stat-num">{formatMoneyUz(grossTotal)}</span>
+                    <span className="calc-stat-sub">{Number(calcStudentCount) || 0} ta o'quvchi</span>
+                  </div>
+
+                  <div className="calc-stat-clean">
+                    <span className="calc-stat-lbl">Markaz ulushi ({100 - calcTeacherPercent}%)</span>
+                    <span className="calc-stat-num">{formatMoneyUz(centerShare)}</span>
+                    <span className="calc-stat-sub">{formatMoneyUz(grossTotal - teacherShare)}</span>
+                  </div>
+                </div>
+
+                {/* Visual Ratio Bar */}
+                <div className="calc-ratio-clean">
+                  <div className="calc-ratio-row">
+                    <span>O'qituvchi ({calcTeacherPercent}%)</span>
+                    <span>Markaz ({100 - calcTeacherPercent}%)</span>
+                  </div>
+                  <div className="calc-bar-track">
+                    <div
+                      className="calc-bar-teacher"
+                      style={{ width: `${Math.min(100, Math.max(0, calcTeacherPercent))}%` }}
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          {/* 2. Real Guruhlar Bo'yicha Minimalist Ro'yxat */}
+          {activeGroups.length > 0 && (
+            <section className="glass-card settings-card calc-groups-clean-card">
+              <div className="card-header-flex calc-groups-head">
+                <div>
+                  <h4 className="card-title" style={{ fontSize: '1.05rem', margin: 0 }}>Guruhlar bo'yicha</h4>
+                  <span className="calc-groups-head-sub">{activeGroups.length} ta guruh</span>
+                </div>
+                <span className="calc-groups-count-badge">{totalGroupsStudents} ta o'quvchi</span>
+              </div>
+
+              <div className="calc-groups-table">
+                {groupsBreakdown.map((grp) => (
+                  <div key={grp.id} className="calc-group-row">
+                    <div className="calc-group-row-info">
+                      <span className="calc-group-row-name">{grp.name}</span>
+                      <span className="calc-group-row-count">{grp.count} ta o'quvchi</span>
+                    </div>
+                    <div className="calc-group-row-amounts">
+                      <span className="calc-group-row-gross">{formatMoneyUz(grp.gross)}</span>
+                      <span className="calc-group-row-share">+{formatMoneyUz(grp.teacherShare)}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <div className="calc-groups-total-bar">
+                <span className="lbl">Jami o'qituvchiga:</span>
+                <span className="val">+{formatMoneyUz(totalGroupsTeacherShare)}</span>
+              </div>
+            </section>
+          )}
+        </div>
+      )}
+
       {/* Tab 1: Tezkor Izoh Shablonlari */}
       {activeTab === 'tags' && (
         <div className="settings-tab-content fade-in">
@@ -1021,7 +1409,7 @@ const Settings = ({
                 {normalizedTags.map((tagObj, idx) => (
                   <div key={idx} className="tag-card-modern">
                     <div className="tag-display-row">
-                      <span className="tag-name-text">{tagObj.text}</span>
+                      <span className="tag-name-text" title={tagObj.text}>{tagObj.text}</span>
                       <div className="tag-right-controls">
                         <span className={`tag-pts-pill ${tagObj.points >= 0 ? 'pts-pos' : 'pts-neg'}`}>
                           {tagObj.points >= 0 ? `+${tagObj.points}` : tagObj.points}
@@ -1060,9 +1448,104 @@ const Settings = ({
         </div>
       )}
 
-      {/* Tab 2: Savat (Recycle Bin) */}
-      {activeTab === 'trash' && (
+      {/* Tab 4: Tizim & Zaxira (JSON Backup, Snapshots, Savat, Xavfsizlik) */}
+      {activeTab === 'system' && (
         <div className="settings-tab-content fade-in">
+          {/* JSON Export / Import Cards */}
+          <section className="glass-card settings-card">
+            <div className="card-header-flex">
+              <div>
+                <h3 className="card-title">Faylli Zaxiralash (JSON Backup & Restore)</h3>
+                <p className="card-desc">Barcha guruhlar, talabalar, baholashlar va davomat tarixini JSON formatida eksport/import qilish</p>
+              </div>
+            </div>
+
+            <div className="backup-action-grid">
+              <div className="backup-action-card">
+                <div className="backup-card-icon-box">
+                  <IconDownload size={22} />
+                </div>
+                <div className="backup-card-text">
+                  <strong className="backup-card-title">Zaxira yuklab olish</strong>
+                  <p className="backup-card-desc">Tizimning joriy holatini .json fayl sifatida kompyuteringizga saqlab qo'yadi.</p>
+                </div>
+                <button type="button" className="btn btn-primary scale-active backup-card-btn" onClick={handleExport}>
+                  <IconDownload size={15} />
+                  <span>JSON Zaxira Yuklab Olish</span>
+                </button>
+              </div>
+
+              <div className="backup-action-card">
+                <div className="backup-card-icon-box import-icon-box">
+                  <IconUpload size={22} />
+                </div>
+                <div className="backup-card-text">
+                  <strong className="backup-card-title">Zaxiradan tiklash</strong>
+                  <p className="backup-card-desc">Avval yuklab olingan .json zaxira faylni yuklab, tizim ma'lumotlarini tiklaydi.</p>
+                </div>
+                <label htmlFor="import-file-settings-tab" className="btn btn-secondary scale-active backup-card-btn import-card-label">
+                  <IconUpload size={15} />
+                  <span>JSON Faylni Yuklash</span>
+                </label>
+                <input
+                  id="import-file-settings-tab"
+                  type="file"
+                  accept=".json"
+                  onChange={handleImport}
+                  style={{ display: 'none' }}
+                />
+              </div>
+            </div>
+          </section>
+
+          {/* Cloud Snapshots Card */}
+          <section className="glass-card settings-card">
+            <div className="card-header-flex">
+              <div>
+                <h3 className="card-title">Bulutli Zaxira Nuqtalari (Snapshots)</h3>
+                <p className="card-desc">O'zgarishlar kiritilganda avtomatik saqlanadigan xavfsizlik nuqtalari</p>
+              </div>
+            </div>
+
+            {snapshots.length === 0 ? (
+              <div className="empty-subtle-box">
+                <IconCloud size={28} />
+                <p>Hozircha saqlangan bulutli zaxira nuqtalari mavjud emas.</p>
+              </div>
+            ) : (
+              <div className="snapshots-list-modern">
+                {snapshots.map((snap, idx) => {
+                  const snapGroupsCount = snap.data && snap.data.groups ? snap.data.groups.filter((g) => !g.deleted).length : 0;
+                  const snapStudentsCount = snap.data && snap.data.students ? snap.data.students.filter((s) => !s.deleted).length : 0;
+                  return (
+                    <div key={idx} className="snapshot-row-modern">
+                      <div className="snapshot-left">
+                        <div className="snapshot-num-badge">#{idx + 1}</div>
+                        <div className="snapshot-text">
+                          <strong className="snapshot-date">
+                            {snap.timestamp ? new Date(snap.timestamp).toLocaleString() : "Noma'lum"}
+                          </strong>
+                          <span className="snapshot-meta-info">
+                            {snapGroupsCount} ta guruh • {snapStudentsCount} ta o'quvchi
+                          </span>
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        className="btn btn-secondary scale-active btn-sm snapshot-rollback-btn"
+                        onClick={() => setRollbackConfirmModal({ snapshot: snap })}
+                      >
+                        <IconRotateCcw size={13} />
+                        <span>Holatni Tiklash</span>
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </section>
+
+          {/* Savat (Recycle Bin) */}
           <section className="glass-card settings-card">
             <div className="card-header-flex">
               <div>
@@ -1205,111 +1688,8 @@ const Settings = ({
               </div>
             )}
           </section>
-        </div>
-      )}
 
-      {/* Tab 3: Bulut & Zaxira (Snapshots & JSON Backup) */}
-      {activeTab === 'backup' && (
-        <div className="settings-tab-content fade-in">
-          {/* JSON Export / Import Cards */}
-          <section className="glass-card settings-card">
-            <div className="card-header-flex">
-              <div>
-                <h3 className="card-title">Faylli Zaxiralash (JSON Backup & Restore)</h3>
-                <p className="card-desc">Barcha guruhlar, talabalar, baholashlar va davomat tarixini JSON formatida eksport/import qilish</p>
-              </div>
-            </div>
-
-            <div className="backup-action-grid">
-              <div className="backup-action-card">
-                <div className="backup-card-icon-box">
-                  <IconDownload size={22} />
-                </div>
-                <div className="backup-card-text">
-                  <strong className="backup-card-title">Zaxira yuklab olish</strong>
-                  <p className="backup-card-desc">Tizimning joriy holatini .json fayl sifatida kompyuteringizga saqlab qo'yadi.</p>
-                </div>
-                <button type="button" className="btn btn-primary scale-active backup-card-btn" onClick={handleExport}>
-                  <IconDownload size={15} />
-                  <span>JSON Zaxira Yuklab Olish</span>
-                </button>
-              </div>
-
-              <div className="backup-action-card">
-                <div className="backup-card-icon-box import-icon-box">
-                  <IconUpload size={22} />
-                </div>
-                <div className="backup-card-text">
-                  <strong className="backup-card-title">Zaxiradan tiklash</strong>
-                  <p className="backup-card-desc">Avval yuklab olingan .json zaxira faylni yuklab, tizim ma'lumotlarini tiklaydi.</p>
-                </div>
-                <label htmlFor="import-file-settings-tab" className="btn btn-secondary scale-active backup-card-btn import-card-label">
-                  <IconUpload size={15} />
-                  <span>JSON Faylni Yuklash</span>
-                </label>
-                <input
-                  id="import-file-settings-tab"
-                  type="file"
-                  accept=".json"
-                  onChange={handleImport}
-                  style={{ display: 'none' }}
-                />
-              </div>
-            </div>
-          </section>
-
-          {/* Cloud Snapshots Card */}
-          <section className="glass-card settings-card">
-            <div className="card-header-flex">
-              <div>
-                <h3 className="card-title">Bulutli Zaxira Nuqtalari (Snapshots)</h3>
-                <p className="card-desc">O'zgarishlar kiritilganda avtomatik saqlanadigan xavfsizlik nuqtalari</p>
-              </div>
-            </div>
-
-            {snapshots.length === 0 ? (
-              <div className="empty-subtle-box">
-                <IconCloud size={28} />
-                <p>Hozircha saqlangan bulutli zaxira nuqtalari mavjud emas.</p>
-              </div>
-            ) : (
-              <div className="snapshots-list-modern">
-                {snapshots.map((snap, idx) => {
-                  const snapGroupsCount = snap.data && snap.data.groups ? snap.data.groups.filter((g) => !g.deleted).length : 0;
-                  const snapStudentsCount = snap.data && snap.data.students ? snap.data.students.filter((s) => !s.deleted).length : 0;
-                  return (
-                    <div key={idx} className="snapshot-row-modern">
-                      <div className="snapshot-left">
-                        <div className="snapshot-num-badge">#{idx + 1}</div>
-                        <div className="snapshot-text">
-                          <strong className="snapshot-date">
-                            {snap.timestamp ? new Date(snap.timestamp).toLocaleString() : "Noma'lum"}
-                          </strong>
-                          <span className="snapshot-meta-info">
-                            {snapGroupsCount} ta guruh • {snapStudentsCount} ta o'quvchi
-                          </span>
-                        </div>
-                      </div>
-                      <button
-                        type="button"
-                        className="btn btn-secondary scale-active btn-sm snapshot-rollback-btn"
-                        onClick={() => setRollbackConfirmModal({ snapshot: snap })}
-                      >
-                        <IconRotateCcw size={13} />
-                        <span>Holatni Tiklash</span>
-                      </button>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </section>
-        </div>
-      )}
-
-      {/* Tab 4: Xavfsizlik (Danger Zone) */}
-      {activeTab === 'danger' && (
-        <div className="settings-tab-content fade-in">
+          {/* Xavfli Hudud (Danger Zone) */}
           <section className="glass-card settings-card danger-zone-card">
             <div className="danger-header">
               <div className="danger-icon-title">
@@ -1351,7 +1731,7 @@ const Settings = ({
       {/* MODAL 1: Reset Database Confirmation */}
       {showResetConfirm && createPortal(
         <div className="modal-overlay" onClick={() => setShowResetConfirm(false)}>
-          <div className="modal-content glass" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '460px' }}>
+          <div className="modal-content glass modal-confirm" onClick={(e) => e.stopPropagation()}>
             <button type="button" className="modal-close-btn" onClick={() => setShowResetConfirm(false)}>
               <IconX />
             </button>
@@ -1382,7 +1762,7 @@ const Settings = ({
       {/* MODAL 2: Permanent Delete Item Confirmation */}
       {deleteConfirmModal && createPortal(
         <div className="modal-overlay" onClick={() => setDeleteConfirmModal(null)}>
-          <div className="modal-content glass" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '440px' }}>
+          <div className="modal-content glass modal-confirm" onClick={(e) => e.stopPropagation()}>
             <button type="button" className="modal-close-btn" onClick={() => setDeleteConfirmModal(null)}>
               <IconX />
             </button>
@@ -1410,7 +1790,7 @@ const Settings = ({
       {/* MODAL 3: Rollback Snapshot Confirmation */}
       {rollbackConfirmModal && createPortal(
         <div className="modal-overlay" onClick={() => setRollbackConfirmModal(null)}>
-          <div className="modal-content glass" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '460px' }}>
+          <div className="modal-content glass modal-confirm" onClick={(e) => e.stopPropagation()}>
             <button type="button" className="modal-close-btn" onClick={() => setRollbackConfirmModal(null)}>
               <IconX />
             </button>
@@ -1439,7 +1819,7 @@ const Settings = ({
       {/* MODAL 4: Edit Quick Tag */}
       {editingTagIndex !== null && createPortal(
         <div className="modal-overlay" onClick={handleCloseEditModal}>
-          <div className="modal-content glass" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '440px' }}>
+          <div className="modal-content glass modal-confirm" onClick={(e) => e.stopPropagation()}>
             <button type="button" className="modal-close-btn" onClick={handleCloseEditModal}>
               <IconX />
             </button>
@@ -1463,8 +1843,9 @@ const Settings = ({
               <div className="form-group" style={{ marginBottom: '20px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
                   <label className="input-field-label" style={{ margin: 0 }}>Like qiymati (+ / -)</label>
-                  <span className={`tag-pts-pill ${Number(editTagPoints) >= 0 ? 'pts-pos' : 'pts-neg'}`}>
-                    {Number(editTagPoints) >= 0 ? `+${Number(editTagPoints) || 0}` : Number(editTagPoints)} Like
+                  <span className={`tag-pts-pill ${Number(editTagPoints) >= 0 ? 'pts-pos' : 'pts-neg'}`} style={{ display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
+                    <ProjectLikeIcon size={12} />
+                    <span>{Number(editTagPoints) >= 0 ? `+${Number(editTagPoints) || 0}` : Number(editTagPoints)} Like</span>
                   </span>
                 </div>
                 <input
@@ -1749,12 +2130,21 @@ const Settings = ({
           height: 48px;
           background: #1D1D1F;
           color: #FFFFFF;
-          border-radius: var(--radius-md);
+          border-radius: 50%;
+          overflow: hidden;
           box-shadow: var(--shadow-sm);
           display: flex;
           align-items: center;
           justify-content: center;
           flex-shrink: 0;
+        }
+
+        .profile-avatar-box img {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+          border-radius: 50%;
+          display: block;
         }
 
         .profile-role-row {
@@ -2010,38 +2400,61 @@ const Settings = ({
         /* Tags Grid Modern */
         .tags-grid-modern {
           display: grid;
-          grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-          gap: 10px;
-          max-height: 380px;
+          grid-template-columns: repeat(3, 1fr);
+          gap: 12px;
+          max-height: 420px;
           overflow-y: auto;
-          padding-right: 4px;
+          padding: 2px 2px 4px 2px;
+        }
+
+        @media (max-width: 1024px) {
+          .tags-grid-modern {
+            grid-template-columns: repeat(2, 1fr);
+          }
+        }
+
+        @media (max-width: 640px) {
+          .tags-grid-modern {
+            grid-template-columns: 1fr;
+          }
         }
 
         .tag-card-modern {
-          padding: 10px 14px;
+          display: flex;
+          align-items: center;
+          padding: 12px 14px;
+          min-height: 52px;
           background: #FAFAFC;
           border: 1px solid rgba(0, 0, 0, 0.06);
-          border-radius: var(--radius-md);
+          border-radius: 12px;
           box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
-          transition: border-color var(--transition-fast);
+          transition: all var(--transition-fast);
+          box-sizing: border-box;
         }
 
         .tag-card-modern:hover {
-          border-color: rgba(0, 0, 0, 0.12);
+          border-color: rgba(0, 0, 0, 0.15);
+          box-shadow: 0 3px 8px rgba(0, 0, 0, 0.04);
         }
 
         .tag-display-row {
           display: flex;
           justify-content: space-between;
           align-items: center;
-          gap: 8px;
+          gap: 10px;
+          width: 100%;
         }
 
         .tag-name-text {
-          font-size: 0.86rem;
+          font-size: 0.88rem;
           font-weight: 600;
           color: var(--text-primary);
-          word-break: break-word;
+          line-height: 1.35;
+          flex: 1;
+          min-width: 0;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
         }
 
         .tag-right-controls {
@@ -2052,10 +2465,15 @@ const Settings = ({
         }
 
         .tag-pts-pill {
-          padding: 2px 8px;
-          font-size: 0.74rem;
+          padding: 3px 9px;
+          font-size: 0.76rem;
           font-weight: 700;
           border-radius: var(--radius-full);
+          font-variant-numeric: tabular-nums;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          min-width: 38px;
         }
 
         .tag-pts-pill.pts-pos {
@@ -2075,7 +2493,7 @@ const Settings = ({
           border: none;
           cursor: pointer;
           padding: 5px;
-          border-radius: var(--radius-sm);
+          border-radius: 6px;
           color: var(--text-tertiary);
           display: inline-flex;
           align-items: center;
@@ -2085,7 +2503,7 @@ const Settings = ({
 
         .tag-icon-action:hover {
           color: var(--text-primary);
-          background: rgba(0, 0, 0, 0.05);
+          background: rgba(0, 0, 0, 0.06);
         }
 
         .tag-icon-action.delete-act:hover {
@@ -3167,6 +3585,490 @@ const Settings = ({
           object-fit: cover;
         }
 
+        /* Minimalist Teacher Earnings Calculator */
+        .calc-main-card {
+          margin-bottom: 18px;
+        }
+
+        .calc-header-clean {
+          margin-bottom: 16px;
+        }
+
+        .calc-header-sub {
+          font-size: 0.74rem;
+          color: var(--text-tertiary);
+          display: block;
+          margin-top: 2px;
+        }
+
+        .calc-sync-pill {
+          padding: 6px 13px;
+          font-size: 0.78rem;
+          font-weight: 600;
+          border-radius: var(--radius-full, 9999px);
+          background: #F2F4F7;
+          border: 1px solid rgba(0, 0, 0, 0.08);
+          color: var(--text-primary);
+          cursor: pointer;
+          transition: all 0.15s ease;
+          white-space: nowrap;
+        }
+
+        .calc-sync-pill:hover {
+          background: #E4E7EC;
+          border-color: rgba(0, 0, 0, 0.15);
+        }
+
+        .calc-split-container {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 20px;
+        }
+
+        .calc-controls-col {
+          display: flex;
+          flex-direction: column;
+          gap: 14px;
+        }
+
+        .calc-input-block {
+          background: #F9FAFB;
+          border: 1px solid rgba(0, 0, 0, 0.06);
+          border-radius: 12px;
+          padding: 14px;
+          display: flex;
+          flex-direction: column;
+          gap: 10px;
+        }
+
+        .calc-label-row {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+        }
+
+        .calc-field-title {
+          font-size: 0.8rem;
+          font-weight: 600;
+          color: var(--text-secondary);
+        }
+
+        .calc-field-val {
+          font-size: 0.84rem;
+          font-weight: 700;
+          color: var(--text-primary);
+          font-variant-numeric: tabular-nums;
+        }
+
+        .calc-stepper-row {
+          display: flex;
+          align-items: center;
+          background: #FFFFFF;
+          border: 1px solid rgba(0, 0, 0, 0.1);
+          border-radius: 10px;
+          overflow: hidden;
+          height: 42px;
+        }
+
+        .calc-step-btn {
+          width: 44px;
+          height: 100%;
+          background: transparent;
+          border: none;
+          font-size: 1.25rem;
+          font-weight: 600;
+          color: var(--text-primary);
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          transition: background 0.15s ease;
+          flex-shrink: 0;
+        }
+
+        .calc-step-btn:hover:not(:disabled) {
+          background: #F2F4F7;
+        }
+
+        .calc-step-btn:disabled {
+          opacity: 0.3;
+          cursor: not-allowed;
+        }
+
+        .calc-step-input-wrap {
+          flex: 1;
+          height: 100%;
+          border-left: 1px solid rgba(0, 0, 0, 0.06);
+          border-right: 1px solid rgba(0, 0, 0, 0.06);
+        }
+
+        .calc-step-input {
+          width: 100%;
+          height: 100%;
+          border: none;
+          outline: none;
+          text-align: center;
+          font-size: 1.05rem;
+          font-weight: 700;
+          color: var(--text-primary);
+          background: transparent;
+          box-sizing: border-box;
+          font-variant-numeric: tabular-nums;
+        }
+
+        .calc-price-input-wrap {
+          position: relative;
+          display: flex;
+          align-items: center;
+          background: #FFFFFF;
+          border: 1px solid rgba(0, 0, 0, 0.1);
+          border-radius: 10px;
+          height: 42px;
+          overflow: hidden;
+        }
+
+        .calc-price-input {
+          flex: 1;
+          height: 100%;
+          border: none;
+          outline: none;
+          padding: 0 54px 0 14px;
+          font-size: 1rem;
+          font-weight: 700;
+          color: var(--text-primary);
+          background: transparent;
+          box-sizing: border-box;
+          font-variant-numeric: tabular-nums;
+        }
+
+        .calc-suffix-text {
+          position: absolute;
+          right: 14px;
+          font-size: 0.8rem;
+          font-weight: 600;
+          color: var(--text-tertiary);
+          pointer-events: none;
+        }
+
+        .calc-chips-scroll {
+          display: flex;
+          gap: 5px;
+          overflow-x: auto;
+          -webkit-overflow-scrolling: touch;
+          scrollbar-width: none;
+          padding-bottom: 2px;
+        }
+
+        .calc-chips-scroll::-webkit-scrollbar {
+          display: none;
+        }
+
+        .calc-chip-clean {
+          padding: 4px 10px;
+          font-size: 0.74rem;
+          font-weight: 600;
+          background: #FFFFFF;
+          border: 1px solid rgba(0, 0, 0, 0.08);
+          border-radius: 6px;
+          color: var(--text-secondary);
+          cursor: pointer;
+          white-space: nowrap;
+          flex-shrink: 0;
+          transition: all 0.15s ease;
+        }
+
+        .calc-chip-clean:hover {
+          color: var(--text-primary);
+          border-color: rgba(0, 0, 0, 0.2);
+        }
+
+        .calc-chip-clean.active {
+          background: #1D1D1F;
+          color: #FFFFFF;
+          border-color: #1D1D1F;
+        }
+
+        .calc-slider-wrap {
+          display: flex;
+          flex-direction: column;
+          gap: 6px;
+          padding: 4px 0;
+        }
+
+        .calc-range-slider {
+          width: 100%;
+          height: 6px;
+          border-radius: 3px;
+          outline: none;
+          -webkit-appearance: none;
+          background: #E5E7EB;
+          cursor: pointer;
+        }
+
+        .calc-range-slider::-webkit-slider-thumb {
+          -webkit-appearance: none;
+          width: 18px;
+          height: 18px;
+          border-radius: 50%;
+          background: #1D1D1F;
+          box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
+          cursor: pointer;
+        }
+
+        .calc-slider-ticks {
+          position: relative;
+          width: 100%;
+          height: 18px;
+          margin-top: 4px;
+        }
+
+        .calc-tick-mark {
+          position: absolute;
+          font-size: 0.72rem;
+          color: var(--text-tertiary);
+          font-weight: 500;
+          cursor: pointer;
+          user-select: none;
+          transition: color 0.15s ease, font-weight 0.15s ease;
+        }
+
+        .calc-tick-mark:hover {
+          color: var(--text-primary);
+        }
+
+        .calc-tick-mark.active {
+          color: var(--text-primary);
+          font-weight: 700;
+        }
+
+        /* Results Column */
+        .calc-results-col {
+          display: flex;
+          flex-direction: column;
+          gap: 12px;
+        }
+
+        .calc-hero-clean {
+          background: #18191B;
+          color: #FFFFFF;
+          border-radius: 14px;
+          padding: 18px 20px;
+          display: flex;
+          flex-direction: column;
+          gap: 6px;
+        }
+
+        .calc-hero-top {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+        }
+
+        .calc-hero-label {
+          font-size: 0.74rem;
+          font-weight: 600;
+          letter-spacing: 0.5px;
+          text-transform: uppercase;
+          color: rgba(255, 255, 255, 0.65);
+        }
+
+        .calc-hero-pct {
+          font-size: 0.74rem;
+          font-weight: 700;
+          background: rgba(255, 255, 255, 0.15);
+          padding: 2px 8px;
+          border-radius: var(--radius-full, 9999px);
+        }
+
+        .calc-hero-val {
+          font-size: 1.85rem;
+          font-weight: 800;
+          letter-spacing: -0.02em;
+          color: #FFFFFF;
+          font-variant-numeric: tabular-nums;
+          line-height: 1.2;
+        }
+
+        .calc-hero-meta {
+          font-size: 0.76rem;
+          color: rgba(255, 255, 255, 0.65);
+        }
+
+        .calc-stats-dual {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 10px;
+        }
+
+        .calc-stat-clean {
+          background: #F9FAFB;
+          border: 1px solid rgba(0, 0, 0, 0.06);
+          border-radius: 12px;
+          padding: 12px 14px;
+          display: flex;
+          flex-direction: column;
+          gap: 3px;
+        }
+
+        .calc-stat-lbl {
+          font-size: 0.72rem;
+          font-weight: 600;
+          color: var(--text-secondary);
+        }
+
+        .calc-stat-num {
+          font-size: 1.08rem;
+          font-weight: 700;
+          color: var(--text-primary);
+          font-variant-numeric: tabular-nums;
+        }
+
+        .calc-stat-sub {
+          font-size: 0.7rem;
+          color: var(--text-tertiary);
+        }
+
+        .calc-ratio-clean {
+          background: #F9FAFB;
+          border: 1px solid rgba(0, 0, 0, 0.06);
+          border-radius: 12px;
+          padding: 12px 14px;
+          display: flex;
+          flex-direction: column;
+          gap: 8px;
+        }
+
+        .calc-ratio-row {
+          display: flex;
+          justify-content: space-between;
+          font-size: 0.72rem;
+          font-weight: 600;
+          color: var(--text-secondary);
+        }
+
+        .calc-bar-track {
+          width: 100%;
+          height: 6px;
+          background: #E5E7EB;
+          border-radius: var(--radius-full, 9999px);
+          overflow: hidden;
+        }
+
+        .calc-bar-teacher {
+          height: 100%;
+          background: #1D1D1F;
+          border-radius: var(--radius-full, 9999px);
+          transition: width 0.25s ease;
+        }
+
+        /* Minimal Groups Table */
+        .calc-groups-clean-card {
+          margin-top: 18px;
+        }
+
+        .calc-groups-head {
+          margin-bottom: 12px;
+        }
+
+        .calc-groups-head-sub {
+          font-size: 0.74rem;
+          color: var(--text-tertiary);
+        }
+
+        .calc-groups-count-badge {
+          font-size: 0.76rem;
+          font-weight: 600;
+          color: var(--text-secondary);
+          background: #F2F4F7;
+          padding: 4px 10px;
+          border-radius: var(--radius-full, 9999px);
+        }
+
+        .calc-groups-table {
+          display: flex;
+          flex-direction: column;
+          border: 1px solid rgba(0, 0, 0, 0.06);
+          border-radius: 12px;
+          overflow: hidden;
+        }
+
+        .calc-group-row {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          padding: 10px 14px;
+          background: #FFFFFF;
+          border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+          transition: background 0.15s ease;
+        }
+
+        .calc-group-row:last-child {
+          border-bottom: none;
+        }
+
+        .calc-group-row:hover {
+          background: #F9FAFB;
+        }
+
+        .calc-group-row-info {
+          display: flex;
+          flex-direction: column;
+          gap: 2px;
+        }
+
+        .calc-group-row-name {
+          font-size: 0.86rem;
+          font-weight: 600;
+          color: var(--text-primary);
+        }
+
+        .calc-group-row-count {
+          font-size: 0.72rem;
+          color: var(--text-tertiary);
+        }
+
+        .calc-group-row-amounts {
+          display: flex;
+          flex-direction: column;
+          align-items: flex-end;
+          gap: 2px;
+        }
+
+        .calc-group-row-gross {
+          font-size: 0.72rem;
+          color: var(--text-tertiary);
+        }
+
+        .calc-group-row-share {
+          font-size: 0.86rem;
+          font-weight: 700;
+          color: #059669;
+          font-variant-numeric: tabular-nums;
+        }
+
+        .calc-groups-total-bar {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          padding: 12px 14px;
+          background: #F9FAFB;
+          border-radius: 10px;
+          margin-top: 10px;
+          font-size: 0.82rem;
+        }
+
+        .calc-groups-total-bar .lbl {
+          font-weight: 600;
+          color: var(--text-secondary);
+        }
+
+        .calc-groups-total-bar .val {
+          font-weight: 800;
+          color: #059669;
+          font-size: 0.95rem;
+          font-variant-numeric: tabular-nums;
+        }
+
         /* Mobile Breakpoints */
         @media (max-width: 768px) {
           .settings-page-header {
@@ -3177,7 +4079,7 @@ const Settings = ({
 
           .settings-page-header .tab-control-brutalist {
             display: grid;
-            grid-template-columns: repeat(5, 1fr);
+            grid-template-columns: repeat(4, 1fr);
             width: 100%;
             background: #EEEEF0;
             padding: 3px;
@@ -3211,6 +4113,28 @@ const Settings = ({
             padding: 1px 4px;
             margin-left: 2px;
             flex-shrink: 0;
+          }
+
+          .calc-split-container {
+            grid-template-columns: 1fr;
+            gap: 14px;
+          }
+
+          .calc-stats-dual {
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+          }
+
+          .calc-hero-val {
+            font-size: 1.6rem;
+          }
+
+          .calc-hero-clean {
+            padding: 16px;
+          }
+
+          .calc-input-block {
+            padding: 12px;
           }
 
           .settings-hero-banner {
@@ -3353,6 +4277,8 @@ const Settings = ({
           background: #202124;
           border: 1px solid #3C4043;
           color: #8AB4F8;
+          border-radius: 50%;
+          overflow: hidden;
         }
 
         [data-theme="dark"] .hero-sync-box {
@@ -3387,10 +4313,12 @@ const Settings = ({
         [data-theme="dark"] .tag-card-modern {
           background: #202124;
           border-color: #3C4043;
+          box-shadow: none;
         }
 
         [data-theme="dark"] .tag-card-modern:hover {
           border-color: #5F6368;
+          background: #26282B;
         }
 
         [data-theme="dark"] .tag-name-text {
@@ -3398,13 +4326,13 @@ const Settings = ({
         }
 
         [data-theme="dark"] .tag-pts-pill.pts-pos {
-          background: rgba(129, 201, 149, 0.15);
+          background: rgba(129, 201, 149, 0.16);
           color: #81C995;
           border-color: rgba(129, 201, 149, 0.35);
         }
 
         [data-theme="dark"] .tag-pts-pill.pts-neg {
-          background: rgba(242, 139, 130, 0.15);
+          background: rgba(242, 139, 130, 0.16);
           color: #F28B82;
           border-color: rgba(242, 139, 130, 0.35);
         }
@@ -3414,13 +4342,13 @@ const Settings = ({
         }
 
         [data-theme="dark"] .tag-icon-action:hover {
-          color: #8AB4F8;
-          background: rgba(255, 255, 255, 0.06);
+          color: #E8EAED;
+          background: #303134;
         }
 
         [data-theme="dark"] .tag-icon-action.delete-act:hover {
           color: #F28B82;
-          background: rgba(242, 139, 130, 0.15);
+          background: rgba(242, 139, 130, 0.18);
         }
 
         [data-theme="dark"] .trash-segmented-filter {
@@ -3665,6 +4593,148 @@ const Settings = ({
 
         [data-theme="dark"] .settings-gallery-item {
           background: #202124;
+        }
+
+        /* Dark Mode Calculator Overrides */
+        [data-theme="dark"] .calc-sync-pill {
+          background: #202124;
+          border-color: #3C4043;
+          color: #E8EAED;
+        }
+
+        [data-theme="dark"] .calc-sync-pill:hover {
+          background: #303134;
+        }
+
+        [data-theme="dark"] .calc-input-block {
+          background: #202124;
+          border-color: #3C4043;
+        }
+
+        [data-theme="dark"] .calc-stepper-row {
+          background: #292A2D;
+          border-color: #3C4043;
+        }
+
+        [data-theme="dark"] .calc-step-btn {
+          color: #E8EAED;
+        }
+
+        [data-theme="dark"] .calc-step-btn:hover:not(:disabled) {
+          background: #303134;
+        }
+
+        [data-theme="dark"] .calc-step-input {
+          color: #E8EAED;
+        }
+
+        [data-theme="dark"] .calc-price-input-wrap {
+          background: #292A2D;
+          border-color: #3C4043;
+        }
+
+        [data-theme="dark"] .calc-price-input {
+          color: #E8EAED;
+        }
+
+        [data-theme="dark"] .calc-suffix-text {
+          color: #9AA0A6;
+        }
+
+        [data-theme="dark"] .calc-chip-clean {
+          background: #292A2D;
+          border-color: #3C4043;
+          color: #9AA0A6;
+        }
+
+        [data-theme="dark"] .calc-chip-clean:hover {
+          color: #E8EAED;
+          border-color: #5F6368;
+        }
+
+        [data-theme="dark"] .calc-chip-clean.active {
+          background: #E8EAED;
+          color: #202124;
+          border-color: #E8EAED;
+        }
+
+        [data-theme="dark"] .calc-range-slider {
+          background: #3C4043;
+        }
+
+        [data-theme="dark"] .calc-range-slider::-webkit-slider-thumb {
+          background: #E8EAED;
+        }
+
+        [data-theme="dark"] .calc-hero-clean {
+          background: #202124;
+          border: 1px solid #3C4043;
+        }
+
+        [data-theme="dark"] .calc-stat-clean {
+          background: #202124;
+          border-color: #3C4043;
+        }
+
+        [data-theme="dark"] .calc-stat-num {
+          color: #E8EAED;
+        }
+
+        [data-theme="dark"] .calc-ratio-clean {
+          background: #202124;
+          border-color: #3C4043;
+        }
+
+        [data-theme="dark"] .calc-bar-track {
+          background: #3C4043;
+        }
+
+        [data-theme="dark"] .calc-bar-teacher {
+          background: #E8EAED;
+        }
+
+        [data-theme="dark"] .calc-groups-count-badge {
+          background: #202124;
+          color: #9AA0A6;
+        }
+
+        [data-theme="dark"] .calc-groups-table {
+          border-color: #3C4043;
+        }
+
+        [data-theme="dark"] .calc-group-row {
+          background: #202124;
+          border-bottom-color: #2D2F31;
+        }
+
+        [data-theme="dark"] .calc-group-row:hover {
+          background: #292A2D;
+        }
+
+        [data-theme="dark"] .calc-group-row-name {
+          color: #E8EAED;
+        }
+
+        [data-theme="dark"] .calc-group-row-share {
+          color: #81C995;
+        }
+
+        [data-theme="dark"] .calc-groups-total-bar {
+          background: #202124;
+          border-color: #3C4043;
+        }
+
+        [data-theme="dark"] .calc-groups-total-bar .val {
+          color: #81C995;
+        }
+
+        [data-theme="dark"] .calc-tick-mark {
+          color: #9AA0A6;
+        }
+
+        [data-theme="dark"] .calc-tick-mark:hover,
+        [data-theme="dark"] .calc-tick-mark.active {
+          color: #E8EAED;
         }
       `}</style>
     </div>

@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { RewardSquircle, ProjectLikeIcon } from './StudentIcons';
+import useModalDismiss from '../../hooks/useModalDismiss';
 
 const REWARDS_CATALOG = [
   {
@@ -258,19 +259,12 @@ export default function StudentShopComingSoon({
     }
   }, [pinnedStudent]);
 
-  // Escape key handler for open modals
-  useEffect(() => {
-    if (!selectedReward && !confirmOrderReward && !showRequestsDrawer) return;
-    const handleKeyDown = (e) => {
-      if (e.key === 'Escape') {
-        setSelectedReward(null);
-        setConfirmOrderReward(null);
-        setShowRequestsDrawer(false);
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [selectedReward, confirmOrderReward, showRequestsDrawer]);
+  // Escape key handler and body scroll lock for open modals
+  useModalDismiss(Boolean(selectedReward || confirmOrderReward || showRequestsDrawer), () => {
+    setSelectedReward(null);
+    setConfirmOrderReward(null);
+    setShowRequestsDrawer(false);
+  });
 
   const targetReward = useMemo(() => {
     if (!targetRewardId) return null;
@@ -427,8 +421,9 @@ export default function StudentShopComingSoon({
                       </button>
                     )}
                     {pinnedStudent && (
-                      <span className="slide-balance-pill">
-                        {totalScore} Like mavjud
+                      <span className="slide-balance-pill" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                        <ProjectLikeIcon size={12} />
+                        <span>{totalScore} Like mavjud</span>
                       </span>
                     )}
                   </div>
@@ -473,8 +468,9 @@ export default function StudentShopComingSoon({
             <span className="target-goal-title">
               Orzu mukofot: <strong>{targetReward.title}</strong>
             </span>
-            <span className="target-goal-stats">
-              {totalScore} / {targetReward.points} Like ({targetPercent}%)
+            <span className="target-goal-stats" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+              <ProjectLikeIcon size={13} />
+              <span>{totalScore} / {targetReward.points} Like ({targetPercent}%)</span>
             </span>
           </div>
           <div className="target-progress-track">
@@ -631,7 +627,8 @@ export default function StudentShopComingSoon({
                       <path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z" />
                     </svg>
                   </div>
-                  <div className="shop-empty-badge">
+                  <div className="shop-empty-badge" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                    <ProjectLikeIcon size={13} />
                     <span>Balansingiz: {totalScore} Like</span>
                   </div>
                   <h3 className="shop-empty-title">Hozircha yetarli Like mavjud emas</h3>
@@ -758,8 +755,12 @@ export default function StudentShopComingSoon({
               {pinnedStudent ? (
                 <div className="detail-progress-card">
                   <div className="progress-header">
-                    <span>To'plangan: {totalScore} Like</span>
-                    <span>Kerak: {selectedReward.points} Like</span>
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
+                      <ProjectLikeIcon size={12} /> To'plangan: {totalScore} Like
+                    </span>
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
+                      <ProjectLikeIcon size={12} /> Kerak: {selectedReward.points} Like
+                    </span>
                   </div>
                   <div className="detail-progress-track">
                     <div

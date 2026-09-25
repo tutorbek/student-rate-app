@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { extractGroupDays } from '../../utils/scheduleUtils';
+import { extractGroupDays, isStudentTargetedByExtraLesson } from '../../utils/scheduleUtils';
 
 const UZBEK_MONTHS = [
   'Yanvar', 'Fevral', 'Mart', 'Aprel', 'May', 'Iyun',
@@ -24,6 +24,7 @@ export default function StudentAttendanceCalendar({
   group,
   pinnedStudent,
   onOpenProfilePicker,
+  extraLessons = [],
 }) {
   const [currentYear, setCurrentYear] = useState(() => new Date().getFullYear());
   const [currentMonth, setCurrentMonth] = useState(() => new Date().getMonth());
@@ -116,18 +117,23 @@ export default function StudentAttendanceCalendar({
         status = record.records?.[pId] ?? record.records?.[pinnedStudent.id] ?? null;
       }
 
-      const isLessonDay = scheduledDays.includes(dayKey);
+      const extraLesson = (extraLessons || []).find(
+        (el) => el && String(el.groupId) === String(group?.id) && el.date === dateStr && (!pinnedStudent?.id || isStudentTargetedByExtraLesson(el, pinnedStudent.id))
+      );
+      const isLessonDay = scheduledDays.includes(dayKey) || Boolean(extraLesson);
       const hasGroupRecord = Boolean(record);
 
       // Priority 1: pinned student attendance status
       // Priority 2: unpinned group record (lesson conducted)
-      // Priority 3: scheduled group lesson day (e.g. Du-Ch-Ju throughout month)
+      // Priority 3: scheduled group lesson day (e.g. Du-Ch-Ju throughout month or Extra Lesson)
       const validStatuses = ['present', 'late', 'absent', 'excused'];
       let cellStatus = 'none';
       if (status && validStatuses.includes(status)) {
         cellStatus = status;
       } else if (!pinnedStudent && hasGroupRecord) {
         cellStatus = 'group-lesson';
+      } else if (extraLesson) {
+        cellStatus = 'scheduled';
       } else if (isLessonDay) {
         cellStatus = 'scheduled';
       } else if (hasGroupRecord) {
@@ -142,14 +148,16 @@ export default function StudentAttendanceCalendar({
         dayKey,
         isToday,
         status,
-        isLessonDay,
         hasGroupRecord,
+        isLessonDay,
+        hasExtraLesson: Boolean(extraLesson),
+        extraLessonData: extraLesson,
         cellStatus,
       });
     }
 
     return cells;
-  }, [currentYear, currentMonth, todayStr, attendanceMap, pinnedStudent, scheduledDays]);
+  }, [currentYear, currentMonth, todayStr, attendanceMap, pinnedStudent, scheduledDays, extraLessons, group?.id]);
 
   const monthStats = useMemo(() => {
     if (!group?.id) {
@@ -215,7 +223,12 @@ export default function StudentAttendanceCalendar({
     let statusText = "Dars kuni emas";
     let statusType = 'none';
 
-    if (cell.status === 'present') {
+    if (cell.hasExtraLesson && cell.extraLessonData) {
+      const el = cell.extraLessonData;
+      const isPersonal = el.targetType === 'custom';
+      statusText = `${isPersonal ? "⚡ Siz uchun alohida Extra Lesson" : "⚡ Extra Lesson"} (${el.startTime || '15:30'}${el.endTime ? ` - ${el.endTime}` : ''})${el.room ? ` • ${el.room}` : ''}${el.topic ? ` • ${el.topic}` : ''}`;
+      statusType = 'extra-lesson';
+    } else if (cell.status === 'present') {
       statusText = 'Darsda qatnashgan';
       statusType = 'present';
     } else if (cell.status === 'late') {
@@ -389,6 +402,7 @@ export default function StudentAttendanceCalendar({
               aria-label={`${cell.day}-kun`}
             >
               <span className="day-number">{cell.day}</span>
+              {cell.hasExtraLesson && <span className="cell-extra-badge" title="Extra Lesson">⚡</span>}
             </button>
           );
         })}

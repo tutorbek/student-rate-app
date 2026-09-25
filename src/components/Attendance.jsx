@@ -12,6 +12,7 @@ import {
 } from '../utils/attendanceUtils';
 import { exportAttendanceToCSV, printAttendanceJournal } from '../utils/exportAttendance';
 import { getCurrentActiveLessonGroup, isGroupLessonActive } from '../utils/scheduleUtils';
+import { useModalDismiss } from '../hooks/useModalDismiss';
 
 const UZBEK_MONTHS = [
   'Yanvar', 'Fevral', 'Mart', 'Aprel', 'May', 'Iyun',
@@ -188,10 +189,10 @@ const StudentAttendanceRow = React.memo(({ student, status, wasAbsentLastLesson,
   );
 });
 
-const Attendance = ({ groups = [], students = [], attendance = [], onSaveAttendance, onDeleteAttendance, showToast }) => {
+const Attendance = ({ groups = [], students = [], attendance = [], onSaveAttendance, onDeleteAttendance, showToast, extraLessons = [] }) => {
   const [activeTab, setActiveTab] = useState('mark'); // 'mark' | 'journal' | 'stats'
   const [selectedGroupId, setSelectedGroupId] = useState(() => {
-    const activeLesson = getCurrentActiveLessonGroup(groups);
+    const activeLesson = getCurrentActiveLessonGroup(groups, new Date(), 5, extraLessons);
     if (activeLesson) return activeLesson.id;
     return groups.length > 0 ? groups[0].id : '';
   });
@@ -224,26 +225,10 @@ const Attendance = ({ groups = [], students = [], attendance = [], onSaveAttenda
 
   useEffect(() => {
     if (groups.length > 0 && (!selectedGroupId || !groups.find((g) => g.id === selectedGroupId))) {
-      const activeLesson = getCurrentActiveLessonGroup(groups);
+      const activeLesson = getCurrentActiveLessonGroup(groups, new Date(), 5, extraLessons);
       setSelectedGroupId(activeLesson ? activeLesson.id : groups[0].id);
     }
-  }, [groups, selectedGroupId]);
-
-  useEffect(() => {
-    const handleKeyDown = (e) => {
-      if (e.key === 'Escape') {
-        setIsGroupDropdownOpen(false);
-        setIsDatePickerOpen(false);
-        setIsUnifiedMonthPickerOpen(false);
-        setConfirmDeleteDate(null);
-        setSelectedDayDetail(null);
-        setSelectedStudentHistoryModal(null);
-        setPendingNavigation(null);
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []);
+  }, [groups, selectedGroupId, extraLessons]);
 
   const selectedGroup = useMemo(() => {
     return groups.find((g) => g.id === selectedGroupId) || null;
@@ -266,6 +251,40 @@ const Attendance = ({ groups = [], students = [], attendance = [], onSaveAttenda
   const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
   const [calendarViewYear, setCalendarViewYear] = useState(() => new Date().getFullYear());
   const [calendarViewMonth, setCalendarViewMonth] = useState(() => new Date().getMonth());
+
+  // Escape key and background scroll lock for all modals in Attendance
+  const isAnyAttendanceModalOpen = Boolean(
+    confirmDeleteDate ||
+    selectedDayDetail ||
+    selectedStudentHistoryModal ||
+    pendingNavigation
+  );
+
+  useModalDismiss(isAnyAttendanceModalOpen, () => {
+    if (confirmDeleteDate) {
+      setConfirmDeleteDate(null);
+    } else if (pendingNavigation) {
+      setPendingNavigation(null);
+    } else if (selectedDayDetail) {
+      setSelectedDayDetail(null);
+    } else if (selectedStudentHistoryModal) {
+      setSelectedStudentHistoryModal(null);
+    }
+  });
+
+  // Close dropdowns on Escape
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape' && !isAnyAttendanceModalOpen) {
+        setIsGroupDropdownOpen(false);
+        setIsJournalGroupDropdownOpen(false);
+        setIsDatePickerOpen(false);
+        setIsUnifiedMonthPickerOpen(false);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isAnyAttendanceModalOpen]);
 
   const formatDisplayDate = (dateStr) => {
     if (!dateStr) return '';
@@ -1906,69 +1925,73 @@ const Attendance = ({ groups = [], students = [], attendance = [], onSaveAttenda
             </button>
 
             {/* Modal Header */}
-            <div className="student-modal-header">
-              <div className="avatar-circle student-modal-avatar" style={{ background: studentHistoryDetails.student.color }}>
-                {renderAvatar(studentHistoryDetails.student.emoji)}
+            <div className="modal-header-fixed" style={{ marginBottom: '10px' }}>
+              <div className="student-modal-header" style={{ marginBottom: '12px', paddingBottom: '12px' }}>
+                <div className="avatar-circle student-modal-avatar" style={{ background: studentHistoryDetails.student.color }}>
+                  {renderAvatar(studentHistoryDetails.student.emoji)}
+                </div>
+                <div className="student-modal-info">
+                  <h3 className="student-modal-title">{studentHistoryDetails.student.name}</h3>
+                  <p className="student-modal-subtitle">
+                    {selectedGroup?.name || 'Guruh'} • Davr: <strong>{studentModalTimeframe === 'all' ? 'Kurs davomida' : `${UZBEK_MONTHS[journalMonth]} ${journalYear}`}</strong>
+                  </p>
+                  <div className="student-modal-period-tabs">
+                    <button
+                      type="button"
+                      className={`student-period-tab-btn ${studentModalTimeframe === 'month' ? 'active' : ''}`}
+                      onClick={() => setStudentModalTimeframe('month')}
+                    >
+                      {UZBEK_MONTHS[journalMonth]} {journalYear}
+                    </button>
+                    <button
+                      type="button"
+                      className={`student-period-tab-btn ${studentModalTimeframe === 'all' ? 'active' : ''}`}
+                      onClick={() => setStudentModalTimeframe('all')}
+                    >
+                      Kurs davomida
+                    </button>
+                  </div>
+                </div>
               </div>
-              <div className="student-modal-info">
-                <h3 className="student-modal-title">{studentHistoryDetails.student.name}</h3>
-                <p className="student-modal-subtitle">
-                  {selectedGroup?.name || 'Guruh'} • Davr: <strong>{studentModalTimeframe === 'all' ? 'Kurs davomida' : `${UZBEK_MONTHS[journalMonth]} ${journalYear}`}</strong>
-                </p>
-                <div className="student-modal-period-tabs">
-                  <button
-                    type="button"
-                    className={`student-period-tab-btn ${studentModalTimeframe === 'month' ? 'active' : ''}`}
-                    onClick={() => setStudentModalTimeframe('month')}
-                  >
-                    {UZBEK_MONTHS[journalMonth]} {journalYear}
-                  </button>
-                  <button
-                    type="button"
-                    className={`student-period-tab-btn ${studentModalTimeframe === 'all' ? 'active' : ''}`}
-                    onClick={() => setStudentModalTimeframe('all')}
-                  >
-                    Kurs davomida
-                  </button>
+
+              {/* Modal KPI Mini Row */}
+              <div className="student-modal-kpi-row" style={{ marginBottom: 0 }}>
+                <div className="kpi-mini-card">
+                  <span className="lbl">Jami Darslar</span>
+                  <span className="val">{studentHistoryDetails.total} ta</span>
+                </div>
+                <div className="kpi-mini-card card-present">
+                  <span className="lbl">Qatnashgan</span>
+                  <span className="val text-positive">
+                    {studentHistoryDetails.presentDays.length}
+                  </span>
+                </div>
+                <div className="kpi-mini-card card-excused">
+                  <span className="lbl">Sababli</span>
+                  <span className="val" style={{ color: '#2563EB' }}>
+                    {studentHistoryDetails.excusedDays.length}
+                  </span>
+                </div>
+                <div className="kpi-mini-card card-absent">
+                  <span className="lbl">Qoldirilgan</span>
+                  <span className="val text-negative">
+                    {studentHistoryDetails.absentDays.length}
+                  </span>
+                </div>
+                <div className="kpi-mini-card card-late">
+                  <span className="lbl">Kechikkan</span>
+                  <span className="val">
+                    {studentHistoryDetails.lateDays.length}
+                  </span>
+                </div>
+                <div className="kpi-mini-card">
+                  <span className="lbl">Davomat</span>
+                  <span className="val font-bold">{studentHistoryDetails.total > 0 ? `${studentHistoryDetails.rate}%` : '—'}</span>
                 </div>
               </div>
             </div>
 
-            {/* Modal KPI Mini Row */}
-            <div className="student-modal-kpi-row">
-              <div className="kpi-mini-card">
-                <span className="lbl">Jami Darslar</span>
-                <span className="val">{studentHistoryDetails.total} ta</span>
-              </div>
-              <div className="kpi-mini-card card-present">
-                <span className="lbl">Qatnashgan</span>
-                <span className="val text-positive">
-                  {studentHistoryDetails.presentDays.length}
-                </span>
-              </div>
-              <div className="kpi-mini-card card-excused">
-                <span className="lbl">Sababli</span>
-                <span className="val" style={{ color: '#2563EB' }}>
-                  {studentHistoryDetails.excusedDays.length}
-                </span>
-              </div>
-              <div className="kpi-mini-card card-absent">
-                <span className="lbl">Qoldirilgan</span>
-                <span className="val text-negative">
-                  {studentHistoryDetails.absentDays.length}
-                </span>
-              </div>
-              <div className="kpi-mini-card card-late">
-                <span className="lbl">Kechikkan</span>
-                <span className="val">
-                  {studentHistoryDetails.lateDays.length}
-                </span>
-              </div>
-              <div className="kpi-mini-card">
-                <span className="lbl">Davomat</span>
-                <span className="val font-bold">{studentHistoryDetails.total > 0 ? `${studentHistoryDetails.rate}%` : '—'}</span>
-              </div>
-            </div>
+            <div className="modal-body-scrollable">
 
             {/* Qoldirilgan Darslar Ro'yxati */}
             <div className="student-modal-section">
@@ -2066,7 +2089,9 @@ const Attendance = ({ groups = [], students = [], attendance = [], onSaveAttenda
               </div>
             )}
 
-            <div className="modal-actions">
+            </div>
+
+            <div className="modal-actions-fixed">
               <button
                 type="button"
                 className="btn btn-secondary scale-active"
@@ -2094,46 +2119,49 @@ const Attendance = ({ groups = [], students = [], attendance = [], onSaveAttenda
                 <line x1="6" y1="6" x2="18" y2="18" />
               </svg>
             </button>
-            <div className="journal-modal-header">
-              <h3 className="modal-title" style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
-                <IconCalendar size={18} />
-                <span>{formatDisplayDate(selectedDayDetail.date)}</span>
-              </h3>
-              <p className="modal-subtitle">Guruh davomat tafsilotlari</p>
+
+            <div className="modal-header-fixed">
+              <div className="journal-modal-header" style={{ marginBottom: '10px', paddingBottom: '8px' }}>
+                <h3 className="modal-title" style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
+                  <IconCalendar size={18} />
+                  <span>{formatDisplayDate(selectedDayDetail.date)}</span>
+                </h3>
+                <p className="modal-subtitle">Guruh davomat tafsilotlari</p>
+              </div>
+
+              <div className="journal-modal-metrics" style={{ marginBottom: 0 }}>
+                <div className="modal-metric-box">
+                  <span className="metric-lbl">Kelgan</span>
+                  <span className="metric-val text-positive">
+                    {selectedDayDetail.present}
+                  </span>
+                </div>
+                <div className="modal-metric-box">
+                  <span className="metric-lbl">Sababli</span>
+                  <span className="metric-val" style={{ color: '#2563EB' }}>
+                    {selectedDayDetail.excused || 0}
+                  </span>
+                </div>
+                <div className="modal-metric-box">
+                  <span className="metric-lbl">Kelmagan</span>
+                  <span className="metric-val text-negative">
+                    {selectedDayDetail.absent}
+                  </span>
+                </div>
+                <div className="modal-metric-box">
+                  <span className="metric-lbl">Kechikkan</span>
+                  <span className="metric-val">
+                    {selectedDayDetail.late}
+                  </span>
+                </div>
+                <div className="modal-metric-box">
+                  <span className="metric-lbl">Davomad %</span>
+                  <span className="metric-val font-bold">{selectedDayDetail.rate}%</span>
+                </div>
+              </div>
             </div>
 
-            <div className="journal-modal-metrics">
-              <div className="modal-metric-box">
-                <span className="metric-lbl">Kelgan</span>
-                <span className="metric-val text-positive">
-                  {selectedDayDetail.present}
-                </span>
-              </div>
-              <div className="modal-metric-box">
-                <span className="metric-lbl">Sababli</span>
-                <span className="metric-val" style={{ color: '#2563EB' }}>
-                  {selectedDayDetail.excused || 0}
-                </span>
-              </div>
-              <div className="modal-metric-box">
-                <span className="metric-lbl">Kelmagan</span>
-                <span className="metric-val text-negative">
-                  {selectedDayDetail.absent}
-                </span>
-              </div>
-              <div className="modal-metric-box">
-                <span className="metric-lbl">Kechikkan</span>
-                <span className="metric-val">
-                  {selectedDayDetail.late}
-                </span>
-              </div>
-              <div className="modal-metric-box">
-                <span className="metric-lbl">Davomad %</span>
-                <span className="metric-val font-bold">{selectedDayDetail.rate}%</span>
-              </div>
-            </div>
-
-            <div className="journal-modal-students-scroll">
+            <div className="modal-body-scrollable journal-modal-students-scroll">
               {(selectedDayDetail.studentsList || []).length > 0 ? (
                 selectedDayDetail.studentsList.map((student) => {
                   const status = selectedDayDetail.records?.[student.id];
@@ -2176,7 +2204,7 @@ const Attendance = ({ groups = [], students = [], attendance = [], onSaveAttenda
               )}
             </div>
 
-            <div className="modal-actions">
+            <div className="modal-actions-fixed">
               <button
                 type="button"
                 className="btn btn-secondary scale-active"
@@ -2217,7 +2245,7 @@ const Attendance = ({ groups = [], students = [], attendance = [], onSaveAttenda
       {/* Delete Confirmation Modal */}
       {confirmDeleteDate && createPortal(
         <div className="modal-overlay" onClick={() => setConfirmDeleteDate(null)}>
-          <div className="modal-content glass" onClick={(e) => e.stopPropagation()}>
+          <div className="modal-content glass modal-confirm" onClick={(e) => e.stopPropagation()}>
             <button 
               type="button" 
               className="modal-close-btn" 
@@ -2248,7 +2276,7 @@ const Attendance = ({ groups = [], students = [], attendance = [], onSaveAttenda
       {/* Unsaved Changes Confirmation Modal */}
       {pendingNavigation && createPortal(
         <div className="modal-overlay" onClick={handleCancelNavigation}>
-          <div className="modal-content glass" onClick={(e) => e.stopPropagation()}>
+          <div className="modal-content glass modal-confirm" onClick={(e) => e.stopPropagation()}>
             <button 
               type="button" 
               className="modal-close-btn" 
@@ -3625,8 +3653,8 @@ const Attendance = ({ groups = [], students = [], attendance = [], onSaveAttenda
 
         /* Day Details Modal */
         .journal-day-modal {
-          max-width: 520px;
-          width: 92%;
+          max-width: 500px;
+          width: 100%;
           padding: 24px;
         }
 
@@ -4234,8 +4262,8 @@ const Attendance = ({ groups = [], students = [], attendance = [], onSaveAttenda
 
         /* Student Attendance & Absent Days Modal */
         .student-absent-history-modal {
-          max-width: 520px;
-          width: 92%;
+          max-width: 500px;
+          width: 100%;
           padding: 24px;
         }
 
@@ -6423,7 +6451,8 @@ const Attendance = ({ groups = [], students = [], attendance = [], onSaveAttenda
           border-color: #3C4043;
         }
 
-        [data-theme="dark"] .empty-state {
+        [data-theme="dark"] .empty-state,
+        [data-theme="dark"] .empty-history {
           background: #292A2D;
           border-color: #3C4043;
         }

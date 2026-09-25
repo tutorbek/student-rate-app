@@ -3,6 +3,7 @@ import { getStudentScore, getGroupCategory } from '../utils/db';
 import { renderGroupIcon } from '../utils/groupIcons';
 import { renderAvatar } from '../utils/studentAvatars';
 import { calculateStudentAttendanceStats } from '../utils/attendanceUtils';
+import ProjectLikeIcon from './common/ProjectLikeIcon';
 
 // Clean SVG Vector Icons (Minimalist black & white)
 const IconGroups = () => (
@@ -341,7 +342,10 @@ const Dashboard = ({ setActiveTab, onSelectGroup, onOpenSchedule, groups = [], s
             <div className="spotlight-header-row">
               <span className="spotlight-badge">Hozircha BU OY 1-O'RIN</span>
               {thisMonthSpotlight && (
-                <span className="spotlight-score-pill">❤️ +{thisMonthSpotlight.score} Like</span>
+                <span className="spotlight-score-pill">
+                  <ProjectLikeIcon size={14} />
+                  <span>+{thisMonthSpotlight.score} Like</span>
+                </span>
               )}
             </div>
 
@@ -372,7 +376,10 @@ const Dashboard = ({ setActiveTab, onSelectGroup, onOpenSchedule, groups = [], s
             <div className="spotlight-header-row">
               <span className="spotlight-badge">O'TGAN OY G'OLIBI</span>
               {lastMonthSpotlight && (
-                <span className="spotlight-score-pill">❤️ +{lastMonthSpotlight.score} Like</span>
+                <span className="spotlight-score-pill">
+                  <ProjectLikeIcon size={14} />
+                  <span>+{lastMonthSpotlight.score} Like</span>
+                </span>
               )}
             </div>
 
@@ -398,7 +405,10 @@ const Dashboard = ({ setActiveTab, onSelectGroup, onOpenSchedule, groups = [], s
             <div className="spotlight-header-row">
               <span className="spotlight-badge">O'TGAN OY G'OLIB GURUHI</span>
               {lastMonthGroupSpotlight && (
-                <span className="spotlight-score-pill">❤️ +{lastMonthGroupSpotlight.score} Like</span>
+                <span className="spotlight-score-pill">
+                  <ProjectLikeIcon size={14} />
+                  <span>+{lastMonthGroupSpotlight.score} Like</span>
+                </span>
               )}
             </div>
 
@@ -695,6 +705,9 @@ const Dashboard = ({ setActiveTab, onSelectGroup, onOpenSchedule, groups = [], s
         }
 
         .spotlight-score-pill {
+          display: inline-flex;
+          align-items: center;
+          gap: 4px;
           font-size: 0.82rem;
           font-weight: 700;
           color: #059669;

@@ -14,6 +14,7 @@ import AdminAttendance from './components/admin/AdminAttendance';
 import LoginPage from './components/LoginPage';
 import LandingPage from './components/LandingPage';
 import StudentPortal from './components/student/StudentPortal';
+import { useModalDismiss } from './hooks/useModalDismiss';
 import {
   loadFromSupabase as loadFromFirestore,
   saveToSupabase as saveToFirestore,
@@ -371,6 +372,16 @@ function App() {
   const [transactions, setTransactions] = useState([]);
   const [quickTags, setQuickTags] = useState([]);
   const [attendance, setAttendance] = useState([]);
+  const [extraLessons, setExtraLessons] = useState(() => {
+    try {
+      const tId = localStorage.getItem('rsa_teacher_id');
+      if (tId) {
+        const cached = localStorage.getItem(`rsa_extra_lessons_${tId}`);
+        if (cached) return JSON.parse(cached);
+      }
+    } catch (_) {}
+    return [];
+  });
   const [teacherProfile, setTeacherProfile] = useState(() => {
     try {
       const tId = localStorage.getItem('rsa_teacher_id');
@@ -407,6 +418,8 @@ function App() {
   groupsRef.current = groups;
   const attendanceRef = useRef(attendance);
   attendanceRef.current = attendance;
+  const extraLessonsRef = useRef(extraLessons);
+  extraLessonsRef.current = extraLessons;
   const studentGroupsRef = useRef(studentGroups);
   studentGroupsRef.current = studentGroups;
 
@@ -472,7 +485,8 @@ function App() {
               transactions: t.transactions || [],
               quickTags: normalizeQuickTags(t.quickTags),
               attendance: t.attendance || [],
-              teacherProfile: t.teacherProfile || null
+              teacherProfile: t.teacherProfile || null,
+              extraLessons: t.extraLessons || []
             };
           });
           setAllTeachersData(normalized);
@@ -485,6 +499,7 @@ function App() {
               setTransactions(currentT.transactions || []);
               setAttendance(currentT.attendance || []);
               setQuickTags(currentT.quickTags || DEFAULT_DATA.quickTags);
+              setExtraLessons(currentT.extraLessons || []);
               if (currentT.teacherProfile) {
                 setTeacherProfile(currentT.teacherProfile);
               }
@@ -556,6 +571,8 @@ function App() {
         setTransactions(loadedTransactions);
         setQuickTags(loadedQuickTags);
         setAttendance(syncedAttendance);
+        const loadedExtraLessons = data.extraLessons || [];
+        setExtraLessons(loadedExtraLessons);
 
         const loadedTeacherProfile = data.teacherProfile || null;
         if (loadedTeacherProfile) {
@@ -572,7 +589,8 @@ function App() {
           transactions: loadedTransactions,
           quickTags: loadedQuickTags,
           attendance: syncedAttendance,
-          teacherProfile: loadedTeacherProfile
+          teacherProfile: loadedTeacherProfile,
+          extraLessons: loadedExtraLessons
         };
         lastSavedDataRef.current = JSON.stringify(dbState);
 
@@ -670,11 +688,29 @@ function App() {
     return attendance;
   }, [attendance, userRole, studentGroupId]);
 
+  const filteredExtraLessons = useMemo(() => {
+    if (userRole === 'student') {
+      if (!studentGroupId) return [];
+      if (allTeachersData) {
+        for (const tId of Object.keys(allTeachersData)) {
+          const t = allTeachersData[tId];
+          if (t && Array.isArray(t.extraLessons)) {
+            const matches = t.extraLessons.filter((el) => String(el.groupId) === String(studentGroupId));
+            if (matches.length > 0) return matches;
+          }
+        }
+      }
+      return extraLessons.filter((el) => String(el.groupId) === String(studentGroupId));
+    }
+    return extraLessons;
+  }, [extraLessons, userRole, studentGroupId, allTeachersData]);
+
   // All active data for the current teacher (no student-group isolation)
   const allActiveGroups = useMemo(() => sortGroupsNaturally(groups.filter(g => !g.deleted)), [groups]);
   const allActiveStudents = useMemo(() => students.filter(s => !s.deleted), [students]);
   const allActiveTransactions = useMemo(() => transactions.filter(t => !t.deleted), [transactions]);
   const allActiveAttendance = useMemo(() => attendance || [], [attendance]);
+  const allActiveExtraLessons = useMemo(() => extraLessons || [], [extraLessons]);
 
   // Aggregated connected groups for students across all teachers
   const allStudentConnectedGroups = useMemo(() => {
@@ -799,7 +835,7 @@ function App() {
     if (!isLoaded || !isAuthenticated || !teacherId) return;
     if (userRole === 'student' || userRole === 'admin') return;
 
-    const db = { groups, students, transactions, quickTags, attendance, teacherProfile };
+    const db = { groups, students, transactions, quickTags, attendance, teacherProfile, extraLessons };
     const dbStr = JSON.stringify(db);
 
     // Instant (0ms) local cache backup to localStorage for offline protection!
@@ -855,7 +891,7 @@ function App() {
     }, 1500); // 1.5 second debounce
 
     return () => clearTimeout(timer);
-  }, [groups, students, transactions, quickTags, attendance, teacherProfile, isLoaded, isAuthenticated, teacherId, userRole]);
+  }, [groups, students, transactions, quickTags, attendance, teacherProfile, extraLessons, isLoaded, isAuthenticated, teacherId, userRole]);
 
   // Clear toast after timeout
   useEffect(() => {
@@ -1247,6 +1283,45 @@ function App() {
     return true;
   };
 
+  const handleAddExtraLesson = (lessonData) => {
+    const newLesson = {
+      ...lessonData,
+      id: lessonData.id || `extra_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`,
+      createdAt: new Date().toISOString(),
+    };
+    setExtraLessons((prev) => {
+      const updated = [newLesson, ...prev];
+      try {
+        if (teacherId) localStorage.setItem(`rsa_extra_lessons_${teacherId}`, JSON.stringify(updated));
+      } catch (_) {}
+      return updated;
+    });
+    showToast("Qo'shimcha dars (Extra Lesson) muvaffaqiyatli saqlandi!", "success");
+    return newLesson;
+  };
+
+  const handleUpdateExtraLesson = (id, updatedData) => {
+    setExtraLessons((prev) => {
+      const updated = prev.map((l) => (l.id === id ? { ...l, ...updatedData, updatedAt: new Date().toISOString() } : l));
+      try {
+        if (teacherId) localStorage.setItem(`rsa_extra_lessons_${teacherId}`, JSON.stringify(updated));
+      } catch (_) {}
+      return updated;
+    });
+    showToast("Extra Lesson ma'lumotlari yangilandi!", "success");
+  };
+
+  const handleDeleteExtraLesson = (id) => {
+    setExtraLessons((prev) => {
+      const updated = prev.filter((l) => l.id !== id);
+      try {
+        if (teacherId) localStorage.setItem(`rsa_extra_lessons_${teacherId}`, JSON.stringify(updated));
+      } catch (_) {}
+      return updated;
+    });
+    showToast("Qo'shimcha dars o'chirildi", "info");
+  };
+
   // Restore and Permanent Deletion Actions for Trash Bin
   const handleRestoreGroup = (id) => {
     const { updatedGroups, updatedStudents, updatedTransactions } = restoreGroup(groups, students, transactions, id);
@@ -1335,6 +1410,9 @@ function App() {
 
   // Logout handler state and function
   const [showLogoutConfirmModal, setShowLogoutConfirmModal] = useState(false);
+
+  // Close logout modal on Escape and lock background scroll
+  useModalDismiss(showLogoutConfirmModal, () => setShowLogoutConfirmModal(false));
 
   const handleLogout = () => {
     setShowLogoutConfirmModal(true);
@@ -1489,6 +1567,7 @@ function App() {
           toggleTheme={toggleTheme}
           teacherProfile={teacherProfile}
           allTeachersData={allTeachersData}
+          extraLessons={filteredExtraLessons}
         />
       );
     }
@@ -1504,6 +1583,7 @@ function App() {
             students={filteredStudents}
             transactions={filteredTransactions}
             attendance={attendance}
+            extraLessons={filteredExtraLessons}
           />
         );
       case 'groups':
@@ -1552,6 +1632,10 @@ function App() {
           <ScheduleView
             groups={filteredGroups}
             students={filteredStudents}
+            extraLessons={filteredExtraLessons}
+            onAddExtraLesson={handleAddExtraLesson}
+            onUpdateExtraLesson={handleUpdateExtraLesson}
+            onDeleteExtraLesson={handleDeleteExtraLesson}
             onSelectGroup={handleSelectGroup}
             onUpdateGroupSchedule={handleUpdateGroupSchedule}
             showToast={showToast}
@@ -1569,6 +1653,7 @@ function App() {
             userRole={userRole}
             onDeleteTransaction={handleDeleteTransaction}
             showToast={showToast}
+            extraLessons={filteredExtraLessons}
           />
         );
       case 'attendance':
@@ -1580,6 +1665,7 @@ function App() {
             onSaveAttendance={handleSaveAttendance}
             onDeleteAttendance={handleDeleteAttendance}
             showToast={showToast}
+            extraLessons={filteredExtraLessons}
           />
         );
       case 'settings':
@@ -1615,6 +1701,10 @@ function App() {
           <ScheduleView
             groups={filteredGroups}
             students={filteredStudents}
+            extraLessons={filteredExtraLessons}
+            onAddExtraLesson={handleAddExtraLesson}
+            onUpdateExtraLesson={handleUpdateExtraLesson}
+            onDeleteExtraLesson={handleDeleteExtraLesson}
             onSelectGroup={handleSelectGroup}
             onUpdateGroupSchedule={handleUpdateGroupSchedule}
             showToast={showToast}
@@ -1783,7 +1873,7 @@ function App() {
       {/* Logout Confirmation Warning Modal */}
       {showLogoutConfirmModal && createPortal(
         <div className="modal-overlay" onClick={() => setShowLogoutConfirmModal(false)}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '420px', padding: '24px' }}>
+          <div className="modal-content modal-confirm" onClick={(e) => e.stopPropagation()}>
             <button
               type="button"
               className="modal-close-btn"

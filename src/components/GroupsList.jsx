@@ -6,6 +6,7 @@ import { AVATAR_GALLERY_IMAGES, isGalleryImage, compressUploadedImage } from '..
 import { isGroupLessonActive } from '../utils/scheduleUtils';
 import ScheduleView from './ScheduleView';
 import Time24Input from './Time24Input';
+import { useModalDismiss } from '../hooks/useModalDismiss';
 
 const SCHEDULE_WEEKDAYS = [
   { key: 'mon', name: 'Dushanba', short: 'Du' },
@@ -212,19 +213,25 @@ const GroupsList = ({
     }
   }, [editingGroup]);
 
-  useEffect(() => {
-    const handleKeyDown = (e) => {
-      if (e.key === 'Escape') {
-        setShowAddModal(false);
-        setConfirmDeleteId(null);
-        setEditingGroup(null);
-        setShowScheduleModal(false);
-        setCategoryModalGroup(null);
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []);
+  // Escape key and background scroll lock handler for all modals in GroupsList
+  const isAnyGroupsListModalOpen = Boolean(
+    showAddModal ||
+    confirmDeleteId ||
+    editingGroup ||
+    categoryModalGroup
+  );
+
+  useModalDismiss(isAnyGroupsListModalOpen, () => {
+    if (confirmDeleteId) {
+      setConfirmDeleteId(null);
+    } else if (categoryModalGroup) {
+      setCategoryModalGroup(null);
+    } else if (editingGroup) {
+      setEditingGroup(null);
+    } else if (showAddModal) {
+      setShowAddModal(false);
+    }
+  });
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -441,7 +448,7 @@ const GroupsList = ({
       {/* Category Change Modal (Pop oyna) */}
       {categoryModalGroup && createPortal(
         <div className="modal-overlay" onClick={() => setCategoryModalGroup(null)}>
-          <div className="modal-content glass" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '400px' }}>
+          <div className="modal-content glass modal-confirm" onClick={(e) => e.stopPropagation()}>
             <button
               type="button"
               className="modal-close-btn"
@@ -520,9 +527,12 @@ const GroupsList = ({
                 <line x1="6" y1="6" x2="18" y2="18" />
               </svg>
             </button>
-            <h3 className="modal-title">Yangi Guruh Qo'shish</h3>
+            <div className="modal-header-fixed">
+              <h3 className="modal-title">Yangi Guruh Qo'shish</h3>
+            </div>
             <form onSubmit={handleSubmit}>
-              <div className="form-group">
+              <div className="modal-body-scrollable">
+                <div className="form-group">
                 <label className="form-label">Guruh nomi</label>
                 <input
                   type="text"
@@ -816,16 +826,17 @@ const GroupsList = ({
                   ))}
                 </div>
               </div>
+            </div>
 
-              <div className="modal-actions">
-                <button type="button" className="btn btn-secondary scale-active" onClick={() => setShowAddModal(false)}>
-                  Bekor qilish
-                </button>
-                <button type="submit" className="btn btn-primary scale-active">
-                  Yaratish
-                </button>
-              </div>
-            </form>
+            <div className="modal-actions-fixed">
+              <button type="button" className="btn btn-secondary scale-active" onClick={() => setShowAddModal(false)}>
+                Bekor qilish
+              </button>
+              <button type="submit" className="btn btn-primary scale-active">
+                Yaratish
+              </button>
+            </div>
+          </form>
           </div>
         </div>,
         document.body
@@ -834,7 +845,7 @@ const GroupsList = ({
       {/* Delete Confirmation Modal */}
       {confirmDeleteId && createPortal(
         <div className="modal-overlay" onClick={() => setConfirmDeleteId(null)}>
-          <div className="modal-content glass" onClick={(e) => e.stopPropagation()}>
+          <div className="modal-content glass modal-confirm" onClick={(e) => e.stopPropagation()}>
             <button
               type="button"
               className="modal-close-btn"
@@ -884,9 +895,12 @@ const GroupsList = ({
                 <line x1="6" y1="6" x2="18" y2="18" />
               </svg>
             </button>
-            <h3 className="modal-title">Guruhni Tahrirlash</h3>
+            <div className="modal-header-fixed">
+              <h3 className="modal-title">Guruhni Tahrirlash</h3>
+            </div>
             <form onSubmit={handleEditSubmit}>
-              <div className="form-group">
+              <div className="modal-body-scrollable">
+                <div className="form-group">
                 <label className="form-label">Guruh nomi</label>
                 <input
                   type="text"
@@ -1176,10 +1190,11 @@ const GroupsList = ({
                   ))}
                 </div>
               </div>
+            </div>
 
-              <div className="modal-actions modal-actions-edit-group">
-                <button
-                  type="button"
+            <div className="modal-actions-fixed modal-actions-edit-group">
+              <button
+                type="button"
                   className="btn btn-danger scale-active edit-group-delete-btn"
                   onClick={() => {
                     const idToDelete = editingGroup.id;

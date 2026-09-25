@@ -69,11 +69,36 @@ export const extractGroupTimes = (group) => {
  * @param {Object} group
  * @param {Date} [now=new Date()]
  * @param {number} [bufferMinutes=5]
+ * @param {Array} [extraLessons=[]]
  * @returns {boolean}
  */
-export const isGroupLessonActive = (group, now = new Date(), bufferMinutes = 5) => {
+export const isGroupLessonActive = (group, now = new Date(), bufferMinutes = 5, extraLessons = []) => {
   if (!group || group.deleted) return false;
 
+  const currentMinutes = now.getHours() * 60 + now.getMinutes();
+
+  // 1. Check if group has an Extra Lesson today
+  if (Array.isArray(extraLessons) && extraLessons.length > 0) {
+    const todayDateStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+    const todayExtra = extraLessons.find(
+      (el) => el && String(el.groupId) === String(group.id) && el.date === todayDateStr && (!studentId || isStudentTargetedByExtraLesson(el, studentId))
+    );
+    if (todayExtra && todayExtra.startTime) {
+      const startMin = parseTimeToMinutes(todayExtra.startTime);
+      let endMin = parseTimeToMinutes(todayExtra.endTime);
+      if (startMin !== null) {
+        if (endMin === null) endMin = (startMin + 90) % 1440;
+        const wStart = Math.max(0, startMin - bufferMinutes);
+        const wEnd = Math.min(1439, endMin + bufferMinutes);
+        const isActive = wEnd >= wStart
+          ? currentMinutes >= wStart && currentMinutes <= wEnd
+          : currentMinutes >= wStart || currentMinutes <= wEnd;
+        if (isActive) return true;
+      }
+    }
+  }
+
+  // 2. Regular weekly schedule check
   const currentDayKey = DAY_KEYS_MAP[now.getDay()];
   const days = extractGroupDays(group);
   if (!days.includes(currentDayKey)) {
@@ -84,8 +109,6 @@ export const isGroupLessonActive = (group, now = new Date(), bufferMinutes = 5) 
   if (startMinutes === null || endMinutes === null) {
     return false;
   }
-
-  const currentMinutes = now.getHours() * 60 + now.getMinutes();
 
   // 5-minute buffer before start and after end
   const windowStart = Math.max(0, startMinutes - bufferMinutes);
@@ -100,23 +123,72 @@ export const isGroupLessonActive = (group, now = new Date(), bufferMinutes = 5) 
 };
 
 /**
+ * Checks whether an Extra Lesson applies to a specific student.
+ * If targetType is 'all' (or undefined/null), it applies to all students in that group.
+ * If targetType is 'custom', it only applies if studentIds includes the student's ID.
+ */
+export const isStudentTargetedByExtraLesson = (extraLesson, studentId) => {
+  if (!extraLesson) return false;
+  if (!extraLesson.targetType || extraLesson.targetType === 'all') return true;
+  if (extraLesson.targetType === 'custom') {
+    if (!studentId) return false;
+    return Array.isArray(extraLesson.studentIds) && extraLesson.studentIds.some((id) => String(id) === String(studentId));
+  }
+  return true;
+};
+
+/**
  * Finds the group currently having a lesson (with 5 min buffer before & after).
  * If multiple groups match, returns the one where current time is closest to start time.
+ * Supports Extra Lessons.
  *
  * @param {Array} groups
  * @param {Date} [now=new Date()]
  * @param {number} [bufferMinutes=5]
+ * @param {Array} [extraLessons=[]]
+ * @param {string|number|null} [studentId=null]
  * @returns {Object|null}
  */
-export const getCurrentActiveLessonGroup = (groups = [], now = new Date(), bufferMinutes = 5) => {
+export const getCurrentActiveLessonGroup = (groups = [], now = new Date(), bufferMinutes = 5, extraLessons = [], studentId = null) => {
   if (!Array.isArray(groups) || groups.length === 0) return null;
 
-  const activeGroups = groups.filter((g) => g && !g.deleted && isGroupLessonActive(g, now, bufferMinutes));
+  const todayDateStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+  const currentMinutes = now.getHours() * 60 + now.getMinutes();
+
+  // Check extra lessons first
+  if (Array.isArray(extraLessons) && extraLessons.length > 0) {
+    const activeExtras = extraLessons.filter((el) => {
+      if (!el || el.date !== todayDateStr) return false;
+      if (studentId && !isStudentTargetedByExtraLesson(el, studentId)) return false;
+      const startMin = parseTimeToMinutes(el.startTime);
+      let endMin = parseTimeToMinutes(el.endTime);
+      if (startMin === null) return false;
+      if (endMin === null) endMin = (startMin + 90) % 1440;
+      const wStart = Math.max(0, startMin - bufferMinutes);
+      const wEnd = Math.min(1439, endMin + bufferMinutes);
+      return wEnd >= wStart
+        ? currentMinutes >= wStart && currentMinutes <= wEnd
+        : currentMinutes >= wStart || currentMinutes <= wEnd;
+    });
+
+    if (activeExtras.length > 0) {
+      const matchedLesson = activeExtras[0];
+      const grp = groups.find((g) => String(g.id) === String(matchedLesson.groupId) && !g.deleted);
+      if (grp) {
+        return {
+          ...grp,
+          isExtraLesson: true,
+          extraLessonData: matchedLesson,
+        };
+      }
+    }
+  }
+
+  const activeGroups = groups.filter((g) => g && !g.deleted && isGroupLessonActive(g, now, bufferMinutes, extraLessons, studentId));
   if (activeGroups.length === 0) return null;
 
   if (activeGroups.length === 1) return activeGroups[0];
 
-  const currentMinutes = now.getHours() * 60 + now.getMinutes();
   return activeGroups.reduce((best, curr) => {
     if (!best) return curr;
     const { startMinutes: bestStart } = extractGroupTimes(best);
@@ -126,3 +198,23 @@ export const getCurrentActiveLessonGroup = (groups = [], now = new Date(), buffe
     return distCurr < distBest ? curr : best;
   }, null);
 };
+
+/**
+ * Returns upcoming or current extra lessons for a group, sorted chronologically.
+ */
+export const getUpcomingExtraLessons = (groupId, extraLessons = [], now = new Date(), studentId = null) => {
+  if (!groupId || !Array.isArray(extraLessons) || extraLessons.length === 0) return [];
+  const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+  return extraLessons
+    .filter((el) => {
+      if (!el || String(el.groupId) !== String(groupId) || el.date < todayStr) return false;
+      if (studentId && !isStudentTargetedByExtraLesson(el, studentId)) return false;
+      return true;
+    })
+    .sort((a, b) => {
+      const cmpDate = (a.date || '').localeCompare(b.date || '');
+      if (cmpDate !== 0) return cmpDate;
+      return (a.startTime || '').localeCompare(b.startTime || '');
+    });
+};
+

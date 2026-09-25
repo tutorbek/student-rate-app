@@ -4,6 +4,8 @@ import { renderAvatar, STUDENT_AVATARS } from '../../utils/studentAvatars';
 import { AVATAR_GALLERY_IMAGES } from '../../utils/avatarGallery';
 import { scrollToWithOffset } from '../../utils/scrollOffset';
 import { getOrCreateDeviceId } from '../../utils/deviceId';
+import { ProjectLikeIcon } from './StudentIcons';
+import useModalDismiss from '../../hooks/useModalDismiss';
 
 const triggerHaptic = (style = 'light') => {
   try {
@@ -103,50 +105,8 @@ export default function StudentAccountView({
     setSheetDragY(0);
   };
 
-  // Bulletproof lock of background scroll on Mobile (iOS Safari / Android / Telegram WebApp) & Desktop
-  useEffect(() => {
-    if (typeof document === 'undefined') return;
-    const isModalOpen = Boolean(pinModalMode || showLogoutConfirm);
-    if (!isModalOpen) return;
-
-    const scrollY = window.scrollY || window.pageYOffset || 0;
-    const originalBodyPos = document.body.style.position;
-    const originalBodyTop = document.body.style.top;
-    const originalBodyWidth = document.body.style.width;
-    const originalBodyOverflow = document.body.style.overflow;
-    const originalDocOverflow = document.documentElement.style.overflow;
-
-    document.body.style.position = 'fixed';
-    document.body.style.top = `-${scrollY}px`;
-    document.body.style.left = '0';
-    document.body.style.right = '0';
-    document.body.style.width = '100%';
-    document.body.style.overflow = 'hidden';
-    document.documentElement.style.overflow = 'hidden';
-
-    return () => {
-      document.body.style.position = originalBodyPos;
-      document.body.style.top = originalBodyTop;
-      document.body.style.left = '';
-      document.body.style.right = '';
-      document.body.style.width = originalBodyWidth;
-      document.body.style.overflow = originalBodyOverflow;
-      document.documentElement.style.overflow = originalDocOverflow;
-      window.scrollTo(0, scrollY);
-    };
-  }, [pinModalMode, showLogoutConfirm]);
-
-  // Escape key handler for open modals
-  useEffect(() => {
-    if (!pinModalMode && !showLogoutConfirm) return;
-    const handleKeyDown = (e) => {
-      if (e.key === 'Escape') {
-        closeModals();
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [pinModalMode, showLogoutConfirm]);
+  // Bulletproof lock of background scroll and Escape key handler
+  useModalDismiss(Boolean(pinModalMode || showLogoutConfirm), closeModals);
 
   // Auto focus input when opening PIN entry
   useEffect(() => {
@@ -531,7 +491,7 @@ export default function StudentAccountView({
 
               <div className="account-points-row">
                 <div className="account-points-pill">
-                  <span className="points-star">⭐</span>
+                  <ProjectLikeIcon size={18} glow />
                   <span className="points-number">{totalScore}</span>
                   <span className="points-label">Like to'plangan</span>
                 </div>

@@ -513,20 +513,19 @@ html, body, #root, * {
   }
 }
 
-/* Modals */
+/* Modals Global Styling */
 .modal-overlay {
   position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.38);
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   z-index: 2000;
   padding: 20px;
   box-sizing: border-box;
-  overflow-y: auto;
+  overflow: hidden;
+  overscroll-behavior: contain;
+  touch-action: none;
   animation: modalBackdropFadeIn 0.2s ease-out forwards;
   display: flex;
   align-items: center;
@@ -536,17 +535,134 @@ html, body, #root, * {
 .modal-content {
   position: relative;
   width: 100%;
-  max-width: 480px;
+  max-width: 500px;
+  max-height: min(620px, calc(100dvh - 48px));
+  height: auto;
   margin: auto;
   box-sizing: border-box;
   background: #FFFFFF;
   border: 1px solid rgba(0, 0, 0, 0.08);
   border-radius: var(--radius-xl);
   box-shadow: var(--shadow-modal);
-  padding: 28px 24px 22px;
-  max-height: calc(100dvh - 50px);
-  overflow-y: auto;
+  padding: 26px 24px 20px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  overscroll-behavior: contain;
   animation: modalScaleIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Small Confirmation Modals */
+.modal-content.modal-confirm {
+  height: auto;
+  min-height: unset;
+  max-height: calc(100dvh - 48px);
+  max-width: 440px;
+  padding: 24px 22px 20px;
+}
+
+/* Modals with multi-tab or dynamic dataset that benefit from stable full height */
+.modal-content.modal-fixed-height,
+.modal-content.student-absent-history-modal,
+.modal-content.journal-day-modal {
+  height: min(620px, calc(100dvh - 48px));
+}
+
+/* Modals with side-by-side columns (e.g. Score modal with Quick Tags) */
+.modal-content.score-modal.has-quick-tags {
+  max-width: 640px;
+}
+
+/* Modal Internal Sections */
+.modal-header-fixed {
+  flex-shrink: 0;
+  position: relative;
+  margin-bottom: 14px;
+  padding-right: 36px;
+}
+
+.modal-body-scrollable {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding-right: 4px;
+  margin-bottom: 8px;
+}
+
+.modal-content > form {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.modal-actions-fixed,
+.modal-actions,
+.modal-content > .modal-actions,
+.modal-content > form > .modal-actions,
+.student-list-modal-footer,
+.modal-actions-footer,
+.cert-modal-actions {
+  flex-shrink: 0;
+  margin-top: auto;
+  padding-top: 14px;
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
+/* Smooth sleek scrollbars for modal scrollable containers */
+.modal-body-scrollable::-webkit-scrollbar,
+.journal-modal-students-scroll::-webkit-scrollbar,
+.quick-tags-list::-webkit-scrollbar,
+.admin-modal-students-list::-webkit-scrollbar,
+.absent-days-list::-webkit-scrollbar,
+.excused-days-list::-webkit-scrollbar,
+.late-days-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.modal-body-scrollable::-webkit-scrollbar-track,
+.journal-modal-students-scroll::-webkit-scrollbar-track,
+.quick-tags-list::-webkit-scrollbar-track,
+.admin-modal-students-list::-webkit-scrollbar-track,
+.absent-days-list::-webkit-scrollbar-track,
+.excused-days-list::-webkit-scrollbar-track,
+.late-days-list::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.modal-body-scrollable::-webkit-scrollbar-thumb,
+.journal-modal-students-scroll::-webkit-scrollbar-thumb,
+.quick-tags-list::-webkit-scrollbar-thumb,
+.admin-modal-students-list::-webkit-scrollbar-thumb,
+.absent-days-list::-webkit-scrollbar-thumb,
+.excused-days-list::-webkit-scrollbar-thumb,
+.late-days-list::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.18);
+  border-radius: 999px;
+}
+
+.modal-body-scrollable::-webkit-scrollbar-thumb:hover,
+.journal-modal-students-scroll::-webkit-scrollbar-thumb:hover,
+.quick-tags-list::-webkit-scrollbar-thumb:hover,
+.admin-modal-students-list::-webkit-scrollbar-thumb:hover,
+.absent-days-list::-webkit-scrollbar-thumb:hover,
+.excused-days-list::-webkit-scrollbar-thumb:hover,
+.late-days-list::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.32);
+}
+
+[data-theme="dark"] .modal-body-scrollable::-webkit-scrollbar-thumb,
+[data-theme="dark"] .journal-modal-students-scroll::-webkit-scrollbar-thumb,
+[data-theme="dark"] .quick-tags-list::-webkit-scrollbar-thumb,
+[data-theme="dark"] .admin-modal-students-list::-webkit-scrollbar-thumb,
+[data-theme="dark"] .absent-days-list::-webkit-scrollbar-thumb,
+[data-theme="dark"] .excused-days-list::-webkit-scrollbar-thumb,
+[data-theme="dark"] .late-days-list::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.22);
 }
 
 .modal-close-btn {
@@ -579,13 +695,20 @@ html, body, #root, * {
 @media (max-width: 900px) {
   .modal-overlay {
     padding: 12px;
-    padding-bottom: calc(85px + env(safe-area-inset-bottom, 0px));
   }
 
   .modal-content {
     max-width: 100%;
+    width: 100%;
+    height: min(620px, calc(100dvh - 24px));
     border-radius: var(--radius-lg);
-    padding: 22px 18px 16px;
+    padding: 20px 16px 16px;
+  }
+
+  .modal-content.modal-confirm {
+    height: auto;
+    max-height: calc(100dvh - 24px);
+    max-width: 440px;
   }
 }
 
@@ -890,6 +1013,15 @@ html, body, #root, * {
   font-size: 1.3rem;
   font-weight: bold;
   box-shadow: var(--shadow-sm);
+  overflow: hidden;
+}
+
+.avatar-circle img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: inherit;
+  display: block;
 }
 
 /* Apple Badge */

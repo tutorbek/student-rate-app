@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
+import { lockBodyScroll, unlockBodyScroll } from '../../utils/scrollLock';
 
 const triggerHaptic = (style = 'light') => {
   try {
@@ -102,16 +103,22 @@ export default function StudentCenterAddresses() {
     }, 240);
   };
 
-  // Close on Escape key
+  // Close on Escape key and lock background scroll
   useEffect(() => {
     if (!isOpen) return;
+
+    lockBodyScroll();
+
     const handleKeyDown = (e) => {
       if (e.key === 'Escape') {
         handleClose();
       }
     };
     window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      unlockBodyScroll();
+    };
   }, [isOpen, isClosing]);
 
   const handleOpenLink = (url) => {
