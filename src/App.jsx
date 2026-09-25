@@ -1483,7 +1483,7 @@ function App() {
           onRemoveGroup={handleRemoveStudentGroup}
           onUpdateAvatar={handleUpdateStudentAvatar}
           onSetStudentPin={handleSetStudentPin}
-          onLogout={handleLogout}
+          onLogout={executeLogout}
           showToast={showToast}
           theme={theme}
           toggleTheme={toggleTheme}
