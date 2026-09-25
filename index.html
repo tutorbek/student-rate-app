@@ -24,6 +24,20 @@
         overflow-x: hidden;
         overflow-x: clip;
         max-width: 100%;
+        overscroll-behavior-y: none;
+      }
+      @media (max-width: 900px) {
+        html, body, #root, * {
+          scrollbar-width: none !important;
+          -ms-overflow-style: none !important;
+        }
+        ::-webkit-scrollbar,
+        *::-webkit-scrollbar {
+          display: none !important;
+          width: 0 !important;
+          height: 0 !important;
+          background: transparent !important;
+        }
       }
       @media (min-width: 901px) {
         body {

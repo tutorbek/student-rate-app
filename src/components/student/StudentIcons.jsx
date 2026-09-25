@@ -477,8 +477,9 @@ export const REWARD_VISUALS = {
   },
 };
 
-export const RewardSquircle = ({ rewardId, size = 44, iconSize = 22, className = '' }) => {
+export const RewardSquircle = ({ rewardId, size = 44, iconSize, className = '' }) => {
   const visual = REWARD_VISUALS[rewardId] || REWARD_VISUALS.pen_set;
+  const actualIconSize = iconSize || Math.round(size * 0.5);
   return (
     <div
       className={`reward-squircle-box theme-${visual.theme} ${className}`}
@@ -497,7 +498,7 @@ export const RewardSquircle = ({ rewardId, size = 44, iconSize = 22, className =
         boxShadow: '0 2px 8px rgba(0, 0, 0, 0.04)',
       }}
     >
-      <div style={{ width: iconSize, height: iconSize, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <div className="reward-squircle-icon" style={{ width: actualIconSize, height: actualIconSize, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         {visual.svg}
       </div>
     </div>

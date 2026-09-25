@@ -116,7 +116,23 @@ export default function StudentAttendanceCalendar({
         status = record.records?.[pId] ?? record.records?.[pinnedStudent.id] ?? null;
       }
 
-      const isScheduled = scheduledDays.includes(dayKey) && dateStr >= todayStr && !status && !record;
+      const isLessonDay = scheduledDays.includes(dayKey);
+      const hasGroupRecord = Boolean(record);
+
+      // Priority 1: pinned student attendance status
+      // Priority 2: unpinned group record (lesson conducted)
+      // Priority 3: scheduled group lesson day (e.g. Du-Ch-Ju throughout month)
+      const validStatuses = ['present', 'late', 'absent', 'excused'];
+      let cellStatus = 'none';
+      if (status && validStatuses.includes(status)) {
+        cellStatus = status;
+      } else if (!pinnedStudent && hasGroupRecord) {
+        cellStatus = 'group-lesson';
+      } else if (isLessonDay) {
+        cellStatus = 'scheduled';
+      } else if (hasGroupRecord) {
+        cellStatus = pinnedStudent ? 'scheduled' : 'group-lesson';
+      }
 
       cells.push({
         isBlank: false,
@@ -126,8 +142,9 @@ export default function StudentAttendanceCalendar({
         dayKey,
         isToday,
         status,
-        isScheduled,
-        hasGroupRecord: Boolean(record),
+        isLessonDay,
+        hasGroupRecord,
+        cellStatus,
       });
     }
 
@@ -142,7 +159,7 @@ export default function StudentAttendanceCalendar({
     const totalLessons = attendanceMap.size;
     let scheduledLessons = 0;
     calendarDays.forEach((cell) => {
-      if (!cell.isBlank && cell.isScheduled) {
+      if (!cell.isBlank && cell.isLessonDay) {
         scheduledLessons++;
       }
     });
@@ -195,7 +212,7 @@ export default function StudentAttendanceCalendar({
     const parts = selectedDateStr.split('-');
     const formatted = `${parseInt(parts[2], 10)}-${UZBEK_MONTHS[parseInt(parts[1], 10) - 1]}`;
 
-    let statusText = "Dars o'tkazilmagan";
+    let statusText = "Dars kuni emas";
     let statusType = 'none';
 
     if (cell.status === 'present') {
@@ -210,18 +227,23 @@ export default function StudentAttendanceCalendar({
     } else if (cell.status === 'excused') {
       statusText = 'Sababli qatnashmadi';
       statusType = 'excused';
-    } else if (cell.isScheduled) {
-      statusText = 'Kelgusi rejadagi dars kuni';
-      statusType = 'scheduled';
     } else if (cell.hasGroupRecord) {
       statusText = pinnedStudent
         ? "Bu kungi davomatda qayd etilmagan"
         : "Guruh darsi o'tilgan";
       statusType = 'group-lesson';
+    } else if (cell.isLessonDay) {
+      statusText = cell.dateStr >= todayStr
+        ? "Kelgusi rejadagi dars kuni"
+        : "Rejadagi dars kuni";
+      statusType = 'scheduled';
+    } else {
+      statusText = "Dars kuni emas";
+      statusType = 'none';
     }
 
     return { formatted, statusText, statusType, hasGroupRecord: cell.hasGroupRecord };
-  }, [selectedDateStr, calendarDays, pinnedStudent]);
+  }, [selectedDateStr, calendarDays, pinnedStudent, todayStr]);
 
   return (
     <div className="native-calendar-card" id="student-attendance-calendar">
@@ -265,7 +287,7 @@ export default function StudentAttendanceCalendar({
 
       {/* Monthly Stats Summary Pills */}
       {monthStats && (
-        <div className="calendar-stats-row">
+        <div className={`calendar-stats-row ${monthStats.isPinned ? 'is-pinned-stats' : 'is-unpinned-stats'}`}>
           {monthStats.isPinned ? (
             <>
               <div className="calendar-stat-pill present">
@@ -332,9 +354,17 @@ export default function StudentAttendanceCalendar({
 
       {/* 7-col Weekday Headers */}
       <div className="calendar-weekdays-header">
-        {WEEKDAY_HEADERS.map((w) => (
-          <div key={w}>{w}</div>
-        ))}
+        {WEEKDAY_HEADERS.map((w, idx) => {
+          const isScheduledWeekday = scheduledDays.includes(DAY_KEYS[idx]);
+          return (
+            <div
+              key={w}
+              className={`weekday-label ${isScheduledWeekday ? 'is-scheduled-weekday' : ''}`}
+            >
+              {w}
+            </div>
+          );
+        })}
       </div>
 
       {/* Days Grid Cells */}
@@ -345,27 +375,20 @@ export default function StudentAttendanceCalendar({
           }
 
           const isSelected = cell.dateStr === selectedDateStr;
-          let statusDotClass = '';
-          if (cell.status === 'present') statusDotClass = 'dot-present';
-          else if (cell.status === 'late') statusDotClass = 'dot-late';
-          else if (cell.status === 'absent') statusDotClass = 'dot-absent';
-          else if (cell.status === 'excused') statusDotClass = 'dot-excused';
-          else if (cell.hasGroupRecord) statusDotClass = 'dot-group-lesson';
-          else if (cell.isScheduled) statusDotClass = 'dot-scheduled';
+          const statusClass = cell.cellStatus !== 'none' ? `status-${cell.cellStatus}` : 'is-non-lesson';
 
           return (
             <button
               key={cell.key}
               type="button"
-              className={`day-cell ${cell.isToday ? 'is-today' : ''} ${isSelected ? 'is-selected' : ''}`}
+              className={`day-cell ${statusClass} ${cell.isToday ? 'is-today' : ''} ${isSelected ? 'is-selected' : ''}`}
               onClick={() => {
                 triggerHaptic('light');
                 setSelectedDateStr(isSelected ? null : cell.dateStr);
               }}
               aria-label={`${cell.day}-kun`}
             >
-              <span>{cell.day}</span>
-              {statusDotClass && <span className={`cell-status-dot ${statusDotClass}`} />}
+              <span className="day-number">{cell.day}</span>
             </button>
           );
         })}
@@ -403,31 +426,31 @@ export default function StudentAttendanceCalendar({
         {pinnedStudent ? (
           <>
             <div className="legend-item">
-              <span className="legend-dot" style={{ background: '#34C759' }} />
+              <span className="legend-swatch status-present" />
               <span>Kelgan</span>
             </div>
             <div className="legend-item">
-              <span className="legend-dot" style={{ background: '#FF9500' }} />
+              <span className="legend-swatch status-late" />
               <span>Kechikkan</span>
             </div>
             <div className="legend-item">
-              <span className="legend-dot" style={{ background: '#FF3B30' }} />
+              <span className="legend-swatch status-absent" />
               <span>Kelmagan</span>
             </div>
             <div className="legend-item">
-              <span className="legend-dot" style={{ background: 'rgba(0, 113, 227, 0.4)' }} />
-              <span>Rejadagi dars</span>
+              <span className="legend-swatch status-scheduled" />
+              <span>Dars kuni</span>
             </div>
           </>
         ) : (
           <>
             <div className="legend-item">
-              <span className="legend-dot" style={{ background: '#0071E3' }} />
+              <span className="legend-swatch status-group-lesson" />
               <span>Dars o'tilgan</span>
             </div>
             <div className="legend-item">
-              <span className="legend-dot" style={{ background: 'rgba(0, 113, 227, 0.4)' }} />
-              <span>Rejadagi dars</span>
+              <span className="legend-swatch status-scheduled" />
+              <span>Dars kuni</span>
             </div>
           </>
         )}

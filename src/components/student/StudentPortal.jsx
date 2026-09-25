@@ -358,131 +358,135 @@ export default function StudentPortal({
 
   return (
     <div className="student-portal-wrapper">
-      {/* 1. Sleek Minimalist Top Navigation Header (Full Width, Flat Corners) */}
-      <header className="student-navbar" aria-label="Asosiy navigatsiya paneli">
-        <div className="student-navbar-inner">
-          {/* Left: Brand Identity */}
-          <div className="navbar-brand-col">
-            <button
-              type="button"
-              className="navbar-brand-btn"
-              onClick={() => handleTabSelect('main')}
-              title="Asosiy sahifa"
-              aria-label="Asosiy sahifa"
-            >
-            <span className="navbar-logo-text">
-              EPCHIL <span className="logo-badge">ROBOT</span>
-            </span>
-          </button>
-        </div>
+      {/* 1. Sleek Minimalist Top Navigation Header (Portaled to document.body so it is strictly fixed to viewport) */}
+      {typeof document !== 'undefined' && createPortal(
+        <header className="student-navbar" aria-label="Asosiy navigatsiya paneli">
+          <div className="student-navbar-inner">
+            {/* Left: Brand Identity */}
+            <div className="navbar-brand-col">
+              <button
+                type="button"
+                className="navbar-brand-btn"
+                onClick={() => handleTabSelect('main')}
+                title="Asosiy sahifa"
+                aria-label="Asosiy sahifa"
+              >
+                <span className="navbar-logo-text">
+                  EPCHIL <span className="logo-badge">ROBOT</span>
+                </span>
+              </button>
+            </div>
 
-        {/* Center: Desktop-only Segmented Navigation Tabs (4 Tabs) */}
-        <div className="navbar-desktop-nav">
-          <nav className="desktop-segmented-control" aria-label="Student sahifalari">
-            <button
-              type="button"
-              className={`desktop-nav-btn ${activeTab === 'main' ? 'active' : ''}`}
-              onClick={() => handleTabSelect('main')}
-            >
-              Asosiy
-            </button>
-            <button
-              type="button"
-              className={`desktop-nav-btn ${activeTab === 'rating' ? 'active' : ''}`}
-              onClick={() => handleTabSelect('rating')}
-            >
-              Reyting
-            </button>
-            <button
-              type="button"
-              className={`desktop-nav-btn ${activeTab === 'shop' ? 'active' : ''}`}
-              onClick={() => handleTabSelect('shop')}
-            >
-              Do'kon
-            </button>
-            <button
-              type="button"
-              className={`desktop-nav-btn ${activeTab === 'profile' ? 'active' : ''}`}
-              onClick={() => handleTabSelect('profile')}
-            >
-              Profil
-            </button>
-          </nav>
-        </div>
+            {/* Center: Desktop-only Segmented Navigation Tabs (4 Tabs) */}
+            <div className="navbar-desktop-nav">
+              <nav className="desktop-segmented-control" aria-label="Student sahifalari">
+                <button
+                  type="button"
+                  className={`desktop-nav-btn ${activeTab === 'main' ? 'active' : ''}`}
+                  onClick={() => handleTabSelect('main')}
+                >
+                  Asosiy
+                </button>
+                <button
+                  type="button"
+                  className={`desktop-nav-btn ${activeTab === 'rating' ? 'active' : ''}`}
+                  onClick={() => handleTabSelect('rating')}
+                >
+                  Reyting
+                </button>
+                <button
+                  type="button"
+                  className={`desktop-nav-btn ${activeTab === 'shop' ? 'active' : ''}`}
+                  onClick={() => handleTabSelect('shop')}
+                >
+                  Do'kon
+                </button>
+                <button
+                  type="button"
+                  className={`desktop-nav-btn ${activeTab === 'profile' ? 'active' : ''}`}
+                  onClick={() => handleTabSelect('profile')}
+                >
+                  Profil
+                </button>
+              </nav>
+            </div>
 
-        {/* Right: Quick Profile Summary & Theme Icon */}
-        <div className="navbar-actions-row">
-          <button
-            type="button"
-            className="navbar-profile-pill"
-            onClick={() => handleTabSelect('profile')}
-            title="Profil sozlamalariga o'tish"
-            aria-label="Profil"
-          >
-            {pinnedStudent ? (
-              <>
-                <div className="navbar-avatar-circle">
-                  {renderAvatar(pinnedStudent.emoji, 26)}
-                </div>
-                <div className="navbar-profile-info">
-                  <span className="navbar-user-name">
-                    {pinnedStudent.name.split(' ')[0]}
-                  </span>
-                  <span className="navbar-likes-pill">
-                    {totalPinnedScore} Like
-                  </span>
-                </div>
-              </>
-            ) : (
-              <>
-                <div className="navbar-avatar-circle unpinned">
-                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-                    <circle cx="12" cy="7" r="4" />
-                  </svg>
-                </div>
-                <div className="navbar-profile-info">
-                  <span className="navbar-unpinned-text">
-                    Profil tanlash
-                  </span>
-                </div>
-              </>
-            )}
-          </button>
+            {/* Right: Quick Profile Summary & Theme Icon */}
+            <div className="navbar-actions-row">
+              <button
+                type="button"
+                className="navbar-profile-pill"
+                onClick={() => handleTabSelect('profile')}
+                title="Profil sozlamalariga o'tish"
+                aria-label="Profil"
+              >
+                {pinnedStudent ? (
+                  <>
+                    <div className="navbar-avatar-circle">
+                      {renderAvatar(pinnedStudent.emoji, 26)}
+                    </div>
+                    <div className="navbar-profile-info">
+                      <span className="navbar-user-name">
+                        {pinnedStudent.name.split(' ')[0]}
+                      </span>
+                      <span className="navbar-likes-pill">
+                        {totalPinnedScore} Like
+                      </span>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div className="navbar-avatar-circle unpinned">
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                        <circle cx="12" cy="7" r="4" />
+                      </svg>
+                    </div>
+                    <div className="navbar-profile-info">
+                      <span className="navbar-unpinned-text">
+                        <span className="unpinned-text-full">Profil tanlash</span>
+                        <span className="unpinned-text-short">Profil</span>
+                      </span>
+                    </div>
+                  </>
+                )}
+              </button>
 
-          {toggleTheme && (
-            <button
-              type="button"
-              className="navbar-icon-btn"
-              onClick={() => {
-                triggerHaptic('light');
-                toggleTheme();
-              }}
-              title="Mavzuni o'zgartirish"
-              aria-label="Mavzu"
-            >
-              {theme === 'dark' ? (
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                  <circle cx="12" cy="12" r="5"/>
-                  <line x1="12" y1="1" x2="12" y2="3"/>
-                  <line x1="12" y1="21" x2="12" y2="23"/>
-                  <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
-                  <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
-                  <line x1="1" y1="12" x2="3" y2="12"/>
-                  <line x1="21" y1="12" x2="23" y2="12"/>
-                  <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
-                  <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
-                </svg>
-              ) : (
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
-                </svg>
+              {toggleTheme && (
+                <button
+                  type="button"
+                  className="navbar-icon-btn"
+                  onClick={() => {
+                    triggerHaptic('light');
+                    toggleTheme();
+                  }}
+                  title="Mavzuni o'zgartirish"
+                  aria-label="Mavzu"
+                >
+                  {theme === 'dark' ? (
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                      <circle cx="12" cy="12" r="5"/>
+                      <line x1="12" y1="1" x2="12" y2="3"/>
+                      <line x1="12" y1="21" x2="12" y2="23"/>
+                      <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
+                      <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+                      <line x1="1" y1="12" x2="3" y2="12"/>
+                      <line x1="21" y1="12" x2="23" y2="12"/>
+                      <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
+                      <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+                    </svg>
+                  ) : (
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+                    </svg>
+                  )}
+                </button>
               )}
-            </button>
-          )}
-        </div>
-        </div>
-      </header>
+            </div>
+          </div>
+        </header>,
+        document.body
+      )}
 
       {/* 2. Main Centered Content Container */}
       <div className="student-portal-container">

@@ -541,18 +541,22 @@ export default function StudentShopComingSoon({
               >
                 {/* Soft Tinted Image Container */}
                 <div className="product-image-container">
-                  <RewardSquircle rewardId={reward.id} size={64} iconSize={32} />
+                  <RewardSquircle rewardId={reward.id} size={46} iconSize={23} className="product-card-squircle" />
 
-                  {isTarget && (
-                    <span className="product-target-badge" title="Orzu mukofot sifatida belgilangan">
-                      Orzu
-                    </span>
-                  )}
+                  {(isTarget || canAfford) && (
+                    <div className="product-badges-row">
+                      {isTarget && (
+                        <span className="product-target-badge" title="Orzu mukofot sifatida belgilangan">
+                          Orzu
+                        </span>
+                      )}
 
-                  {canAfford && !isTarget && (
-                    <span className="product-affordable-badge" title="Bu sovg'a uchun Like'ingiz yetarli!">
-                      Yetarli
-                    </span>
+                      {canAfford && (
+                        <span className="product-affordable-badge" title="Bu sovg'a uchun Like'ingiz yetarli!">
+                          Yetarli
+                        </span>
+                      )}
+                    </div>
                   )}
                 </div>
 
