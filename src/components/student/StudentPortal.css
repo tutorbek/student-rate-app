@@ -26,11 +26,6 @@
   }
 }
 
-/* Prevent elastic bounce that drags fixed headers/footers */
-html, body {
-  overscroll-behavior-y: none;
-}
-
 /* --- Global Scroll Offset for Fixed Navbar --- */
 html {
   scroll-padding-top: calc(var(--student-navbar-height) + 24px);
