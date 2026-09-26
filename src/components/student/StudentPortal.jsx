@@ -115,25 +115,6 @@ export default function StudentPortal({
       (groups && groups.length > 0 && String(groups[0]?.id) === String(studentGroupId) ? groups[0] : null);
   }, [studentGroupId, allConnectedGroups, groups]);
 
-  // Upcoming Extra Lesson for currentGroup
-  const upcomingGroupExtraLesson = useMemo(() => {
-    if (!currentGroup?.id || !Array.isArray(extraLessons) || extraLessons.length === 0) return null;
-    const now = new Date();
-    const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
-    const future = extraLessons
-      .filter((el) => {
-        if (!el || String(el.groupId) !== String(currentGroup.id) || el.date < todayStr) return false;
-        if (pinnedStudent?.id && !isStudentTargetedByExtraLesson(el, pinnedStudent.id)) return false;
-        return true;
-      })
-      .sort((a, b) => {
-        const c = (a.date || '').localeCompare(b.date || '');
-        if (c !== 0) return c;
-        return (a.startTime || '').localeCompare(b.startTime || '');
-      });
-    return future.length > 0 ? future[0] : null;
-  }, [currentGroup?.id, extraLessons, pinnedStudent?.id]);
-
   // Resolve current active group's teacher profile
   const currentTeacherProfile = useMemo(() => {
     if (currentGroup?.teacherId && allTeachersData?.[currentGroup.teacherId]?.teacherProfile) {
@@ -253,6 +234,25 @@ export default function StudentPortal({
 
     return null;
   }, [currentGroup?.id, groupStudents, pinnedOverrides]);
+
+  // Upcoming Extra Lesson for currentGroup
+  const upcomingGroupExtraLesson = useMemo(() => {
+    if (!currentGroup?.id || !Array.isArray(extraLessons) || extraLessons.length === 0) return null;
+    const now = new Date();
+    const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+    const future = extraLessons
+      .filter((el) => {
+        if (!el || String(el.groupId) !== String(currentGroup.id) || el.date < todayStr) return false;
+        if (pinnedStudent?.id && !isStudentTargetedByExtraLesson(el, pinnedStudent.id)) return false;
+        return true;
+      })
+      .sort((a, b) => {
+        const c = (a.date || '').localeCompare(b.date || '');
+        if (c !== 0) return c;
+        return (a.startTime || '').localeCompare(b.startTime || '');
+      });
+    return future.length > 0 ? future[0] : null;
+  }, [currentGroup?.id, extraLessons, pinnedStudent?.id]);
 
   // Safe Remote Kickout listener: if teacher reset the student's PIN remotely in DB
   useEffect(() => {
