@@ -75,6 +75,16 @@ export const saveToSupabase = async (teacherId, data, isExplicitReset = false) =
       .from('appdata')
       .upsert({ teacher_id: teacherId, data });
     if (error) throw error;
+
+    // Keep group passwords synchronized with the saved groups!
+    if (teacherId !== 'admin') {
+      if (isExplicitReset && isEmptyData) {
+        deregisterTeacherGroupPasswords(teacherId).catch(console.warn);
+      } else if (Array.isArray(data.groups)) {
+        syncTeacherGroupPasswords(teacherId, data.groups).catch(console.warn);
+      }
+    }
+
     return true;
   } catch (err) {
     console.error('[Supabase] Save failed:', err);
@@ -303,6 +313,146 @@ export const deregisterGroupPassword = async (password) => {
     if (error) throw error;
   } catch (err) {
     console.error('[Supabase] Failed to deregister password:', err);
+  }
+};
+
+/**
+ * Deregister all group passwords belonging to a teacher.
+ */
+export const deregisterTeacherGroupPasswords = async (teacherId) => {
+  try {
+    if (!teacherId) return false;
+    const { error } = await supabase
+      .from('group_passwords')
+      .delete()
+      .eq('teacher_id', teacherId);
+    if (error) throw error;
+    return true;
+  } catch (err) {
+    console.error('[Supabase] Failed to deregister teacher passwords:', err);
+    return false;
+  }
+};
+
+/**
+ * Sync active group passwords for a teacher:
+ * Deletes any stale passwords in group_passwords for this teacher that are no longer active,
+ * and ensures active passwords are registered.
+ */
+export const syncTeacherGroupPasswords = async (teacherId, groups = []) => {
+  try {
+    if (!teacherId || teacherId === 'admin') return false;
+
+    // Active groups that have a password and are not soft-deleted
+    const activeGroups = (groups || []).filter(g => !g.deleted && g.password);
+    const activeMap = new Map();
+    activeGroups.forEach(g => {
+      const pwd = String(g.password).trim().toLowerCase();
+      if (pwd) activeMap.set(pwd, String(g.id));
+    });
+
+    // Fetch existing records for this teacher from group_passwords
+    const { data: currentRecords, error: fetchErr } = await supabase
+      .from('group_passwords')
+      .select('password, group_id')
+      .eq('teacher_id', teacherId);
+    if (fetchErr) throw fetchErr;
+
+    const currentPasswords = currentRecords || [];
+    const passwordsToDelete = [];
+    const existingValid = new Set();
+
+    for (const row of currentPasswords) {
+      const targetGroupId = activeMap.get(row.password);
+      if (!targetGroupId || String(row.group_id) !== String(targetGroupId)) {
+        passwordsToDelete.push(row.password);
+      } else {
+        existingValid.add(row.password);
+      }
+    }
+
+    if (passwordsToDelete.length > 0) {
+      await supabase
+        .from('group_passwords')
+        .delete()
+        .eq('teacher_id', teacherId)
+        .in('password', passwordsToDelete);
+    }
+
+    // Passwords to insert/upsert
+    const toInsert = [];
+    activeMap.forEach((gId, pwd) => {
+      if (!existingValid.has(pwd)) {
+        toInsert.push({ password: pwd, teacher_id: teacherId, group_id: gId });
+      }
+    });
+
+    if (toInsert.length > 0) {
+      await supabase
+        .from('group_passwords')
+        .upsert(toInsert);
+    }
+    return true;
+  } catch (err) {
+    console.error('[Supabase] Failed to sync group passwords:', err);
+    return false;
+  }
+};
+
+/**
+ * Verify a group password and ensure the group actually exists and is active.
+ * If the password exists in registry but group is missing or deleted,
+ * automatically purges the orphaned registry entry and returns null.
+ */
+export const verifyGroupPassword = async (password) => {
+  if (!password) return null;
+  const cleanPassword = password.trim().toLowerCase();
+
+  try {
+    // 1. Look up in group_passwords
+    const { data: row, error } = await supabase
+      .from('group_passwords')
+      .select('*')
+      .eq('password', cleanPassword)
+      .maybeSingle();
+
+    if (error || !row) {
+      return null; // Not found in registry
+    }
+
+    // 2. Fetch the corresponding teacher's appdata
+    const { data: teacherRow, error: tErr } = await supabase
+      .from('appdata')
+      .select('data')
+      .eq('teacher_id', row.teacher_id)
+      .maybeSingle();
+
+    if (tErr || !teacherRow || !teacherRow.data) {
+      // Teacher row missing - purge orphaned password
+      await deregisterGroupPassword(cleanPassword);
+      return null;
+    }
+
+    const groups = teacherRow.data.groups || [];
+    const matchedGroup = groups.find(
+      (g) => String(g.id) === String(row.group_id) && !g.deleted
+    );
+
+    if (!matchedGroup) {
+      // Group does not exist or has been deleted - purge orphaned password
+      await deregisterGroupPassword(cleanPassword);
+      return null;
+    }
+
+    return {
+      teacherId: row.teacher_id,
+      groupId: row.group_id,
+      groupName: matchedGroup.name || '',
+      group: matchedGroup
+    };
+  } catch (err) {
+    console.error('[Supabase] Failed to verify group password:', err);
+    return null;
   }
 };
 

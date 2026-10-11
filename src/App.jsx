@@ -21,6 +21,9 @@ import {
   loadAllTeachersFromSupabase,
   registerGroupPassword,
   deregisterGroupPassword,
+  deregisterTeacherGroupPasswords,
+  syncTeacherGroupPasswords,
+  verifyGroupPassword,
   getGroupPasswordsRegistry,
   loadSnapshotsFromSupabase as loadSnapshotsFromFirestore,
   saveSnapshotToSupabase as saveSnapshotToFirestore,
@@ -336,8 +339,7 @@ function App() {
     } else {
       // Try to check group password registry
       try {
-        const registry = await getGroupPasswordsRegistry();
-        const groupMatch = registry[passwordClean];
+        const groupMatch = await verifyGroupPassword(passwordClean);
         if (groupMatch) {
           const freshGroup = {
             teacherId: groupMatch.teacherId,
@@ -371,7 +373,7 @@ function App() {
 
           showToast("Guruh reytingiga muvaffaqiyatli kirdingiz!", "success");
         } else {
-          setLoginError("Noto'g'ri parol!");
+          setLoginError("Noto'g'ri parol yoki bu guruh o'chirib yuborilgan!");
         }
       } catch (err) {
         console.error('Group login failed:', err);
@@ -674,6 +676,50 @@ function App() {
           }
         } catch (_) { }
 
+        // Validate student group existence: if deleted or cleared, kick out gracefully
+        if (userRole === 'student' && studentGroupId) {
+          const currentGroupExists = loadedGroups.some(
+            (g) => String(g.id) === String(studentGroupId) && !g.deleted
+          );
+          if (!currentGroupExists) {
+            let currentStoredGroups = [];
+            try {
+              currentStoredGroups = JSON.parse(localStorage.getItem('rsa_student_groups') || '[]');
+            } catch (_) {}
+            const otherValidGroup = currentStoredGroups.find(
+              (sg) => String(sg.groupId) !== String(studentGroupId) && loadedGroups.some((g) => String(g.id) === String(sg.groupId) && !g.deleted)
+            );
+            if (otherValidGroup) {
+              const updatedGroups = currentStoredGroups.filter((sg) => String(sg.groupId) !== String(studentGroupId));
+              setStudentGroups(updatedGroups);
+              localStorage.setItem('rsa_student_groups', JSON.stringify(updatedGroups));
+              setStudentGroupId(otherValidGroup.groupId);
+              localStorage.setItem('rsa_student_group_id', otherValidGroup.groupId);
+              showToast("Guruh o'chirilganligi sababli boshqa guruhingizga o'tildi.", "info");
+            } else {
+              localStorage.removeItem('rsa_authenticated');
+              localStorage.removeItem('rsa_role');
+              localStorage.removeItem('rsa_teacher_id');
+              localStorage.removeItem('rsa_active_tab');
+              sessionStorage.removeItem('rsa_active_tab');
+              localStorage.removeItem('rsa_student_group_id');
+              localStorage.removeItem('rsa_student_groups');
+              localStorage.removeItem('rsa_pinned_student_id');
+              localStorage.removeItem('rsa_student_portal_tab');
+              setIsAuthenticated(false);
+              setTeacherId(null);
+              setStudentGroupId(null);
+              setStudentGroups([]);
+              setLoginError("Ushbu guruh ustoz tomonidan o'chirib yuborilgan!");
+              setAuthView('login');
+              showToast("Ushbu guruh ustoz tomonidan o'chirib yuborilgan!", "warning");
+              setIsLoaded(true);
+              setIsSyncing(false);
+              return;
+            }
+          }
+        }
+
         setIsLoaded(true);
         setConnectionError(false);
         setSyncStatus('saved');
@@ -860,8 +906,7 @@ function App() {
     }
 
     try {
-      const registry = await getGroupPasswordsRegistry();
-      const groupMatch = registry[clean];
+      const groupMatch = await verifyGroupPassword(clean);
       if (groupMatch) {
         const exists = studentGroups.some(g => String(g.groupId) === String(groupMatch.groupId));
         const newGroupObj = {
@@ -882,7 +927,7 @@ function App() {
         handleSwitchStudentGroup(groupMatch.groupId, targetGroup);
         return { success: true, group: groupMatch, alreadyConnected: exists };
       } else {
-        return { success: false, message: "Noto'g'ri guruh paroli kiritildi!" };
+        return { success: false, message: "Noto'g'ri guruh paroli yoki bu guruh o'chirib yuborilgan!" };
       }
     } catch (err) {
       console.error('Add group failed:', err);
@@ -1028,6 +1073,9 @@ function App() {
       quickTags: DEFAULT_QUICK_TAGS,
       attendance: []
     };
+    if (teacherId) {
+      await deregisterTeacherGroupPasswords(teacherId);
+    }
     const success = await saveToFirestore(teacherId, defaultDb, true);
     if (success) {
       setGroups([]);
@@ -1397,7 +1445,11 @@ function App() {
   };
 
   // Restore and Permanent Deletion Actions for Trash Bin
-  const handleRestoreGroup = (id) => {
+  const handleRestoreGroup = async (id) => {
+    const group = groups.find((g) => g.id === id);
+    if (group && group.password && teacherId) {
+      await registerGroupPassword(group.password, teacherId, id);
+    }
     const { updatedGroups, updatedStudents, updatedTransactions } = restoreGroup(groups, students, transactions, id);
     setGroups(updatedGroups);
     setStudents(updatedStudents);
@@ -1413,7 +1465,11 @@ function App() {
     showToast("O'quvchi muvaffaqiyatli tiklandi!", "success");
   };
 
-  const handlePermanentlyDeleteGroup = (id) => {
+  const handlePermanentlyDeleteGroup = async (id) => {
+    const group = groups.find((g) => g.id === id);
+    if (group && group.password) {
+      await deregisterGroupPassword(group.password);
+    }
     const { updatedGroups, updatedStudents, updatedTransactions, updatedAttendance } = permanentlyDeleteGroup(groups, students, transactions, id, attendance);
     setGroups(updatedGroups);
     setStudents(updatedStudents);

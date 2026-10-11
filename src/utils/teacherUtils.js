@@ -81,7 +81,7 @@ export const getTeacherKpiTier = (attendanceRate, sessionsCount = 1) => {
       color: '#6B7280',
       badgeBg: 'rgba(107, 114, 128, 0.1)',
       badgeBorder: 'rgba(107, 114, 128, 0.25)',
-      icon: '',
+      icon: '⚪',
     };
   }
 
@@ -92,7 +92,7 @@ export const getTeacherKpiTier = (attendanceRate, sessionsCount = 1) => {
       color: '#059669',
       badgeBg: 'rgba(16, 185, 129, 0.12)',
       badgeBorder: 'rgba(16, 185, 129, 0.3)',
-      icon: '',
+      icon: '🟢',
     };
   }
 
@@ -103,7 +103,7 @@ export const getTeacherKpiTier = (attendanceRate, sessionsCount = 1) => {
       color: '#D97706',
       badgeBg: 'rgba(245, 158, 11, 0.12)',
       badgeBorder: 'rgba(245, 158, 11, 0.3)',
-      icon: '',
+      icon: '🟡',
     };
   }
 
@@ -113,7 +113,7 @@ export const getTeacherKpiTier = (attendanceRate, sessionsCount = 1) => {
     color: '#DC2626',
     badgeBg: 'rgba(239, 68, 68, 0.12)',
     badgeBorder: 'rgba(239, 68, 68, 0.3)',
-    icon: '',
+    icon: '🔴',
   };
 };
 
