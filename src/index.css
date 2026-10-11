@@ -1800,6 +1800,7 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 
 [data-theme="dark"] .tab-btn-brutalist {
   color: var(--text-secondary);
+  font-weight: 600;
 }
 
 [data-theme="dark"] .tab-btn-brutalist:hover {

@@ -205,17 +205,59 @@ const EMOJI_TO_SVG_MAP = {
   '🛡️': 'shield',
 };
 
-// 8 Calm, Apple-inspired, non-rainbow muted & pastel card color tones
+// 16 Distinct, Vibrant Light Pastel Card Color Tones (Identical in Light & Dark mode, no colored border outlines)
 export const GROUP_COLOR_OPTIONS = [
-  { value: '#FFFFFF', name: 'Klassik Oq', border: 'rgba(0, 0, 0, 0.08)', darkBg: '#292A2D', darkBorder: '#3C4043' },
-  { value: '#F7F5EF', name: 'Iliq Qaymoq', border: 'rgba(0, 0, 0, 0.07)', darkBg: '#2E2B25', darkBorder: '#484238' },
-  { value: '#EBF2F7', name: 'Muz Moviy', border: 'rgba(0, 0, 0, 0.07)', darkBg: '#242C35', darkBorder: '#364352' },
-  { value: '#EDF4ED', name: 'Shalfey Yashil', border: 'rgba(0, 0, 0, 0.07)', darkBg: '#232E27', darkBorder: '#35473B' },
-  { value: '#F3F4F6', name: 'Neytral Kulrang', border: 'rgba(0, 0, 0, 0.07)', darkBg: '#2D2E30', darkBorder: '#424447' },
-  { value: '#FAF3EE', name: 'Iliq Qum', border: 'rgba(0, 0, 0, 0.07)', darkBg: '#302A24', darkBorder: '#4C4238' },
-  { value: '#F5F2F8', name: 'Sokin Binafsha', border: 'rgba(0, 0, 0, 0.07)', darkBg: '#2B2633', darkBorder: '#443A52' },
-  { value: '#EFECE6', name: 'Yumshoq Kofe', border: 'rgba(0, 0, 0, 0.07)', darkBg: '#2D2926', darkBorder: '#453E39' },
+  { value: '#FFFFFF', name: 'Klassik Oq', border: 'rgba(0, 0, 0, 0.08)', darkBg: '#FFFFFF', darkBorder: 'rgba(0, 0, 0, 0.08)' },
+  { value: '#DBEAFE', name: 'Moviy Osmon', border: 'rgba(0, 0, 0, 0.06)', darkBg: '#DBEAFE', darkBorder: 'rgba(0, 0, 0, 0.06)' },
+  { value: '#DCFCE7', name: 'Yalpiz Yashil', border: 'rgba(0, 0, 0, 0.06)', darkBg: '#DCFCE7', darkBorder: 'rgba(0, 0, 0, 0.06)' },
+  { value: '#EDE9FE', name: 'Nafis Lavanda', border: 'rgba(0, 0, 0, 0.06)', darkBg: '#EDE9FE', darkBorder: 'rgba(0, 0, 0, 0.06)' },
+  { value: '#FEF3C7', name: 'Quyosh Nuri', border: 'rgba(0, 0, 0, 0.06)', darkBg: '#FEF3C7', darkBorder: 'rgba(0, 0, 0, 0.06)' },
+  { value: '#FFE4E6', name: 'Atirgul Pushti', border: 'rgba(0, 0, 0, 0.06)', darkBg: '#FFE4E6', darkBorder: 'rgba(0, 0, 0, 0.06)' },
+  { value: '#CCFBF1', name: 'Firuza Zangori', border: 'rgba(0, 0, 0, 0.06)', darkBg: '#CCFBF1', darkBorder: 'rgba(0, 0, 0, 0.06)' },
+  { value: '#FFEDD5', name: 'Iliq Shaftoli', border: 'rgba(0, 0, 0, 0.06)', darkBg: '#FFEDD5', darkBorder: 'rgba(0, 0, 0, 0.06)' },
+  { value: '#CFFAFE', name: 'Tiniq Sian', border: 'rgba(0, 0, 0, 0.06)', darkBg: '#CFFAFE', darkBorder: 'rgba(0, 0, 0, 0.06)' },
+  { value: '#D1FAE5', name: 'Tog\' Zumradi', border: 'rgba(0, 0, 0, 0.06)', darkBg: '#D1FAE5', darkBorder: 'rgba(0, 0, 0, 0.06)' },
+  { value: '#ECFCCB', name: 'Bahor Laymi', border: 'rgba(0, 0, 0, 0.06)', darkBg: '#ECFCCB', darkBorder: 'rgba(0, 0, 0, 0.06)' },
+  { value: '#FEF9C3', name: 'Limon Sariq', border: 'rgba(0, 0, 0, 0.06)', darkBg: '#FEF9C3', darkBorder: 'rgba(0, 0, 0, 0.06)' },
+  { value: '#FEE2E2', name: 'Marjon Qizil', border: 'rgba(0, 0, 0, 0.06)', darkBg: '#FEE2E2', darkBorder: 'rgba(0, 0, 0, 0.06)' },
+  { value: '#FAE8FF', name: 'Yorqin Fuchsiya', border: 'rgba(0, 0, 0, 0.06)', darkBg: '#FAE8FF', darkBorder: 'rgba(0, 0, 0, 0.06)' },
+  { value: '#E0E7FF', name: 'Nilufar Indigo', border: 'rgba(0, 0, 0, 0.06)', darkBg: '#E0E7FF', darkBorder: 'rgba(0, 0, 0, 0.06)' },
+  { value: '#F1F5F9', name: 'Neytral Po\'lat', border: 'rgba(0, 0, 0, 0.06)', darkBg: '#F1F5F9', darkBorder: 'rgba(0, 0, 0, 0.06)' },
 ];
+
+export const OLD_COLOR_MAP = {
+  // Old hexes to new light palette mapping
+  '#007AFF': '#DBEAFE',
+  '#34C759': '#DCFCE7',
+  '#FF9500': '#FFEDD5',
+  '#AF52DE': '#EDE9FE',
+  '#FF2D55': '#FFE4E6',
+  '#5856D6': '#E0E7FF',
+  '#00C7BE': '#CCFBF1',
+  '#F5F5DC': '#FEF9C3',
+  '#F4A460': '#FFEDD5',
+  '#E35336': '#FEE2E2',
+  '#A0522D': '#FEF3C7',
+  '#F7F5EF': '#FEF3C7',
+  '#EBF2F7': '#DBEAFE',
+  '#EDF4ED': '#DCFCE7',
+  '#F3F4F6': '#F1F5F9',
+  '#FAF3EE': '#FFEDD5',
+  '#F5F2F8': '#EDE9FE',
+  '#EFECE6': '#ECFCCB',
+};
+
+export const getGroupColorOption = (colorValue) => {
+  if (!colorValue) return GROUP_COLOR_OPTIONS[0];
+  const direct = GROUP_COLOR_OPTIONS.find((c) => c.value.toLowerCase() === colorValue.toLowerCase());
+  if (direct) return direct;
+  const mappedValue = OLD_COLOR_MAP[colorValue.toUpperCase()] || OLD_COLOR_MAP[colorValue];
+  if (mappedValue) {
+    const found = GROUP_COLOR_OPTIONS.find((c) => c.value === mappedValue);
+    if (found) return found;
+  }
+  return GROUP_COLOR_OPTIONS[0];
+};
 
 export const renderGroupIcon = (iconKey, size = 20) => {
   const normalizedKey = normalizeIconUrl(iconKey);

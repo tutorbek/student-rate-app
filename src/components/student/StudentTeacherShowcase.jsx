@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { renderAvatar } from '../../utils/studentAvatars';
+import { CertificateIcon } from './StudentIcons';
 import { lockBodyScroll, unlockBodyScroll } from '../../utils/scrollLock';
 import './StudentTeacherShowcase.css';
 
@@ -124,7 +125,7 @@ export default function StudentTeacherShowcase({
       {/* Header Hero Section */}
       <div className="teacher-modal-hero">
         <div className="teacher-modal-avatar-box">
-          {renderAvatar(avatar || '👤', 76)}
+          {renderAvatar(avatar || 'user', 76)}
         </div>
 
         <span className="teacher-modal-role-pill">Guruh Ustozi</span>
@@ -211,7 +212,9 @@ export default function StudentTeacherShowcase({
                       loading="lazy"
                     />
                   ) : (
-                    <div className="cert-placeholder">📜</div>
+                    <div className="cert-placeholder" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <CertificateIcon size={34} color="rgba(0, 113, 227, 0.7)" />
+                    </div>
                   )}
                   <div className="cert-zoom-overlay">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -301,7 +304,7 @@ export default function StudentTeacherShowcase({
           <div className="showcase-card-inner">
             {/* Avatar */}
             <div className="showcase-avatar-circle">
-              {renderAvatar(avatar || '👤', 48)}
+              {renderAvatar(avatar || 'user', 48)}
             </div>
 
             {/* Info Details */}
@@ -397,7 +400,10 @@ export default function StudentTeacherShowcase({
               onClick={() => setLightboxCert(null)}
               aria-label="Yopish"
             >
-              ✕
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18" />
+                <line x1="6" y1="6" x2="18" y2="18" />
+              </svg>
             </button>
             <div className="cert-lightbox-img-wrap">
               {lightboxCert.image ? (
@@ -406,7 +412,9 @@ export default function StudentTeacherShowcase({
                   alt={lightboxCert.title || 'Sertifikat'}
                 />
               ) : (
-                <div className="cert-lightbox-placeholder">📜</div>
+                <div className="cert-lightbox-placeholder" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <CertificateIcon size={64} color="rgba(0, 113, 227, 0.7)" />
+                </div>
               )}
             </div>
             {lightboxCert.title && (

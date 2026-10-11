@@ -630,6 +630,185 @@ html {
   }
 }
 
+/* Unpinned Hero Profile CTA Card (exact hero dimensions) */
+.home-welcome-hero.home-unpinned-profile-hero {
+  cursor: pointer;
+  transition: transform 0.16s ease, box-shadow 0.16s ease, border-color 0.16s ease;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  min-height: 142px;
+}
+
+.home-welcome-hero.home-unpinned-profile-hero:hover {
+  transform: translateY(-1px);
+  border-color: rgba(0, 113, 227, 0.4);
+  box-shadow: 0 6px 20px rgba(0, 113, 227, 0.08);
+}
+
+[data-theme="dark"] .home-welcome-hero.home-unpinned-profile-hero:hover {
+  border-color: rgba(138, 180, 248, 0.45);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+}
+
+.home-welcome-hero.home-unpinned-profile-hero:active {
+  transform: scale(0.99);
+}
+
+.home-unpinned-hero-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.home-unpinned-hero-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.home-unpinned-avatar-badge {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: rgba(0, 113, 227, 0.1);
+  color: var(--apple-blue);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border: 1px solid rgba(0, 113, 227, 0.2);
+}
+
+[data-theme="dark"] .home-unpinned-avatar-badge {
+  background: rgba(138, 180, 248, 0.15);
+  color: #8AB4F8;
+  border-color: rgba(138, 180, 248, 0.25);
+}
+
+.home-unpinned-header-texts {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.home-unpinned-title {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0;
+  letter-spacing: -0.3px;
+  line-height: 1.25;
+}
+
+.home-unpinned-date {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+}
+
+.home-unpinned-status-pill {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: #D97706;
+  background: rgba(245, 158, 11, 0.12);
+  border: 1px solid rgba(245, 158, 11, 0.25);
+  padding: 3px 9px;
+  border-radius: 9999px;
+  white-space: nowrap;
+}
+
+[data-theme="dark"] .home-unpinned-status-pill {
+  color: #FBBF24;
+  background: rgba(245, 158, 11, 0.2);
+  border-color: rgba(245, 158, 11, 0.35);
+}
+
+.home-unpinned-body-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding-top: 10px;
+  border-top: 1px dashed var(--border-color);
+}
+
+.home-unpinned-desc {
+  margin: 0;
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+  line-height: 1.4;
+  flex: 1;
+}
+
+.home-unpinned-cta-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--apple-blue);
+  color: #ffffff;
+  border: none;
+  border-radius: 12px;
+  padding: 8px 14px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+  box-shadow: 0 2px 8px rgba(0, 113, 227, 0.25);
+  transition: background-color 0.15s ease, transform 0.15s ease;
+}
+
+.home-unpinned-cta-btn:hover {
+  background: #0062c4;
+  transform: translateY(-1px);
+}
+
+.home-unpinned-cta-btn:active {
+  transform: scale(0.97);
+}
+
+@media (max-width: 480px) {
+  .home-welcome-hero.home-unpinned-profile-hero {
+    min-height: 134px;
+  }
+  .home-unpinned-avatar-badge {
+    width: 38px;
+    height: 38px;
+  }
+  .home-unpinned-avatar-badge svg {
+    width: 19px;
+    height: 19px;
+  }
+  .home-unpinned-title {
+    font-size: 1.02rem;
+  }
+  .home-unpinned-date {
+    font-size: 0.7rem;
+  }
+  .home-unpinned-status-pill {
+    font-size: 0.68rem;
+    padding: 2px 7px;
+  }
+  .home-unpinned-body-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+    padding-top: 8px;
+  }
+  .home-unpinned-desc {
+    font-size: 0.76rem;
+    line-height: 1.35;
+  }
+  .home-unpinned-cta-btn {
+    width: 100%;
+    justify-content: center;
+    padding: 8px 12px;
+    font-size: 0.82rem;
+  }
+}
+
 .welcome-greeting-row {
   display: flex;
   align-items: center;
@@ -1054,6 +1233,13 @@ html {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 8px;
+  min-width: 0;
+}
+
+.schedule-header-titles {
+  min-width: 0;
+  flex: 1;
 }
 
 .schedule-group-name {
@@ -1061,6 +1247,8 @@ html {
   font-weight: 700;
   color: var(--text-primary);
   margin: 0;
+  word-break: break-word;
+  overflow-wrap: anywhere;
 }
 
 .schedule-room-pill {

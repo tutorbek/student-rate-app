@@ -4,7 +4,7 @@ import { renderAvatar, STUDENT_AVATARS } from '../../utils/studentAvatars';
 import { AVATAR_GALLERY_IMAGES } from '../../utils/avatarGallery';
 import { scrollToWithOffset } from '../../utils/scrollOffset';
 import { getOrCreateDeviceId } from '../../utils/deviceId';
-import { ProjectLikeIcon } from './StudentIcons';
+import { ProjectLikeIcon, LockIcon, UnlockIcon, InfoIcon, AlertTriangleIcon, LightbulbIcon } from './StudentIcons';
 import useModalDismiss from '../../hooks/useModalDismiss';
 
 const triggerHaptic = (style = 'light') => {
@@ -482,8 +482,9 @@ export default function StudentAccountView({
             <div className="account-hero-info">
               <div className="account-hero-badge-row">
                 <span className="account-group-tag">{currentGroup?.name || "Guruh"}</span>
-                <span className={`account-pin-status-tag ${pinnedStudent.pin ? 'has-pin' : 'no-pin'}`}>
-                  {pinnedStudent.pin ? "🔒 PIN faol" : "🔓 PIN yo'q"}
+                <span className={`account-pin-status-tag ${pinnedStudent.pin ? 'has-pin' : 'no-pin'}`} style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                  {pinnedStudent.pin ? <LockIcon size={12} /> : <UnlockIcon size={12} />}
+                  <span>{pinnedStudent.pin ? "PIN faol" : "PIN yo'q"}</span>
                 </span>
               </div>
 
@@ -539,8 +540,9 @@ export default function StudentAccountView({
             <div className="account-hero-info">
               <div className="account-hero-badge-row">
                 <span className="account-group-tag">{currentGroup?.name || "Guruh"}</span>
-                <span className="account-pin-status-tag no-pin">
-                  🔓 Profil tanlanmagan
+                <span className="account-pin-status-tag no-pin" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                  <UnlockIcon size={12} />
+                  <span>Profil tanlanmagan</span>
                 </span>
               </div>
 
@@ -548,7 +550,7 @@ export default function StudentAccountView({
 
               <div className="account-points-row">
                 <div className="account-unpinned-pill">
-                  <span className="unpinned-info-icon">ℹ️</span>
+                  <span className="unpinned-info-icon" style={{ display: 'inline-flex', alignItems: 'center' }}><InfoIcon size={13} /></span>
                   <span className="unpinned-info-text">Ro'yxatdan tanlang</span>
                 </div>
               </div>
@@ -661,8 +663,11 @@ export default function StudentAccountView({
 
                 <div className="account-group-right">
                   {isCurrent ? (
-                    <span className="group-active-pill" aria-label="Faol guruh">
-                      ✓ Faol
+                    <span className="group-active-pill" aria-label="Faol guruh" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                        <polyline points="20 6 9 17 4 12" />
+                      </svg>
+                      <span>Faol</span>
                     </span>
                   ) : (
                     <button
@@ -751,7 +756,10 @@ export default function StudentAccountView({
                 onClick={() => setProfileSearchQuery('')}
                 aria-label="Tozalash"
               >
-                ✕
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="18" y1="6" x2="6" y2="18" />
+                  <line x1="6" y1="6" x2="18" y2="18" />
+                </svg>
               </button>
             )}
           </div>
@@ -801,13 +809,13 @@ export default function StudentAccountView({
                       <span className="student-row-name">{st.name}</span>
                       {hasPin ? (
                         <span className="student-pin-badge protected" title="4 xonali PIN bilan himoyalangan">
-                          <span className="pin-icon" aria-hidden="true">🔒</span>
+                          <span className="pin-icon" aria-hidden="true" style={{ display: 'inline-flex', alignItems: 'center' }}><LockIcon size={11} /></span>
                           <span className="pin-text-full">Himoyalangan</span>
                           <span className="pin-text-short">PIN</span>
                         </span>
                       ) : (
                         <span className="student-pin-badge open" title="PIN belgilanmagan">
-                          <span className="pin-icon" aria-hidden="true">🔓</span>
+                          <span className="pin-icon" aria-hidden="true" style={{ display: 'inline-flex', alignItems: 'center' }}><UnlockIcon size={11} /></span>
                           <span className="pin-text-full">Yangi profil</span>
                           <span className="pin-text-short">Yangi</span>
                         </span>
@@ -1093,7 +1101,10 @@ export default function StudentAccountView({
                       {renderAvatar((pinTargetStudent || pinnedStudent)?.emoji, 56)}
                     </div>
                     <h4 className="pin-preview-name">{(pinTargetStudent || pinnedStudent)?.name}</h4>
-                    <span className="student-pin-badge protected">🔒 PIN bilan himoyalangan</span>
+                    <span className="student-pin-badge protected" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                      <LockIcon size={12} />
+                      <span>PIN bilan himoyalangan</span>
+                    </span>
                     <p className="pin-preview-hint">Profilga kirish uchun 4 xonali PIN-kodni tering</p>
                   </div>
 
@@ -1140,7 +1151,10 @@ export default function StudentAccountView({
 
                   {pinError && (
                     <div className="pin-error-banner animate-shake">
-                      <span>⚠️ {pinError}</span>
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                        <AlertTriangleIcon size={15} color="#EF4444" />
+                        <span>{pinError}</span>
+                      </span>
                     </div>
                   )}
 
@@ -1162,7 +1176,10 @@ export default function StudentAccountView({
                     </button>
                     {showForgotPinNotice && (
                       <div className="pin-forgot-box animate-fadeIn">
-                        <span>💡 <strong>Ustozingizga ayting:</strong> O'qituvchi o'z panelidan 1 bosish bilan PIN-kodingizni bekor qilib beradi va siz yangi PIN o'rnatib kirasiz.</span>
+                        <span style={{ display: 'inline-flex', alignItems: 'flex-start', gap: '8px' }}>
+                          <span style={{ marginTop: '2px', display: 'inline-flex' }}><LightbulbIcon size={16} color="#F59E0B" /></span>
+                          <span><strong>Ustozingizga ayting:</strong> O'qituvchi o'z panelidan 1 bosish bilan PIN-kodingizni bekor qilib beradi va siz yangi PIN o'rnatib kirasiz.</span>
+                        </span>
                       </div>
                     )}
                   </div>
@@ -1248,7 +1265,10 @@ export default function StudentAccountView({
 
                   {pinError && (
                     <div className="pin-error-banner animate-shake">
-                      <span>⚠️ {pinError}</span>
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                        <AlertTriangleIcon size={15} color="#EF4444" />
+                        <span>{pinError}</span>
+                      </span>
                     </div>
                   )}
 
@@ -1364,7 +1384,10 @@ export default function StudentAccountView({
 
                   {pinError && (
                     <div className="pin-error-banner animate-shake">
-                      <span>⚠️ {pinError}</span>
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                        <AlertTriangleIcon size={15} color="#EF4444" />
+                        <span>{pinError}</span>
+                      </span>
                     </div>
                   )}
 

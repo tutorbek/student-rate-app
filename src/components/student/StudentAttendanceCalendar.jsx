@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { extractGroupDays, isStudentTargetedByExtraLesson } from '../../utils/scheduleUtils';
+import { ZapIcon } from './StudentIcons';
 
 const UZBEK_MONTHS = [
   'Yanvar', 'Fevral', 'Mart', 'Aprel', 'May', 'Iyun',
@@ -226,7 +227,7 @@ export default function StudentAttendanceCalendar({
     if (cell.hasExtraLesson && cell.extraLessonData) {
       const el = cell.extraLessonData;
       const isPersonal = el.targetType === 'custom';
-      statusText = `${isPersonal ? "⚡ Siz uchun alohida Extra Lesson" : "⚡ Extra Lesson"} (${el.startTime || '15:30'}${el.endTime ? ` - ${el.endTime}` : ''})${el.room ? ` • ${el.room}` : ''}${el.topic ? ` • ${el.topic}` : ''}`;
+      statusText = `${isPersonal ? "Siz uchun alohida Extra Lesson" : "Extra Lesson"} (${el.startTime || '15:30'}${el.endTime ? ` - ${el.endTime}` : ''})${el.room ? ` • ${el.room}` : ''}${el.topic ? ` • ${el.topic}` : ''}`;
       statusType = 'extra-lesson';
     } else if (cell.status === 'present') {
       statusText = 'Darsda qatnashgan';
@@ -402,7 +403,11 @@ export default function StudentAttendanceCalendar({
               aria-label={`${cell.day}-kun`}
             >
               <span className="day-number">{cell.day}</span>
-              {cell.hasExtraLesson && <span className="cell-extra-badge" title="Extra Lesson">⚡</span>}
+              {cell.hasExtraLesson && (
+                <span className="cell-extra-badge" title="Extra Lesson" style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <ZapIcon size={9} color="#FFFFFF" />
+                </span>
+              )}
             </button>
           );
         })}
@@ -430,7 +435,10 @@ export default function StudentAttendanceCalendar({
             onClick={() => setSelectedDateStr(null)}
             aria-label="Yopish"
           >
-            ✕
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="18" y1="6" x2="6" y2="18" />
+              <line x1="6" y1="6" x2="18" y2="18" />
+            </svg>
           </button>
         </div>
       )}

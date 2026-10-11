@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { createPortal } from 'react-dom';
-import { exportDatabase, DEFAULT_QUICK_TAGS, normalizeQuickTags } from '../utils/db';
+import { exportDatabase, DEFAULT_QUICK_TAGS, normalizeQuickTags, getGroupCategory } from '../utils/db';
 import { renderAvatar } from '../utils/studentAvatars';
+import { renderGroupIcon } from '../utils/groupIcons';
 import { AVATAR_GALLERY_IMAGES } from '../utils/avatarGallery';
 import ProjectLikeIcon from './common/ProjectLikeIcon';
 import { useModalDismiss } from '../hooks/useModalDismiss';
@@ -163,6 +164,63 @@ const IconInstagram = ({ size = 15, strokeWidth = 2.2 }) => (
     <line x1="17.5" y1="6.5" x2="17.51" y2="6.5" />
   </svg>
 );
+
+const IconCalendar = ({ size = 15, strokeWidth = 2.2 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round">
+    <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+    <line x1="16" y1="2" x2="16" y2="6" />
+    <line x1="8" y1="2" x2="8" y2="6" />
+    <line x1="3" y1="10" x2="21" y2="10" />
+  </svg>
+);
+
+const IconCalculator = ({ size = 14, strokeWidth = 2.2 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round">
+    <rect x="4" y="2" width="16" height="20" rx="2" />
+    <line x1="8" y1="6" x2="16" y2="6" />
+    <line x1="16" y1="14" x2="16" y2="18" />
+    <line x1="16" y1="10" x2="16" y2="10.01" />
+    <line x1="12" y1="10" x2="12" y2="10.01" />
+    <line x1="8" y1="10" x2="8" y2="10.01" />
+    <line x1="12" y1="14" x2="12" y2="14.01" />
+    <line x1="8" y1="14" x2="8" y2="14.01" />
+    <line x1="12" y1="18" x2="12" y2="18.01" />
+    <line x1="8" y1="18" x2="8" y2="18.01" />
+  </svg>
+);
+
+const IconChevronLeft = ({ size = 14, strokeWidth = 2.4 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round">
+    <polyline points="15 18 9 12 15 6" />
+  </svg>
+);
+
+const IconChevronRight = ({ size = 14, strokeWidth = 2.4 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round">
+    <polyline points="9 18 15 12 9 6" />
+  </svg>
+);
+
+const IconChevronDown = ({ size = 14, strokeWidth = 2.4 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round">
+    <polyline points="6 9 12 15 18 9" />
+  </svg>
+);
+
+const UZBEK_CAL_MONTHS = [
+  'Yanvar', 'Fevral', 'Mart', 'Aprel', 'May', 'Iyun',
+  'Iyul', 'Avgust', 'Sentabr', 'Oktabr', 'Noyabr', 'Dekabr'
+];
+
+const UZBEK_CAL_WEEKDAYS = ['Du', 'Se', 'Ch', 'Pa', 'Ju', 'Sh', 'Ya'];
+
+const formatNumberWithCommas = (num) => {
+  if (num === '' || num === null || num === undefined) return '';
+  const digits = String(num).replace(/\D/g, '');
+  if (!digits) return '';
+  const cleanDigits = digits.replace(/^0+(?=\d)/, '');
+  return cleanDigits ? Number(cleanDigits).toLocaleString('en-US') : '';
+};
 
 const formatMoneyUz = (num) => {
   const n = Math.round(Number(num) || 0);
@@ -464,6 +522,24 @@ const Settings = ({
     return (saved !== null && !isNaN(Number(saved)) && Number(saved) >= 0 && Number(saved) <= 100) ? Number(saved) : 50;
   });
 
+  const [calcAdvanceAmount, setCalcAdvanceAmount] = useState(() => {
+    const saved = localStorage.getItem('teacher_calc_advance_amount');
+    if (saved !== null && !isNaN(Number(saved))) return Number(saved);
+    return 2000000;
+  });
+
+  const [calcAdvanceDay, setCalcAdvanceDay] = useState(() => {
+    const saved = localStorage.getItem('teacher_calc_advance_day');
+    if (saved !== null && !isNaN(Number(saved))) return Number(saved);
+    return 15;
+  });
+
+  const [calcSalaryDay, setCalcSalaryDay] = useState(() => {
+    const saved = localStorage.getItem('teacher_calc_salary_day');
+    if (saved !== null && !isNaN(Number(saved))) return Number(saved);
+    return 1;
+  });
+
   useEffect(() => {
     try {
       if (calcStudentCount !== '' && Number(calcStudentCount) > 0) {
@@ -492,11 +568,141 @@ const Settings = ({
     }
   }, [calcTeacherPercent]);
 
+  useEffect(() => {
+    try {
+      if (calcAdvanceAmount !== '') {
+        localStorage.setItem('teacher_calc_advance_amount', String(calcAdvanceAmount));
+      }
+    } catch {
+      // ignore
+    }
+  }, [calcAdvanceAmount]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('teacher_calc_advance_day', String(calcAdvanceDay));
+    } catch {
+      // ignore
+    }
+  }, [calcAdvanceDay]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('teacher_calc_salary_day', String(calcSalaryDay));
+    } catch {
+      // ignore
+    }
+  }, [calcSalaryDay]);
+
+  // Mini Kalendar va narxlarni formatlash holatlari
+  const [calPickerTarget, setCalPickerTarget] = useState(null);
+  const [calPickerMonth, setCalPickerMonth] = useState(() => new Date().getMonth());
+  const [calPickerYear, setCalPickerYear] = useState(() => new Date().getFullYear());
+
+  const handlePrevCalMonth = (e) => {
+    e.stopPropagation();
+    if (calPickerMonth === 0) {
+      setCalPickerMonth(11);
+      setCalPickerYear((y) => y - 1);
+    } else {
+      setCalPickerMonth((m) => m - 1);
+    }
+  };
+
+  const handleNextCalMonth = (e) => {
+    e.stopPropagation();
+    if (calPickerMonth === 11) {
+      setCalPickerMonth(0);
+      setCalPickerYear((y) => y + 1);
+    } else {
+      setCalPickerMonth((m) => m + 1);
+    }
+  };
+
+  const miniCalendarGrid = useMemo(() => {
+    const firstDay = new Date(calPickerYear, calPickerMonth, 1);
+    const startDayOfWeek = (firstDay.getDay() + 6) % 7;
+    const daysInCurrentMonth = new Date(calPickerYear, calPickerMonth + 1, 0).getDate();
+    const daysInPrevMonth = new Date(calPickerYear, calPickerMonth, 0).getDate();
+
+    const cells = [];
+    for (let i = startDayOfWeek - 1; i >= 0; i--) {
+      cells.push({
+        day: daysInPrevMonth - i,
+        isCurrentMonth: false,
+      });
+    }
+    for (let d = 1; d <= daysInCurrentMonth; d++) {
+      cells.push({
+        day: d,
+        isCurrentMonth: true,
+      });
+    }
+    const remainder = cells.length % 7;
+    if (remainder !== 0) {
+      const needed = 7 - remainder;
+      for (let d = 1; d <= needed; d++) {
+        cells.push({
+          day: d,
+          isCurrentMonth: false,
+        });
+      }
+    }
+    return cells;
+  }, [calPickerYear, calPickerMonth]);
+
+  const handleFormattedPriceChange = (e, setter) => {
+    const input = e.target;
+    const cursor = input.selectionStart || 0;
+    const rawVal = input.value;
+    const digitsBeforeCursor = rawVal.slice(0, cursor).replace(/\D/g, '').length;
+    const allDigits = rawVal.replace(/\D/g, '');
+
+    if (allDigits === '') {
+      setter('');
+      return;
+    }
+
+    const cleanDigits = allDigits.replace(/^0+(?=\d)/, '');
+    const num = parseInt(cleanDigits, 10);
+    setter(isNaN(num) ? '' : Math.max(0, num));
+
+    requestAnimationFrame(() => {
+      if (!input) return;
+      const formatted = formatNumberWithCommas(cleanDigits);
+      let newCursor = 0;
+      let countedDigits = 0;
+      for (let i = 0; i < formatted.length; i++) {
+        if (/\d/.test(formatted[i])) {
+          countedDigits++;
+        }
+        if (countedDigits >= digitsBeforeCursor) {
+          newCursor = i + 1;
+          break;
+        }
+      }
+      if (countedDigits < digitsBeforeCursor) {
+        newCursor = formatted.length;
+      }
+      input.setSelectionRange(newCursor, newCursor);
+    });
+  };
+
   const grossTotal = Math.max(0, (Number(calcStudentCount) || 0) * (Number(calcPricePerStudent) || 0));
   const teacherShare = Math.round(grossTotal * ((Number(calcTeacherPercent) || 0) / 100));
   const centerShare = Math.max(0, grossTotal - teacherShare);
   const perStudentTeacherShare = Math.round((Number(calcPricePerStudent) || 0) * ((Number(calcTeacherPercent) || 0) / 100));
   const dailyTeacherShare = Math.round(teacherShare / 30);
+
+  // Avans va qoldiq maosh hisob-kitoblari
+  const rawAdvance = Number(calcAdvanceAmount) || 0;
+  const advanceAmount = Math.min(teacherShare, Math.max(0, rawAdvance));
+  const remainingSalary = Math.max(0, teacherShare - advanceAmount);
+  const advancePercentOfSalary = teacherShare > 0 ? Math.round((advanceAmount / teacherShare) * 100) : 0;
+  const remainingPercentOfSalary = Math.max(0, 100 - advancePercentOfSalary);
+
+  const [selectedCalcGroupId, setSelectedCalcGroupId] = useState(null);
+  const [calcGroupStudentSearch, setCalcGroupStudentSearch] = useState('');
 
   const groupsBreakdown = useMemo(() => {
     return activeGroups.map((g) => {
@@ -508,12 +714,29 @@ const Settings = ({
         id: g.id,
         name: g.name,
         icon: g.icon,
+        color: g.color,
+        category: getGroupCategory(g),
+        schedule: g.schedule,
+        students: gStudents,
         count,
         gross: gGross,
         teacherShare: gTeacherShare,
       };
     });
   }, [activeGroups, students, calcPricePerStudent, calcTeacherPercent]);
+
+  const selectedCalcGroup = useMemo(() => {
+    if (!selectedCalcGroupId) return null;
+    return groupsBreakdown.find((g) => g.id === selectedCalcGroupId) || null;
+  }, [groupsBreakdown, selectedCalcGroupId]);
+
+  const displayedCalcStudents = useMemo(() => {
+    if (!selectedCalcGroup) return [];
+    const list = selectedCalcGroup.students || [];
+    if (!calcGroupStudentSearch.trim()) return list;
+    const q = calcGroupStudentSearch.toLowerCase().trim();
+    return list.filter((s) => (s.name || '').toLowerCase().includes(q));
+  }, [selectedCalcGroup, calcGroupStudentSearch]);
 
   const totalGroupsStudents = useMemo(() => {
     return groupsBreakdown.reduce((sum, g) => sum + g.count, 0);
@@ -526,6 +749,10 @@ const Settings = ({
   const totalGroupsGross = useMemo(() => {
     return groupsBreakdown.reduce((sum, g) => sum + g.gross, 0);
   }, [groupsBreakdown]);
+
+  // Guruhlar bo'yicha hisoblangan avans va qoldiq maosh
+  const groupsAdvanceShare = Math.round(totalGroupsTeacherShare * (advancePercentOfSalary / 100));
+  const groupsRemainingShare = Math.max(0, totalGroupsTeacherShare - groupsAdvanceShare);
 
   const normalizedTags = useMemo(() => {
     return normalizeQuickTags(quickTags);
@@ -549,8 +776,9 @@ const Settings = ({
 
   const totalTrashCount = deletedGroups.length + deletedStudents.length;
 
-  // Escape key and background scroll lock handler for all modals (including cert and gallery)
+  // Escape key and background scroll lock handler for all modals (including cert, gallery and calc group)
   const isAnySettingsModalOpen = Boolean(
+    selectedCalcGroupId ||
     showResetConfirm ||
     deleteConfirmModal ||
     rollbackConfirmModal ||
@@ -560,7 +788,10 @@ const Settings = ({
   );
 
   useModalDismiss(isAnySettingsModalOpen, () => {
-    if (showGalleryModal) {
+    if (selectedCalcGroupId) {
+      setSelectedCalcGroupId(null);
+      setCalcGroupStudentSearch('');
+    } else if (showGalleryModal) {
       setShowGalleryModal(false);
     } else if (showAddCertModal) {
       setShowAddCertModal(false);
@@ -761,35 +992,32 @@ const Settings = ({
             className={`tab-btn-brutalist ${activeTab === 'profile' ? 'active' : ''}`}
             onClick={() => setActiveTab('profile')}
           >
-            <span className="tab-label-desktop">Profil</span>
-            <span className="tab-label-mobile">Profil</span>
+            <span className="tab-btn-text">Profil</span>
           </button>
           <button
             type="button"
-            className={`tab-btn-brutalist ${activeTab === 'calculator' ? 'active' : ''}`}
+            className={`tab-btn-brutalist tab-btn-calc-featured ${activeTab === 'calculator' ? 'active' : ''}`}
             onClick={() => setActiveTab('calculator')}
           >
-            <span className="tab-label-desktop">Kalkulyator</span>
-            <span className="tab-label-mobile">Hisob</span>
+            <span className="tab-calc-icon"><IconCalculator size={15} /></span>
+            <span className="tab-btn-text">Kalkulyator</span>
           </button>
           <button
             type="button"
             className={`tab-btn-brutalist ${activeTab === 'tags' ? 'active' : ''}`}
             onClick={() => setActiveTab('tags')}
           >
-            <span className="tab-label-desktop">Izohlar</span>
-            <span className="tab-label-mobile">Izoh</span>
-            <span className="tab-count-badge">{normalizedTags.length}</span>
+            <span className="tab-btn-text">Izohlar</span>
           </button>
-          <button
+          {/* Tizim & Zaxira tab tugmasi - Hozircha UI'da yashirilgan */}
+          {/* <button
             type="button"
             className={`tab-btn-brutalist ${activeTab === 'system' ? 'active' : ''}`}
             onClick={() => setActiveTab('system')}
           >
-            <span className="tab-label-desktop">Tizim & Zaxira</span>
-            <span className="tab-label-mobile">Tizim</span>
+            <span className="tab-btn-text">Tizim & Zaxira</span>
             {totalTrashCount > 0 && <span className="tab-count-badge badge-red">{totalTrashCount}</span>}
-          </button>
+          </button> */}
         </div>
       </div>
 
@@ -1274,23 +1502,13 @@ const Settings = ({
 
                   <div className="calc-price-input-wrap">
                     <input
-                      type="number"
-                      step="10000"
-                      min="0"
+                      type="text"
+                      inputMode="numeric"
                       className="calc-price-input"
-                      value={calcPricePerStudent}
+                      value={calcPricePerStudent === '' ? '' : formatNumberWithCommas(calcPricePerStudent)}
                       placeholder="0"
                       onFocus={(e) => e.target.select()}
-                      onChange={(e) => {
-                        const val = e.target.value;
-                        if (val === '') {
-                          setCalcPricePerStudent('');
-                          return;
-                        }
-                        const cleanVal = val.replace(/^0+(?=\d)/, '');
-                        const num = parseInt(cleanVal, 10);
-                        setCalcPricePerStudent(isNaN(num) ? '' : Math.max(0, num));
-                      }}
+                      onChange={(e) => handleFormattedPriceChange(e, setCalcPricePerStudent)}
                       onBlur={() => {
                         if (calcPricePerStudent === '') {
                           setCalcPricePerStudent(0);
@@ -1371,6 +1589,206 @@ const Settings = ({
                     ))}
                   </div>
                 </div>
+
+                {/* 4. Avans to'lovi (Oldindan to'lov) */}
+                <div className="calc-input-block">
+                  <div className="calc-label-row">
+                    <span className="calc-field-title">Avans to'lovi</span>
+                    <span className="calc-field-val">
+                      {formatMoneyUz(advanceAmount)}
+                      {teacherShare > 0 && (
+                        <span className="calc-field-sub-pct"> ({advancePercentOfSalary}%)</span>
+                      )}
+                    </span>
+                  </div>
+
+                  <div className="calc-price-input-wrap">
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      className="calc-price-input"
+                      value={calcAdvanceAmount === '' ? '' : formatNumberWithCommas(calcAdvanceAmount)}
+                      placeholder="0"
+                      onFocus={(e) => e.target.select()}
+                      onChange={(e) => handleFormattedPriceChange(e, setCalcAdvanceAmount)}
+                      onBlur={() => {
+                        if (calcAdvanceAmount === '') {
+                          setCalcAdvanceAmount(0);
+                        }
+                      }}
+                    />
+                    <span className="calc-suffix-text">so'm</span>
+                  </div>
+
+                  <div className="calc-chips-scroll">
+                    {[
+                      { label: "30%", val: Math.round(teacherShare * 0.3) },
+                      { label: "40%", val: Math.round(teacherShare * 0.4) },
+                      { label: "50%", val: Math.round(teacherShare * 0.5) },
+                      { label: "1M", val: 1000000 },
+                      { label: "1.5M", val: 1500000 },
+                      { label: "2M", val: 2000000 },
+                      { label: "2.5M", val: 2500000 },
+                      { label: "3M", val: 3000000 },
+                    ].map((preset) => (
+                      <button
+                        key={preset.label}
+                        type="button"
+                        className={`calc-chip-clean scale-active ${Number(calcAdvanceAmount) === preset.val ? 'active' : ''}`}
+                        onClick={() => setCalcAdvanceAmount(preset.val)}
+                      >
+                        {preset.label}
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* To'lov sanalari - Kichik kalendar bilan */}
+                  <div className="calc-dates-row">
+                    <div className="calc-date-item">
+                      <label className="calc-date-lbl">Avans sanasi:</label>
+                      <button
+                        type="button"
+                        className={`calc-date-trigger-btn advance ${calPickerTarget === 'advance' ? 'active' : ''}`}
+                        onClick={() => setCalPickerTarget(calPickerTarget === 'advance' ? null : 'advance')}
+                      >
+                        <div className="calc-date-trigger-left">
+                          <span className="calc-date-cal-badge advance">
+                            <IconCalendar size={13} />
+                          </span>
+                          <span className="calc-date-trigger-val">
+                            Har oy <strong>{calcAdvanceDay}-kuni</strong>
+                          </span>
+                        </div>
+                        <IconChevronDown size={13} className={`calc-date-trigger-chevron ${calPickerTarget === 'advance' ? 'rotate' : ''}`} />
+                      </button>
+                    </div>
+
+                    <div className="calc-date-item">
+                      <label className="calc-date-lbl">Oylik sanasi:</label>
+                      <button
+                        type="button"
+                        className={`calc-date-trigger-btn salary ${calPickerTarget === 'salary' ? 'active' : ''}`}
+                        onClick={() => setCalPickerTarget(calPickerTarget === 'salary' ? null : 'salary')}
+                      >
+                        <div className="calc-date-trigger-left">
+                          <span className="calc-date-cal-badge salary">
+                            <IconCalendar size={13} />
+                          </span>
+                          <span className="calc-date-trigger-val">
+                            Har oy <strong>{calcSalaryDay}-kuni</strong>
+                          </span>
+                        </div>
+                        <IconChevronDown size={13} className={`calc-date-trigger-chevron ${calPickerTarget === 'salary' ? 'rotate' : ''}`} />
+                      </button>
+                    </div>
+
+                    {/* Kichik Kalendar Popover */}
+                    {calPickerTarget && (
+                      <>
+                        <div
+                          className="calc-calendar-overlay"
+                          onClick={() => setCalPickerTarget(null)}
+                        />
+                        <div className={`calc-mini-calendar-popover ${calPickerTarget}`}>
+                          {/* Kalendar Header */}
+                          <div className="cal-mini-header">
+                            <button
+                              type="button"
+                              className="cal-mini-nav-btn"
+                              onClick={handlePrevCalMonth}
+                              title="Oldingi oy"
+                            >
+                              <IconChevronLeft size={13} />
+                            </button>
+                            <div className="cal-mini-title-wrap">
+                              <span className="cal-mini-month">
+                                {UZBEK_CAL_MONTHS[calPickerMonth]} {calPickerYear}
+                              </span>
+                              <span className={`cal-mini-tag ${calPickerTarget}`}>
+                                {calPickerTarget === 'advance' ? 'Avans sanasi' : 'Oylik sanasi'}
+                              </span>
+                            </div>
+                            <button
+                              type="button"
+                              className="cal-mini-nav-btn"
+                              onClick={handleNextCalMonth}
+                              title="Keyingi oy"
+                            >
+                              <IconChevronRight size={13} />
+                            </button>
+                          </div>
+
+                          {/* Hafta kunlari */}
+                          <div className="cal-mini-weekdays">
+                            {UZBEK_CAL_WEEKDAYS.map((wd, i) => (
+                              <span key={wd} className={`cal-mini-wd ${i === 6 ? 'sunday' : ''}`}>
+                                {wd}
+                              </span>
+                            ))}
+                          </div>
+
+                          {/* Kunlar katakchalari */}
+                          <div className="cal-mini-grid">
+                            {miniCalendarGrid.map((cell, idx) => {
+                              const activeDay = calPickerTarget === 'advance' ? calcAdvanceDay : calcSalaryDay;
+                              const isSelected = cell.day === activeDay && cell.isCurrentMonth;
+                              const isSunday = (idx % 7) === 6;
+                              return (
+                                <button
+                                  key={idx}
+                                  type="button"
+                                  className={`cal-mini-cell ${!cell.isCurrentMonth ? 'other-month' : ''} ${isSunday ? 'sunday' : ''} ${isSelected ? `selected ${calPickerTarget}` : ''}`}
+                                  onClick={() => {
+                                    if (calPickerTarget === 'advance') {
+                                      setCalcAdvanceDay(cell.day);
+                                    } else {
+                                      setCalcSalaryDay(cell.day);
+                                    }
+                                    setCalPickerTarget(null);
+                                  }}
+                                  title={`Har oyning ${cell.day}-kuni`}
+                                >
+                                  {cell.day}
+                                </button>
+                              );
+                            })}
+                          </div>
+
+                          {/* Pastki qism: Tezkor sanalar va Yopish */}
+                          <div className="cal-mini-footer">
+                            <div className="cal-mini-presets">
+                              <span className="cal-mini-presets-lbl">Tezkor:</span>
+                              {(calPickerTarget === 'advance' ? [5, 10, 15, 20, 25] : [1, 3, 5, 10]).map((d) => (
+                                <button
+                                  key={d}
+                                  type="button"
+                                  className={`cal-mini-preset-chip ${((calPickerTarget === 'advance' ? calcAdvanceDay : calcSalaryDay) === d) ? 'active' : ''}`}
+                                  onClick={() => {
+                                    if (calPickerTarget === 'advance') {
+                                      setCalcAdvanceDay(d);
+                                    } else {
+                                      setCalcSalaryDay(d);
+                                    }
+                                    setCalPickerTarget(null);
+                                  }}
+                                >
+                                  {d}
+                                </button>
+                              ))}
+                            </div>
+                            <button
+                              type="button"
+                              className="cal-mini-close-btn"
+                              onClick={() => setCalPickerTarget(null)}
+                            >
+                              Yopish
+                            </button>
+                          </div>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                </div>
               </div>
 
               {/* Right Column: Calculated Results */}
@@ -1378,7 +1796,7 @@ const Settings = ({
                 {/* Hero Card: Teacher's Take-Home */}
                 <div className="calc-hero-clean">
                   <div className="calc-hero-top">
-                    <span className="calc-hero-label">O'qituvchi daromadi</span>
+                    <span className="calc-hero-label">O'qituvchi jami daromadi</span>
                     <span className="calc-hero-pct">{calcTeacherPercent}%</span>
                   </div>
                   <div className="calc-hero-val">
@@ -1386,6 +1804,73 @@ const Settings = ({
                   </div>
                   <div className="calc-hero-meta">
                     1 o'quvchidan: {formatMoneyUz(perStudentTeacherShare)}
+                  </div>
+                </div>
+
+                {/* Split Payout Cards: Avans & Oylik */}
+                <div className="calc-payouts-grid">
+                  {/* Avans Card */}
+                  <div className="calc-payout-card advance">
+                    <div className="calc-payout-header">
+                      <span className="calc-payout-tag">Avans to'lovi</span>
+                      <button
+                        type="button"
+                        className="calc-payout-date-badge is-clickable"
+                        onClick={() => setCalPickerTarget('advance')}
+                        title="Avans sanasini tanlash"
+                      >
+                        Har oy {calcAdvanceDay}-kuni
+                      </button>
+                    </div>
+                    <div className="calc-payout-amount">
+                      {formatMoneyUz(advanceAmount)}
+                    </div>
+                    <div className="calc-payout-sub">
+                      Daromadning <strong>{advancePercentOfSalary}%</strong> qismi
+                    </div>
+                  </div>
+
+                  {/* Qoldiq Oylik Card */}
+                  <div className="calc-payout-card remaining">
+                    <div className="calc-payout-header">
+                      <span className="calc-payout-tag">Qoldiq oylik</span>
+                      <button
+                        type="button"
+                        className="calc-payout-date-badge is-clickable"
+                        onClick={() => setCalPickerTarget('salary')}
+                        title="Oylik sanasini tanlash"
+                      >
+                        Har oy {calcSalaryDay}-kuni
+                      </button>
+                    </div>
+                    <div className="calc-payout-amount">
+                      {formatMoneyUz(remainingSalary)}
+                    </div>
+                    <div className="calc-payout-sub">
+                      Daromadning <strong>{remainingPercentOfSalary}%</strong> qismi
+                    </div>
+                  </div>
+                </div>
+
+                {/* Payout Progress Timeline Bar */}
+                <div className="calc-payout-bar-wrap">
+                  <div className="calc-payout-bar-labels">
+                    <span className="payout-bar-lbl advance">
+                      Avans ({calcAdvanceDay}-kuni): <strong>{formatMoneyUz(advanceAmount)}</strong> ({advancePercentOfSalary}%)
+                    </span>
+                    <span className="payout-bar-lbl remaining">
+                      Oylik ({calcSalaryDay}-kuni): <strong>{formatMoneyUz(remainingSalary)}</strong> ({remainingPercentOfSalary}%)
+                    </span>
+                  </div>
+                  <div className="calc-payout-bar-track">
+                    <div
+                      className="calc-payout-bar-advance"
+                      style={{ width: `${Math.min(100, Math.max(0, advancePercentOfSalary))}%` }}
+                    />
+                    <div
+                      className="calc-payout-bar-remaining"
+                      style={{ width: `${Math.min(100, Math.max(0, remainingPercentOfSalary))}%` }}
+                    />
                   </div>
                 </div>
 
@@ -1401,20 +1886,6 @@ const Settings = ({
                     <span className="calc-stat-lbl">Markaz ulushi ({100 - calcTeacherPercent}%)</span>
                     <span className="calc-stat-num">{formatMoneyUz(centerShare)}</span>
                     <span className="calc-stat-sub">{formatMoneyUz(grossTotal - teacherShare)}</span>
-                  </div>
-                </div>
-
-                {/* Visual Ratio Bar */}
-                <div className="calc-ratio-clean">
-                  <div className="calc-ratio-row">
-                    <span>O'qituvchi ({calcTeacherPercent}%)</span>
-                    <span>Markaz ({100 - calcTeacherPercent}%)</span>
-                  </div>
-                  <div className="calc-bar-track">
-                    <div
-                      className="calc-bar-teacher"
-                      style={{ width: `${Math.min(100, Math.max(0, calcTeacherPercent))}%` }}
-                    />
                   </div>
                 </div>
               </div>
@@ -1434,22 +1905,60 @@ const Settings = ({
 
               <div className="calc-groups-table">
                 {groupsBreakdown.map((grp) => (
-                  <div key={grp.id} className="calc-group-row">
-                    <div className="calc-group-row-info">
-                      <span className="calc-group-row-name">{grp.name}</span>
-                      <span className="calc-group-row-count">{grp.count} ta o'quvchi</span>
+                  <div
+                    key={grp.id}
+                    className="calc-group-row scale-active"
+                    onClick={() => {
+                      setSelectedCalcGroupId(grp.id);
+                      setCalcGroupStudentSearch('');
+                    }}
+                    role="button"
+                    tabIndex={0}
+                    title="Guruh o'quvchilari ro'yxatini ko'rish"
+                  >
+                    <div className="calc-group-row-left">
+                      <div className="calc-group-row-icon avatar-circle">
+                        {renderGroupIcon(grp.icon, 18)}
+                      </div>
+                      <div className="calc-group-row-info">
+                        <div className="calc-group-row-name-wrap">
+                          <span className="calc-group-row-name">{grp.name}</span>
+                          <span className={`group-category-pill group-category-${grp.category}`}>
+                            {grp.category === 'kids' ? 'Kids' : 'Teens'}
+                          </span>
+                        </div>
+                        <span className="calc-group-row-count">{grp.count} ta o'quvchi</span>
+                      </div>
                     </div>
-                    <div className="calc-group-row-amounts">
-                      <span className="calc-group-row-gross">{formatMoneyUz(grp.gross)}</span>
-                      <span className="calc-group-row-share">+{formatMoneyUz(grp.teacherShare)}</span>
+
+                    <div className="calc-group-row-right">
+                      <div className="calc-group-row-amounts">
+                        <span className="calc-group-row-gross">{formatMoneyUz(grp.gross)}</span>
+                        <span className="calc-group-row-share">+{formatMoneyUz(grp.teacherShare)}</span>
+                      </div>
+                      <span className="calc-group-row-arrow">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+                          <polyline points="9 18 15 12 9 6" />
+                        </svg>
+                      </span>
                     </div>
                   </div>
                 ))}
               </div>
 
               <div className="calc-groups-total-bar">
-                <span className="lbl">Jami o'qituvchiga:</span>
-                <span className="val">+{formatMoneyUz(totalGroupsTeacherShare)}</span>
+                <div className="calc-groups-total-main">
+                  <span className="lbl">Jami o'qituvchiga:</span>
+                  <span className="val">+{formatMoneyUz(totalGroupsTeacherShare)}</span>
+                </div>
+                <div className="calc-groups-payout-breakdown">
+                  <span className="calc-payout-chip advance">
+                    Avans ({calcAdvanceDay}-kuni): <strong>+{formatMoneyUz(groupsAdvanceShare)}</strong>
+                  </span>
+                  <span className="calc-payout-chip remaining">
+                    Oylik ({calcSalaryDay}-kuni): <strong>+{formatMoneyUz(groupsRemainingShare)}</strong>
+                  </span>
+                </div>
               </div>
             </section>
           )}
@@ -1590,8 +2099,8 @@ const Settings = ({
         </div>
       )}
 
-      {/* Tab 4: Tizim & Zaxira (JSON Backup, Snapshots, Savat, Xavfsizlik) */}
-      {activeTab === 'system' && (
+      {/* Tab 4: Tizim & Zaxira (JSON Backup, Snapshots, Savat, Xavfsizlik) - Hozircha UI'da yashirilgan */}
+      {false && activeTab === 'system' && (
         <div className="settings-tab-content fade-in">
           {/* JSON Export / Import Cards */}
           <section className="glass-card settings-card">
@@ -2158,6 +2667,160 @@ const Settings = ({
         document.body
       )}
 
+      {/* MODAL 7: Kalkulyator Guruh O'quvchilari Ro'yxati */}
+      {selectedCalcGroup && typeof document !== 'undefined' && createPortal(
+        <div
+          className="modal-overlay"
+          onClick={() => {
+            setSelectedCalcGroupId(null);
+            setCalcGroupStudentSearch('');
+          }}
+        >
+          <div
+            className="modal-content glass calc-student-list-modal"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Modal Header */}
+            <div className="calc-student-modal-header">
+              <div className="calc-student-modal-head-left">
+                <div className="calc-student-modal-group-icon avatar-circle">
+                  {renderGroupIcon(selectedCalcGroup.icon, 24)}
+                </div>
+                <div className="calc-student-modal-head-info">
+                  <div className="calc-student-modal-title-row">
+                    <h3 className="calc-student-modal-group-name">{selectedCalcGroup.name}</h3>
+                    <span className={`group-category-pill group-category-${selectedCalcGroup.category}`}>
+                      {selectedCalcGroup.category === 'kids' ? 'Kids' : 'Teens'}
+                    </span>
+                    <span className="calc-student-modal-count-badge">
+                      {selectedCalcGroup.count} ta o'quvchi
+                    </span>
+                  </div>
+                  <div className="calc-student-modal-meta-row">
+                    <span>1 o'quvchidan sizga: <strong>+{formatMoneyUz(perStudentTeacherShare)}</strong></span>
+                  </div>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                className="modal-close-btn scale-active"
+                onClick={() => {
+                  setSelectedCalcGroupId(null);
+                  setCalcGroupStudentSearch('');
+                }}
+                title="Yopish (Esc)"
+              >
+                <IconX size={15} />
+              </button>
+            </div>
+
+            {/* Financial Overview Banner */}
+            <div className="calc-student-modal-stats-banner">
+              <div className="calc-student-stat-item">
+                <span className="stat-label">Guruh jami tushumi</span>
+                <span className="stat-value">{formatMoneyUz(selectedCalcGroup.gross)}</span>
+              </div>
+              <div className="calc-student-stat-item highlight">
+                <span className="stat-label">O'qituvchiga ({calcTeacherPercent}%)</span>
+                <span className="stat-value">+{formatMoneyUz(selectedCalcGroup.teacherShare)}</span>
+              </div>
+              <div className="calc-student-stat-item advance-box">
+                <span className="stat-label">Avans ({calcAdvanceDay}-kuni, {advancePercentOfSalary}%)</span>
+                <span className="stat-value">+{formatMoneyUz(Math.round(selectedCalcGroup.teacherShare * (advancePercentOfSalary / 100)))}</span>
+              </div>
+              <div className="calc-student-stat-item remaining-box">
+                <span className="stat-label">Qoldiq ({calcSalaryDay}-kuni, {remainingPercentOfSalary}%)</span>
+                <span className="stat-value">+{formatMoneyUz(Math.max(0, selectedCalcGroup.teacherShare - Math.round(selectedCalcGroup.teacherShare * (advancePercentOfSalary / 100))))}</span>
+              </div>
+            </div>
+
+            {/* Quick Search for Groups with 6+ students */}
+            {selectedCalcGroup.students.length > 5 && (
+              <div className="calc-student-search-wrap">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="11" cy="11" r="8" />
+                  <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                </svg>
+                <input
+                  type="text"
+                  className="calc-student-search-input"
+                  placeholder="O'quvchini qidirish..."
+                  value={calcGroupStudentSearch}
+                  onChange={(e) => setCalcGroupStudentSearch(e.target.value)}
+                  autoFocus={false}
+                />
+                {calcGroupStudentSearch && (
+                  <button
+                    type="button"
+                    className="calc-student-search-clear"
+                    onClick={() => setCalcGroupStudentSearch('')}
+                    title="Tozalash"
+                  >
+                    ×
+                  </button>
+                )}
+              </div>
+            )}
+
+            {/* Students List Body */}
+            <div className="calc-student-modal-body">
+              {displayedCalcStudents.length > 0 ? (
+                <div className="calc-students-list">
+                  {displayedCalcStudents.map((student, idx) => (
+                    <div key={student.id} className="calc-student-card">
+                      <span className="calc-student-idx">{idx + 1}.</span>
+                      <div className="calc-student-avatar-wrap avatar-circle">
+                        {renderAvatar(student.emoji, 32)}
+                      </div>
+                      <div className="calc-student-main">
+                        <span className="calc-student-name" title={student.name}>
+                          {student.name}
+                        </span>
+                        {student.phone && (
+                          <span className="calc-student-sub">{student.phone}</span>
+                        )}
+                      </div>
+                      <div className="calc-student-share-pill">
+                        +{formatMoneyUz(perStudentTeacherShare)}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : selectedCalcGroup.students.length > 0 ? (
+                <div className="calc-students-empty">
+                  <p className="empty-title">O'quvchi topilmadi</p>
+                  <p className="empty-sub">"{calcGroupStudentSearch}" bo'yicha hech kim topilmadi.</p>
+                </div>
+              ) : (
+                <div className="calc-students-empty">
+                  <div className="empty-icon-wrap">👥</div>
+                  <p className="empty-title">Bu guruhda o'quvchilar yo'q</p>
+                  <p className="empty-sub">Guruh sahifasiga kirib o'quvchi qo'shishingiz mumkin.</p>
+                </div>
+              )}
+            </div>
+
+            {/* Modal Footer */}
+            <div className="calc-student-modal-footer">
+              <span className="calc-modal-footer-note">
+                Jami: <strong>{selectedCalcGroup.count} ta</strong> o'quvchi
+              </span>
+              <button
+                type="button"
+                className="btn btn-secondary scale-active"
+                onClick={() => {
+                  setSelectedCalcGroupId(null);
+                  setCalcGroupStudentSearch('');
+                }}
+              >
+                Yopish
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
 
       {/* Scoped Apple Minimalist / Brutalist Styles for Settings */}
       <style>{`
@@ -2180,11 +2843,11 @@ const Settings = ({
         .tab-control-brutalist {
           display: inline-flex;
           align-items: center;
-          background: #F5F5F7;
-          border-radius: var(--radius-md);
-          padding: 3px;
-          border: 1px solid rgba(0, 0, 0, 0.04);
-          gap: 2px;
+          background: #EEEEF0;
+          border-radius: 12px;
+          padding: 4px;
+          border: 1px solid rgba(0, 0, 0, 0.06);
+          gap: 6px;
         }
 
         .tab-btn-brutalist {
@@ -2192,37 +2855,72 @@ const Settings = ({
           align-items: center;
           justify-content: center;
           gap: 6px;
-          padding: 7px 14px;
-          border: none;
+          width: 124px;
+          min-width: 124px;
+          max-width: 124px;
+          height: 38px;
+          padding: 0 8px;
+          border: 1px solid transparent;
           background: transparent;
           font-family: var(--font-family);
           font-weight: 600;
-          font-size: 0.82rem;
+          font-size: 0.84rem;
           cursor: pointer;
           color: var(--text-secondary);
-          border-radius: var(--radius-sm);
-          transition: background-color var(--transition-fast), color var(--transition-fast), box-shadow var(--transition-fast);
+          border-radius: 8px;
+          transition: background-color var(--transition-fast), color var(--transition-fast), box-shadow var(--transition-fast), border-color var(--transition-fast);
           touch-action: manipulation;
           box-sizing: border-box;
           white-space: nowrap;
+          text-align: center;
+          flex-shrink: 0;
         }
 
         .tab-btn-brutalist:hover {
           color: var(--text-primary);
+          background: rgba(0, 0, 0, 0.04);
+          font-weight: 600;
         }
 
         .tab-btn-brutalist.active {
           background: #FFFFFF;
           color: var(--text-primary);
           box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+          border-color: rgba(0, 0, 0, 0.04);
           font-weight: 600;
         }
 
-        .tab-label-mobile {
-          display: none;
+        /* Featured Calculator Tab */
+        .tab-btn-brutalist.tab-btn-calc-featured {
+          background: rgba(0, 113, 227, 0.09);
+          color: var(--apple-blue);
+          border-color: rgba(0, 113, 227, 0.18);
+          font-weight: 600;
         }
 
-        .tab-label-desktop {
+        .tab-btn-brutalist.tab-btn-calc-featured:hover {
+          background: rgba(0, 113, 227, 0.16);
+          border-color: rgba(0, 113, 227, 0.28);
+          color: var(--apple-blue);
+          font-weight: 600;
+        }
+
+        .tab-btn-brutalist.tab-btn-calc-featured.active {
+          background: var(--apple-blue);
+          color: #FFFFFF;
+          border-color: var(--apple-blue);
+          box-shadow: 0 2px 8px rgba(0, 113, 227, 0.35);
+          font-weight: 600;
+        }
+
+        .tab-calc-icon {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          line-height: 1;
+        }
+
+        .tab-btn-text {
           display: inline;
         }
 
@@ -3863,6 +4561,12 @@ const Settings = ({
           font-variant-numeric: tabular-nums;
         }
 
+        .calc-field-sub-pct {
+          font-size: 0.78rem;
+          color: var(--text-tertiary);
+          font-weight: 500;
+        }
+
         .calc-stepper-row {
           display: flex;
           align-items: center;
@@ -4044,6 +4748,357 @@ const Settings = ({
           font-weight: 700;
         }
 
+        .calc-dates-row {
+          position: relative;
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 10px;
+          margin-top: 10px;
+          padding-top: 10px;
+          border-top: 1px dashed rgba(0, 0, 0, 0.08);
+        }
+
+        .calc-date-item {
+          display: flex;
+          flex-direction: column;
+          gap: 4px;
+          position: relative;
+        }
+
+        .calc-date-lbl {
+          font-size: 0.72rem;
+          font-weight: 600;
+          color: var(--text-secondary);
+        }
+
+        .calc-date-trigger-btn {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          width: 100%;
+          padding: 8px 10px;
+          border-radius: var(--radius-md, 8px);
+          border: 1px solid rgba(0, 0, 0, 0.1);
+          background: #FFFFFF;
+          color: var(--text-primary);
+          font-size: 0.78rem;
+          cursor: pointer;
+          transition: all 0.15s ease;
+          user-select: none;
+          box-sizing: border-box;
+          gap: 6px;
+        }
+
+        .calc-date-trigger-btn:hover {
+          border-color: rgba(0, 0, 0, 0.22);
+          background: #FAFAFA;
+        }
+
+        .calc-date-trigger-btn.active.advance {
+          border-color: var(--apple-blue);
+          box-shadow: 0 0 0 2px rgba(0, 113, 227, 0.15);
+          background: #FFFFFF;
+        }
+
+        .calc-date-trigger-btn.active.salary {
+          border-color: #059669;
+          box-shadow: 0 0 0 2px rgba(5, 150, 105, 0.15);
+          background: #FFFFFF;
+        }
+
+        .calc-date-trigger-left {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          min-width: 0;
+        }
+
+        .calc-date-cal-badge {
+          width: 22px;
+          height: 22px;
+          border-radius: 5px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          flex-shrink: 0;
+        }
+
+        .calc-date-cal-badge.advance {
+          background: rgba(0, 113, 227, 0.1);
+          color: var(--apple-blue);
+        }
+
+        .calc-date-cal-badge.salary {
+          background: rgba(5, 150, 105, 0.1);
+          color: #059669;
+        }
+
+        .calc-date-trigger-val {
+          font-size: 0.78rem;
+          color: var(--text-primary);
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+
+        .calc-date-trigger-val strong {
+          font-weight: 700;
+        }
+
+        .calc-date-trigger-chevron {
+          color: var(--text-tertiary);
+          transition: transform 0.2s ease;
+          flex-shrink: 0;
+        }
+
+        .calc-date-trigger-chevron.rotate {
+          transform: rotate(180deg);
+        }
+
+        /* Click outside overlay */
+        .calc-calendar-overlay {
+          position: fixed;
+          inset: 0;
+          z-index: 90;
+          background: transparent;
+        }
+
+        /* Mini Calendar Popover */
+        .calc-mini-calendar-popover {
+          position: absolute;
+          top: calc(100% + 6px);
+          z-index: 95;
+          width: 280px;
+          background: #FFFFFF;
+          border: 1px solid rgba(0, 0, 0, 0.1);
+          border-radius: 14px;
+          box-shadow: 0 16px 36px rgba(0, 0, 0, 0.16), 0 4px 12px rgba(0, 0, 0, 0.06);
+          padding: 12px 14px 10px;
+          display: flex;
+          flex-direction: column;
+          gap: 9px;
+          animation: calPopIn 0.16s cubic-bezier(0.16, 1, 0.3, 1);
+          box-sizing: border-box;
+        }
+
+        .calc-mini-calendar-popover.advance {
+          left: 0;
+          right: auto;
+        }
+
+        .calc-mini-calendar-popover.salary {
+          right: 0;
+          left: auto;
+        }
+
+        @keyframes calPopIn {
+          from {
+            opacity: 0;
+            transform: translateY(-6px) scale(0.97);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+          }
+        }
+
+        .cal-mini-header {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          padding-bottom: 2px;
+        }
+
+        .cal-mini-nav-btn {
+          width: 26px;
+          height: 26px;
+          border-radius: 6px;
+          border: 1px solid rgba(0, 0, 0, 0.08);
+          background: #F9FAFB;
+          color: var(--text-secondary);
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          transition: all 0.15s ease;
+        }
+
+        .cal-mini-nav-btn:hover {
+          background: #F0F2F5;
+          color: var(--text-primary);
+        }
+
+        .cal-mini-title-wrap {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 2px;
+        }
+
+        .cal-mini-month {
+          font-size: 0.84rem;
+          font-weight: 700;
+          color: var(--text-primary);
+        }
+
+        .cal-mini-tag {
+          font-size: 0.65rem;
+          font-weight: 600;
+          padding: 1px 7px;
+          border-radius: 999px;
+        }
+
+        .cal-mini-tag.advance {
+          color: var(--apple-blue);
+          background: rgba(0, 113, 227, 0.1);
+        }
+
+        .cal-mini-tag.salary {
+          color: #059669;
+          background: rgba(5, 150, 105, 0.1);
+        }
+
+        .cal-mini-weekdays {
+          display: grid;
+          grid-template-columns: repeat(7, 1fr);
+          gap: 2px;
+          text-align: center;
+        }
+
+        .cal-mini-wd {
+          font-size: 0.68rem;
+          font-weight: 600;
+          color: var(--text-tertiary);
+        }
+
+        .cal-mini-wd.sunday {
+          color: #EF4444;
+        }
+
+        .cal-mini-grid {
+          display: grid;
+          grid-template-columns: repeat(7, 1fr);
+          gap: 3px;
+        }
+
+        .cal-mini-cell {
+          height: 30px;
+          border-radius: 7px;
+          border: none;
+          background: transparent;
+          font-size: 0.78rem;
+          font-weight: 600;
+          color: var(--text-primary);
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          transition: all 0.12s ease;
+          user-select: none;
+        }
+
+        .cal-mini-cell:hover:not(.selected) {
+          background: #F3F4F6;
+        }
+
+        .cal-mini-cell.other-month {
+          opacity: 0.35;
+        }
+
+        .cal-mini-cell.sunday:not(.selected) {
+          color: #EF4444;
+        }
+
+        .cal-mini-cell.selected.advance {
+          background: var(--apple-blue);
+          color: #FFFFFF;
+          font-weight: 700;
+          box-shadow: 0 2px 8px rgba(0, 113, 227, 0.4);
+        }
+
+        .cal-mini-cell.selected.salary {
+          background: #059669;
+          color: #FFFFFF;
+          font-weight: 700;
+          box-shadow: 0 2px 8px rgba(5, 150, 105, 0.4);
+        }
+
+        .cal-mini-footer {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          border-top: 1px solid rgba(0, 0, 0, 0.06);
+          padding-top: 7px;
+          margin-top: 1px;
+          gap: 6px;
+        }
+
+        .cal-mini-presets {
+          display: flex;
+          align-items: center;
+          gap: 4px;
+          flex-wrap: wrap;
+          flex: 1;
+        }
+
+        .cal-mini-presets-lbl {
+          font-size: 0.68rem;
+          color: var(--text-tertiary);
+          font-weight: 500;
+        }
+
+        .cal-mini-preset-chip {
+          font-size: 0.68rem;
+          font-weight: 600;
+          padding: 2px 6px;
+          border-radius: 4px;
+          border: 1px solid rgba(0, 0, 0, 0.08);
+          background: #F9FAFB;
+          color: var(--text-secondary);
+          cursor: pointer;
+          transition: all 0.12s ease;
+        }
+
+        .cal-mini-preset-chip:hover {
+          border-color: rgba(0, 0, 0, 0.2);
+          color: var(--text-primary);
+        }
+
+        .cal-mini-preset-chip.active {
+          background: #1D1D1F;
+          color: #FFFFFF;
+          border-color: #1D1D1F;
+        }
+
+        .cal-mini-close-btn {
+          font-size: 0.72rem;
+          font-weight: 600;
+          color: var(--text-tertiary);
+          border: none;
+          background: transparent;
+          cursor: pointer;
+          padding: 2px 6px;
+          border-radius: 4px;
+        }
+
+        .cal-mini-close-btn:hover {
+          color: var(--text-primary);
+          background: #F3F4F6;
+        }
+
+        .calc-payout-date-badge.is-clickable {
+          cursor: pointer;
+          border: none;
+          display: inline-flex;
+          align-items: center;
+          transition: transform 0.15s ease, filter 0.15s ease;
+        }
+
+        .calc-payout-date-badge.is-clickable:hover {
+          transform: scale(1.04);
+          filter: brightness(0.96);
+        }
+
         /* Results Column */
         .calc-results-col {
           display: flex;
@@ -4131,37 +5186,154 @@ const Settings = ({
           color: var(--text-tertiary);
         }
 
-        .calc-ratio-clean {
-          background: #F9FAFB;
-          border: 1px solid rgba(0, 0, 0, 0.06);
+        /* Split Payout Cards: Avans & Oylik */
+        .calc-payouts-grid {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 10px;
+        }
+
+        .calc-payout-card {
           border-radius: 12px;
           padding: 12px 14px;
           display: flex;
           flex-direction: column;
-          gap: 8px;
+          gap: 4px;
+          position: relative;
+          border: 1px solid rgba(0, 0, 0, 0.06);
+          background: #FFFFFF;
+          transition: transform 0.15s ease, box-shadow 0.15s ease;
         }
 
-        .calc-ratio-row {
+        .calc-payout-card.advance {
+          border-color: rgba(0, 113, 227, 0.2);
+          background: linear-gradient(135deg, rgba(0, 113, 227, 0.04) 0%, rgba(0, 113, 227, 0.01) 100%);
+        }
+
+        .calc-payout-card.remaining {
+          border-color: rgba(5, 150, 105, 0.2);
+          background: linear-gradient(135deg, rgba(5, 150, 105, 0.04) 0%, rgba(5, 150, 105, 0.01) 100%);
+        }
+
+        .calc-payout-header {
           display: flex;
+          align-items: center;
           justify-content: space-between;
+          gap: 6px;
+          flex-wrap: wrap;
+        }
+
+        .calc-payout-tag {
+          display: inline-flex;
+          align-items: center;
+          gap: 5px;
           font-size: 0.72rem;
+          font-weight: 700;
+          text-transform: uppercase;
+          letter-spacing: 0.03em;
+        }
+
+        .calc-payout-card.advance .calc-payout-tag {
+          color: var(--apple-blue);
+        }
+
+        .calc-payout-card.remaining .calc-payout-tag {
+          color: #059669;
+        }
+
+        .calc-payout-date-badge {
+          font-size: 0.68rem;
           font-weight: 600;
+          padding: 1px 6px;
+          border-radius: 999px;
+          background: rgba(0, 0, 0, 0.05);
           color: var(--text-secondary);
         }
 
-        .calc-bar-track {
+        .calc-payout-card.advance .calc-payout-date-badge {
+          background: rgba(0, 113, 227, 0.1);
+          color: var(--apple-blue);
+        }
+
+        .calc-payout-card.remaining .calc-payout-date-badge {
+          background: rgba(5, 150, 105, 0.1);
+          color: #059669;
+        }
+
+        .calc-payout-amount {
+          font-size: 1.18rem;
+          font-weight: 800;
+          color: var(--text-primary);
+          font-variant-numeric: tabular-nums;
+          letter-spacing: -0.01em;
+          margin-top: 2px;
+        }
+
+        .calc-payout-card.advance .calc-payout-amount {
+          color: #0071E3;
+        }
+
+        .calc-payout-card.remaining .calc-payout-amount {
+          color: #059669;
+        }
+
+        .calc-payout-sub {
+          font-size: 0.7rem;
+          color: var(--text-tertiary);
+        }
+
+        /* Payout Timeline Progress Bar */
+        .calc-payout-bar-wrap {
+          display: flex;
+          flex-direction: column;
+          gap: 6px;
+          padding: 10px 12px;
+          background: #F9FAFB;
+          border-radius: 12px;
+          border: 1px solid rgba(0, 0, 0, 0.06);
+        }
+
+        .calc-payout-bar-labels {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          font-size: 0.72rem;
+          gap: 8px;
+          flex-wrap: wrap;
+        }
+
+        .payout-bar-lbl {
+          font-weight: 500;
+          color: var(--text-secondary);
+        }
+
+        .payout-bar-lbl.advance strong {
+          color: #0071E3;
+        }
+
+        .payout-bar-lbl.remaining strong {
+          color: #059669;
+        }
+
+        .calc-payout-bar-track {
           width: 100%;
-          height: 6px;
+          height: 8px;
+          border-radius: 999px;
           background: #E5E7EB;
-          border-radius: var(--radius-full, 9999px);
+          display: flex;
           overflow: hidden;
         }
 
-        .calc-bar-teacher {
+        .calc-payout-bar-advance {
           height: 100%;
-          background: #1D1D1F;
-          border-radius: var(--radius-full, 9999px);
-          transition: width 0.25s ease;
+          background: #0071E3;
+          transition: width 0.3s ease;
+        }
+
+        .calc-payout-bar-remaining {
+          height: 100%;
+          background: #059669;
+          transition: width 0.3s ease;
         }
 
         /* Minimal Groups Table */
@@ -4199,10 +5371,12 @@ const Settings = ({
           display: flex;
           justify-content: space-between;
           align-items: center;
-          padding: 10px 14px;
+          padding: 11px 14px;
           background: #FFFFFF;
           border-bottom: 1px solid rgba(0, 0, 0, 0.05);
-          transition: background 0.15s ease;
+          cursor: pointer;
+          transition: background 0.15s ease, transform 0.15s ease;
+          user-select: none;
         }
 
         .calc-group-row:last-child {
@@ -4210,24 +5384,70 @@ const Settings = ({
         }
 
         .calc-group-row:hover {
-          background: #F9FAFB;
+          background: rgba(0, 113, 227, 0.04);
+        }
+
+        .calc-group-row:active {
+          transform: scale(0.995);
+        }
+
+        .calc-group-row-left {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          min-width: 0;
+          flex: 1;
+        }
+
+        .calc-group-row-icon {
+          width: 36px;
+          height: 36px;
+          border-radius: 10px;
+          background: #F5F5F7;
+          border: 1px solid rgba(0, 0, 0, 0.06);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: var(--text-primary);
+          flex-shrink: 0;
         }
 
         .calc-group-row-info {
           display: flex;
           flex-direction: column;
           gap: 2px;
+          min-width: 0;
+          flex: 1;
+        }
+
+        .calc-group-row-name-wrap {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          min-width: 0;
+          flex-wrap: wrap;
         }
 
         .calc-group-row-name {
-          font-size: 0.86rem;
-          font-weight: 600;
+          font-size: 0.9rem;
+          font-weight: 700;
           color: var(--text-primary);
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
         }
 
         .calc-group-row-count {
-          font-size: 0.72rem;
+          font-size: 0.74rem;
           color: var(--text-tertiary);
+          font-weight: 500;
+        }
+
+        .calc-group-row-right {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          flex-shrink: 0;
         }
 
         .calc-group-row-amounts {
@@ -4243,16 +5463,324 @@ const Settings = ({
         }
 
         .calc-group-row-share {
-          font-size: 0.86rem;
+          font-size: 0.88rem;
           font-weight: 700;
           color: #059669;
           font-variant-numeric: tabular-nums;
         }
 
+        .calc-group-row-arrow {
+          color: var(--text-tertiary);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          transition: transform 0.15s ease, color 0.15s ease;
+        }
+
+        .calc-group-row:hover .calc-group-row-arrow {
+          color: var(--apple-blue);
+          transform: translateX(2px);
+        }
+
+        /* Calculator Students List Modal */
+        .calc-student-list-modal {
+          max-width: 480px;
+          width: 100%;
+          padding: 22px 24px 20px;
+          display: flex;
+          flex-direction: column;
+          gap: 14px;
+          border-radius: var(--radius-xl);
+          box-shadow: 0 24px 60px rgba(0, 0, 0, 0.2);
+          position: relative;
+          background: var(--bg-card);
+          border: 1px solid var(--border-color);
+          max-height: min(620px, calc(100dvh - 48px));
+          height: auto;
+          box-sizing: border-box;
+        }
+
+        .calc-student-modal-header {
+          display: flex;
+          align-items: flex-start;
+          justify-content: space-between;
+          gap: 14px;
+          padding-bottom: 14px;
+          border-bottom: 1px solid var(--border-color);
+        }
+
+        .calc-student-modal-head-left {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          min-width: 0;
+          flex: 1;
+        }
+
+        .calc-student-modal-group-icon {
+          width: 44px;
+          height: 44px;
+          border-radius: 12px;
+          background: rgba(0, 0, 0, 0.04);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          flex-shrink: 0;
+        }
+
+        .calc-student-modal-head-info {
+          display: flex;
+          flex-direction: column;
+          gap: 3px;
+          min-width: 0;
+          flex: 1;
+        }
+
+        .calc-student-modal-title-row {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          flex-wrap: wrap;
+          min-width: 0;
+        }
+
+        .calc-student-modal-group-name {
+          margin: 0;
+          font-size: 1.15rem;
+          font-weight: 700;
+          color: var(--text-primary);
+          letter-spacing: -0.01em;
+          word-break: break-word;
+          overflow-wrap: anywhere;
+        }
+
+        .calc-student-modal-count-badge {
+          font-size: 0.74rem;
+          font-weight: 600;
+          padding: 2px 8px;
+          border-radius: 999px;
+          background: rgba(0, 113, 227, 0.1);
+          color: var(--apple-blue);
+          white-space: nowrap;
+        }
+
+        .calc-student-modal-meta-row {
+          font-size: 0.78rem;
+          color: var(--text-secondary);
+        }
+
+        .calc-student-modal-stats-banner {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 10px;
+          padding: 10px 14px;
+          border-radius: var(--radius-md);
+          background: rgba(0, 0, 0, 0.03);
+          border: 1px solid rgba(0, 0, 0, 0.05);
+        }
+
+        .calc-student-stat-item {
+          display: flex;
+          flex-direction: column;
+          gap: 2px;
+        }
+
+        .calc-student-stat-item .stat-label {
+          font-size: 0.7rem;
+          font-weight: 500;
+          color: var(--text-tertiary);
+          text-transform: uppercase;
+          letter-spacing: 0.02em;
+        }
+
+        .calc-student-stat-item .stat-value {
+          font-size: 0.95rem;
+          font-weight: 700;
+          color: var(--text-primary);
+          font-variant-numeric: tabular-nums;
+        }
+
+        .calc-student-stat-item.highlight .stat-value {
+          color: #059669;
+        }
+
+        .calc-student-stat-item.advance-box .stat-value {
+          color: #0071E3;
+        }
+
+        .calc-student-stat-item.remaining-box .stat-value {
+          color: #059669;
+        }
+
+        .calc-student-search-wrap {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          padding: 8px 12px;
+          border-radius: var(--radius-md);
+          background: rgba(0, 0, 0, 0.03);
+          border: 1px solid var(--border-color);
+          color: var(--text-tertiary);
+          transition: all 0.15s ease;
+        }
+
+        .calc-student-search-wrap:focus-within {
+          border-color: var(--apple-blue);
+          background: #FFFFFF;
+          box-shadow: 0 0 0 3px rgba(0, 113, 227, 0.1);
+        }
+
+        .calc-student-search-input {
+          flex: 1;
+          border: none;
+          background: transparent;
+          outline: none;
+          font-size: 0.85rem;
+          color: var(--text-primary);
+        }
+
+        .calc-student-search-clear {
+          border: none;
+          background: transparent;
+          color: var(--text-tertiary);
+          cursor: pointer;
+          font-size: 1.1rem;
+          line-height: 1;
+          padding: 0 4px;
+        }
+
+        .calc-student-modal-body {
+          flex: 1 1 auto;
+          min-height: 0;
+          max-height: 340px;
+          overflow-y: auto;
+          overflow-x: hidden;
+          padding-right: 4px;
+          overscroll-behavior: contain;
+        }
+
+        .calc-students-list {
+          display: flex;
+          flex-direction: column;
+          gap: 6px;
+        }
+
+        .calc-student-card {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          padding: 8px 12px;
+          border-radius: var(--radius-md);
+          background: #FFFFFF;
+          border: 1px solid rgba(0, 0, 0, 0.06);
+          box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
+          transition: background 0.15s ease;
+        }
+
+        .calc-student-card:hover {
+          background: #F9FAFB;
+        }
+
+        .calc-student-idx {
+          font-size: 0.82rem;
+          font-weight: 700;
+          color: var(--text-tertiary);
+          min-width: 20px;
+          font-variant-numeric: tabular-nums;
+        }
+
+        .calc-student-avatar-wrap {
+          width: 32px;
+          height: 32px;
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          flex-shrink: 0;
+          background: rgba(0, 0, 0, 0.04);
+        }
+
+        .calc-student-main {
+          display: flex;
+          flex-direction: column;
+          min-width: 0;
+          flex: 1;
+        }
+
+        .calc-student-name {
+          font-size: 0.86rem;
+          font-weight: 600;
+          color: var(--text-primary);
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+
+        .calc-student-sub {
+          font-size: 0.72rem;
+          color: var(--text-tertiary);
+        }
+
+        .calc-student-share-pill {
+          font-size: 0.8rem;
+          font-weight: 700;
+          color: #059669;
+          font-variant-numeric: tabular-nums;
+          background: rgba(5, 150, 105, 0.08);
+          padding: 3px 8px;
+          border-radius: 6px;
+          white-space: nowrap;
+          flex-shrink: 0;
+        }
+
+        .calc-students-empty {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          padding: 32px 16px;
+          text-align: center;
+        }
+
+        .calc-students-empty .empty-icon-wrap {
+          font-size: 2rem;
+          margin-bottom: 8px;
+          opacity: 0.7;
+        }
+
+        .calc-students-empty .empty-title {
+          font-size: 0.95rem;
+          font-weight: 600;
+          color: var(--text-primary);
+          margin: 0 0 4px 0;
+        }
+
+        .calc-students-empty .empty-sub {
+          font-size: 0.8rem;
+          color: var(--text-tertiary);
+          margin: 0;
+        }
+
+        .calc-student-modal-footer {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          padding-top: 12px;
+          border-top: 1px solid var(--border-color);
+          gap: 12px;
+        }
+
+        .calc-modal-footer-note {
+          font-size: 0.82rem;
+          color: var(--text-secondary);
+        }
+
         .calc-groups-total-bar {
           display: flex;
-          justify-content: space-between;
           align-items: center;
+          justify-content: space-between;
+          flex-wrap: wrap;
+          gap: 10px;
           padding: 12px 14px;
           background: #F9FAFB;
           border-radius: 10px;
@@ -4260,16 +5788,57 @@ const Settings = ({
           font-size: 0.82rem;
         }
 
-        .calc-groups-total-bar .lbl {
+        .calc-groups-total-main {
+          display: flex;
+          align-items: baseline;
+          gap: 6px;
+        }
+
+        .calc-groups-total-main .lbl {
           font-weight: 600;
           color: var(--text-secondary);
         }
 
-        .calc-groups-total-bar .val {
+        .calc-groups-total-main .val {
           font-weight: 800;
           color: #059669;
-          font-size: 0.95rem;
+          font-size: 1.05rem;
           font-variant-numeric: tabular-nums;
+        }
+
+        .calc-groups-payout-breakdown {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          flex-wrap: wrap;
+        }
+
+        .calc-payout-chip {
+          font-size: 0.72rem;
+          font-weight: 500;
+          padding: 3px 9px;
+          border-radius: 999px;
+          display: inline-flex;
+          align-items: center;
+          gap: 4px;
+        }
+
+        .calc-payout-chip.advance {
+          background: rgba(0, 113, 227, 0.08);
+          color: #0071E3;
+        }
+
+        .calc-payout-chip.advance strong {
+          color: #0071E3;
+        }
+
+        .calc-payout-chip.remaining {
+          background: rgba(5, 150, 105, 0.08);
+          color: #059669;
+        }
+
+        .calc-payout-chip.remaining strong {
+          color: #059669;
         }
 
         /* Mobile Breakpoints */
@@ -4282,33 +5851,31 @@ const Settings = ({
 
           .settings-page-header .tab-control-brutalist {
             display: grid;
-            grid-template-columns: repeat(4, 1fr);
+            grid-template-columns: repeat(3, 1fr);
             width: 100%;
             background: #EEEEF0;
-            padding: 3px;
-            gap: 2px;
+            padding: 4px;
+            gap: 6px;
+            border-radius: 12px;
             box-sizing: border-box;
           }
 
           .settings-page-header .tab-btn-brutalist {
             width: 100%;
             min-width: 0;
-            padding: 7px 1px;
-            font-size: 0.7rem;
+            max-width: 100%;
+            height: 36px;
+            padding: 0 4px;
+            font-size: 0.78rem;
+            font-weight: 600;
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 2px;
+            gap: 4px;
             text-align: center;
+            border-radius: 8px;
             box-sizing: border-box;
-          }
-
-          .tab-label-desktop {
-            display: none;
-          }
-
-          .tab-label-mobile {
-            display: inline;
+            flex-shrink: 0;
           }
 
           .settings-page-header .tab-count-badge {
@@ -4321,6 +5888,30 @@ const Settings = ({
           .calc-split-container {
             grid-template-columns: 1fr;
             gap: 14px;
+          }
+
+          .calc-dates-row {
+            grid-template-columns: 1fr;
+            gap: 8px;
+          }
+
+          .calc-mini-calendar-popover {
+            width: calc(100vw - 48px);
+            max-width: 300px;
+            left: 50% !important;
+            right: auto !important;
+            transform: translateX(-50%);
+          }
+
+          .calc-payouts-grid {
+            grid-template-columns: 1fr;
+            gap: 8px;
+          }
+
+          .calc-payout-bar-labels {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 4px;
           }
 
           .calc-stats-dual {
@@ -4338,6 +5929,16 @@ const Settings = ({
 
           .calc-input-block {
             padding: 12px;
+          }
+
+          .calc-groups-total-bar {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 8px;
+          }
+
+          .calc-groups-payout-breakdown {
+            width: 100%;
           }
 
           .modern-hero-identity-card {
@@ -4445,23 +6046,52 @@ const Settings = ({
         }
 
         /* Settings Dark Mode Overrides */
-        [data-theme="dark"] .tab-control-brutalist {
+        [data-theme="dark"] .tab-control-brutalist,
+        [data-theme="dark"] .settings-page-header .tab-control-brutalist {
           background: #202124;
           border-color: #3C4043;
         }
 
         [data-theme="dark"] .tab-btn-brutalist {
           color: #9AA0A6;
+          border-color: transparent;
+          font-weight: 600;
         }
 
         [data-theme="dark"] .tab-btn-brutalist:hover {
           color: #E8EAED;
+          background: rgba(255, 255, 255, 0.05);
+          font-weight: 600;
         }
 
         [data-theme="dark"] .tab-btn-brutalist.active {
           background: #303134;
           color: #E8EAED;
           box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
+          border-color: rgba(255, 255, 255, 0.08);
+          font-weight: 600;
+        }
+
+        [data-theme="dark"] .tab-btn-brutalist.tab-btn-calc-featured {
+          background: rgba(138, 180, 248, 0.14);
+          color: #8AB4F8;
+          border-color: rgba(138, 180, 248, 0.28);
+          font-weight: 600;
+        }
+
+        [data-theme="dark"] .tab-btn-brutalist.tab-btn-calc-featured:hover {
+          background: rgba(138, 180, 248, 0.22);
+          color: #8AB4F8;
+          border-color: rgba(138, 180, 248, 0.4);
+          font-weight: 600;
+        }
+
+        [data-theme="dark"] .tab-btn-brutalist.tab-btn-calc-featured.active {
+          background: #8AB4F8;
+          color: #202124;
+          border-color: #8AB4F8;
+          box-shadow: 0 2px 8px rgba(138, 180, 248, 0.35);
+          font-weight: 600;
         }
 
         [data-theme="dark"] .modern-hero-identity-card {
@@ -4926,17 +6556,155 @@ const Settings = ({
           color: #E8EAED;
         }
 
-        [data-theme="dark"] .calc-ratio-clean {
+        [data-theme="dark"] .calc-dates-row {
+          border-top-color: #3C4043;
+        }
+
+        [data-theme="dark"] .calc-date-trigger-btn {
+          background: #202124;
+          border-color: #3C4043;
+          color: #E8EAED;
+        }
+
+        [data-theme="dark"] .calc-date-trigger-btn:hover {
+          border-color: #5F6368;
+          background: #26282B;
+        }
+
+        [data-theme="dark"] .calc-date-trigger-btn.active.advance {
+          border-color: #8AB4F8;
+          box-shadow: 0 0 0 2px rgba(138, 180, 248, 0.2);
+          background: #202124;
+        }
+
+        [data-theme="dark"] .calc-date-trigger-btn.active.salary {
+          border-color: #81C995;
+          box-shadow: 0 0 0 2px rgba(129, 201, 149, 0.2);
+          background: #202124;
+        }
+
+        [data-theme="dark"] .calc-date-trigger-val {
+          color: #E8EAED;
+        }
+
+        [data-theme="dark"] .calc-mini-calendar-popover {
+          background: #252629;
+          border-color: #3C4043;
+          box-shadow: 0 16px 36px rgba(0, 0, 0, 0.55), 0 4px 12px rgba(0, 0, 0, 0.3);
+        }
+
+        [data-theme="dark"] .cal-mini-nav-btn {
+          background: #2D2F31;
+          border-color: #3C4043;
+          color: #E8EAED;
+        }
+
+        [data-theme="dark"] .cal-mini-nav-btn:hover {
+          background: #383A3D;
+        }
+
+        [data-theme="dark"] .cal-mini-month {
+          color: #E8EAED;
+        }
+
+        [data-theme="dark"] .cal-mini-cell {
+          color: #E8EAED;
+        }
+
+        [data-theme="dark"] .cal-mini-cell:hover:not(.selected) {
+          background: #303134;
+        }
+
+        [data-theme="dark"] .cal-mini-footer {
+          border-top-color: #3C4043;
+        }
+
+        [data-theme="dark"] .cal-mini-preset-chip {
+          background: #2D2F31;
+          border-color: #3C4043;
+          color: #9AA0A6;
+        }
+
+        [data-theme="dark"] .cal-mini-preset-chip:hover {
+          color: #E8EAED;
+          border-color: #5F6368;
+        }
+
+        [data-theme="dark"] .cal-mini-preset-chip.active {
+          background: #E8EAED;
+          color: #202124;
+          border-color: #E8EAED;
+        }
+
+        [data-theme="dark"] .cal-mini-close-btn:hover {
+          color: #E8EAED;
+          background: #303134;
+        }
+
+        [data-theme="dark"] .calc-payout-card {
           background: #202124;
           border-color: #3C4043;
         }
 
-        [data-theme="dark"] .calc-bar-track {
+        [data-theme="dark"] .calc-payout-card.advance {
+          background: rgba(138, 180, 248, 0.08);
+          border-color: rgba(138, 180, 248, 0.3);
+        }
+
+        [data-theme="dark"] .calc-payout-card.advance .calc-payout-tag,
+        [data-theme="dark"] .calc-payout-card.advance .calc-payout-amount,
+        [data-theme="dark"] .calc-payout-card.advance .calc-payout-date-badge,
+        [data-theme="dark"] .payout-bar-lbl.advance strong,
+        [data-theme="dark"] .calc-payout-chip.advance strong {
+          color: #8AB4F8;
+        }
+
+        [data-theme="dark"] .calc-payout-card.advance .calc-payout-date-badge {
+          background: rgba(138, 180, 248, 0.15);
+        }
+
+        [data-theme="dark"] .calc-payout-card.remaining {
+          background: rgba(129, 201, 149, 0.08);
+          border-color: rgba(129, 201, 149, 0.3);
+        }
+
+        [data-theme="dark"] .calc-payout-card.remaining .calc-payout-tag,
+        [data-theme="dark"] .calc-payout-card.remaining .calc-payout-amount,
+        [data-theme="dark"] .calc-payout-card.remaining .calc-payout-date-badge,
+        [data-theme="dark"] .payout-bar-lbl.remaining strong,
+        [data-theme="dark"] .calc-payout-chip.remaining strong {
+          color: #81C995;
+        }
+
+        [data-theme="dark"] .calc-payout-card.remaining .calc-payout-date-badge {
+          background: rgba(129, 201, 149, 0.15);
+        }
+
+        [data-theme="dark"] .calc-payout-bar-wrap {
+          background: #202124;
+          border-color: #3C4043;
+        }
+
+        [data-theme="dark"] .calc-payout-bar-track {
           background: #3C4043;
         }
 
-        [data-theme="dark"] .calc-bar-teacher {
-          background: #E8EAED;
+        [data-theme="dark"] .calc-payout-bar-advance {
+          background: #8AB4F8;
+        }
+
+        [data-theme="dark"] .calc-payout-bar-remaining {
+          background: #81C995;
+        }
+
+        [data-theme="dark"] .calc-payout-chip.advance {
+          background: rgba(138, 180, 248, 0.12);
+          color: #8AB4F8;
+        }
+
+        [data-theme="dark"] .calc-payout-chip.remaining {
+          background: rgba(129, 201, 149, 0.12);
+          color: #81C995;
         }
 
         [data-theme="dark"] .calc-groups-count-badge {
@@ -4954,7 +6722,13 @@ const Settings = ({
         }
 
         [data-theme="dark"] .calc-group-row:hover {
+          background: #28292D;
+        }
+
+        [data-theme="dark"] .calc-group-row-icon {
           background: #292A2D;
+          border-color: #3C4043;
+          color: #E8EAED;
         }
 
         [data-theme="dark"] .calc-group-row-name {
@@ -4962,6 +6736,80 @@ const Settings = ({
         }
 
         [data-theme="dark"] .calc-group-row-share {
+          color: #81C995;
+        }
+
+        [data-theme="dark"] .calc-student-list-modal {
+          background: #292A2D;
+          border-color: #3C4043;
+          box-shadow: 0 24px 60px rgba(0, 0, 0, 0.65);
+        }
+
+        [data-theme="dark"] .calc-student-modal-group-icon {
+          background: rgba(255, 255, 255, 0.08);
+        }
+
+        [data-theme="dark"] .calc-student-modal-group-name {
+          color: #E8EAED;
+        }
+
+        [data-theme="dark"] .calc-student-modal-count-badge {
+          background: rgba(138, 180, 248, 0.15);
+          color: #8AB4F8;
+        }
+
+        [data-theme="dark"] .calc-student-modal-stats-banner {
+          background: #202124;
+          border-color: #3C4043;
+        }
+
+        [data-theme="dark"] .calc-student-stat-item .stat-value {
+          color: #E8EAED;
+        }
+
+        [data-theme="dark"] .calc-student-stat-item.highlight .stat-value {
+          color: #81C995;
+        }
+
+        [data-theme="dark"] .calc-student-stat-item.advance-box .stat-value {
+          color: #8AB4F8;
+        }
+
+        [data-theme="dark"] .calc-student-stat-item.remaining-box .stat-value {
+          color: #81C995;
+        }
+
+        [data-theme="dark"] .calc-student-search-wrap {
+          background: #202124;
+          border-color: #3C4043;
+        }
+
+        [data-theme="dark"] .calc-student-search-wrap:focus-within {
+          background: #292A2D;
+          border-color: #8AB4F8;
+          box-shadow: 0 0 0 3px rgba(138, 180, 248, 0.15);
+        }
+
+        [data-theme="dark"] .calc-student-card {
+          background: #202124;
+          border-color: rgba(255, 255, 255, 0.08);
+          box-shadow: none;
+        }
+
+        [data-theme="dark"] .calc-student-card:hover {
+          background: #28292D;
+        }
+
+        [data-theme="dark"] .calc-student-avatar-wrap {
+          background: rgba(255, 255, 255, 0.06);
+        }
+
+        [data-theme="dark"] .calc-student-name {
+          color: #E8EAED;
+        }
+
+        [data-theme="dark"] .calc-student-share-pill {
+          background: rgba(129, 201, 149, 0.15);
           color: #81C995;
         }
 

@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { renderGroupIcon, GROUP_COLOR_OPTIONS } from '../utils/groupIcons';
+import { renderGroupIcon, GROUP_COLOR_OPTIONS, getGroupColorOption } from '../utils/groupIcons';
 import { renderAvatar } from '../utils/studentAvatars';
 import { getGroupCategory } from '../utils/db';
 import Time24Input from './Time24Input';
@@ -475,12 +475,12 @@ const ScheduleView = ({
 
   // Helper to get group styling
   const getGroupStyle = (colorValue) => {
-    const opt = GROUP_COLOR_OPTIONS.find((c) => c.value === colorValue) || GROUP_COLOR_OPTIONS[0];
+    const opt = getGroupColorOption(colorValue);
     return {
       '--card-bg-light': opt.value || '#FFFFFF',
-      '--card-border-light': opt.border || 'rgba(0, 0, 0, 0.08)',
-      '--card-bg-dark': opt.darkBg || '#292A2D',
-      '--card-border-dark': opt.darkBorder || '#3C4043',
+      '--card-border-light': opt.border || 'rgba(0, 0, 0, 0.06)',
+      '--card-bg-dark': opt.darkBg || opt.value || '#FFFFFF',
+      '--card-border-dark': opt.darkBorder || opt.border || 'rgba(0, 0, 0, 0.06)',
     };
   };
 
@@ -530,7 +530,13 @@ const ScheduleView = ({
 
       {/* Weekly Timetable Grid (Desktop: 6/7 columns, Mobile: shows selected day) */}
       <div className="weekly-grid-wrapper">
-        <div className="weekly-timetable-grid">
+        <div
+          className="weekly-timetable-grid"
+          style={{
+            gridTemplateColumns: `repeat(${activeWeekdays.length}, minmax(0, 1fr))`,
+            minWidth: activeWeekdays.length > 6 ? '980px' : '850px'
+          }}
+        >
           {activeWeekdays.map((day) => {
             const dayClasses = scheduleByDay[day.key] || [];
             const isToday = day.key === todayKey;
@@ -567,7 +573,6 @@ const ScheduleView = ({
                             key={item.key}
                             className="schedule-lesson-card extra-lesson-card scale-active"
                             onClick={() => setSelectedGroupForStudents(group)}
-                            title="Guruh talabalari ro'yxatini ko'rish uchun bosing"
                           >
                             <div className="extra-lesson-top-row">
                               <span className="extra-lesson-badge">
@@ -686,7 +691,6 @@ const ScheduleView = ({
                           className="schedule-lesson-card scale-active"
                           style={cardStyles}
                           onClick={() => setSelectedGroupForStudents(group)}
-                          title="Guruh talabalari ro'yxatini ko'rish uchun bosing"
                         >
                           <div className="lesson-time-header">
                             <span className="lesson-time-range">
@@ -792,7 +796,7 @@ const ScheduleView = ({
                         <div className="schedule-group-pill-icon">
                           {renderGroupIcon(activeGroup.icon, 16)}
                         </div>
-                        <span className="schedule-select-group-name">{activeGroup.name}</span>
+                        <span className="schedule-select-group-name" title={activeGroup.name}>{activeGroup.name}</span>
                         <span className={`group-category-pill group-category-${getGroupCategory(activeGroup)}`}>
                           {getGroupCategory(activeGroup) === 'kids' ? 'Kids' : 'Teens'}
                         </span>
@@ -826,7 +830,7 @@ const ScheduleView = ({
                               <div className="schedule-group-pill-icon">
                                 {renderGroupIcon(g.icon, 16)}
                               </div>
-                              <span className="schedule-item-name">{g.name}</span>
+                              <span className="schedule-item-name" title={g.name}>{g.name}</span>
                               <span className={`group-category-pill group-category-${getGroupCategory(g)}`}>
                                 {getGroupCategory(g) === 'kids' ? 'Kids' : 'Teens'}
                               </span>
@@ -1012,7 +1016,7 @@ const ScheduleView = ({
                         <div className="schedule-group-pill-icon">
                           {renderGroupIcon(extraSelectedGroup.icon, 16)}
                         </div>
-                        <span className="schedule-select-group-name">{extraSelectedGroup.name}</span>
+                        <span className="schedule-select-group-name" title={extraSelectedGroup.name}>{extraSelectedGroup.name}</span>
                         <span className={`group-category-pill group-category-${getGroupCategory(extraSelectedGroup)}`}>
                           {getGroupCategory(extraSelectedGroup) === 'kids' ? 'Kids' : 'Teens'}
                         </span>
@@ -1057,7 +1061,7 @@ const ScheduleView = ({
                               <div className="schedule-group-pill-icon">
                                 {renderGroupIcon(g.icon, 16)}
                               </div>
-                              <span className="schedule-item-name">{g.name}</span>
+                              <span className="schedule-item-name" title={g.name}>{g.name}</span>
                               <span className={`group-category-pill group-category-${getGroupCategory(g)}`}>
                                 {getGroupCategory(g) === 'kids' ? 'Kids' : 'Teens'}
                               </span>
@@ -1307,7 +1311,7 @@ const ScheduleView = ({
                 </div>
                 <div className="student-list-header-info">
                   <div className="student-list-title-row">
-                    <h3 className="student-list-group-name">{selectedGroupForStudents.name}</h3>
+                    <h3 className="student-list-group-name" title={selectedGroupForStudents.name}>{selectedGroupForStudents.name}</h3>
                     <span className={`group-category-pill group-category-${getGroupCategory(selectedGroupForStudents)}`}>
                       {getGroupCategory(selectedGroupForStudents) === 'kids' ? 'Kids' : 'Teens'}
                     </span>
@@ -1705,9 +1709,10 @@ const ScheduleView = ({
 
         .weekly-timetable-grid {
           display: grid;
-          grid-template-columns: repeat(6, 1fr);
+          grid-template-columns: repeat(6, minmax(0, 1fr));
           gap: 12px;
           min-width: 850px;
+          width: 100%;
         }
 
         .timetable-day-col {
@@ -1719,6 +1724,10 @@ const ScheduleView = ({
           border-radius: var(--radius-lg);
           padding: 12px;
           min-height: 280px;
+          min-width: 0;
+          max-width: 100%;
+          box-sizing: border-box;
+          overflow: hidden;
         }
 
         [data-theme="dark"] .timetable-day-col {
@@ -1742,6 +1751,8 @@ const ScheduleView = ({
           justify-content: space-between;
           padding-bottom: 8px;
           border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+          min-width: 0;
+          gap: 6px;
         }
 
         [data-theme="dark"] .day-col-header {
@@ -1752,6 +1763,8 @@ const ScheduleView = ({
           display: flex;
           align-items: center;
           gap: 6px;
+          min-width: 0;
+          overflow: hidden;
         }
 
         .day-col-name {
@@ -1759,6 +1772,10 @@ const ScheduleView = ({
           font-weight: 700;
           color: var(--text-primary);
           letter-spacing: -0.01em;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          min-width: 0;
         }
 
         .day-today-indicator {
@@ -1797,24 +1814,79 @@ const ScheduleView = ({
           flex-direction: column;
           gap: 10px;
           flex: 1;
+          min-width: 0;
+          max-width: 100%;
         }
 
         .schedule-lesson-card {
           padding: 12px;
           border-radius: var(--radius-md);
           background-color: var(--card-bg-light, #FFFFFF);
-          border: 1px solid var(--card-border-light, rgba(0, 0, 0, 0.08));
+          border: 1px solid var(--card-border-light, rgba(0, 0, 0, 0.06));
           box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
           cursor: pointer;
           transition: all var(--transition-fast);
           display: flex;
           flex-direction: column;
           gap: 8px;
+          min-width: 0;
+          max-width: 100%;
+          box-sizing: border-box;
+          overflow: hidden;
         }
 
         [data-theme="dark"] .schedule-lesson-card {
-          background-color: var(--card-bg-dark, #292A2D) !important;
-          border-color: var(--card-border-dark, #3C4043) !important;
+          background-color: var(--card-bg-dark, var(--card-bg-light, #FFFFFF)) !important;
+          border-color: var(--card-border-dark, var(--card-border-light, rgba(0, 0, 0, 0.06))) !important;
+          box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+        }
+
+        [data-theme="dark"] .schedule-lesson-card .lesson-time-range {
+          color: #1D1D1F !important;
+        }
+
+        [data-theme="dark"] .schedule-lesson-card .lesson-group-title {
+          color: #1D1D1F !important;
+        }
+
+        [data-theme="dark"] .schedule-lesson-card .lesson-room-pill {
+          background: rgba(0, 0, 0, 0.06) !important;
+          color: #374151 !important;
+        }
+
+        [data-theme="dark"] .schedule-lesson-card .lesson-group-icon {
+          background: rgba(0, 0, 0, 0.05) !important;
+          border-color: rgba(0, 0, 0, 0.06) !important;
+          color: #1D1D1F !important;
+        }
+
+        [data-theme="dark"] .schedule-lesson-card .lesson-card-action-btn {
+          color: #4B5563 !important;
+        }
+
+        [data-theme="dark"] .schedule-lesson-card .lesson-card-action-btn:hover {
+          color: #111827 !important;
+          background: rgba(0, 0, 0, 0.08) !important;
+        }
+
+        [data-theme="dark"] .schedule-lesson-card .group-category-pill.group-category-kids {
+          background: rgba(255, 149, 0, 0.14) !important;
+          color: #B45309 !important;
+          border-color: rgba(255, 149, 0, 0.35) !important;
+        }
+
+        [data-theme="dark"] .schedule-lesson-card .group-category-pill.group-category-teens {
+          background: rgba(88, 86, 214, 0.14) !important;
+          color: #4338CA !important;
+          border-color: rgba(88, 86, 214, 0.35) !important;
+        }
+
+        [data-theme="dark"] .schedule-lesson-card .lesson-card-footer {
+          border-top-color: rgba(0, 0, 0, 0.08) !important;
+        }
+
+        [data-theme="dark"] .schedule-lesson-card .lesson-students-count {
+          color: #5F6368 !important;
         }
 
         .schedule-lesson-card:hover {
@@ -1831,9 +1903,46 @@ const ScheduleView = ({
         }
 
         [data-theme="dark"] .schedule-lesson-card.extra-lesson-card {
-          background: linear-gradient(135deg, rgba(124, 58, 237, 0.16) 0%, rgba(245, 158, 11, 0.09) 100%), #25262B !important;
-          border: 1.5px solid rgba(167, 139, 250, 0.5) !important;
-          box-shadow: 0 2px 12px rgba(124, 58, 237, 0.18);
+          background: linear-gradient(135deg, rgba(124, 58, 237, 0.08) 0%, rgba(245, 158, 11, 0.06) 100%), #FFFFFF !important;
+          border: 1.5px solid rgba(124, 58, 237, 0.45) !important;
+          box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+        }
+
+        [data-theme="dark"] .schedule-lesson-card.extra-lesson-card .extra-lesson-badge {
+          background: rgba(124, 58, 237, 0.12) !important;
+          color: #7C3AED !important;
+          border-color: rgba(124, 58, 237, 0.25) !important;
+        }
+
+        [data-theme="dark"] .schedule-lesson-card.extra-lesson-card .extra-lesson-badge-pulse {
+          background: #7C3AED !important;
+          box-shadow: 0 0 6px #7C3AED !important;
+        }
+
+        [data-theme="dark"] .schedule-lesson-card.extra-lesson-card .extra-lesson-date-pill {
+          background: rgba(245, 158, 11, 0.12) !important;
+          color: #D97706 !important;
+          border-color: rgba(245, 158, 11, 0.25) !important;
+        }
+
+        [data-theme="dark"] .schedule-lesson-card.extra-lesson-card .extra-action-icon-btn {
+          color: #4B5563 !important;
+        }
+
+        [data-theme="dark"] .schedule-lesson-card.extra-lesson-card .extra-action-icon-btn:hover {
+          color: #111827 !important;
+          background: rgba(0, 0, 0, 0.08) !important;
+        }
+
+        [data-theme="dark"] .schedule-lesson-card.extra-lesson-card .extra-lesson-topic-box {
+          background: rgba(0, 0, 0, 0.04) !important;
+          color: #374151 !important;
+        }
+
+        [data-theme="dark"] .schedule-lesson-card.extra-lesson-card .extra-lesson-target-badge {
+          background: rgba(124, 58, 237, 0.1) !important;
+          color: #6D28D9 !important;
+          border-color: rgba(124, 58, 237, 0.25) !important;
         }
 
         .schedule-lesson-card.extra-lesson-card:hover {
@@ -1848,6 +1957,7 @@ const ScheduleView = ({
           width: 100%;
           gap: 6px;
           margin-bottom: 2px;
+          min-width: 0;
         }
 
         .extra-lesson-badge {
@@ -1906,6 +2016,7 @@ const ScheduleView = ({
           justify-content: space-between;
           width: 100%;
           gap: 6px;
+          min-width: 0;
         }
 
         .extra-actions-group {
@@ -1978,9 +2089,18 @@ const ScheduleView = ({
           display: flex;
           align-items: center;
           gap: 4px;
+          min-width: 0;
+          width: 100%;
+          box-sizing: border-box;
+          overflow: hidden;
+        }
+
+        .extra-topic-text {
+          min-width: 0;
           overflow: hidden;
           text-overflow: ellipsis;
           white-space: nowrap;
+          flex: 1;
         }
 
         [data-theme="dark"] .extra-lesson-topic-box {
@@ -2378,6 +2498,8 @@ const ScheduleView = ({
           align-items: center;
           justify-content: space-between;
           gap: 4px;
+          min-width: 0;
+          width: 100%;
         }
 
         .lesson-time-range {
@@ -2386,6 +2508,8 @@ const ScheduleView = ({
           color: var(--text-primary);
           font-variant-numeric: tabular-nums;
           letter-spacing: -0.01em;
+          white-space: nowrap;
+          flex-shrink: 0;
         }
 
         .lesson-room-pill {
@@ -2396,6 +2520,10 @@ const ScheduleView = ({
           border-radius: 4px;
           color: var(--text-secondary);
           white-space: nowrap;
+          max-width: 75px;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          flex-shrink: 1;
         }
 
         [data-theme="dark"] .lesson-room-pill {
@@ -2407,6 +2535,7 @@ const ScheduleView = ({
           align-items: center;
           gap: 8px;
           min-width: 0;
+          width: 100%;
         }
 
         .group-category-pill {
@@ -2474,8 +2603,14 @@ const ScheduleView = ({
           font-size: 0.86rem;
           font-weight: 700;
           color: var(--text-primary);
-          line-height: 1.25;
-          white-space: nowrap;
+          line-height: 1.3;
+          flex: 1;
+          min-width: 0;
+          word-break: break-word;
+          overflow-wrap: anywhere;
+          display: -webkit-box;
+          -webkit-line-clamp: 2;
+          -webkit-box-orient: vertical;
           overflow: hidden;
           text-overflow: ellipsis;
         }
@@ -2607,6 +2742,8 @@ const ScheduleView = ({
           white-space: nowrap;
           overflow: hidden;
           text-overflow: ellipsis;
+          min-width: 0;
+          flex: 1;
         }
 
         .schedule-select-student-count {
@@ -2721,6 +2858,8 @@ const ScheduleView = ({
           white-space: nowrap;
           overflow: hidden;
           text-overflow: ellipsis;
+          min-width: 0;
+          flex: 1;
         }
 
         .schedule-item-count {
@@ -3027,6 +3166,7 @@ const ScheduleView = ({
           align-items: center;
           gap: 10px;
           flex-wrap: wrap;
+          min-width: 0;
         }
 
         .student-list-group-name {
@@ -3035,6 +3175,9 @@ const ScheduleView = ({
           font-weight: 700;
           color: var(--text-primary);
           letter-spacing: -0.02em;
+          word-break: break-word;
+          overflow-wrap: anywhere;
+          max-width: 100%;
         }
 
         .student-list-count-badge {

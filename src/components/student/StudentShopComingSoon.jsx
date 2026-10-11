@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { RewardSquircle, ProjectLikeIcon } from './StudentIcons';
+import { RewardSquircle, ProjectLikeIcon, GiftIcon, XIcon } from './StudentIcons';
 import useModalDismiss from '../../hooks/useModalDismiss';
 
 const REWARDS_CATALOG = [
@@ -145,29 +145,7 @@ const CATEGORIES = [
   { key: 'champion', label: "Bosh sovrin" },
 ];
 
-const PROMO_SLIDES = [
-  {
-    id: 'rewards_motivation',
-    eyebrow: "FAOL TA'LIM DASTURI",
-    headline: "Vazifalarni 100% bajarib, orzuingizdagi sovg'aga ega bo'ling",
-    sub: "Har bir to'plangan Like sizni do'kondagi mukofotlarga yaqinlashtiradi.",
-    bgClass: 'slide-card-bg-0',
-  },
-  {
-    id: 'target_goal',
-    eyebrow: "ORZU MAQSADINI BELGILANG",
-    headline: "O'zingiz yoqtirgan sovg'ani tanlang va unga intiling",
-    sub: "Har qanday sovg'ani tanlab, shaxsiy orzu maqsad qilib belgilang.",
-    bgClass: 'slide-card-bg-1',
-  },
-  {
-    id: 'grand_champion',
-    eyebrow: "YILNING BOSH SOVRINI",
-    headline: "Yil chempioni bo'ling va Oltin kubokni qo'lga kiriting",
-    sub: "Eng ko'p Like to'plagan 1-o'quvchiga maxsus premium sovg'a beriladi.",
-    bgClass: 'slide-card-bg-2',
-  },
-];
+
 
 const triggerHaptic = (style = 'light') => {
   try {
@@ -193,37 +171,7 @@ export default function StudentShopComingSoon({
   const [showRequestsDrawer, setShowRequestsDrawer] = useState(false);
   const [confirmOrderReward, setConfirmOrderReward] = useState(null);
 
-  // Interactive Carousel State
-  const [currentSlide, setCurrentSlide] = useState(0);
-  const [isSlidePaused, setIsSlidePaused] = useState(false);
-  const [touchStartX, setTouchStartX] = useState(null);
 
-  useEffect(() => {
-    if (isSlidePaused) return;
-    const interval = setInterval(() => {
-      setCurrentSlide((prev) => (prev + 1) % PROMO_SLIDES.length);
-    }, 4500);
-    return () => clearInterval(interval);
-  }, [isSlidePaused]);
-
-  const handleTouchStart = (e) => {
-    setTouchStartX(e.touches[0].clientX);
-  };
-
-  const handleTouchEnd = (e) => {
-    if (touchStartX === null) return;
-    const touchEndX = e.changedTouches[0].clientX;
-    const diff = touchStartX - touchEndX;
-    if (Math.abs(diff) > 40) {
-      triggerHaptic('light');
-      if (diff > 0) {
-        setCurrentSlide((prev) => (prev + 1) % PROMO_SLIDES.length);
-      } else {
-        setCurrentSlide((prev) => (prev - 1 + PROMO_SLIDES.length) % PROMO_SLIDES.length);
-      }
-    }
-    setTouchStartX(null);
-  };
 
   // Student total points
   const totalScore = useMemo(() => {
@@ -389,77 +337,19 @@ export default function StudentShopComingSoon({
 
   return (
     <div className="native-shop-container animate-fadeIn">
-      {/* Top Floating/Sliding Promo Carousel */}
-      <div
-        className="shop-carousel-container"
-        onTouchStart={handleTouchStart}
-        onTouchEnd={handleTouchEnd}
-        onMouseEnter={() => setIsSlidePaused(true)}
-        onMouseLeave={() => setIsSlidePaused(false)}
-      >
-        <div className="shop-carousel-viewport">
-          <div
-            className="shop-carousel-track"
-            style={{ transform: `translateX(-${currentSlide * 100}%)` }}
+      {/* Active Requests Pill (if student has pending requests) */}
+      {pinnedStudent && rewardRequests.length > 0 && (
+        <div className="shop-requests-bar" style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '10px' }}>
+          <button
+            type="button"
+            className="hero-requests-pill-btn"
+            onClick={() => setShowRequestsDrawer(true)}
+            title="So'rovlar ro'yxatini ko'rish"
           >
-            {PROMO_SLIDES.map((slide, idx) => (
-              <div
-                key={slide.id}
-                className={`shop-slide-card ${slide.bgClass}`}
-              >
-                <div className="slide-card-header">
-                  <span className="slide-eyebrow-pill">{slide.eyebrow}</span>
-                  <div className="slide-eyebrow-actions">
-                    {pinnedStudent && rewardRequests.length > 0 && idx === 0 && (
-                      <button
-                        type="button"
-                        className="hero-requests-pill-btn"
-                        onClick={() => setShowRequestsDrawer(true)}
-                        title="So'rovlar ro'yxatini ko'rish"
-                      >
-                        So'rovlarim ({rewardRequests.length})
-                      </button>
-                    )}
-                    {pinnedStudent && (
-                      <span className="slide-balance-pill" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                        <ProjectLikeIcon size={12} />
-                        <span>{totalScore} Like mavjud</span>
-                      </span>
-                    )}
-                  </div>
-                </div>
-
-                <div className="slide-card-body">
-                  <h2 className="slide-headline">
-                    {slide.headline}
-                  </h2>
-                  <p className="slide-sub">
-                    {slide.sub}
-                  </p>
-                </div>
-              </div>
-            ))}
-          </div>
+            So'rovlarim ({rewardRequests.length})
+          </button>
         </div>
-
-        {/* Carousel Pagination Dots */}
-        <div className="shop-carousel-dots" role="tablist" aria-label="Promo slaydlar">
-          {PROMO_SLIDES.map((slide, idx) => (
-            <button
-              key={slide.id}
-              type="button"
-              className={`shop-carousel-dot ${idx === currentSlide ? 'active' : ''}`}
-              onClick={() => {
-                triggerHaptic('light');
-                setCurrentSlide(idx);
-              }}
-              aria-label={`Slayd ${idx + 1}: ${slide.eyebrow}`}
-              aria-selected={idx === currentSlide}
-              role="tab"
-            />
-          ))}
-        </div>
-      </div>
+      )}
 
       {/* Dream Target Mini Progress Bar */}
       {targetReward && pinnedStudent && (
@@ -506,7 +396,7 @@ export default function StudentShopComingSoon({
               onClick={() => setSearchQuery('')}
               aria-label="Qidiruvni tozalash"
             >
-              ✕
+              <XIcon size={12} />
             </button>
           )}
         </div>
@@ -729,7 +619,7 @@ export default function StudentShopComingSoon({
                 onClick={() => setSelectedReward(null)}
                 aria-label="Yopish"
               >
-                ✕
+                <XIcon size={14} />
               </button>
               <div className="sheet-title-wrap sheet-title-center">
                 <h3 className="sheet-title">{selectedReward.title}</h3>
@@ -792,8 +682,10 @@ export default function StudentShopComingSoon({
                       triggerHaptic('medium');
                       setConfirmOrderReward(selectedReward);
                     }}
+                    style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
                   >
-                    🎁 Sovg'ani so'rash ({selectedReward.points} Like)
+                    <GiftIcon size={16} />
+                    <span>Sovg'ani so'rash ({selectedReward.points} Like)</span>
                   </button>
                 )}
 
@@ -882,7 +774,7 @@ export default function StudentShopComingSoon({
                 onClick={() => setShowRequestsDrawer(false)}
                 aria-label="Yopish"
               >
-                ✕
+                <XIcon size={14} />
               </button>
               <div className="sheet-title-wrap sheet-title-center">
                 <h3 className="sheet-title">Mening so'rovlarim ({rewardRequests.length})</h3>
@@ -911,7 +803,7 @@ export default function StudentShopComingSoon({
                         onClick={() => handleCancelRequest(req.id)}
                         title="So'rovni bekor qilish"
                       >
-                        ✕
+                        <XIcon size={12} />
                       </button>
                     </div>
                   </div>

@@ -10,7 +10,7 @@ import StudentAccountView from './StudentAccountView';
 import { renderAvatar } from '../../utils/studentAvatars';
 import { scrollToWithOffset } from '../../utils/scrollOffset';
 import { isStudentTargetedByExtraLesson } from '../../utils/scheduleUtils';
-import { ProjectLikeIcon } from './StudentIcons';
+import { ProjectLikeIcon, ZapIcon, CalendarIcon, MapPinIcon } from './StudentIcons';
 import './StudentPortal.css';
 
 const triggerHaptic = (style = 'light') => {
@@ -549,9 +549,9 @@ export default function StudentPortal({
         {activeTab === 'main' && (
           <div className="tab-pane-main animate-fadeIn">
             {/* Top Welcome & Quick Stats Hero */}
-            <div className="home-welcome-hero">
-              <div className="welcome-greeting-row">
-                {pinnedStudent && (
+            {pinnedStudent ? (
+              <div className="home-welcome-hero">
+                <div className="welcome-greeting-row">
                   <button
                     type="button"
                     className="welcome-avatar-btn"
@@ -563,63 +563,116 @@ export default function StudentPortal({
                       {renderAvatar(pinnedStudent.emoji, 48)}
                     </div>
                   </button>
-                )}
-                <div className="welcome-title-col">
-                  <h2 className="welcome-title">
-                    {pinnedStudent ? `Salom, ${pinnedStudent.name.split(' ')[0]}!` : "Assalomu alaykum!"}
-                  </h2>
-                  <span className="welcome-date-sub">{formattedToday}</span>
+                  <div className="welcome-title-col">
+                    <h2 className="welcome-title">
+                      {`Salom, ${pinnedStudent.name.split(' ')[0]}!`}
+                    </h2>
+                    <span className="welcome-date-sub">{formattedToday}</span>
+                  </div>
+                </div>
+
+                {/* 2 Quick Stat Cards Row - Interactive */}
+                <div className="home-stats-grid">
+                  <button
+                    type="button"
+                    className="home-stat-card is-clickable"
+                    onClick={() => handleTabSelect('rating')}
+                    title="Reyting sahifasiga o'tish"
+                  >
+                    <span className="stat-card-eyebrow">Reyting</span>
+                    <span className="stat-card-value">
+                      {pinnedStudentRank ? `#${pinnedStudentRank} o'rin` : "—"}
+                    </span>
+                    <span className="stat-card-hint" style={{ display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
+                      <ProjectLikeIcon size={12} />
+                      <span>{totalPinnedScore} Like ›</span>
+                    </span>
+                  </button>
+
+                  <button
+                    type="button"
+                    className="home-stat-card is-clickable"
+                    onClick={() => {
+                      scrollToWithOffset('student-attendance-calendar');
+                    }}
+                    title="Davomat taqvimiga o'tish"
+                  >
+                    <span className="stat-card-eyebrow">Davomat</span>
+                    <span className="stat-card-value">
+                      {pinnedAttendanceRate || "—"}
+                    </span>
+                    <span className="stat-card-hint">
+                      {pinnedAttendanceRate ? "Bu oyda ›" : "Tarix yo'q ›"}
+                    </span>
+                  </button>
                 </div>
               </div>
+            ) : (
+              <div
+                className="home-welcome-hero home-unpinned-profile-hero is-clickable"
+                onClick={() => {
+                  triggerHaptic('light');
+                  handleTabSelect('profile');
+                }}
+                role="button"
+                tabIndex={0}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    triggerHaptic('light');
+                    handleTabSelect('profile');
+                  }
+                }}
+                title="Profilingizni tanlang"
+                aria-label="Profilingizni tanlang"
+              >
+                <div className="home-unpinned-hero-header">
+                  <div className="home-unpinned-hero-left">
+                    <div className="home-unpinned-avatar-badge">
+                      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                        <circle cx="12" cy="7" r="4" />
+                      </svg>
+                    </div>
+                    <div className="home-unpinned-header-texts">
+                      <h2 className="home-unpinned-title">Profilingizni tanlang</h2>
+                      <span className="home-unpinned-date">{formattedToday}</span>
+                    </div>
+                  </div>
+                  <span className="home-unpinned-status-pill">
+                    Profil tanlanmagan
+                  </span>
+                </div>
 
-              {/* 3 Quick Stat Cards Row - Interactive */}
-              <div className="home-stats-grid">
-                <button
-                  type="button"
-                  className="home-stat-card is-clickable"
-                  onClick={() => handleTabSelect('rating')}
-                  title="Reyting sahifasiga o'tish"
-                >
-                  <span className="stat-card-eyebrow">Reyting</span>
-                  <span className="stat-card-value">
-                    {pinnedStudentRank ? `#${pinnedStudentRank} o'rin` : "—"}
-                  </span>
-                  <span className="stat-card-hint" style={{ display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
-                    <ProjectLikeIcon size={12} />
-                    <span>{totalPinnedScore} Like ›</span>
-                  </span>
-                </button>
-
-                <button
-                  type="button"
-                  className="home-stat-card is-clickable"
-                  onClick={() => {
-                    scrollToWithOffset('student-attendance-calendar');
-                  }}
-                  title="Davomat taqvimiga o'tish"
-                >
-                  <span className="stat-card-eyebrow">Davomat</span>
-                  <span className="stat-card-value">
-                    {pinnedStudent
-                      ? (pinnedAttendanceRate || "—")
-                      : (groupMonthLessonsCount > 0 ? `${groupMonthLessonsCount} ta dars` : "—")}
-                  </span>
-                  <span className="stat-card-hint">
-                    {pinnedStudent
-                      ? (pinnedAttendanceRate ? "Bu oyda ›" : "Tarix yo'q ›")
-                      : (groupMonthLessonsCount > 0 ? "Profil tanlang ›" : "Dars yo'q ›")}
-                  </span>
-                </button>
+                <div className="home-unpinned-body-row">
+                  <p className="home-unpinned-desc">
+                    Guruhdagi ballaringiz, umumiy reyting va davomatingizni ko'rish uchun profilingizni belgilang.
+                  </p>
+                  <button
+                    type="button"
+                    className="home-unpinned-cta-btn"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      triggerHaptic('light');
+                      handleTabSelect('profile');
+                    }}
+                  >
+                    <span>Profilni tanlash</span>
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="9 18 15 12 9 6" />
+                    </svg>
+                  </button>
+                </div>
               </div>
-            </div>
+            )}
 
             {/* Upcoming Extra Lesson Announcement Banner */}
             {upcomingGroupExtraLesson && (
               <div className="student-extra-lesson-banner scale-active">
                 <div className="extra-banner-top">
-                  <span className="extra-banner-badge">
-                    <span className="extra-banner-dot" />
-                    ⚡ Qo'shimcha Dars (Extra Lesson)
+                  <span className="extra-banner-badge" style={{ display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
+                    <ZapIcon size={12} color="#F59E0B" />
+                    <span>Qo'shimcha Dars (Extra Lesson)</span>
                   </span>
                   <span className="extra-banner-date-badge">
                     {formatExtraLessonDateLabel(upcomingGroupExtraLesson.date)}
@@ -630,15 +683,21 @@ export default function StudentPortal({
                     {upcomingGroupExtraLesson.topic || "Qo'shimcha dars rejalashtirildi"}
                   </h4>
                   <div className="extra-banner-meta">
-                    <span className="extra-meta-item">
-                      📅 <strong>{formatExtraLessonFullDate(upcomingGroupExtraLesson.date)}</strong>
+                    <span className="extra-meta-item" style={{ display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
+                      <CalendarIcon size={13} />
+                      <strong>{formatExtraLessonFullDate(upcomingGroupExtraLesson.date)}</strong>
                     </span>
-                    <span className="extra-meta-item">
-                      ⏰ <strong>{upcomingGroupExtraLesson.startTime}{upcomingGroupExtraLesson.endTime ? ` — ${upcomingGroupExtraLesson.endTime}` : ''}</strong>
+                    <span className="extra-meta-item" style={{ display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ verticalAlign: 'middle', display: 'inline-block' }}>
+                        <circle cx="12" cy="12" r="10"/>
+                        <polyline points="12 6 12 12 16 14"/>
+                      </svg>
+                      <strong>{upcomingGroupExtraLesson.startTime}{upcomingGroupExtraLesson.endTime ? ` — ${upcomingGroupExtraLesson.endTime}` : ''}</strong>
                     </span>
                     {upcomingGroupExtraLesson.room && (
-                      <span className="extra-meta-item">
-                        📍 <strong>{upcomingGroupExtraLesson.room}</strong>
+                      <span className="extra-meta-item" style={{ display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
+                        <MapPinIcon size={13} />
+                        <strong>{upcomingGroupExtraLesson.room}</strong>
                       </span>
                     )}
                   </div>

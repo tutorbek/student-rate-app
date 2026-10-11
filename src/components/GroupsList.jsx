@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { generateUniqueGroupPassword, getGroupCategory } from '../utils/db';
-import { GROUP_SVG_ICONS, GROUP_COLOR_OPTIONS, renderGroupIcon } from '../utils/groupIcons';
+import { GROUP_SVG_ICONS, GROUP_COLOR_OPTIONS, getGroupColorOption, renderGroupIcon } from '../utils/groupIcons';
 import { AVATAR_GALLERY_IMAGES, isGalleryImage, compressUploadedImage } from '../utils/avatarGallery';
 import { isGroupLessonActive } from '../utils/scheduleUtils';
 import ScheduleView from './ScheduleView';
@@ -321,7 +321,7 @@ const GroupsList = ({
       {groups.length > 0 ? (
         <div className="groups-vertical-list">
           {groups.map((group) => {
-            const colorOption = GROUP_COLOR_OPTIONS.find(c => c.value === group.color) || GROUP_COLOR_OPTIONS[0];
+            const colorOption = getGroupColorOption(group.color);
             const isCurrentLesson = isGroupLessonActive(group);
             const category = getGroupCategory(group);
             return (
@@ -330,9 +330,9 @@ const GroupsList = ({
                 className={`glass-card group-list-item ${isCurrentLesson ? 'is-current-lesson' : ''}`}
                 style={{
                   '--group-bg-light': colorOption.value || '#FFFFFF',
-                  '--group-border-light': colorOption.border || 'rgba(0, 0, 0, 0.08)',
-                  '--group-bg-dark': colorOption.darkBg || '#292A2D',
-                  '--group-border-dark': colorOption.darkBorder || '#3C4043',
+                  '--group-border-light': colorOption.border || 'rgba(0, 0, 0, 0.06)',
+                  '--group-bg-dark': colorOption.darkBg || colorOption.value || '#FFFFFF',
+                  '--group-border-dark': colorOption.darkBorder || colorOption.border || 'rgba(0, 0, 0, 0.06)',
                 }}
               >
                 <div className="group-item-main" onClick={() => onSelectGroup(group.id)}>
@@ -805,7 +805,7 @@ const GroupsList = ({
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
                   <label className="form-label" style={{ margin: 0 }}>Karta rangi</label>
                   <span style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--text-secondary)' }}>
-                    {GROUP_COLOR_OPTIONS.find(c => c.value === newGroupColor)?.name || 'Klassik Oq'}
+                    {getGroupColorOption(newGroupColor).name}
                   </span>
                 </div>
                 <div className="group-color-picker-grid">
@@ -813,8 +813,9 @@ const GroupsList = ({
                     <button
                       key={color.value}
                       type="button"
+                      title={color.name}
                       className={`group-color-btn scale-active ${newGroupColor === color.value ? 'selected' : ''}`}
-                      style={{ backgroundColor: color.value, borderColor: color.border }}
+                      style={{ backgroundColor: color.value }}
                       onClick={() => setNewGroupColor(color.value)}
                     >
                       {newGroupColor === color.value && (
@@ -1169,7 +1170,7 @@ const GroupsList = ({
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
                   <label className="form-label" style={{ margin: 0 }}>Karta rangi</label>
                   <span style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--text-secondary)' }}>
-                    {GROUP_COLOR_OPTIONS.find(c => c.value === editGroupColor)?.name || 'Klassik Oq'}
+                    {getGroupColorOption(editGroupColor).name}
                   </span>
                 </div>
                 <div className="group-color-picker-grid">
@@ -1177,8 +1178,9 @@ const GroupsList = ({
                     <button
                       key={color.value}
                       type="button"
+                      title={color.name}
                       className={`group-color-btn scale-active ${editGroupColor === color.value ? 'selected' : ''}`}
-                      style={{ backgroundColor: color.value, borderColor: color.border }}
+                      style={{ backgroundColor: color.value }}
                       onClick={() => setEditGroupColor(color.value)}
                     >
                       {editGroupColor === color.value && (
@@ -1740,7 +1742,7 @@ const GroupsList = ({
           justify-content: space-between;
           gap: 18px;
           background-color: var(--group-bg-light, #FFFFFF);
-          border: 1px solid var(--group-border-light, rgba(0, 0, 0, 0.08));
+          border: 1px solid var(--group-border-light, rgba(0, 0, 0, 0.06));
           border-radius: var(--radius-lg);
           box-shadow: var(--shadow-sm);
           transition: box-shadow var(--transition-fast);
@@ -1754,13 +1756,71 @@ const GroupsList = ({
         }
 
         [data-theme="dark"] .group-list-item {
-          background-color: var(--group-bg-dark, #292A2D) !important;
-          border-color: var(--group-border-dark, #3C4043) !important;
+          background-color: var(--group-bg-dark, var(--group-bg-light, #FFFFFF)) !important;
+          border-color: var(--group-border-dark, var(--group-border-light, rgba(0, 0, 0, 0.06))) !important;
+          box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+        }
+
+        [data-theme="dark"] .group-list-item .group-item-title {
+          color: #1D1D1F !important;
+        }
+
+        [data-theme="dark"] .group-list-item .group-item-date {
+          color: #5F6368 !important;
+        }
+
+        [data-theme="dark"] .group-list-item .group-folder-icon {
+          background: rgba(0, 0, 0, 0.05) !important;
+          border-color: rgba(0, 0, 0, 0.06) !important;
+          color: #1D1D1F !important;
+        }
+
+        [data-theme="dark"] .group-list-item .group-room-tag {
+          background: rgba(0, 0, 0, 0.06) !important;
+          color: #374151 !important;
+          border-color: rgba(0, 0, 0, 0.08) !important;
+        }
+
+        [data-theme="dark"] .group-list-item .group-schedule-pill {
+          color: #0071E3 !important;
+          background: rgba(0, 113, 227, 0.08) !important;
+          border-color: rgba(0, 113, 227, 0.22) !important;
+        }
+
+        [data-theme="dark"] .group-list-item .group-category-pill.group-category-kids {
+          background: rgba(255, 149, 0, 0.14) !important;
+          color: #B45309 !important;
+          border-color: rgba(255, 149, 0, 0.35) !important;
+        }
+
+        [data-theme="dark"] .group-list-item .group-category-pill.group-category-teens {
+          background: rgba(88, 86, 214, 0.14) !important;
+          color: #4338CA !important;
+          border-color: rgba(88, 86, 214, 0.35) !important;
+        }
+
+        [data-theme="dark"] .group-list-item .current-lesson-live-dot {
+          color: #248A3D !important;
+          background: rgba(52, 199, 89, 0.12) !important;
+          border-color: rgba(52, 199, 89, 0.3) !important;
+        }
+
+        [data-theme="dark"] .group-list-item .btn-secondary {
+          background: rgba(255, 255, 255, 0.85) !important;
+          color: #1D1D1F !important;
+          border-color: rgba(0, 0, 0, 0.14) !important;
+          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+        }
+
+        [data-theme="dark"] .group-list-item .btn-secondary:hover {
+          background: #FFFFFF !important;
+          color: #000000 !important;
+          border-color: rgba(0, 0, 0, 0.25) !important;
         }
 
         [data-theme="dark"] .group-list-item.is-current-lesson {
-          border-color: rgba(52, 199, 89, 0.45) !important;
-          box-shadow: 0 0 0 1px rgba(52, 199, 89, 0.25), 0 2px 8px rgba(0, 0, 0, 0.3);
+          border-color: rgba(52, 199, 89, 0.55) !important;
+          box-shadow: 0 0 0 1.5px rgba(52, 199, 89, 0.3), 0 4px 16px rgba(0, 0, 0, 0.35);
         }
 
         @media (hover: hover) and (pointer: fine) {
@@ -1985,27 +2045,44 @@ const GroupsList = ({
         @media (max-width: 600px) {
           .group-color-picker-grid {
             grid-template-columns: repeat(4, 1fr);
+            gap: 10px 8px;
           }
         }
 
         .group-color-btn {
           height: 38px;
           border-radius: var(--radius-md);
-          border: 1px solid rgba(0, 0, 0, 0.1);
+          border: 1.5px solid rgba(0, 0, 0, 0.1);
           cursor: pointer;
           display: flex;
           align-items: center;
           justify-content: center;
-          transition: box-shadow var(--transition-fast);
+          transition: transform 0.15s ease, box-shadow var(--transition-fast), border-color 0.15s ease;
           padding: 0;
         }
 
         .group-color-btn:hover {
-          box-shadow: 0 0 0 2px rgba(0, 113, 227, 0.35);
+          transform: translateY(-2px);
+          box-shadow: 0 4px 10px rgba(0, 0, 0, 0.12);
         }
 
         .group-color-btn.selected {
-          box-shadow: 0 0 0 2px #1D1D1F, inset 0 0 0 1.5px #FFFFFF;
+          transform: translateY(-1px) scale(1.04);
+          box-shadow: 0 0 0 2.5px #0071E3, 0 4px 12px rgba(0, 113, 227, 0.25);
+          border-color: #0071E3 !important;
+        }
+
+        [data-theme="dark"] .group-color-btn {
+          border-color: rgba(255, 255, 255, 0.15);
+        }
+
+        [data-theme="dark"] .group-color-btn:hover {
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+        }
+
+        [data-theme="dark"] .group-color-btn.selected {
+          box-shadow: 0 0 0 2.5px #0A84FF, 0 4px 14px rgba(10, 132, 255, 0.4);
+          border-color: #0A84FF !important;
         }
 
         .empty-groups-placeholder {

@@ -1,5 +1,6 @@
 import React, { useMemo } from 'react';
 import { extractGroupDays, extractGroupTimes, isStudentTargetedByExtraLesson } from '../../utils/scheduleUtils';
+import { ZapIcon, TargetIcon, MapPinIcon } from './StudentIcons';
 
 const DAY_NAMES_UZ = {
   mon: 'Dushanba',
@@ -209,12 +210,15 @@ export default function StudentScheduleCard({ group, extraLessons = [], studentI
     <div className={`native-schedule-card ${nextLessonInfo.isExtra ? 'has-extra-lesson' : ''}`} id="student-schedule-card">
       {/* Dynamic Status Strip */}
       <div className={`native-schedule-strip ${nextLessonInfo.isExtra ? 'is-extra-lesson' : ''} ${nextLessonInfo.isLive ? 'is-live' : nextLessonInfo.isToday ? 'is-today' : ''}`}>
-        <span className="schedule-status-eyebrow">
-          {nextLessonInfo.isExtra
-            ? (nextLessonInfo.extraLesson?.targetType === 'custom'
-                ? (nextLessonInfo.isLive ? "⚡ SHAXSIY EXTRA LESSON • DARS DAVOM ETMOQDA" : "⚡ SIZ UCHUN ALOHIDA EXTRA LESSON")
-                : (nextLessonInfo.isLive ? "⚡ EXTRA LESSON • DARS DAVOM ETMOQDA" : "⚡ EXTRA LESSON • QO'SHIMCHA DARS"))
-            : (nextLessonInfo.isLive ? "DARS DAVOM ETMOQDA" : "KEYINGI DARS")}
+        <span className="schedule-status-eyebrow" style={{ display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
+          {nextLessonInfo.isExtra && <ZapIcon size={12} color="#F59E0B" />}
+          <span>
+            {nextLessonInfo.isExtra
+              ? (nextLessonInfo.extraLesson?.targetType === 'custom'
+                  ? (nextLessonInfo.isLive ? "SHAXSIY EXTRA LESSON • DARS DAVOM ETMOQDA" : "SIZ UCHUN ALOHIDA EXTRA LESSON")
+                  : (nextLessonInfo.isLive ? "EXTRA LESSON • DARS DAVOM ETMOQDA" : "EXTRA LESSON • QO'SHIMCHA DARS"))
+              : (nextLessonInfo.isLive ? "DARS DAVOM ETMOQDA" : "KEYINGI DARS")}
+          </span>
         </span>
         <span className="schedule-status-time">{nextLessonInfo.text}</span>
       </div>
@@ -247,24 +251,28 @@ export default function StudentScheduleCard({ group, extraLessons = [], studentI
       {nextLessonInfo.isExtra && nextLessonInfo.extraLesson && (
         <div className="student-extra-card-callout">
           <div className="extra-callout-header">
-            <span className={`extra-callout-badge ${nextLessonInfo.extraLesson.targetType === 'custom' ? 'personal' : ''}`}>
-              {nextLessonInfo.extraLesson.targetType === 'custom'
-                ? "⚡ Siz uchun alohida dars"
-                : "⚡ Belgilangan Qo'shimcha Dars"}
+            <span className={`extra-callout-badge ${nextLessonInfo.extraLesson.targetType === 'custom' ? 'personal' : ''}`} style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+              <ZapIcon size={11} color="#F59E0B" />
+              <span>
+                {nextLessonInfo.extraLesson.targetType === 'custom'
+                  ? "Siz uchun alohida dars"
+                  : "Belgilangan Qo'shimcha Dars"}
+              </span>
             </span>
             <span className="extra-callout-time">
               {nextLessonInfo.extraLesson.startTime} - {nextLessonInfo.extraLesson.endTime}
             </span>
           </div>
           {nextLessonInfo.extraLesson.topic && (
-            <div className="extra-callout-topic">
-              <span className="extra-topic-icon">🎯</span>
+            <div className="extra-callout-topic" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <span className="extra-topic-icon" style={{ display: 'inline-flex', alignItems: 'center' }}><TargetIcon size={14} color="#0071E3" /></span>
               <span><strong>Mavzu:</strong> {nextLessonInfo.extraLesson.topic}</span>
             </div>
           )}
           {nextLessonInfo.extraLesson.room && (
-            <div className="extra-callout-room">
-              <span>📍 <strong>Xona:</strong> {nextLessonInfo.extraLesson.room}</span>
+            <div className="extra-callout-room" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <span style={{ display: 'inline-flex', alignItems: 'center' }}><MapPinIcon size={14} /></span>
+              <span><strong>Xona:</strong> {nextLessonInfo.extraLesson.room}</span>
             </div>
           )}
         </div>
