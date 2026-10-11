@@ -9,6 +9,8 @@ const DEFAULT_DATA = {
   groups: [],
   students: [],
   transactions: [],
+  payments: [],
+  leads: [],
   quickTags: [
     'Faol ishtirok 🌟',
     'Uy vazifasi bajardi 📚',
@@ -63,7 +65,7 @@ export const saveToSupabase = async (teacherId, data, isExplicitReset = false) =
     if (!teacherId || !data) return false;
 
     // Safety Guard: Block accidental empty database overwrite!
-    const isEmptyData = (!data.groups || data.groups.length === 0) && (!data.students || data.students.length === 0);
+    const isEmptyData = teacherId !== 'admin' && (!data.groups || data.groups.length === 0) && (!data.students || data.students.length === 0);
     if (isEmptyData && !isExplicitReset) {
       console.warn('[Supabase Guard] Aborted save: Attempted to save empty database without explicit user reset confirmation!');
       return false;
@@ -375,7 +377,7 @@ export const saveSnapshotToSupabase = async (teacherId, data) => {
  * Load data for all teachers from Supabase (Admin view).
  * Returns an object mapping teacherId -> teacher data.
  */
-export const loadAllTeachersFromSupabase = async (teacherIds = ['teacher1', 'teacher2', 'teacher3', 'teacher4']) => {
+export const loadAllTeachersFromSupabase = async (teacherIds = ['teacher1', 'teacher2', 'teacher3', 'teacher4', 'admin']) => {
   try {
     const timeoutPromise = new Promise((_, reject) =>
       setTimeout(() => reject(new Error('Supabase load timed out')), 6000)
@@ -397,9 +399,12 @@ export const loadAllTeachersFromSupabase = async (teacherIds = ['teacher1', 'tea
         groups: [],
         students: [],
         transactions: [],
+        payments: [],
         quickTags: DEFAULT_DATA.quickTags,
         attendance: [],
         teacherProfile: null,
+        leads: [],
+        extraLessons: [],
         updatedAt: null
       };
     });
@@ -411,9 +416,12 @@ export const loadAllTeachersFromSupabase = async (teacherIds = ['teacher1', 'tea
             groups: row.data.groups || [],
             students: row.data.students || [],
             transactions: row.data.transactions || [],
+            payments: row.data.payments || [],
             quickTags: row.data.quickTags || DEFAULT_DATA.quickTags,
             attendance: row.data.attendance || [],
             teacherProfile: row.data.teacherProfile || null,
+            leads: row.data.leads || [],
+            extraLessons: row.data.extraLessons || [],
             updatedAt: row.updated_at || null
           };
         }

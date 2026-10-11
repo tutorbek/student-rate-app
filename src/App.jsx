@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import Sidebar from './components/Sidebar';
-import Dashboard from './components/Dashboard';
 import GroupsList from './components/GroupsList';
 import GroupDetail from './components/GroupDetail';
 import Leaderboard from './components/Leaderboard';
@@ -9,8 +8,9 @@ import Settings from './components/Settings';
 import Attendance from './components/Attendance';
 import ScheduleView from './components/ScheduleView';
 import AdminDashboard from './components/admin/AdminDashboard';
-import AdminGroups from './components/admin/AdminGroups';
 import AdminAttendance from './components/admin/AdminAttendance';
+import AdminFinance from './components/admin/AdminFinance';
+import AdminLeads from './components/admin/AdminLeads';
 import LoginPage from './components/LoginPage';
 import LandingPage from './components/LandingPage';
 import StudentPortal from './components/student/StudentPortal';
@@ -32,6 +32,7 @@ import {
 import {
   DEFAULT_QUICK_TAGS,
   normalizeQuickTags,
+  sanitizeAttendanceDate,
   saveAttendance,
   deleteAttendanceRecord,
   addGroup,
@@ -61,12 +62,21 @@ function App() {
       const savedTab = localStorage.getItem('rsa_active_tab') || 'leaderboard';
       return (savedTab === 'leaderboard' || savedTab === 'history') ? savedTab : 'leaderboard';
     }
-    // When entering the project as teacher/admin, open Dashboard ('dashboard') first
+    if (savedRole === 'admin') {
+      const sessionTab = sessionStorage.getItem('rsa_active_tab');
+      const validAdminTabs = ['dashboard', 'leads', 'finance', 'attendance'];
+      return (sessionTab && validAdminTabs.includes(sessionTab)) ? sessionTab : 'dashboard';
+    }
+    // Teacher: default is schedule (dashboard removed)
     const sessionTab = sessionStorage.getItem('rsa_active_tab');
-    if (sessionTab) {
+    if (sessionTab && sessionTab !== 'dashboard') {
       return sessionTab;
     }
-    return 'dashboard';
+    const savedTab = localStorage.getItem('rsa_active_tab');
+    if (savedTab && savedTab !== 'dashboard') {
+      return savedTab;
+    }
+    return 'schedule';
   });
   const [selectedGroupId, setSelectedGroupId] = useState(() => {
     const saved = localStorage.getItem('rsa_selected_group_id');
@@ -250,7 +260,58 @@ function App() {
     };
 
     const passwordClean = loginPassword.trim().toLowerCase();
-    const match = CREDENTIALS[passwordClean];
+    let match = CREDENTIALS[passwordClean];
+
+    // Check custom password from teacherProfile in allTeachersData
+    if (!match && allTeachersData) {
+      for (const tId of ['teacher1', 'teacher2', 'teacher3', 'teacher4']) {
+        const customPwd = allTeachersData[tId]?.teacherProfile?.password?.trim()?.toLowerCase();
+        if (customPwd && customPwd === passwordClean) {
+          match = { role: 'teacher', teacherId: tId };
+          break;
+        }
+      }
+    }
+
+    // Check cached teacher profiles from localStorage
+    if (!match) {
+      for (const tId of ['teacher1', 'teacher2', 'teacher3', 'teacher4']) {
+        try {
+          const raw = localStorage.getItem(`rsa_teacher_profile_${tId}`);
+          if (raw) {
+            const p = JSON.parse(raw);
+            const customPwd = p?.password?.trim()?.toLowerCase();
+            if (customPwd && customPwd === passwordClean) {
+              match = { role: 'teacher', teacherId: tId };
+              break;
+            }
+          }
+        } catch (_) {}
+      }
+    }
+
+    // Check Supabase remote teacher profiles if still unauthenticated
+    if (!match) {
+      try {
+        const remoteTeachers = await loadAllTeachersFromSupabase(['teacher1', 'teacher2', 'teacher3', 'teacher4']);
+        if (remoteTeachers) {
+          for (const tId of ['teacher1', 'teacher2', 'teacher3', 'teacher4']) {
+            const remotePwd = remoteTeachers[tId]?.teacherProfile?.password?.trim()?.toLowerCase();
+            if (remotePwd && remotePwd === passwordClean) {
+              match = { role: 'teacher', teacherId: tId };
+              if (remoteTeachers[tId]?.teacherProfile) {
+                try {
+                  localStorage.setItem(`rsa_teacher_profile_${tId}`, JSON.stringify(remoteTeachers[tId].teacherProfile));
+                } catch (_) {}
+              }
+              break;
+            }
+          }
+        }
+      } catch (err) {
+        console.warn('Teacher remote credential check skipped:', err);
+      }
+    }
 
     if (match) {
       localStorage.setItem('rsa_authenticated', 'true');
@@ -265,8 +326,10 @@ function App() {
 
       if (match.role === 'student') {
         setActiveTab('leaderboard');
-      } else {
+      } else if (match.role === 'admin') {
         setActiveTab('dashboard');
+      } else {
+        setActiveTab('schedule');
       }
       showToast(match.role === 'admin' ? "Admin paneliga muvaffaqiyatli kirdingiz!" : "Muvaffaqiyatli kirdingiz!", "success");
       setLoginLoading(false);
@@ -339,17 +402,22 @@ function App() {
       setTeacherId(null);
       setStudentGroupId(null);
       setUserRole('student');
-      setActiveTab('dashboard');
+      setActiveTab('leaderboard');
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Enforce student role routing constraints — always block unauthorized tabs
+  // Enforce student and teacher role routing constraints — always block unauthorized tabs
   useEffect(() => {
     if (userRole === 'student') {
       if (activeTab !== 'leaderboard' && activeTab !== 'history') {
         setActiveTab('leaderboard');
         localStorage.setItem('rsa_active_tab', 'leaderboard');
+      }
+    } else if (userRole === 'teacher') {
+      if (activeTab === 'dashboard') {
+        setActiveTab('schedule');
+        localStorage.setItem('rsa_active_tab', 'schedule');
       }
     }
   }, [userRole, activeTab]);
@@ -372,6 +440,7 @@ function App() {
   const [transactions, setTransactions] = useState([]);
   const [quickTags, setQuickTags] = useState([]);
   const [attendance, setAttendance] = useState([]);
+  const [payments, setPayments] = useState([]);
   const [extraLessons, setExtraLessons] = useState(() => {
     try {
       const tId = localStorage.getItem('rsa_teacher_id');
@@ -456,7 +525,7 @@ function App() {
 
       if (userRole === 'admin' || (userRole === 'student' && studentTeacherIds.length > 1)) {
         const idsToLoad = userRole === 'admin'
-          ? ['teacher1', 'teacher2', 'teacher3', 'teacher4']
+          ? ['teacher1', 'teacher2', 'teacher3', 'teacher4', 'admin']
           : studentTeacherIds;
 
         // Prevent redundant network refetch on simple group switch if all teacher data is already present in memory
@@ -483,10 +552,12 @@ function App() {
               groups: (t.groups || []).map(g => ({ ...g, icon: normalizeIconUrl(g.icon) })),
               students: (t.students || []).map(s => ({ ...s, emoji: normalizeIconUrl(s.emoji) })),
               transactions: t.transactions || [],
+              payments: t.payments || [],
               quickTags: normalizeQuickTags(t.quickTags),
               attendance: t.attendance || [],
               teacherProfile: t.teacherProfile || null,
-              extraLessons: t.extraLessons || []
+              extraLessons: t.extraLessons || [],
+              leads: t.leads || []
             };
           });
           setAllTeachersData(normalized);
@@ -498,7 +569,7 @@ function App() {
               setStudents(currentT.students || []);
               setTransactions(currentT.transactions || []);
               setAttendance(currentT.attendance || []);
-              setQuickTags(currentT.quickTags || DEFAULT_DATA.quickTags);
+              setQuickTags(currentT.quickTags || DEFAULT_QUICK_TAGS);
               setExtraLessons(currentT.extraLessons || []);
               if (currentT.teacherProfile) {
                 setTeacherProfile(currentT.teacherProfile);
@@ -571,6 +642,8 @@ function App() {
         setTransactions(loadedTransactions);
         setQuickTags(loadedQuickTags);
         setAttendance(syncedAttendance);
+        const loadedPayments = data.payments || [];
+        setPayments(loadedPayments);
         const loadedExtraLessons = data.extraLessons || [];
         setExtraLessons(loadedExtraLessons);
 
@@ -835,7 +908,7 @@ function App() {
     if (!isLoaded || !isAuthenticated || !teacherId) return;
     if (userRole === 'student' || userRole === 'admin') return;
 
-    const db = { groups, students, transactions, quickTags, attendance, teacherProfile, extraLessons };
+    const db = { groups, students, transactions, quickTags, attendance, teacherProfile, extraLessons, payments };
     const dbStr = JSON.stringify(db);
 
     // Instant (0ms) local cache backup to localStorage for offline protection!
@@ -891,7 +964,7 @@ function App() {
     }, 1500); // 1.5 second debounce
 
     return () => clearTimeout(timer);
-  }, [groups, students, transactions, quickTags, attendance, teacherProfile, extraLessons, isLoaded, isAuthenticated, teacherId, userRole]);
+  }, [groups, students, transactions, quickTags, attendance, teacherProfile, extraLessons, payments, isLoaded, isAuthenticated, teacherId, userRole]);
 
   // Clear toast after timeout
   useEffect(() => {
@@ -916,6 +989,7 @@ function App() {
       transactions,
       quickTags,
       attendance,
+      payments,
       teacherProfile: updatedProfile,
       lastModified: new Date().toISOString()
     };
@@ -932,14 +1006,14 @@ function App() {
           teacherProfile: updatedProfile
         }
       }));
-      showToast("Ustoz profili muvaffaqiyatli saqlandi! 🎉", "success");
+      showToast("Ustoz profili muvaffaqiyatli saqlandi!", "success");
       return true;
     } else {
       setSyncStatus('offline');
       showToast("Internet sekin, ma'lumotlar qurilmada saqlandi", "warning");
       return false;
     }
-  }, [groups, students, transactions, quickTags, attendance, teacherId]);
+  }, [groups, students, transactions, quickTags, attendance, payments, teacherId]);
 
 
 
@@ -1037,13 +1111,13 @@ function App() {
     }
   };
 
-  const handleAddStudent = (name, groupId, emoji, color) => {
-    const { newStudent, updatedStudents } = addStudent(students, name, groupId, emoji, color);
+  const handleAddStudent = (name, groupId, emoji, color, phone = '', parentPhone = '') => {
+    const { newStudent, updatedStudents } = addStudent(students, name, groupId, emoji, color, phone, parentPhone);
     setStudents(updatedStudents);
   };
 
-  const handleUpdateStudent = (id, name, emoji, color, groupId = null) => {
-    const { updatedStudents, updatedAttendance } = updateStudent(students, id, name, emoji, color, groupId, attendance);
+  const handleUpdateStudent = (id, name, emoji, color, groupId = null, phone = undefined, parentPhone = undefined) => {
+    const { updatedStudents, updatedAttendance } = updateStudent(students, id, name, emoji, color, groupId, attendance, phone, parentPhone);
     setStudents(updatedStudents);
     if (updatedAttendance) setAttendance(updatedAttendance);
   };
@@ -1398,14 +1472,14 @@ function App() {
     if (userRole === 'student' && tabId !== 'leaderboard') {
       return;
     }
+    // Teachers cannot access dashboard
+    if (userRole === 'teacher' && tabId === 'dashboard') {
+      return;
+    }
     setActiveTab(tabId);
     if (tabId !== 'groups') {
       setSelectedGroupId(null);
     }
-  };
-
-  const handleOpenSchedule = () => {
-    handleTabChange('schedule');
   };
 
   // Logout handler state and function
@@ -1453,7 +1527,7 @@ function App() {
     setTeacherId(null);
     setStudentGroupId(null);
     setUserRole('student');
-    setActiveTab('dashboard');
+    setActiveTab('leaderboard');
     setLoginPassword('');
     setLoginError('');
 
@@ -1466,7 +1540,7 @@ function App() {
 
   const handleAdminRefresh = async () => {
     setIsSyncing(true);
-    const allData = await loadAllTeachersFromSupabase(['teacher1', 'teacher2', 'teacher3', 'teacher4']);
+    const allData = await loadAllTeachersFromSupabase(['teacher1', 'teacher2', 'teacher3', 'teacher4', 'admin']);
     if (allData) {
       const normalized = {};
       Object.keys(allData).forEach(tId => {
@@ -1476,8 +1550,12 @@ function App() {
           groups: (t.groups || []).map(g => ({ ...g, icon: normalizeIconUrl(g.icon) })),
           students: (t.students || []).map(s => ({ ...s, emoji: normalizeIconUrl(s.emoji) })),
           transactions: t.transactions || [],
+          payments: t.payments || [],
           quickTags: normalizeQuickTags(t.quickTags),
-          attendance: t.attendance || []
+          attendance: t.attendance || [],
+          teacherProfile: t.teacherProfile || null,
+          extraLessons: t.extraLessons || [],
+          leads: t.leads || []
         };
       });
       setAllTeachersData(normalized);
@@ -1486,6 +1564,624 @@ function App() {
       showToast("Yangilashda xatolik yuz berdi. Internetni tekshiring.", "error");
     }
     setIsSyncing(false);
+  };
+
+  const handleAdminUpdateAttendance = async (tId, groupId, date, studentId, newStatus) => {
+    if (!tId || !groupId || !date || !studentId) return;
+    const tData = allTeachersData[tId];
+    if (!tData) return;
+
+    const cleanDate = sanitizeAttendanceDate(date);
+    const currentAttendance = tData.attendance || [];
+    const existingIdx = currentAttendance.findIndex(
+      (a) => String(a.groupId) === String(groupId) && sanitizeAttendanceDate(a.date) === cleanDate
+    );
+
+    let updatedAttendance;
+    if (existingIdx > -1) {
+      const existingRec = currentAttendance[existingIdx];
+      const updatedRec = {
+        ...existingRec,
+        records: {
+          ...(existingRec.records || {}),
+          [String(studentId)]: newStatus,
+        },
+        updatedAt: new Date().toISOString(),
+      };
+      updatedAttendance = [...currentAttendance];
+      updatedAttendance[existingIdx] = updatedRec;
+    } else {
+      const newRec = {
+        id: 'att_' + Math.random().toString(36).substring(2, 10),
+        groupId,
+        date: cleanDate,
+        records: {
+          [String(studentId)]: newStatus,
+        },
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+      updatedAttendance = [...currentAttendance, newRec];
+    }
+
+    const updatedTeacherData = {
+      ...tData,
+      attendance: updatedAttendance,
+    };
+
+    setAllTeachersData((prev) => ({
+      ...prev,
+      [tId]: updatedTeacherData,
+    }));
+
+    try {
+      const success = await saveToFirestore(tId, updatedTeacherData);
+      if (success) {
+        const student = (tData.students || []).find((s) => String(s.id) === String(studentId));
+        const studentName = student ? student.name : "O'quvchi";
+        const statusLabel = newStatus === 'excused' ? 'Sababli' : newStatus === 'present' ? 'Keldi' : 'Kelmadi';
+        showToast(`${studentName} holati "${statusLabel}" deb belgilandi!`, 'success');
+      } else {
+        showToast("Davomatni saqlashda xatolik yuz berdi!", 'error');
+      }
+    } catch (err) {
+      console.error('Failed to update admin attendance:', err);
+      showToast("Serverga ulanishda xatolik yuz berdi!", 'error');
+    }
+  };
+
+  const handleAdminUpdateStudentPhone = async (tId, studentId, phone, parentPhone) => {
+    if (!tId || !studentId) return false;
+    const tData = allTeachersData[tId];
+    if (!tData) return false;
+
+    const prevTeacherData = tData;
+    const updatedStudents = (tData.students || []).map((s) => {
+      if (String(s.id) === String(studentId)) {
+        return {
+          ...s,
+          phone: phone !== undefined ? String(phone || '').trim() : (s.phone || ''),
+          parentPhone: parentPhone !== undefined ? String(parentPhone || '').trim() : (s.parentPhone || ''),
+        };
+      }
+      return s;
+    });
+
+    const updatedTeacherData = {
+      ...tData,
+      students: updatedStudents,
+    };
+
+    setAllTeachersData((prev) => ({
+      ...prev,
+      [tId]: updatedTeacherData,
+    }));
+
+    try {
+      const success = await saveToFirestore(tId, updatedTeacherData);
+      if (success) {
+        showToast("Telefon raqami muvaffaqiyatli saqlandi!", 'success');
+        return true;
+      } else {
+        setAllTeachersData((prev) => ({ ...prev, [tId]: prevTeacherData }));
+        showToast("Telefon raqamini saqlashda xatolik yuz berdi!", 'error');
+        return false;
+      }
+    } catch (err) {
+      console.error('Failed to update student phone:', err);
+      setAllTeachersData((prev) => ({ ...prev, [tId]: prevTeacherData }));
+      showToast("Serverga ulanishda xatolik yuz berdi!", 'error');
+      return false;
+    }
+  };
+
+  const handleAdminRecordPayment = async (tId, paymentData) => {
+    if (!tId || !paymentData) return false;
+    const tData = allTeachersData[tId];
+    if (!tData) return false;
+
+    const prevTeacherData = tData;
+    const newPayment = {
+      id: paymentData.id || ('pay_' + Date.now() + '_' + Math.random().toString(36).substring(2, 9)),
+      studentId: paymentData.studentId,
+      studentName: paymentData.studentName || '',
+      studentEmoji: paymentData.studentEmoji || '',
+      studentColor: paymentData.studentColor || '',
+      groupId: paymentData.groupId || '',
+      groupName: paymentData.groupName || '',
+      teacherId: tId,
+      amount: Number(paymentData.amount) || 0,
+      month: paymentData.month,
+      date: paymentData.date,
+      method: paymentData.method || 'cash',
+      note: paymentData.note ? String(paymentData.note).trim() : '',
+      createdAt: paymentData.createdAt || new Date().toISOString(),
+    };
+
+    const currentPayments = tData.payments || [];
+    const updatedPayments = [newPayment, ...currentPayments];
+
+    const updatedTeacherData = {
+      ...tData,
+      payments: updatedPayments,
+    };
+
+    setAllTeachersData((prev) => ({
+      ...prev,
+      [tId]: updatedTeacherData,
+    }));
+
+    try {
+      const success = await saveToFirestore(tId, updatedTeacherData);
+      if (success) {
+        showToast("To'lov muvaffaqiyatli qabul qilindi va saqlandi!", 'success');
+        return true;
+      } else {
+        setAllTeachersData((prev) => ({ ...prev, [tId]: prevTeacherData }));
+        showToast("To'lovni saqlashda xatolik yuz berdi!", 'error');
+        return false;
+      }
+    } catch (err) {
+      console.error('Failed to record payment:', err);
+      setAllTeachersData((prev) => ({ ...prev, [tId]: prevTeacherData }));
+      showToast("Serverga ulanishda xatolik yuz berdi!", 'error');
+      return false;
+    }
+  };
+
+  const handleAdminDeletePayment = async (tId, paymentId) => {
+    if (!tId || !paymentId) return false;
+    const tData = allTeachersData[tId];
+    if (!tData) return false;
+
+    const prevTeacherData = tData;
+    const currentPayments = tData.payments || [];
+    const updatedPayments = currentPayments.filter((p) => String(p.id) !== String(paymentId));
+
+    const updatedTeacherData = {
+      ...tData,
+      payments: updatedPayments,
+    };
+
+    setAllTeachersData((prev) => ({
+      ...prev,
+      [tId]: updatedTeacherData,
+    }));
+
+    try {
+      const success = await saveToFirestore(tId, updatedTeacherData);
+      if (success) {
+        showToast("To'lov bekor qilindi / o'chirildi!", 'success');
+        return true;
+      } else {
+        setAllTeachersData((prev) => ({ ...prev, [tId]: prevTeacherData }));
+        showToast("To'lovni o'chirishda xatolik yuz berdi!", 'error');
+        return false;
+      }
+    } catch (err) {
+      console.error('Failed to delete payment:', err);
+      setAllTeachersData((prev) => ({ ...prev, [tId]: prevTeacherData }));
+      showToast("Serverga ulanishda xatolik yuz berdi!", 'error');
+      return false;
+    }
+  };
+
+  // Admin Schedule Handler (Phase 4)
+  const handleAdminUpdateGroupSchedule = async (tId, groupId, scheduleData) => {
+    if (!tId || !groupId || !scheduleData) return false;
+    const tData = allTeachersData[tId];
+    if (!tData) return false;
+
+    const prevTeacherData = tData;
+    const updatedGroups = (tData.groups || []).map((g) => {
+      if (String(g.id) === String(groupId)) {
+        return {
+          ...g,
+          schedule: {
+            ...(g.schedule || {}),
+            ...scheduleData,
+          },
+        };
+      }
+      return g;
+    });
+
+    const updatedTeacherData = {
+      ...tData,
+      groups: updatedGroups,
+    };
+
+    setAllTeachersData((prev) => ({
+      ...prev,
+      [tId]: updatedTeacherData,
+    }));
+
+    if (teacherId === tId) {
+      setGroups(updatedGroups);
+    }
+
+    try {
+      const success = await saveToFirestore(tId, updatedTeacherData);
+      if (success) {
+        showToast("Dars jadvali muvaffaqiyatli saqlandi!", 'success');
+        return true;
+      } else {
+        setAllTeachersData((prev) => ({ ...prev, [tId]: prevTeacherData }));
+        showToast("Dars jadvalini saqlashda xatolik yuz berdi!", 'error');
+        return false;
+      }
+    } catch (err) {
+      console.error('Failed to update group schedule:', err);
+      setAllTeachersData((prev) => ({ ...prev, [tId]: prevTeacherData }));
+      showToast("Serverga ulanishda xatolik yuz berdi!", 'error');
+      return false;
+    }
+  };
+
+  // Admin Leads Handlers (Phase 3)
+  const handleAdminAddLead = async (leadData) => {
+    if (!leadData) return false;
+    const adminData = allTeachersData.admin || { leads: [] };
+    const prevAdminData = adminData;
+
+    const currentLeads = Array.isArray(adminData.leads) ? adminData.leads : [];
+    const updatedLeads = [leadData, ...currentLeads];
+
+    const updatedAdminData = {
+      ...adminData,
+      leads: updatedLeads,
+      updatedAt: new Date().toISOString()
+    };
+
+    setAllTeachersData((prev) => ({
+      ...prev,
+      admin: updatedAdminData
+    }));
+
+    try {
+      const success = await saveToFirestore('admin', updatedAdminData);
+      if (success) {
+        showToast("Yangi lid muvaffaqiyatli saqlandi!", 'success');
+        return true;
+      } else {
+        setAllTeachersData((prev) => ({ ...prev, admin: prevAdminData }));
+        showToast("Lidni saqlashda xatolik yuz berdi!", 'error');
+        return false;
+      }
+    } catch (err) {
+      console.error('Failed to add lead:', err);
+      setAllTeachersData((prev) => ({ ...prev, admin: prevAdminData }));
+      showToast("Serverga ulanishda xatolik yuz berdi!", 'error');
+      return false;
+    }
+  };
+
+  const handleAdminUpdateLead = async (leadId, updatedFields) => {
+    if (!leadId || !updatedFields) return false;
+    const adminData = allTeachersData.admin || { leads: [] };
+    const prevAdminData = adminData;
+
+    const currentLeads = Array.isArray(adminData.leads) ? adminData.leads : [];
+    const updatedLeads = currentLeads.map((l) => {
+      if (String(l.id) === String(leadId)) {
+        return {
+          ...l,
+          ...updatedFields,
+          updatedAt: new Date().toISOString()
+        };
+      }
+      return l;
+    });
+
+    const updatedAdminData = {
+      ...adminData,
+      leads: updatedLeads,
+      updatedAt: new Date().toISOString()
+    };
+
+    setAllTeachersData((prev) => ({
+      ...prev,
+      admin: updatedAdminData
+    }));
+
+    try {
+      const success = await saveToFirestore('admin', updatedAdminData);
+      if (success) {
+        showToast("Lid ma'lumotlari yangilandi!", 'success');
+        return true;
+      } else {
+        setAllTeachersData((prev) => ({ ...prev, admin: prevAdminData }));
+        showToast("Lidni yangilashda xatolik yuz berdi!", 'error');
+        return false;
+      }
+    } catch (err) {
+      console.error('Failed to update lead:', err);
+      setAllTeachersData((prev) => ({ ...prev, admin: prevAdminData }));
+      showToast("Serverga ulanishda xatolik yuz berdi!", 'error');
+      return false;
+    }
+  };
+
+  const handleAdminDeleteLead = async (leadId) => {
+    if (!leadId) return false;
+    const adminData = allTeachersData.admin || { leads: [] };
+    const prevAdminData = adminData;
+
+    const currentLeads = Array.isArray(adminData.leads) ? adminData.leads : [];
+    const updatedLeads = currentLeads.filter((l) => String(l.id) !== String(leadId));
+
+    const updatedAdminData = {
+      ...adminData,
+      leads: updatedLeads,
+      updatedAt: new Date().toISOString()
+    };
+
+    setAllTeachersData((prev) => ({
+      ...prev,
+      admin: updatedAdminData
+    }));
+
+    try {
+      const success = await saveToFirestore('admin', updatedAdminData);
+      if (success) {
+        showToast("Lid muvaffaqiyatli o'chirildi!", 'success');
+        return true;
+      } else {
+        setAllTeachersData((prev) => ({ ...prev, admin: prevAdminData }));
+        showToast("Lidni o'chirishda xatolik yuz berdi!", 'error');
+        return false;
+      }
+    } catch (err) {
+      console.error('Failed to delete lead:', err);
+      setAllTeachersData((prev) => ({ ...prev, admin: prevAdminData }));
+      showToast("Serverga ulanishda xatolik yuz berdi!", 'error');
+      return false;
+    }
+  };
+
+  const handleAdminConvertLeadToStudent = async (leadId, studentPayload) => {
+    if (!leadId || !studentPayload || !studentPayload.teacherId || !studentPayload.groupId) return false;
+
+    const targetTeacherId = studentPayload.teacherId;
+    const tData = allTeachersData[targetTeacherId];
+    const adminData = allTeachersData.admin || { leads: [] };
+    if (!tData) {
+      showToast("Tanlangan ustoz ma'lumotlari topilmadi!", 'error');
+      return false;
+    }
+
+    const prevTeacherData = tData;
+    const prevAdminData = adminData;
+
+    const now = new Date().toISOString();
+    const newStudentId = 's_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7);
+
+    // Target group to find name & monthlyFee
+    const targetGroup = (tData.groups || []).find((g) => String(g.id) === String(studentPayload.groupId));
+    const groupName = targetGroup ? targetGroup.name : "Guruh";
+
+    const newStudent = {
+      id: newStudentId,
+      name: studentPayload.name.trim(),
+      groupId: studentPayload.groupId,
+      emoji: normalizeIconUrl(studentPayload.emoji || 'lion'),
+      color: studentPayload.color || '#007AFF',
+      phone: studentPayload.phone ? String(studentPayload.phone).trim() : '',
+      parentPhone: studentPayload.parentPhone ? String(studentPayload.parentPhone).trim() : '',
+      monthlyFee: studentPayload.monthlyFee !== undefined && studentPayload.monthlyFee !== null
+        ? studentPayload.monthlyFee
+        : (targetGroup?.monthlyFee || null),
+      createdAt: now,
+      joinedGroupAt: now
+    };
+
+    const updatedTeacherStudents = [...(tData.students || []), newStudent];
+    const updatedTeacherData = {
+      ...tData,
+      students: updatedTeacherStudents
+    };
+
+    const currentLeads = Array.isArray(adminData.leads) ? adminData.leads : [];
+    const updatedLeads = currentLeads.map((l) => {
+      if (String(l.id) === String(leadId)) {
+        return {
+          ...l,
+          status: 'converted',
+          convertedStudentId: newStudentId,
+          convertedTeacherId: targetTeacherId,
+          convertedGroupId: studentPayload.groupId,
+          updatedAt: now
+        };
+      }
+      return l;
+    });
+
+    const updatedAdminData = {
+      ...adminData,
+      leads: updatedLeads,
+      updatedAt: now
+    };
+
+    // Optimistically update allTeachersData
+    setAllTeachersData((prev) => ({
+      ...prev,
+      [targetTeacherId]: updatedTeacherData,
+      admin: updatedAdminData
+    }));
+
+    try {
+      const [tSuccess, aSuccess] = await Promise.all([
+        saveToFirestore(targetTeacherId, updatedTeacherData),
+        saveToFirestore('admin', updatedAdminData)
+      ]);
+
+      if (tSuccess && aSuccess) {
+        showToast(`${newStudent.name} muvaffaqiyatli ${groupName}ga qo'shildi!`, 'success');
+        return true;
+      } else {
+        // Rollback both
+        setAllTeachersData((prev) => ({
+          ...prev,
+          [targetTeacherId]: prevTeacherData,
+          admin: prevAdminData
+        }));
+        showToast("O'quvchini guruhga qabul qilishda xatolik yuz berdi!", 'error');
+        return false;
+      }
+    } catch (err) {
+      console.error('Failed to convert lead to student:', err);
+      setAllTeachersData((prev) => ({
+        ...prev,
+        [targetTeacherId]: prevTeacherData,
+        admin: prevAdminData
+      }));
+      showToast("Serverga ulanishda xatolik yuz berdi!", 'error');
+      return false;
+    }
+  };
+
+  // Phase 5: Admin Teacher Management & KPI Handlers
+  const handleAdminUpdateTeacherProfile = async (tId, updatedProfile) => {
+    if (!tId || !updatedProfile) return false;
+    const tData = allTeachersData[tId] || { groups: [], students: [], transactions: [], attendance: [], payments: [] };
+
+    const prevTeacherData = tData;
+    const currentProfile = tData.teacherProfile || tData.profile || {};
+
+    const mergedProfile = {
+      ...currentProfile,
+      ...updatedProfile,
+      fullName: updatedProfile.fullName !== undefined ? String(updatedProfile.fullName).trim() : (currentProfile.fullName || ''),
+      avatar: updatedProfile.avatar !== undefined ? String(updatedProfile.avatar).trim() : (currentProfile.avatar || ''),
+      title: updatedProfile.title !== undefined ? String(updatedProfile.title).trim() : (currentProfile.title || ''),
+      education: updatedProfile.education !== undefined ? String(updatedProfile.education).trim() : (currentProfile.education || ''),
+      motto: updatedProfile.motto !== undefined ? String(updatedProfile.motto).trim() : (currentProfile.motto || ''),
+      phone: updatedProfile.phone !== undefined ? String(updatedProfile.phone).trim() : (currentProfile.phone || ''),
+      password: updatedProfile.password !== undefined ? String(updatedProfile.password).trim() : (currentProfile.password || ''),
+      social: {
+        ...(currentProfile.social || {}),
+        ...(updatedProfile.social || {}),
+        telegram: updatedProfile.social?.telegram !== undefined
+          ? String(updatedProfile.social.telegram).trim().replace(/^@/, '')
+          : (currentProfile.social?.telegram || ''),
+      },
+      updatedAt: new Date().toISOString(),
+    };
+
+    const updatedTeacherData = {
+      ...tData,
+      teacherProfile: mergedProfile,
+    };
+
+    setAllTeachersData((prev) => ({
+      ...prev,
+      [tId]: updatedTeacherData,
+    }));
+
+    try {
+      localStorage.setItem(`rsa_teacher_profile_${tId}`, JSON.stringify(mergedProfile));
+    } catch (_) {}
+
+    if (teacherId === tId) {
+      setTeacherProfile(mergedProfile);
+    }
+
+    try {
+      const success = await saveToFirestore(tId, updatedTeacherData);
+      if (success) {
+        showToast(`${mergedProfile.fullName || 'Ustoz'} profili muvaffaqiyatli yangilandi!`, 'success');
+        return true;
+      } else {
+        setAllTeachersData((prev) => ({ ...prev, [tId]: prevTeacherData }));
+        if (teacherId === tId) setTeacherProfile(prevTeacherData.teacherProfile || null);
+        showToast("Profilni saqlashda xatolik yuz berdi!", 'error');
+        return false;
+      }
+    } catch (err) {
+      console.error('Failed to update teacher profile:', err);
+      setAllTeachersData((prev) => ({ ...prev, [tId]: prevTeacherData }));
+      if (teacherId === tId) setTeacherProfile(prevTeacherData.teacherProfile || null);
+      showToast("Serverga ulanishda xatolik yuz berdi!", 'error');
+      return false;
+    }
+  };
+
+  const handleAdminCreateGroup = async (tId, groupPayload) => {
+    if (!tId || !groupPayload || !groupPayload.name) return false;
+    const tData = allTeachersData[tId] || { groups: [], students: [], transactions: [], attendance: [], payments: [] };
+
+    const prevTeacherData = tData;
+    const newGroupId = groupPayload.id || ('grp_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7));
+    const cleanPassword = (groupPayload.password || '').trim().toLowerCase();
+
+    // Register password in global registry if provided
+    if (cleanPassword) {
+      const registered = await registerGroupPassword(cleanPassword, tId, newGroupId);
+      if (!registered) {
+        showToast("Ushbu guruh paroli allaqachon band qilingan. Boshqa parol tanlang!", 'error');
+        return false;
+      }
+    }
+
+    const cleanRoom = (groupPayload.room || groupPayload.schedule?.room || '1-xona').trim();
+
+    const newGroup = {
+      id: newGroupId,
+      name: groupPayload.name.trim(),
+      icon: normalizeIconUrl(groupPayload.icon || 'folder'),
+      password: cleanPassword,
+      color: groupPayload.color || '#3B82F6',
+      category: groupPayload.category === 'kids' ? 'kids' : 'teens',
+      monthlyFee: groupPayload.monthlyFee !== undefined && groupPayload.monthlyFee !== null ? Number(groupPayload.monthlyFee) : 400000,
+      room: cleanRoom,
+      schedule: {
+        days: Array.isArray(groupPayload.schedule?.days) ? groupPayload.schedule.days : [],
+        startTime: groupPayload.schedule?.startTime || '14:00',
+        endTime: groupPayload.schedule?.endTime || '15:30',
+        room: cleanRoom,
+      },
+      createdAt: new Date().toISOString(),
+    };
+
+    const updatedGroups = [...(tData.groups || []), newGroup];
+    const updatedTeacherData = {
+      ...tData,
+      groups: updatedGroups,
+    };
+
+    setAllTeachersData((prev) => ({
+      ...prev,
+      [tId]: updatedTeacherData,
+    }));
+
+    if (teacherId === tId) {
+      setGroups(updatedGroups);
+    }
+
+    try {
+      const success = await saveToFirestore(tId, updatedTeacherData);
+      if (success) {
+        showToast(`"${newGroup.name}" guruhi muvaffaqiyatli ochildi!`, 'success');
+        return true;
+      } else {
+        if (cleanPassword) {
+          await deregisterGroupPassword(cleanPassword);
+        }
+        setAllTeachersData((prev) => ({ ...prev, [tId]: prevTeacherData }));
+        if (teacherId === tId) setGroups(prevTeacherData.groups || []);
+        showToast("Guruhni saqlashda xatolik yuz berdi!", 'error');
+        return false;
+      }
+    } catch (err) {
+      console.error('Failed to create group:', err);
+      if (cleanPassword) {
+        await deregisterGroupPassword(cleanPassword);
+      }
+      setAllTeachersData((prev) => ({ ...prev, [tId]: prevTeacherData }));
+      if (teacherId === tId) setGroups(prevTeacherData.groups || []);
+      showToast("Serverga ulanishda xatolik yuz berdi!", 'error');
+      return false;
+    }
   };
 
   // Select Group Helper
@@ -1504,19 +2200,36 @@ function App() {
               allTeachersData={allTeachersData}
               onSelectTeacher={(tId) => {
                 setSelectedAdminTeacherFilter(tId);
-                setActiveTab('groups');
               }}
               setActiveTab={handleTabChange}
               onRefresh={handleAdminRefresh}
               isSyncing={isSyncing}
             />
           );
-        case 'groups':
+        case 'leads':
           return (
-            <AdminGroups
+            <AdminLeads
               allTeachersData={allTeachersData}
-              selectedTeacherFilter={selectedAdminTeacherFilter}
-              onSelectTeacherFilter={setSelectedAdminTeacherFilter}
+              onAddLead={handleAdminAddLead}
+              onUpdateLead={handleAdminUpdateLead}
+              onDeleteLead={handleAdminDeleteLead}
+              onConvertLeadToStudent={handleAdminConvertLeadToStudent}
+              onRefresh={handleAdminRefresh}
+              isSyncing={isSyncing}
+              showToast={showToast}
+              setActiveTab={handleTabChange}
+            />
+          );
+        case 'finance':
+          return (
+            <AdminFinance
+              allTeachersData={allTeachersData}
+              onRecordPayment={handleAdminRecordPayment}
+              onDeletePayment={handleAdminDeletePayment}
+              onUpdateStudentPhone={handleAdminUpdateStudentPhone}
+              showToast={showToast}
+              onRefresh={handleAdminRefresh}
+              isSyncing={isSyncing}
             />
           );
         case 'attendance':
@@ -1524,6 +2237,7 @@ function App() {
             <AdminAttendance
               allTeachersData={allTeachersData}
               selectedTeacherFilter={selectedAdminTeacherFilter}
+              showToast={showToast}
             />
           );
         default:
@@ -1532,7 +2246,6 @@ function App() {
               allTeachersData={allTeachersData}
               onSelectTeacher={(tId) => {
                 setSelectedAdminTeacherFilter(tId);
-                setActiveTab('groups');
               }}
               setActiveTab={handleTabChange}
               onRefresh={handleAdminRefresh}
@@ -1573,19 +2286,6 @@ function App() {
     }
 
     switch (activeTab) {
-      case 'dashboard':
-        return (
-          <Dashboard
-            setActiveTab={handleTabChange}
-            onOpenSchedule={handleOpenSchedule}
-            onSelectGroup={handleSelectGroup}
-            groups={filteredGroups}
-            students={filteredStudents}
-            transactions={filteredTransactions}
-            attendance={attendance}
-            extraLessons={filteredExtraLessons}
-          />
-        );
       case 'groups':
         if (selectedGroupId) {
           const group = filteredGroups.find((g) => g.id === selectedGroupId);
@@ -1734,41 +2434,18 @@ function App() {
           />
         )}
 
-        {toast && (
-          <div className="toast-portal-container">
+        {toast && createPortal(
+          <div className="toast-portal-container" aria-live="polite">
             <div
-              className={`toast toast-${toast.type || 'info'}`}
+              className="toast"
               onClick={() => setToast(null)}
-              role="alert"
+              role="status"
               title="Yopish"
             >
-              <span className={`toast-icon-badge ${toast.type || 'info'}`}>
-                {toast.type === 'success' ? (
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                    <polyline points="20 6 9 17 4 12" />
-                  </svg>
-                ) : toast.type === 'error' ? (
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                    <line x1="18" y1="6" x2="6" y2="18" />
-                    <line x1="6" y1="6" x2="18" y2="18" />
-                  </svg>
-                ) : toast.type === 'warning' ? (
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                    <circle cx="12" cy="12" r="10" />
-                    <line x1="12" y1="8" x2="12" y2="12" />
-                    <line x1="12" y1="16" x2="12.01" y2="16" />
-                  </svg>
-                ) : (
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                    <circle cx="12" cy="12" r="10" />
-                    <line x1="12" y1="16" x2="12" y2="12" />
-                    <line x1="12" y1="8" x2="12.01" y2="8" />
-                  </svg>
-                )}
-              </span>
               <span className="toast-message">{toast.message}</span>
             </div>
-          </div>
+          </div>,
+          document.body
         )}
       </div>
     );
@@ -1822,6 +2499,7 @@ function App() {
           isSyncing={isSyncing}
           theme={theme}
           toggleTheme={toggleTheme}
+          teacherProfile={teacherProfile}
         />
       )}
 
@@ -1833,41 +2511,18 @@ function App() {
       </main>
 
       {/* Toast Notification Popups */}
-      {toast && (
-        <div className="toast-portal-container">
+      {toast && createPortal(
+        <div className="toast-portal-container" aria-live="polite">
           <div
-            className={`toast toast-${toast.type || 'info'}`}
+            className="toast"
             onClick={() => setToast(null)}
-            role="alert"
+            role="status"
             title="Yopish"
           >
-            <span className={`toast-icon-badge ${toast.type || 'info'}`}>
-              {toast.type === 'success' ? (
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                  <polyline points="20 6 9 17 4 12" />
-                </svg>
-              ) : toast.type === 'error' ? (
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                  <line x1="18" y1="6" x2="6" y2="18" />
-                  <line x1="6" y1="6" x2="18" y2="18" />
-                </svg>
-              ) : toast.type === 'warning' ? (
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                  <circle cx="12" cy="12" r="10" />
-                  <line x1="12" y1="8" x2="12" y2="12" />
-                  <line x1="12" y1="16" x2="12.01" y2="16" />
-                </svg>
-              ) : (
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                  <circle cx="12" cy="12" r="10" />
-                  <line x1="12" y1="16" x2="12" y2="12" />
-                  <line x1="12" y1="8" x2="12.01" y2="8" />
-                </svg>
-              )}
-            </span>
             <span className="toast-message">{toast.message}</span>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* Logout Confirmation Warning Modal */}

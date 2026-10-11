@@ -27,13 +27,42 @@ export const extractGroupDays = (group) => {
   let days = Array.isArray(group.schedule?.days) ? [...group.schedule.days] : [];
   if (days.length === 0 && group.name) {
     const lower = group.name.toLowerCase();
-    if (lower.includes('dushanba')) days.push('mon');
-    if (lower.includes('seshanba')) days.push('tue');
-    if (lower.includes('chorshanba')) days.push('wed');
-    if (lower.includes('payshanba')) days.push('thu');
-    if (lower.includes('juma')) days.push('fri');
-    if (lower.includes('shanba')) days.push('sat');
-    if (lower.includes('yakshanba')) days.push('sun');
+
+    // Schedule presets
+    if (lower.includes('toq kun')) {
+      ['mon', 'wed', 'fri'].forEach((d) => { if (!days.includes(d)) days.push(d); });
+    }
+    if (lower.includes('juft kun')) {
+      ['tue', 'thu', 'sat'].forEach((d) => { if (!days.includes(d)) days.push(d); });
+    }
+    if (lower.includes('har kuni') || lower.includes('har kun')) {
+      ['mon', 'tue', 'wed', 'thu', 'fri', 'sat'].forEach((d) => { if (!days.includes(d)) days.push(d); });
+    }
+
+    if (lower.includes('dushanba')) {
+      if (!days.includes('mon')) days.push('mon');
+    }
+    if (lower.includes('seshanba')) {
+      if (!days.includes('tue')) days.push('tue');
+    }
+    if (lower.includes('chorshanba')) {
+      if (!days.includes('wed')) days.push('wed');
+    }
+    if (lower.includes('payshanba')) {
+      if (!days.includes('thu')) days.push('thu');
+    }
+    if (lower.includes('juma')) {
+      if (!days.includes('fri')) days.push('fri');
+    }
+    if (lower.includes('yakshanba')) {
+      if (!days.includes('sun')) days.push('sun');
+    }
+
+    // Shanba (Saturday) check: MUST NOT match the 'shanba' inside dushanba, seshanba, chorshanba, payshanba, yakshanba
+    const withoutOtherShanbas = lower.replace(/(dushanba|seshanba|chorshanba|payshanba|yakshanba)/g, '');
+    if (withoutOtherShanbas.includes('shanba')) {
+      if (!days.includes('sat')) days.push('sat');
+    }
   }
   return days;
 };
@@ -72,7 +101,7 @@ export const extractGroupTimes = (group) => {
  * @param {Array} [extraLessons=[]]
  * @returns {boolean}
  */
-export const isGroupLessonActive = (group, now = new Date(), bufferMinutes = 5, extraLessons = []) => {
+export const isGroupLessonActive = (group, now = new Date(), bufferMinutes = 5, extraLessons = [], studentId = null) => {
   if (!group || group.deleted) return false;
 
   const currentMinutes = now.getHours() * 60 + now.getMinutes();
@@ -217,4 +246,276 @@ export const getUpcomingExtraLessons = (groupId, extraLessons = [], now = new Da
       return (a.startTime || '').localeCompare(b.startTime || '');
     });
 };
+
+export const DAY_INDEX_MAP = { mon: 1, tue: 2, wed: 3, thu: 4, fri: 5, sat: 6, sun: 7 };
+
+
+/**
+ * Computes YYYY-MM-DD date string for a given day-of-week in the baseDate's week (Mon-Sun).
+ */
+export const getWeekDayDateStr = (baseDate, targetDayKey) => {
+  const d = new Date(baseDate);
+  const currentIsoDay = d.getDay() === 0 ? 7 : d.getDay();
+  const targetIsoDay = DAY_INDEX_MAP[targetDayKey] || 1;
+  const diffDays = targetIsoDay - currentIsoDay;
+  d.setDate(d.getDate() + diffDays);
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+};
+
+export const SCHEDULE_WEEKDAYS = [
+  { key: 'mon', name: 'Dushanba', short: 'Du' },
+  { key: 'tue', name: 'Seshanba', short: 'Se' },
+  { key: 'wed', name: 'Chorshanba', short: 'Cho' },
+  { key: 'thu', name: 'Payshanba', short: 'Pa' },
+  { key: 'fri', name: 'Juma', short: 'Ju' },
+  { key: 'sat', name: 'Shanba', short: 'Sha' },
+  { key: 'sun', name: 'Yakshanba', short: 'Ya' },
+];
+
+export const DEFAULT_SCHEDULE_ROOMS = ['1-xona', '2-xona', '3-xona', '4-xona'];
+export const TEACHER_IDS = ['teacher1', 'teacher2', 'teacher3', 'teacher4'];
+export const TEACHER_LABELS = {
+  teacher1: 'Teacher 1',
+  teacher2: 'Teacher 2',
+  teacher3: 'Teacher 3',
+  teacher4: 'Teacher 4',
+};
+
+export const formatLessonDuration = (startMinutes, endMinutes) => {
+  if (startMinutes === null || endMinutes === null || isNaN(startMinutes) || isNaN(endMinutes)) {
+    return '90 daqiqa';
+  }
+  if (endMinutes <= startMinutes) {
+    return '0 daqiqa';
+  }
+  const diff = endMinutes - startMinutes;
+  return `${diff} daqiqa`;
+};
+
+export const formatMinutesToTime = (totalMinutes) => {
+  if (totalMinutes === null || totalMinutes === undefined || isNaN(totalMinutes)) return '00:00';
+  const norm = ((Math.floor(totalMinutes) % 1440) + 1440) % 1440;
+  const h = Math.floor(norm / 60);
+  const m = norm % 60;
+  return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+};
+
+/**
+ * Detects room collisions among lesson instances occurring on the same day in the same room.
+ */
+export const detectRoomConflicts = (lessons = []) => {
+  const conflictPairs = [];
+  const conflictingGroupIds = new Set();
+  const conflictingLessonIds = new Set();
+  const conflictsMap = new Map();
+
+  for (let i = 0; i < lessons.length; i++) {
+    const l1 = lessons[i];
+    if (!l1 || l1.startMinutes === null || l1.endMinutes === null) continue;
+    const room1 = (l1.room || '1-xona').toLowerCase().trim();
+
+    for (let j = i + 1; j < lessons.length; j++) {
+      const l2 = lessons[j];
+      if (!l2 || l2.startMinutes === null || l2.endMinutes === null) continue;
+
+      if (l1.dayKey !== l2.dayKey) continue;
+
+      const room2 = (l2.room || '1-xona').toLowerCase().trim();
+      if (room1 !== room2) continue;
+
+      if (String(l1.groupId) === String(l2.groupId)) continue;
+
+      const isOverlapping = l1.startMinutes < l2.endMinutes && l1.endMinutes > l2.startMinutes;
+      if (isOverlapping) {
+        conflictingGroupIds.add(l1.groupId);
+        conflictingGroupIds.add(l2.groupId);
+        conflictingLessonIds.add(l1.id);
+        conflictingLessonIds.add(l2.id);
+
+        const list1 = conflictsMap.get(l1.id) || [];
+        list1.push(l2);
+        conflictsMap.set(l1.id, list1);
+
+        const list2 = conflictsMap.get(l2.id) || [];
+        list2.push(l1);
+        conflictsMap.set(l2.id, list2);
+
+        conflictPairs.push({
+          id: `conflict_${l1.id}_${l2.id}`,
+          room: l1.room || '1-xona',
+          dayKey: l1.dayKey,
+          dayName: SCHEDULE_DAY_FULL_NAMES[l1.dayKey] || l1.dayKey,
+          lessonA: l1,
+          lessonB: l2,
+        });
+      }
+    }
+  }
+
+  return {
+    conflictPairs,
+    conflictingGroupIds: Array.from(conflictingGroupIds),
+    conflictingLessonIds: Array.from(conflictingLessonIds),
+    conflictsMap,
+  };
+};
+
+/**
+ * Extracts all recurring weekly lesson items across teachers for central schedule view.
+ */
+export const extractAllTeacherLessons = (allTeachersData = {}) => {
+  const lessons = [];
+  const tIds = Array.from(new Set([...TEACHER_IDS, ...Object.keys(allTeachersData).filter((k) => k.startsWith('teacher'))]));
+
+  tIds.forEach((tId) => {
+    const tData = allTeachersData[tId];
+    if (!tData) return;
+    const groups = (tData.groups || []).filter((g) => g && !g.deleted);
+    const students = (tData.students || []).filter((s) => s && !s.deleted);
+    const teacherProfile = tData.teacherProfile || tData.profile || {};
+    const teacherName = teacherProfile.fullName?.trim() || TEACHER_LABELS[tId] || tId;
+    const teacherAvatar = teacherProfile.avatar || null;
+    const teacherTitle = teacherProfile.title?.trim() || 'Ustoz';
+
+    groups.forEach((g) => {
+      const days = extractGroupDays(g);
+      const times = extractGroupTimes(g);
+      const room = (g.schedule?.room || '1-xona').trim();
+      const groupStudents = students.filter((s) => String(s.groupId) === String(g.id));
+
+      const startTimeStr = g.schedule?.startTime?.trim() || (times.startMinutes !== null ? formatMinutesToTime(times.startMinutes) : '00:00');
+      const endTimeStr = g.schedule?.endTime?.trim() || (times.endMinutes !== null ? formatMinutesToTime(times.endMinutes) : '00:00');
+
+      days.forEach((dayKey) => {
+        lessons.push({
+          id: `${tId}_${g.id}_${dayKey}`,
+          groupId: g.id,
+          groupName: g.name || 'Nomsiz guruh',
+          groupCategory: g.category || 'Dasturlash',
+          groupColor: g.color || '#3B82F6',
+          groupIcon: g.icon || 'code',
+          monthlyFee: g.monthlyFee,
+          teacherId: tId,
+          teacherName,
+          teacherLabel: teacherName,
+          teacherAvatar,
+          teacherTitle,
+          dayKey,
+          startTime: startTimeStr,
+          endTime: endTimeStr,
+          startMinutes: times.startMinutes,
+          endMinutes: times.endMinutes,
+          durationMinutes: times.endMinutes !== null && times.startMinutes !== null ? Math.max(0, times.endMinutes - times.startMinutes) : 90,
+          room: room || '1-xona',
+          studentCount: groupStudents.length,
+          students: groupStudents,
+          group: g,
+        });
+      });
+    });
+  });
+
+  return lessons;
+};
+
+/**
+ * Calculates schedule and room occupancy KPIs across all teachers.
+ */
+export const calculateScheduleKpis = (allTeachersData = {}, conflictsCount = 0) => {
+  let totalActiveGroups = 0;
+  let totalWeeklyMinutes = 0;
+  const uniqueRoomsSet = new Set();
+  const allRoomsMap = new Map();
+
+  DEFAULT_SCHEDULE_ROOMS.forEach((r) => {
+    allRoomsMap.set(r.toLowerCase().trim(), r.trim());
+  });
+
+  const tIds = Array.from(new Set([...TEACHER_IDS, ...Object.keys(allTeachersData).filter((k) => k.startsWith('teacher'))]));
+
+  tIds.forEach((tId) => {
+    const tData = allTeachersData[tId];
+    if (!tData) return;
+    const groups = (tData.groups || []).filter((g) => g && !g.deleted);
+
+    groups.forEach((g) => {
+      totalActiveGroups++;
+      const days = extractGroupDays(g);
+      const times = extractGroupTimes(g);
+      const rawRoom = (g.schedule?.room || '1-xona').trim();
+
+      if (rawRoom) {
+        const lowerRoom = rawRoom.toLowerCase();
+        uniqueRoomsSet.add(lowerRoom);
+        if (!allRoomsMap.has(lowerRoom)) {
+          allRoomsMap.set(lowerRoom, rawRoom);
+        }
+      }
+
+      const duration = times.endMinutes !== null && times.startMinutes !== null && times.endMinutes > times.startMinutes
+        ? times.endMinutes - times.startMinutes
+        : 90;
+
+      totalWeeklyMinutes += duration * (days.length || 0);
+    });
+  });
+
+  const totalWeeklyLessonHours = Math.round((totalWeeklyMinutes / 60) * 10) / 10;
+  const allRooms = Array.from(allRoomsMap.values()).sort((a, b) => a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' }));
+
+  return {
+    totalActiveGroups,
+    occupiedRoomsCount: uniqueRoomsSet.size,
+    totalWeeklyLessonHours,
+    conflictsCount,
+    allRooms,
+  };
+};
+
+/**
+ * Pre-validates whether a candidate group schedule will conflict with any existing lesson.
+ */
+export const checkCandidateConflict = (candidate, existingLessons = [], excludeGroupId = null) => {
+  if (!candidate || !candidate.room || !candidate.startTime || !candidate.endTime || !Array.isArray(candidate.days)) {
+    return { hasConflict: false, conflictingLesson: null };
+  }
+
+  const startMin = parseTimeToMinutes(candidate.startTime);
+  const endMin = parseTimeToMinutes(candidate.endTime);
+  if (startMin === null || endMin === null) {
+    return { hasConflict: false, conflictingLesson: null };
+  }
+
+  if (startMin >= endMin) {
+    return { hasConflict: false, conflictingLesson: null, isInvalidTime: true };
+  }
+
+  const normCandidateRoom = candidate.room.toLowerCase().trim();
+
+  for (const l of existingLessons) {
+    if (!l) continue;
+    if (excludeGroupId && String(l.groupId) === String(excludeGroupId)) continue;
+    if (!candidate.days.includes(l.dayKey)) continue;
+
+    const normLessonRoom = (l.room || '1-xona').toLowerCase().trim();
+    if (normCandidateRoom !== normLessonRoom) continue;
+
+    if (l.startMinutes === null || l.endMinutes === null) continue;
+
+    const isOverlapping = startMin < l.endMinutes && endMin > l.startMinutes;
+    if (isOverlapping) {
+      return {
+        hasConflict: true,
+        conflictingLesson: l,
+      };
+    }
+  }
+
+  return { hasConflict: false, conflictingLesson: null };
+};
+
+
 

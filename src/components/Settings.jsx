@@ -1,9 +1,8 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { exportDatabase, DEFAULT_QUICK_TAGS, normalizeQuickTags } from '../utils/db';
 import { renderAvatar } from '../utils/studentAvatars';
 import { AVATAR_GALLERY_IMAGES } from '../utils/avatarGallery';
-import StudentTeacherShowcase from './student/StudentTeacherShowcase';
 import ProjectLikeIcon from './common/ProjectLikeIcon';
 import { useModalDismiss } from '../hooks/useModalDismiss';
 
@@ -109,6 +108,62 @@ const IconLogOut = ({ size = 16, strokeWidth = 2.2 }) => (
   </svg>
 );
 
+const IconCamera = ({ size = 15, strokeWidth = 2.2 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round">
+    <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
+    <circle cx="12" cy="13" r="4" />
+  </svg>
+);
+
+const IconSparkles = ({ size = 15, strokeWidth = 2.2 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round">
+    <path d="M12 3l1.912 4.673a3 3 0 0 0 1.742 1.742L20.327 11.327a1 1 0 0 1 0 1.346l-4.673 1.912a3 3 0 0 0-1.742 1.742L12 21l-1.912-4.673a3 3 0 0 0-1.742-1.742L3.673 12.673a1 1 0 0 1 0-1.346l4.673-1.912a3 3 0 0 0 1.742-1.742L12 3z" />
+  </svg>
+);
+
+const IconAward = ({ size = 15, strokeWidth = 2.2 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="12" cy="8" r="7" />
+    <polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88" />
+  </svg>
+);
+
+const IconBriefcase = ({ size = 15, strokeWidth = 2.2 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round">
+    <rect x="2" y="7" width="20" height="14" rx="2" ry="2" />
+    <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" />
+  </svg>
+);
+
+const IconGraduation = ({ size = 15, strokeWidth = 2.2 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round">
+    <path d="M22 10v6M2 10l10-5 10 5-10 5z" />
+    <path d="M6 12v5c3 3 9 3 12 0v-5" />
+  </svg>
+);
+
+const IconQuote = ({ size = 15, strokeWidth = 2.2 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round">
+    <path d="M3 21c3 0 7-1 7-8V5c0-1.25-.756-2.017-2-2H4c-1.25 0-2 .75-2 1.972V11c0 1.25.75 2 2 2 1 0 1 0 1 1v1c0 1-1 2-2 2s-1 .008-1 1.031V20c0 1 0 1 1 1z" />
+    <path d="M15 21c3 0 7-1 7-8V5c0-1.25-.757-2.017-2-2h-4c-1.25 0-2 .75-2 1.972V11c0 1.25.75 2 2 2 1 0 1 0 1 1v1c0 1-1 2-2 2s-1 .008-1 1.031V20c0 1 0 1 1 1z" />
+  </svg>
+);
+
+const IconSend = ({ size = 15, strokeWidth = 2.2 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round">
+    <line x1="22" y1="2" x2="11" y2="13" />
+    <polygon points="22 2 15 22 11 13 2 9 22 2" />
+  </svg>
+);
+
+const IconInstagram = ({ size = 15, strokeWidth = 2.2 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round">
+    <rect x="2" y="2" width="20" height="20" rx="5" ry="5" />
+    <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" />
+    <line x1="17.5" y1="6.5" x2="17.51" y2="6.5" />
+  </svg>
+);
+
 const formatMoneyUz = (num) => {
   const n = Math.round(Number(num) || 0);
   return n.toLocaleString('uz-UZ').replace(/,/g, ' ') + " so'm";
@@ -155,6 +210,9 @@ const Settings = ({
   const [profileTelegram, setProfileTelegram] = useState(teacherProfile?.social?.telegram || '');
   const [profileInstagram, setProfileInstagram] = useState(teacherProfile?.social?.instagram || '');
 
+  const isUserDirtyRef = React.useRef(false);
+  const autoSaveTimerRef = React.useRef(null);
+
   const [newAchievementText, setNewAchievementText] = useState('');
   const [showGalleryModal, setShowGalleryModal] = useState(false);
   const [showAddCertModal, setShowAddCertModal] = useState(false);
@@ -163,8 +221,9 @@ const Settings = ({
   const [certImageInput, setCertImageInput] = useState('');
   const [isSavingProfile, setIsSavingProfile] = useState(false);
 
+  // Sync from props only if user has not actively edited the local form
   useEffect(() => {
-    if (teacherProfile) {
+    if (teacherProfile && !isUserDirtyRef.current) {
       setProfileFullName(teacherProfile.fullName || '');
       setProfileTitle(teacherProfile.title || '');
       setProfileAvatar(teacherProfile.avatar || '');
@@ -176,6 +235,60 @@ const Settings = ({
       setProfileInstagram(teacherProfile.social?.instagram || '');
     }
   }, [teacherProfile]);
+
+  // Debounced auto-save to cloud & instant localStorage backup
+  useEffect(() => {
+    if (!isUserDirtyRef.current) return;
+
+    const updated = {
+      fullName: profileFullName.trim(),
+      title: profileTitle.trim(),
+      avatar: profileAvatar,
+      education: profileEducation.trim(),
+      motto: profileMotto.trim(),
+      achievements: profileAchievements.filter(Boolean),
+      certificates: profileCertificates.filter(Boolean),
+      social: {
+        telegram: profileTelegram.trim(),
+        instagram: profileInstagram.trim()
+      }
+    };
+
+    // Immediate 0ms local storage backup
+    try {
+      const tId = localStorage.getItem('rsa_teacher_id');
+      if (tId) {
+        localStorage.setItem(`rsa_teacher_profile_${tId}`, JSON.stringify(updated));
+      }
+    } catch {}
+
+    if (autoSaveTimerRef.current) {
+      clearTimeout(autoSaveTimerRef.current);
+    }
+
+    autoSaveTimerRef.current = setTimeout(() => {
+      if (onSaveTeacherProfile) {
+        onSaveTeacherProfile(updated);
+      }
+    }, 800);
+
+    return () => {
+      if (autoSaveTimerRef.current) {
+        clearTimeout(autoSaveTimerRef.current);
+      }
+    };
+  }, [
+    profileFullName,
+    profileTitle,
+    profileAvatar,
+    profileEducation,
+    profileMotto,
+    profileAchievements,
+    profileCertificates,
+    profileTelegram,
+    profileInstagram,
+    onSaveTeacherProfile
+  ]);
 
   const handleAvatarFileUpload = (e) => {
     const file = e.target.files?.[0];
@@ -189,6 +302,7 @@ const Settings = ({
       const dataUrl = event.target?.result;
       if (typeof dataUrl === 'string') {
         setProfileAvatar(dataUrl);
+        isUserDirtyRef.current = true;
       }
     };
     reader.readAsDataURL(file);
@@ -219,6 +333,7 @@ const Settings = ({
       showToast("Ushbu yutuq allaqachon qo'shilgan", "info");
       return;
     }
+    isUserDirtyRef.current = true;
     setProfileAchievements([...profileAchievements, clean]);
     setNewAchievementText('');
   };
@@ -228,10 +343,12 @@ const Settings = ({
       showToast("Ushbu yutuq allaqachon mavjud", "info");
       return;
     }
+    isUserDirtyRef.current = true;
     setProfileAchievements([...profileAchievements, text]);
   };
 
   const handleRemoveAchievement = (index) => {
+    isUserDirtyRef.current = true;
     setProfileAchievements(profileAchievements.filter((_, i) => i !== index));
   };
 
@@ -246,6 +363,7 @@ const Settings = ({
       year: certYearInput.trim(),
       image: certImageInput
     };
+    isUserDirtyRef.current = true;
     setProfileCertificates([...profileCertificates, newCert]);
     setCertTitleInput('');
     setCertYearInput('');
@@ -254,6 +372,7 @@ const Settings = ({
   };
 
   const handleRemoveCertificate = (index) => {
+    isUserDirtyRef.current = true;
     setProfileCertificates(profileCertificates.filter((_, i) => i !== index));
   };
 
@@ -261,6 +380,9 @@ const Settings = ({
     if (!profileFullName.trim()) {
       showToast("Iltimos, ism-familiyangizni kiriting!", "warning");
       return;
+    }
+    if (autoSaveTimerRef.current) {
+      clearTimeout(autoSaveTimerRef.current);
     }
     setIsSavingProfile(true);
     const updated = {
@@ -276,11 +398,31 @@ const Settings = ({
         instagram: profileInstagram.trim()
       }
     };
+    try {
+      const tId = localStorage.getItem('rsa_teacher_id');
+      if (tId) {
+        localStorage.setItem(`rsa_teacher_profile_${tId}`, JSON.stringify(updated));
+      }
+    } catch {}
     if (onSaveTeacherProfile) {
       await onSaveTeacherProfile(updated);
     }
     setIsSavingProfile(false);
   };
+
+  // Keyboard shortcut: Ctrl+S / Cmd+S to quickly save profile
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if ((e.ctrlKey || e.metaKey) && (e.key === 's' || e.key === 'S')) {
+        e.preventDefault();
+        if (activeTab === 'profile' && !isSavingProfile) {
+          handleSaveProfile();
+        }
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [activeTab, isSavingProfile, handleSaveProfile]);
 
   // Quick Tags State
   const [newTagText, setNewTagText] = useState('');
@@ -573,7 +715,7 @@ const Settings = ({
       <div className="settings-page">
         <div className="page-header">
           <div>
-            <h2 className="page-title">Sozlamalar</h2>
+            <h2 className="page-title">Profil</h2>
             <p className="page-subtitle">Akkaunt va tizim ma'lumotlari</p>
           </div>
         </div>
@@ -610,8 +752,7 @@ const Settings = ({
       {/* Top Page Header with Tabs */}
       <div className="page-header settings-page-header">
         <div>
-          <h2 className="page-title">Sozlamalar</h2>
-          <p className="page-subtitle">Tizim konfiguratsiyasi, tezkor shablonlar, savat va zaxira nusxalari</p>
+          <h2 className="page-title">Profil</h2>
         </div>
 
         <div className="tab-control-brutalist">
@@ -652,40 +793,91 @@ const Settings = ({
         </div>
       </div>
 
-      {/* Hero Overview & System Status Card */}
-      <section className="glass-card settings-hero-banner">
-        <div className="hero-left-profile">
-          <div className="profile-avatar-box">
-            {profileAvatar ? renderAvatar(profileAvatar, 48) : <IconUser size={22} />}
+      {/* Unified Hero Identity Banner */}
+      <section className="glass-card modern-hero-identity-card">
+        <div className="hero-identity-main">
+          {/* Avatar with Camera Overlay */}
+          <div className="hero-avatar-wrapper">
+            <div className="hero-avatar-disc" onClick={() => setShowGalleryModal(true)} title="Suratni tanlash">
+              {profileAvatar ? renderAvatar(profileAvatar, 82) : <IconUser size={34} />}
+            </div>
+            <button
+              type="button"
+              className="hero-avatar-camera-btn scale-active"
+              onClick={() => setShowGalleryModal(true)}
+              title="Suratni o'zgartirish"
+              aria-label="Suratni o'zgartirish"
+            >
+              <IconCamera size={14} />
+            </button>
           </div>
-          <div className="profile-details">
-            <div className="profile-role-row">
-              <span className="role-pill-badge">{userRole === 'admin' ? 'Administrator' : "O'qituvchi"}</span>
-              <span className="stats-mini-summary">
-                {profileFullName ? `${profileFullName} • ` : ''}{activeGroups.length} ta faol guruh
-              </span>
+
+          {/* Profile Name & Title */}
+          <div className="hero-identity-details">
+            <h3 className="hero-teacher-name">{profileFullName || "Ustoz Ismi"}</h3>
+            <p className="hero-teacher-title">{profileTitle || "Katta o'qituvchi va murabbiy"}</p>
+
+            {/* Quick avatar buttons row */}
+            <div className="hero-avatar-actions-quick">
+              <label className="hero-quick-btn scale-active">
+                <IconCamera size={13} />
+                <span>Rasm yuklash</span>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleAvatarFileUpload}
+                  style={{ display: 'none' }}
+                />
+              </label>
+              <button
+                type="button"
+                className="hero-quick-btn scale-active"
+                onClick={() => setShowGalleryModal(true)}
+              >
+                <span>Galereya</span>
+              </button>
+              {profileAvatar && (
+                <button
+                  type="button"
+                  className="hero-quick-remove-btn"
+                  onClick={() => setProfileAvatar('')}
+                >
+                  Suratni olib tashlash
+                </button>
+              )}
             </div>
           </div>
         </div>
 
-        <div className="hero-right-actions">
-          <div className="hero-sync-box">
-            <div className="sync-box-status">
-              <span className={`sync-dot ${(isSyncing || syncStatus === 'saving') ? 'saving' : syncStatus}`} />
-              <strong>
-                {(isSyncing || syncStatus === 'saving')
-                  ? 'Sinxronizatsiya qilinmoqda...'
-                  : syncStatus === 'offline'
-                    ? 'Oflayn (Internet yo\'q)'
-                    : 'Supabase bilan to\'liq sinxron'}
-              </strong>
-            </div>
-          </div>
+        {/* Hero Right Actions: Single Save button for profile */}
+        <div className="hero-actions-cluster">
+          {activeTab === 'profile' && (
+            <button
+              type="button"
+              className="hero-primary-save-btn scale-active"
+              onClick={handleSaveProfile}
+              disabled={isSavingProfile}
+              title="O'zgarishlarni saqlash (Ctrl+S / Cmd+S)"
+            >
+              {isSavingProfile ? (
+                <>
+                  <span className="btn-spinner" />
+                  <span>Saqlanmoqda...</span>
+                </>
+              ) : (
+                <>
+                  <IconCheck size={15} />
+                  <span>Saqlash</span>
+                </>
+              )}
+            </button>
+          )}
 
           <button
             type="button"
-            className="btn btn-danger scale-active hero-logout-btn"
+            className="hero-danger-logout-btn scale-active"
             onClick={onLogout}
+            title="Tizimdan chiqish"
           >
             <IconLogOut size={15} />
             <span>Chiqish</span>
@@ -696,327 +888,279 @@ const Settings = ({
       {/* Tab 0: Ustoz Shaxsiy Portfoliosi va Profili */}
       {activeTab === 'profile' && (
         <div className="settings-tab-content fade-in">
-          {/* 1. Asosiy Ma'lumotlar Card */}
-          <section className="glass-card settings-card">
-            <div className="card-header-flex">
-              <div>
-                <h3 className="card-title">Ustoz Profili va Vizitkasi</h3>
-                <p className="card-desc">
-                  Ushbu ma'lumotlar studentlar tizimiga kirganda ularning Asosiy sahifasida ko'rinadi
-                </p>
-              </div>
-              <button
-                type="button"
-                className="save-profile-header-btn"
-                onClick={handleSaveProfile}
-                disabled={isSavingProfile}
-              >
-                {isSavingProfile ? "Saqlanmoqda..." : "💾 Saqlash"}
-              </button>
-            </div>
+          <div className="profile-workspace-layout">
+            {/* Left Column: Form & Portfolio Editor */}
+            <div className="profile-editor-column">
+              {/* Section 1: Asosiy Ma'lumotlar */}
+              <section className="glass-card modern-profile-card">
+                <div className="card-header-clean">
+                  <div className="card-header-icon-wrap user-icon-wrap">
+                    <IconUser size={18} />
+                  </div>
+                  <div>
+                    <h3 className="card-title">Asosiy ma'lumotlar</h3>
+                  </div>
+                </div>
 
-            {/* Avatar Section */}
-            <div className="profile-edit-avatar-section">
-              <div className="profile-edit-avatar-preview">
-                {renderAvatar(profileAvatar || '👤', 76)}
-              </div>
-              <div className="profile-edit-avatar-actions">
-                <span className="profile-edit-avatar-label">Profil surati / Avatari</span>
-                <div className="profile-avatar-buttons-row">
-                  <label className="profile-avatar-upload-btn">
-                    <span>📁 Rasm yuklash</span>
+                <div className="profile-fields-grid">
+                  <div className="profile-field-item">
+                    <label className="input-field-label">
+                      <IconUser size={12} />
+                      <span>Ism va Familiya *</span>
+                    </label>
                     <input
-                      type="file"
-                      accept="image/*"
-                      onChange={handleAvatarFileUpload}
-                      style={{ display: 'none' }}
+                      type="text"
+                      className="modern-text-input"
+                      placeholder="Masalan: Bekzod Raxmonov"
+                      value={profileFullName}
+                      onChange={(e) => {
+                        setProfileFullName(e.target.value);
+                        isUserDirtyRef.current = true;
+                      }}
                     />
-                  </label>
-                  <button
-                    type="button"
-                    className="profile-avatar-gallery-btn"
-                    onClick={() => setShowGalleryModal(true)}
-                  >
-                    🎨 Galereyadan tanlash
-                  </button>
-                </div>
-                {profileAvatar && (
-                  <button
-                    type="button"
-                    className="profile-avatar-remove-btn"
-                    onClick={() => setProfileAvatar('')}
-                  >
-                    Suratni olib tashlash
-                  </button>
-                )}
-              </div>
-            </div>
-
-            {/* Inputs Grid */}
-            <div className="profile-fields-grid">
-              <div className="profile-field-item">
-                <label className="input-field-label">Ism va Familiya *</label>
-                <input
-                  type="text"
-                  className="modern-text-input"
-                  placeholder="Masalan: Bekzod Raxmonov"
-                  value={profileFullName}
-                  onChange={(e) => setProfileFullName(e.target.value)}
-                />
-              </div>
-
-              <div className="profile-field-item">
-                <label className="input-field-label">Mutaxassislik / Unvon</label>
-                <input
-                  type="text"
-                  className="modern-text-input"
-                  placeholder="Masalan: Katta Matematika va Mantiq ustozi"
-                  value={profileTitle}
-                  onChange={(e) => setProfileTitle(e.target.value)}
-                />
-              </div>
-
-              <div className="profile-field-item full-width">
-                <label className="input-field-label">O'qigan joyi (Universitet / Ta'lim)</label>
-                <input
-                  type="text"
-                  className="modern-text-input"
-                  placeholder="Masalan: O'zbekiston Milliy Universiteti, Magistratura"
-                  value={profileEducation}
-                  onChange={(e) => setProfileEducation(e.target.value)}
-                />
-              </div>
-
-              <div className="profile-field-item full-width">
-                <label className="input-field-label">Motivatsion shior / Fikringiz</label>
-                <textarea
-                  className="modern-textarea-input"
-                  rows={2}
-                  placeholder="O'quvchilaringizga ilhom beruvchi shior yoki fikringiz..."
-                  value={profileMotto}
-                  onChange={(e) => setProfileMotto(e.target.value)}
-                />
-              </div>
-            </div>
-          </section>
-
-          {/* 2. Yutuqlar va Tajriba (Achievements) */}
-          <section className="glass-card settings-card">
-            <div className="card-header-flex">
-              <div>
-                <h3 className="card-title">🏆 Yutuqlar va Tajriba</h3>
-                <p className="card-desc">
-                  O'quvchilarga taqdim etiladigan asosiy yutuqlar, nishonlar va tajriba yillari
-                </p>
-              </div>
-            </div>
-
-            {/* Existing achievements list */}
-            <div className="achievements-editor-chips-wrap">
-              {profileAchievements.map((ach, idx) => (
-                <span key={idx} className="achievement-edit-pill">
-                  <span>✨ {ach}</span>
-                  <button
-                    type="button"
-                    className="achievement-remove-x"
-                    onClick={() => handleRemoveAchievement(idx)}
-                    aria-label="O'chirish"
-                  >
-                    ✕
-                  </button>
-                </span>
-              ))}
-              {profileAchievements.length === 0 && (
-                <span className="achievements-empty-hint">
-                  Hali yutuqlar qo'shilmadi. Quyidan yozing yoki tavsiyalardan tanlang!
-                </span>
-              )}
-            </div>
-
-            {/* Add new achievement row */}
-            <form onSubmit={handleAddAchievement} className="add-achievement-row">
-              <input
-                type="text"
-                className="modern-text-input flex-1"
-                placeholder="Yangi yutuq (masalan: 6+ yil tajriba)"
-                value={newAchievementText}
-                onChange={(e) => setNewAchievementText(e.target.value)}
-              />
-              <button
-                type="submit"
-                className="add-achievement-submit-btn"
-                disabled={!newAchievementText.trim()}
-              >
-                + Qo'shish
-              </button>
-            </form>
-
-            {/* Fast-pick recommendations */}
-            <div className="achievement-suggestions-block">
-              <span className="suggestions-label">Tezkor tavsiyalar:</span>
-              <div className="suggestions-chips-row">
-                {[
-                  "5+ yil tajriba",
-                  "500+ bitiruvchilar",
-                  "IELTS 8.5",
-                  "Xalqaro olimpiada murabbiyi",
-                  "Magistr darajasi",
-                  "Top universitetlar talabasi",
-                  "Sertifikatlangan mutaxassis"
-                ].map((sug, i) => (
-                  <button
-                    key={i}
-                    type="button"
-                    className="suggestion-chip-btn"
-                    onClick={() => handleAddSuggestedAchievement(sug)}
-                  >
-                    + {sug}
-                  </button>
-                ))}
-              </div>
-            </div>
-          </section>
-
-          {/* 3. Sertifikatlar va Diplomlar Galereyasi */}
-          <section className="glass-card settings-card">
-            <div className="card-header-flex">
-              <div>
-                <h3 className="card-title">📜 Sertifikat va Diplomlar</h3>
-                <p className="card-desc">
-                  Erishgan sertifikat, diplom yoki tashakkurnomalaringiz
-                </p>
-              </div>
-              <button
-                type="button"
-                className="add-cert-trigger-btn"
-                onClick={() => setShowAddCertModal(true)}
-              >
-                + Sertifikat qo'shish
-              </button>
-            </div>
-
-            <div className="certificates-edit-grid">
-              {profileCertificates.map((cert, index) => (
-                <div key={cert.id || index} className="cert-edit-item-card">
-                  <div className="cert-edit-thumbnail">
-                    {cert.image ? (
-                      <img src={cert.image} alt={cert.title || 'Sertifikat'} />
-                    ) : (
-                      <span className="cert-placeholder-emoji">📜</span>
-                    )}
                   </div>
-                  <div className="cert-edit-details">
-                    <h5 className="cert-edit-title">{cert.title || "Nomsiz sertifikat"}</h5>
-                    {cert.year && <span className="cert-edit-year">{cert.year}</span>}
+
+                  <div className="profile-field-item">
+                    <label className="input-field-label">
+                      <IconBriefcase size={12} />
+                      <span>Mutaxassislik / Unvon</span>
+                    </label>
+                    <input
+                      type="text"
+                      className="modern-text-input"
+                      placeholder="Masalan: Katta Matematika va Mantiq ustozi"
+                      value={profileTitle}
+                      onChange={(e) => {
+                        setProfileTitle(e.target.value);
+                        isUserDirtyRef.current = true;
+                      }}
+                    />
+                  </div>
+
+                  <div className="profile-field-item full-width">
+                    <label className="input-field-label">
+                      <IconGraduation size={12} />
+                      <span>O'qigan joyi (Universitet / Ta'lim)</span>
+                    </label>
+                    <input
+                      type="text"
+                      className="modern-text-input"
+                      placeholder="Masalan: O'zbekiston Milliy Universiteti, Magistratura"
+                      value={profileEducation}
+                      onChange={(e) => {
+                        setProfileEducation(e.target.value);
+                        isUserDirtyRef.current = true;
+                      }}
+                    />
+                  </div>
+
+                  <div className="profile-field-item full-width">
+                    <label className="input-field-label">
+                      <IconQuote size={12} />
+                      <span>Motivatsion shior / Fikringiz</span>
+                    </label>
+                    <textarea
+                      className="modern-textarea-input"
+                      rows={2}
+                      placeholder="O'quvchilaringizga ilhom beruvchi shior yoki fikringiz..."
+                      value={profileMotto}
+                      onChange={(e) => {
+                        setProfileMotto(e.target.value);
+                        isUserDirtyRef.current = true;
+                      }}
+                    />
+                  </div>
+                </div>
+              </section>
+
+              {/* Section 2: Ijtimoiy Tarmoqlar va Aloqa */}
+              <section className="glass-card modern-profile-card">
+                <div className="card-header-clean">
+                  <div className="card-header-icon-wrap social-icon-wrap">
+                    <IconSend size={17} />
+                  </div>
+                  <div>
+                    <h3 className="card-title">Ijtimoiy tarmoqlar va Aloqa</h3>
+                  </div>
+                </div>
+
+                <div className="social-inputs-grid">
+                  <div className="social-input-item">
+                    <label className="input-field-label">
+                      <IconSend size={12} />
+                      <span>Telegram (username yoki kanal)</span>
+                    </label>
+                    <div className="social-input-wrap">
+                      <span className="social-input-prefix tg-prefix">@</span>
+                      <input
+                        type="text"
+                        className="social-clean-input"
+                        placeholder="username yoki t.me/havola"
+                        value={profileTelegram}
+                        onChange={(e) => {
+                          setProfileTelegram(e.target.value);
+                          isUserDirtyRef.current = true;
+                        }}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="social-input-item">
+                    <label className="input-field-label">
+                      <IconInstagram size={12} />
+                      <span>Instagram (username)</span>
+                    </label>
+                    <div className="social-input-wrap">
+                      <span className="social-input-prefix ig-prefix">@</span>
+                      <input
+                        type="text"
+                        className="social-clean-input"
+                        placeholder="username"
+                        value={profileInstagram}
+                        onChange={(e) => {
+                          setProfileInstagram(e.target.value);
+                          isUserDirtyRef.current = true;
+                        }}
+                      />
+                    </div>
+                  </div>
+                </div>
+              </section>
+
+              {/* Section 3: Yutuqlar va Tajriba */}
+              <section className="glass-card modern-profile-card">
+                <div className="card-header-clean">
+                  <div className="card-header-icon-wrap sparkles-icon-wrap">
+                    <IconSparkles size={17} />
+                  </div>
+                  <div>
+                    <h3 className="card-title">Yutuqlar va Tajriba</h3>
+                  </div>
+                </div>
+
+                {/* Existing achievements list */}
+                <div className="achievements-editor-chips-wrap">
+                  {profileAchievements.map((ach, idx) => (
+                    <span key={idx} className="achievement-edit-pill">
+                      <span>{ach}</span>
+                      <button
+                        type="button"
+                        className="achievement-remove-x"
+                        onClick={() => handleRemoveAchievement(idx)}
+                        aria-label="O'chirish"
+                        title="O'chirish"
+                      >
+                        ✕
+                      </button>
+                    </span>
+                  ))}
+                </div>
+
+                {/* Add new achievement row */}
+                <form onSubmit={handleAddAchievement} className="add-achievement-row">
+                  <input
+                    type="text"
+                    className="modern-text-input flex-1"
+                    placeholder="Yangi yutuq (masalan: 6+ yil tajriba)"
+                    value={newAchievementText}
+                    onChange={(e) => setNewAchievementText(e.target.value)}
+                  />
+                  <button
+                    type="submit"
+                    className="add-achievement-submit-btn scale-active"
+                    disabled={!newAchievementText.trim()}
+                  >
+                    <IconPlus size={14} />
+                    <span>Qo'shish</span>
+                  </button>
+                </form>
+
+                {/* Fast-pick recommendations */}
+                <div className="achievement-suggestions-block">
+                  <span className="suggestions-label">Tezkor tavsiyalar (bosib qo'shing):</span>
+                  <div className="suggestions-chips-row">
+                    {[
+                      "5+ yil tajriba",
+                      "500+ bitiruvchilar",
+                      "IELTS 8.5",
+                      "Xalqaro olimpiada murabbiyi",
+                      "Magistr darajasi",
+                      "Top universitetlar talabasi",
+                      "Sertifikatlangan mutaxassis"
+                    ].map((sug, i) => (
+                      <button
+                        key={i}
+                        type="button"
+                        className="suggestion-chip-btn scale-active"
+                        onClick={() => handleAddSuggestedAchievement(sug)}
+                      >
+                        <IconPlus size={11} />
+                        <span>{sug}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </section>
+
+              {/* Section 4: Sertifikatlar va Diplomlar */}
+              <section className="glass-card modern-profile-card">
+                <div className="card-header-flex">
+                  <div className="card-header-clean" style={{ margin: 0 }}>
+                    <div className="card-header-icon-wrap cert-icon-wrap">
+                      <IconAward size={18} />
+                    </div>
+                    <div>
+                      <h3 className="card-title">Sertifikat va Diplomlar</h3>
+                    </div>
                   </div>
                   <button
                     type="button"
-                    className="cert-edit-delete-btn"
-                    onClick={() => handleRemoveCertificate(index)}
-                    title="O'chirish"
-                  >
-                    ✕
-                  </button>
-                </div>
-              ))}
-              {profileCertificates.length === 0 && (
-                <div className="certificates-empty-box">
-                  <span className="empty-icon">📜</span>
-                  <p>Hozircha sertifikatlar qo'shilmagan.</p>
-                  <button
-                    type="button"
-                    className="add-first-cert-btn"
+                    className="add-cert-trigger-btn scale-active"
                     onClick={() => setShowAddCertModal(true)}
                   >
-                    + Birinchi sertifikatni qo'shish
+                    <IconPlus size={13} />
+                    <span>Sertifikat qo'shish</span>
                   </button>
                 </div>
-              )}
-            </div>
-          </section>
 
-          {/* 4. Ijtimoiy Tarmoqlar */}
-          <section className="glass-card settings-card">
-            <div className="card-header-flex">
-              <div>
-                <h3 className="card-title">💬 Ijtimoiy Tarmoqlar va Aloqa</h3>
-                <p className="card-desc">
-                  O'quvchilar siz bilan bog'lanishi yoki kanalingizga a'zo bo'lishi uchun havolalar
-                </p>
-              </div>
-            </div>
+                <div className="certificates-edit-grid">
+                  {profileCertificates.map((cert, index) => (
+                    <div key={cert.id || index} className="cert-edit-item-card">
+                      <div className="cert-edit-thumbnail">
+                        {cert.image ? (
+                          <img src={cert.image} alt={cert.title || 'Sertifikat'} />
+                        ) : (
+                          <span className="cert-placeholder-emoji">📜</span>
+                        )}
+                      </div>
+                      <div className="cert-edit-details">
+                        <h5 className="cert-edit-title">{cert.title || "Nomsiz sertifikat"}</h5>
+                        {cert.year && <span className="cert-edit-year">{cert.year}</span>}
+                      </div>
+                      <button
+                        type="button"
+                        className="cert-edit-delete-btn"
+                        onClick={() => handleRemoveCertificate(index)}
+                        title="O'chirish"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  ))}
 
-            <div className="social-inputs-grid">
-              <div className="social-input-item">
-                <label className="input-field-label">Telegram (username yoki kanal)</label>
-                <div className="social-input-wrap">
-                  <span className="social-input-prefix">@</span>
-                  <input
-                    type="text"
-                    className="social-clean-input"
-                    placeholder="username yoki t.me/havola"
-                    value={profileTelegram}
-                    onChange={(e) => setProfileTelegram(e.target.value)}
-                  />
+                  <button
+                    type="button"
+                    className="cert-add-dashed-card scale-active"
+                    onClick={() => setShowAddCertModal(true)}
+                  >
+                    <div className="cert-add-icon-circle">
+                      <IconPlus size={18} />
+                    </div>
+                    <span className="cert-add-text">Yangi sertifikat qo'shish</span>
+                  </button>
                 </div>
-              </div>
-
-              <div className="social-input-item">
-                <label className="input-field-label">Instagram (username)</label>
-                <div className="social-input-wrap">
-                  <span className="social-input-prefix">@</span>
-                  <input
-                    type="text"
-                    className="social-clean-input"
-                    placeholder="username"
-                    value={profileInstagram}
-                    onChange={(e) => setProfileInstagram(e.target.value)}
-                  />
-                </div>
-              </div>
+              </section>
             </div>
-          </section>
-
-          {/* 5. Jonli Ko'rinish (Live Preview) */}
-          <section className="glass-card settings-card live-preview-section">
-            <div className="card-header-flex">
-              <div>
-                <h3 className="card-title">
-                  <span className="preview-live-indicator" /> Studentga qanday ko'rinadi (Jonli namoyish):
-                </h3>
-                <p className="card-desc">
-                  O'quvchi ushbu kartochkani ko'radi va ustiga bosganda to'liq vizitkangiz ochiladi
-                </p>
-              </div>
-            </div>
-
-            <div className="preview-container-box">
-              <StudentTeacherShowcase
-                teacherProfile={{
-                  fullName: profileFullName || "Ism Familiya",
-                  title: profileTitle || "Ustoz unvoni va mutaxassisligi",
-                  avatar: profileAvatar,
-                  education: profileEducation,
-                  motto: profileMotto,
-                  achievements: profileAchievements.length > 0 ? profileAchievements : ["5+ yil tajriba", "Sertifikatlangan ustoz"],
-                  certificates: profileCertificates,
-                  social: { telegram: profileTelegram, instagram: profileInstagram }
-                }}
-                isPreview={true}
-              />
-            </div>
-          </section>
-
-          {/* 6. Bottom Save Action Bar */}
-          <div className="settings-profile-sticky-footer">
-            <button
-              type="button"
-              className="settings-save-profile-large-btn"
-              onClick={handleSaveProfile}
-              disabled={isSavingProfile}
-            >
-              {isSavingProfile ? "Saqlanmoqda..." : "💾 O'zgarishlarni saqlash"}
-            </button>
           </div>
         </div>
       )}
@@ -1029,7 +1173,6 @@ const Settings = ({
             <div className="card-header-flex calc-header-clean">
               <div>
                 <h3 className="card-title" style={{ margin: 0 }}>Daromad hisobi</h3>
-                <span className="calc-header-sub">Oylik hisob-kitob</span>
               </div>
 
               {activeStudentsCount > 0 && (
@@ -1321,7 +1464,6 @@ const Settings = ({
             <div className="card-header-flex">
               <div>
                 <h3 className="card-title">Yangi Izoh Shabloni Qo'shish</h3>
-                <p className="card-desc">Baholash oynasida o'quvchilarga tezkor Like va sharh berish uchun shablon</p>
               </div>
             </div>
 
@@ -1456,7 +1598,6 @@ const Settings = ({
             <div className="card-header-flex">
               <div>
                 <h3 className="card-title">Faylli Zaxiralash (JSON Backup & Restore)</h3>
-                <p className="card-desc">Barcha guruhlar, talabalar, baholashlar va davomat tarixini JSON formatida eksport/import qilish</p>
               </div>
             </div>
 
@@ -1923,7 +2064,6 @@ const Settings = ({
                   </div>
                 ) : (
                   <label className="cert-dropzone-label">
-                    <span className="dropzone-icon">📷</span>
                     <span className="dropzone-text">Sertifikat rasmini yuklang</span>
                     <span className="dropzone-sub">PNG, JPG, WEBP (maks. 3MB)</span>
                     <input
@@ -2104,59 +2244,104 @@ const Settings = ({
           color: var(--apple-red);
         }
 
-        /* Hero Banner */
-        .settings-hero-banner {
+        /* Modern Hero Identity Banner */
+        .modern-hero-identity-card {
           display: flex;
           justify-content: space-between;
           align-items: center;
-          padding: 18px 24px;
+          padding: 22px 28px;
           background: #FFFFFF;
           border: 1px solid rgba(0, 0, 0, 0.06);
-          border-radius: var(--radius-lg);
-          box-shadow: var(--shadow-sm);
-          margin-bottom: 22px;
-          gap: 18px;
+          border-radius: 20px;
+          box-shadow: 0 4px 24px rgba(0, 0, 0, 0.03);
+          margin-bottom: 24px;
+          gap: 20px;
           flex-wrap: wrap;
         }
 
-        .hero-left-profile {
+        .hero-identity-main {
           display: flex;
-          align-items: center;
-          gap: 14px;
+          align-items: flex-start;
+          gap: 20px;
+          flex: 1;
+          min-width: 280px;
         }
 
-        .profile-avatar-box {
-          width: 48px;
-          height: 48px;
-          background: #1D1D1F;
-          color: #FFFFFF;
-          border-radius: 50%;
-          overflow: hidden;
-          box-shadow: var(--shadow-sm);
-          display: flex;
-          align-items: center;
-          justify-content: center;
+        .hero-avatar-wrapper {
+          position: relative;
+          width: 82px;
+          height: 82px;
           flex-shrink: 0;
         }
 
-        .profile-avatar-box img {
+        .hero-avatar-disc {
+          width: 82px;
+          height: 82px;
+          border-radius: 50%;
+          overflow: hidden;
+          background: #F5F5F7;
+          border: 2px solid rgba(0, 0, 0, 0.08);
+          box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
+          transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .hero-avatar-disc:hover {
+          transform: scale(1.02);
+          box-shadow: 0 6px 18px rgba(0, 0, 0, 0.12);
+        }
+
+        .hero-avatar-disc img {
           width: 100%;
           height: 100%;
           object-fit: cover;
-          border-radius: 50%;
           display: block;
         }
 
-        .profile-role-row {
+        .hero-avatar-camera-btn {
+          position: absolute;
+          bottom: -2px;
+          right: -2px;
+          width: 28px;
+          height: 28px;
+          border-radius: 50%;
+          background: var(--apple-blue, #0071E3);
+          color: #FFFFFF;
+          border: 2.5px solid #FFFFFF;
           display: flex;
           align-items: center;
-          gap: 8px;
-          margin-bottom: 3px;
+          justify-content: center;
+          cursor: pointer;
+          box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+          transition: transform 0.15s ease, background 0.15s ease;
+        }
+
+        .hero-avatar-camera-btn:hover {
+          background: #0077ED;
+          transform: scale(1.08);
+        }
+
+        .hero-identity-details {
+          display: flex;
+          flex-direction: column;
+          gap: 6px;
+          min-width: 0;
+          flex: 1;
+        }
+
+        .hero-role-row {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          flex-wrap: wrap;
         }
 
         .role-pill-badge {
           display: inline-block;
-          padding: 2px 8px;
+          padding: 2px 9px;
           background: #1D1D1F;
           color: #FFFFFF;
           font-size: 0.68rem;
@@ -2166,71 +2351,145 @@ const Settings = ({
           letter-spacing: 0.5px;
         }
 
-        .stats-mini-summary {
-          font-size: 0.78rem;
+        .hero-sync-pill {
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          padding: 2px 9px;
+          background: #F5F5F7;
+          border: 1px solid rgba(0, 0, 0, 0.05);
+          border-radius: var(--radius-full);
+          font-size: 0.72rem;
+          font-weight: 600;
           color: var(--text-secondary);
+        }
+
+        .sync-dot {
+          width: 7px;
+          height: 7px;
+          border-radius: 50%;
+          background: #10B981;
+          display: inline-block;
+          flex-shrink: 0;
+        }
+
+        .sync-dot.saving {
+          background: #F59E0B;
+          animation: pulse 1.2s infinite;
+        }
+
+        .sync-dot.offline {
+          background: #EF4444;
+        }
+
+        .hero-teacher-name {
+          font-size: 1.45rem;
+          font-weight: 800;
+          color: var(--text-primary);
+          letter-spacing: -0.02em;
+          margin: 0;
+          line-height: 1.25;
+        }
+
+        .hero-teacher-title {
+          font-size: 0.88rem;
+          color: var(--text-secondary);
+          margin: 0;
+          line-height: 1.35;
           font-weight: 500;
         }
 
-        .profile-name {
-          font-size: 1.12rem;
-          font-weight: 700;
-          color: var(--text-primary);
-          letter-spacing: -0.01em;
-          margin: 0;
+
+        .hero-avatar-actions-quick {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          margin-top: 6px;
+          flex-wrap: wrap;
         }
 
-        .hero-right-actions {
+        .hero-quick-btn {
+          display: inline-flex;
+          align-items: center;
+          gap: 5px;
+          padding: 4px 10px;
+          font-size: 0.76rem;
+          font-weight: 600;
+          border-radius: var(--radius-sm, 7px);
+          background: #F5F5F7;
+          border: 1px solid rgba(0, 0, 0, 0.08);
+          color: var(--text-primary);
+          cursor: pointer;
+          transition: all 0.15s ease;
+        }
+
+        .hero-quick-btn:hover {
+          background: #E8EAED;
+          border-color: rgba(0, 0, 0, 0.15);
+        }
+
+        .hero-quick-remove-btn {
+          background: none;
+          border: none;
+          color: var(--apple-red, #EF4444);
+          font-size: 0.74rem;
+          font-weight: 600;
+          cursor: pointer;
+          padding: 2px 4px;
+          text-decoration: underline;
+        }
+
+        .hero-actions-cluster {
           display: flex;
           align-items: center;
           gap: 10px;
           flex-wrap: wrap;
         }
 
-        .hero-sync-box {
-          display: flex;
-          align-items: center;
-          padding: 8px 14px;
-          background: #F5F5F7;
-          border-radius: var(--radius-md);
-          border: 1px solid rgba(0, 0, 0, 0.04);
-        }
-
-        .sync-box-status {
-          display: flex;
-          align-items: center;
-          gap: 7px;
-          font-size: 0.8rem;
-          font-weight: 600;
-          color: var(--text-primary);
-        }
-
-        .sync-dot {
-          width: 8px;
-          height: 8px;
-          border-radius: 50%;
-          background: var(--apple-green);
-          display: inline-block;
-          flex-shrink: 0;
-        }
-
-        .sync-dot.saving {
-          background: var(--apple-orange);
-          animation: pulse 1.2s infinite;
-        }
-
-        .sync-dot.offline {
-          background: var(--apple-red);
-        }
-
-        .hero-logout-btn {
+        .hero-primary-save-btn {
           display: inline-flex;
           align-items: center;
           gap: 6px;
-          padding: 8px 16px;
-          font-size: 0.82rem;
+          padding: 9px 18px;
+          background: var(--apple-blue, #0071E3);
+          color: #FFFFFF;
+          border: none;
+          border-radius: 10px;
+          font-size: 0.84rem;
+          font-weight: 700;
+          cursor: pointer;
+          box-shadow: 0 2px 8px rgba(0, 113, 227, 0.25);
+          transition: all 0.18s ease;
+        }
+
+        .hero-primary-save-btn:hover:not(:disabled) {
+          opacity: 0.92;
+          box-shadow: 0 4px 12px rgba(0, 113, 227, 0.35);
+        }
+
+        .hero-primary-save-btn:disabled {
+          opacity: 0.6;
+          cursor: not-allowed;
+        }
+
+        .hero-danger-logout-btn {
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          padding: 9px 16px;
+          background: #FEF2F2;
+          color: #DC2626;
+          border: 1px solid #FECACA;
+          border-radius: 10px;
+          font-size: 0.84rem;
           font-weight: 600;
-          border-radius: var(--radius-md);
+          cursor: pointer;
+          transition: all 0.18s ease;
+        }
+
+        .hero-danger-logout-btn:hover {
+          background: #FEE2E2;
+          border-color: #FCA5A5;
         }
 
         /* Tab Content Containers */
@@ -2898,118 +3157,70 @@ const Settings = ({
           margin: 0;
         }
 
-        /* Profile & Showcase Editor Styles */
-        .save-profile-header-btn {
-          background: var(--apple-blue, #0071E3);
-          color: #FFFFFF;
-          border: none;
-          border-radius: var(--radius-full, 9999px);
-          padding: 8px 18px;
-          font-size: 0.82rem;
-          font-weight: 600;
-          cursor: pointer;
-          transition: all var(--transition-fast, 0.2s ease);
-          display: inline-flex;
-          align-items: center;
-          gap: 6px;
-          box-shadow: 0 2px 6px rgba(0, 113, 227, 0.25);
+        /* Minimalist Profile Workspace Layout */
+        .profile-workspace-layout {
+          display: flex;
+          flex-direction: column;
+          gap: 20px;
+          width: 100%;
         }
 
-        .save-profile-header-btn:hover:not(:disabled) {
-          opacity: 0.92;
-          transform: translateY(-1px);
+        .profile-editor-column {
+          display: flex;
+          flex-direction: column;
+          gap: 20px;
+          width: 100%;
+          min-width: 0;
         }
 
-        .save-profile-header-btn:disabled {
-          opacity: 0.6;
-          cursor: not-allowed;
+        .modern-profile-card {
+          padding: 22px 24px;
+          background: #FFFFFF;
+          border: 1px solid rgba(0, 0, 0, 0.06);
+          border-radius: 18px;
+          box-shadow: 0 2px 12px rgba(0, 0, 0, 0.02);
+          transition: border-color 0.2s ease, box-shadow 0.2s ease;
         }
 
-        .profile-edit-avatar-section {
+        .modern-profile-card:hover {
+          border-color: rgba(0, 0, 0, 0.1);
+        }
+
+        .card-header-clean {
           display: flex;
           align-items: center;
-          gap: 20px;
-          padding: 16px 20px;
-          background: #FAFAFC;
-          border: 1px solid rgba(0, 0, 0, 0.05);
-          border-radius: var(--radius-md, 12px);
-          margin-bottom: 20px;
-          flex-wrap: wrap;
+          gap: 12px;
+          margin-bottom: 18px;
         }
 
-        .profile-edit-avatar-preview {
-          width: 76px;
-          height: 76px;
-          border-radius: 50%;
-          overflow: hidden;
-          background: #FFFFFF;
-          border: 2px solid rgba(0, 0, 0, 0.08);
-          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+        .card-header-icon-wrap {
+          width: 38px;
+          height: 38px;
+          border-radius: 10px;
           display: flex;
           align-items: center;
           justify-content: center;
           flex-shrink: 0;
         }
 
-        .profile-edit-avatar-preview img {
-          width: 100%;
-          height: 100%;
-          object-fit: cover;
+        .card-header-icon-wrap.user-icon-wrap {
+          background: rgba(0, 113, 227, 0.1);
+          color: #0071E3;
         }
 
-        .profile-edit-avatar-actions {
-          display: flex;
-          flex-direction: column;
-          gap: 8px;
-          flex: 1;
-          min-width: 200px;
+        .card-header-icon-wrap.social-icon-wrap {
+          background: rgba(14, 165, 233, 0.1);
+          color: #0284C7;
         }
 
-        .profile-edit-avatar-label {
-          font-size: 0.85rem;
-          font-weight: 700;
-          color: var(--text-primary);
+        .card-header-icon-wrap.sparkles-icon-wrap {
+          background: rgba(245, 158, 11, 0.12);
+          color: #D97706;
         }
 
-        .profile-avatar-buttons-row {
-          display: flex;
-          align-items: center;
-          gap: 8px;
-          flex-wrap: wrap;
-        }
-
-        .profile-avatar-upload-btn,
-        .profile-avatar-gallery-btn {
-          display: inline-flex;
-          align-items: center;
-          gap: 6px;
-          padding: 7px 14px;
-          font-size: 0.8rem;
-          font-weight: 600;
-          border-radius: var(--radius-sm, 8px);
-          background: #FFFFFF;
-          border: 1px solid rgba(0, 0, 0, 0.12);
-          color: var(--text-primary);
-          cursor: pointer;
-          transition: all var(--transition-fast, 0.2s ease);
-        }
-
-        .profile-avatar-upload-btn:hover,
-        .profile-avatar-gallery-btn:hover {
-          background: #F5F5F7;
-          border-color: rgba(0, 0, 0, 0.2);
-        }
-
-        .profile-avatar-remove-btn {
-          align-self: flex-start;
-          background: none;
-          border: none;
-          color: var(--apple-red, #EF4444);
-          font-size: 0.76rem;
-          font-weight: 600;
-          cursor: pointer;
-          padding: 2px 0;
-          text-decoration: underline;
+        .card-header-icon-wrap.cert-icon-wrap {
+          background: rgba(16, 185, 129, 0.12);
+          color: #059669;
         }
 
         .profile-fields-grid {
@@ -3021,11 +3232,21 @@ const Settings = ({
         .profile-field-item {
           display: flex;
           flex-direction: column;
-          gap: 4px;
+          gap: 5px;
         }
 
         .profile-field-item.full-width {
           grid-column: 1 / -1;
+        }
+
+        .input-field-label {
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          font-size: 0.78rem;
+          font-weight: 600;
+          color: var(--text-secondary);
+          margin-bottom: 2px;
         }
 
         .modern-text-input,
@@ -3037,7 +3258,7 @@ const Settings = ({
           color: var(--text-primary);
           background: #FFFFFF;
           border: 1px solid rgba(0, 0, 0, 0.12);
-          border-radius: var(--radius-sm, 8px);
+          border-radius: var(--radius-sm, 9px);
           outline: none;
           box-sizing: border-box;
           transition: border-color var(--transition-fast, 0.2s ease), box-shadow var(--transition-fast, 0.2s ease);
@@ -3051,7 +3272,67 @@ const Settings = ({
 
         .modern-textarea-input {
           resize: vertical;
-          min-height: 60px;
+          min-height: 64px;
+          line-height: 1.45;
+        }
+
+        /* Social Inputs */
+        .social-inputs-grid {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 14px;
+        }
+
+        .social-input-item {
+          display: flex;
+          flex-direction: column;
+          gap: 5px;
+        }
+
+        .social-input-wrap {
+          display: flex;
+          align-items: center;
+          background: #FFFFFF;
+          border: 1px solid rgba(0, 0, 0, 0.12);
+          border-radius: var(--radius-sm, 9px);
+          overflow: hidden;
+          transition: border-color var(--transition-fast, 0.2s ease), box-shadow var(--transition-fast, 0.2s ease);
+        }
+
+        .social-input-wrap:focus-within {
+          border-color: var(--apple-blue, #0071E3);
+          box-shadow: 0 0 0 3px rgba(0, 113, 227, 0.12);
+        }
+
+        .social-input-prefix {
+          padding: 9px 12px;
+          background: #F5F5F7;
+          color: var(--text-secondary);
+          font-weight: 700;
+          font-size: 0.85rem;
+          border-right: 1px solid rgba(0, 0, 0, 0.08);
+          user-select: none;
+        }
+
+        .social-input-prefix.tg-prefix {
+          color: #0284C7;
+          background: rgba(14, 165, 233, 0.08);
+        }
+
+        .social-input-prefix.ig-prefix {
+          color: #E1306C;
+          background: rgba(225, 48, 108, 0.08);
+        }
+
+        .social-clean-input {
+          flex: 1;
+          border: none;
+          outline: none;
+          padding: 9px 12px;
+          font-size: 0.86rem;
+          font-family: inherit;
+          color: var(--text-primary);
+          background: transparent;
         }
 
         /* Achievements Editor */
@@ -3062,7 +3343,7 @@ const Settings = ({
           padding: 12px 14px;
           background: #FAFAFC;
           border: 1px solid rgba(0, 0, 0, 0.05);
-          border-radius: var(--radius-md, 10px);
+          border-radius: var(--radius-md, 12px);
           margin-bottom: 14px;
           min-height: 48px;
           align-items: center;
@@ -3080,6 +3361,11 @@ const Settings = ({
           border-radius: var(--radius-full, 9999px);
           color: var(--text-primary);
           box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+          transition: transform 0.15s ease;
+        }
+
+        .achievement-edit-pill:hover {
+          transform: translateY(-1px);
         }
 
         .achievement-remove-x {
@@ -3115,11 +3401,14 @@ const Settings = ({
         }
 
         .add-achievement-submit-btn {
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
           padding: 10px 18px;
           background: var(--apple-blue, #0071E3);
           color: #FFFFFF;
           border: none;
-          border-radius: var(--radius-sm, 8px);
+          border-radius: var(--radius-sm, 9px);
           font-weight: 600;
           font-size: 0.82rem;
           cursor: pointer;
@@ -3128,7 +3417,7 @@ const Settings = ({
         }
 
         .add-achievement-submit-btn:hover:not(:disabled) {
-          opacity: 0.9;
+          opacity: 0.92;
         }
 
         .add-achievement-submit-btn:disabled {
@@ -3139,7 +3428,7 @@ const Settings = ({
         .achievement-suggestions-block {
           display: flex;
           flex-direction: column;
-          gap: 6px;
+          gap: 7px;
         }
 
         .suggestions-label {
@@ -3155,7 +3444,10 @@ const Settings = ({
         }
 
         .suggestion-chip-btn {
-          padding: 4px 10px;
+          display: inline-flex;
+          align-items: center;
+          gap: 4px;
+          padding: 4px 11px;
           font-size: 0.76rem;
           font-weight: 600;
           background: #F5F5F7;
@@ -3170,11 +3462,15 @@ const Settings = ({
           background: #E8EAED;
           color: var(--apple-blue, #0071E3);
           border-color: rgba(0, 113, 227, 0.2);
+          transform: translateY(-1px);
         }
 
         /* Certificates Manager */
         .add-cert-trigger-btn {
-          padding: 7px 14px;
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          padding: 7px 15px;
           font-size: 0.8rem;
           font-weight: 600;
           background: #F0FDF4;
@@ -3191,7 +3487,7 @@ const Settings = ({
 
         .certificates-edit-grid {
           display: grid;
-          grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+          grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
           gap: 12px;
         }
 
@@ -3203,18 +3499,19 @@ const Settings = ({
           padding: 10px 14px;
           background: #FAFAFC;
           border: 1px solid rgba(0, 0, 0, 0.06);
-          border-radius: var(--radius-md, 10px);
-          transition: border-color var(--transition-fast, 0.2s ease);
+          border-radius: var(--radius-md, 12px);
+          transition: border-color var(--transition-fast, 0.2s ease), transform var(--transition-fast, 0.2s ease);
         }
 
         .cert-edit-item-card:hover {
           border-color: rgba(0, 0, 0, 0.15);
+          transform: translateY(-1px);
         }
 
         .cert-edit-thumbnail {
           width: 48px;
           height: 48px;
-          border-radius: var(--radius-sm, 6px);
+          border-radius: var(--radius-sm, 7px);
           overflow: hidden;
           background: #FFFFFF;
           border: 1px solid rgba(0, 0, 0, 0.06);
@@ -3273,148 +3570,54 @@ const Settings = ({
           background: rgba(239, 68, 68, 0.1);
         }
 
-        .certificates-empty-box {
-          grid-column: 1 / -1;
-          text-align: center;
-          padding: 24px 16px;
+        .cert-add-dashed-card {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          gap: 6px;
+          padding: 14px;
           background: #FAFAFC;
-          border: 1px dashed rgba(0, 0, 0, 0.12);
-          border-radius: var(--radius-md, 10px);
-          color: var(--text-secondary);
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          gap: 8px;
-        }
-
-        .certificates-empty-box .empty-icon {
-          font-size: 2rem;
-        }
-
-        .certificates-empty-box p {
-          margin: 0;
-          font-size: 0.84rem;
-        }
-
-        .add-first-cert-btn {
-          margin-top: 4px;
-          padding: 8px 16px;
-          font-size: 0.82rem;
-          font-weight: 600;
-          background: #FFFFFF;
-          border: 1px solid rgba(0, 0, 0, 0.12);
-          border-radius: var(--radius-full, 9999px);
+          border: 1.5px dashed rgba(0, 0, 0, 0.14);
+          border-radius: 12px;
           cursor: pointer;
-          color: var(--text-primary);
-          transition: all var(--transition-fast, 0.2s ease);
+          min-height: 72px;
+          transition: all 0.2s ease;
         }
 
-        .add-first-cert-btn:hover {
-          background: #F5F5F7;
-          border-color: rgba(0, 0, 0, 0.25);
+        .cert-add-dashed-card:hover {
+          background: rgba(0, 113, 227, 0.04);
+          border-color: var(--apple-blue, #0071E3);
+          color: var(--apple-blue, #0071E3);
         }
 
-        /* Social Inputs */
-        .social-inputs-grid {
-          display: grid;
-          grid-template-columns: 1fr 1fr;
-          gap: 14px;
-        }
-
-        .social-input-item {
-          display: flex;
-          flex-direction: column;
-          gap: 4px;
-        }
-
-        .social-input-wrap {
+        .cert-add-icon-circle {
+          width: 28px;
+          height: 28px;
+          border-radius: 50%;
+          background: rgba(0, 0, 0, 0.05);
           display: flex;
           align-items: center;
-          background: #FFFFFF;
-          border: 1px solid rgba(0, 0, 0, 0.12);
-          border-radius: var(--radius-sm, 8px);
-          overflow: hidden;
-          transition: border-color var(--transition-fast, 0.2s ease), box-shadow var(--transition-fast, 0.2s ease);
+          justify-content: center;
+          color: inherit;
         }
 
-        .social-input-wrap:focus-within {
-          border-color: var(--apple-blue, #0071E3);
-          box-shadow: 0 0 0 3px rgba(0, 113, 227, 0.12);
-        }
-
-        .social-input-prefix {
-          padding: 10px 12px;
-          background: #F5F5F7;
-          color: var(--text-secondary);
-          font-weight: 700;
-          font-size: 0.85rem;
-          border-right: 1px solid rgba(0, 0, 0, 0.08);
-        }
-
-        .social-clean-input {
-          flex: 1;
-          border: none;
-          outline: none;
-          padding: 10px 12px;
-          font-size: 0.88rem;
-          font-family: inherit;
-          color: var(--text-primary);
-          background: transparent;
-        }
-
-        /* Live Preview Container */
-        .live-preview-section {
-          border: 1px solid rgba(0, 113, 227, 0.2);
-          background: #FBFDFF;
-        }
-
-        .preview-live-indicator {
-          display: inline-block;
-          width: 9px;
-          height: 9px;
-          background: #10B981;
-          border-radius: 50%;
-          margin-right: 6px;
-          box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.2);
-          animation: pulse 1.8s infinite;
-        }
-
-        .preview-container-box {
-          padding: 16px;
-          background: #F5F5F7;
-          border-radius: var(--radius-md, 14px);
-          border: 1px solid rgba(0, 0, 0, 0.06);
-        }
-
-        /* Bottom Sticky Save Button */
-        .settings-profile-sticky-footer {
-          display: flex;
-          justify-content: flex-end;
-          padding: 16px 0 8px;
-        }
-
-        .settings-save-profile-large-btn {
-          padding: 13px 28px;
+        .cert-add-dashed-card:hover .cert-add-icon-circle {
           background: var(--apple-blue, #0071E3);
           color: #FFFFFF;
-          border: none;
-          border-radius: var(--radius-md, 12px);
-          font-size: 0.95rem;
-          font-weight: 700;
-          cursor: pointer;
-          transition: all var(--transition-fast, 0.2s ease);
-          box-shadow: 0 4px 14px rgba(0, 113, 227, 0.3);
         }
 
-        .settings-save-profile-large-btn:hover:not(:disabled) {
-          opacity: 0.92;
-          transform: translateY(-1px);
-          box-shadow: 0 6px 18px rgba(0, 113, 227, 0.35);
+        .cert-add-text {
+          font-size: 0.78rem;
+          font-weight: 600;
+          color: inherit;
         }
 
-        .settings-save-profile-large-btn:disabled {
-          opacity: 0.55;
-          cursor: not-allowed;
+        @media (max-width: 640px) {
+          .profile-fields-grid,
+          .social-inputs-grid {
+            grid-template-columns: 1fr;
+          }
         }
 
         /* Profile Dialogs (Certificates & Avatar Gallery) */
@@ -4137,35 +4340,45 @@ const Settings = ({
             padding: 12px;
           }
 
-          .settings-hero-banner {
+          .modern-hero-identity-card {
             flex-direction: column;
             align-items: stretch;
+            gap: 16px;
+            padding: 16px;
+          }
+
+          .hero-identity-main {
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
             gap: 14px;
-            padding: 14px 16px;
+            min-width: 0;
           }
 
-          .hero-left-profile {
-            gap: 12px;
+          .hero-identity-details {
+            align-items: center;
           }
 
-          .profile-role-row {
-            flex-direction: column;
-            align-items: flex-start;
-            gap: 4px;
-            margin-bottom: 0;
-          }
-
-          .hero-right-actions {
-            flex-direction: column;
-            align-items: stretch;
-            gap: 8px;
-          }
-
-          .hero-sync-box {
+          .hero-role-row {
             justify-content: center;
           }
 
-          .hero-logout-btn {
+          .hero-stats-row {
+            justify-content: center;
+          }
+
+          .hero-avatar-actions-quick {
+            justify-content: center;
+          }
+
+          .hero-actions-cluster {
+            flex-direction: column;
+            width: 100%;
+            gap: 8px;
+          }
+
+          .hero-primary-save-btn,
+          .hero-danger-logout-btn {
             width: 100%;
             justify-content: center;
           }
@@ -4229,23 +4442,6 @@ const Settings = ({
             grid-template-columns: 1fr;
           }
 
-          .profile-edit-avatar-section {
-            flex-direction: column;
-            align-items: center;
-            text-align: center;
-          }
-
-          .profile-avatar-buttons-row {
-            justify-content: center;
-          }
-
-          .profile-avatar-remove-btn {
-            align-self: center;
-          }
-
-          .settings-save-profile-large-btn {
-            width: 100%;
-          }
         }
 
         /* Settings Dark Mode Overrides */
@@ -4268,26 +4464,57 @@ const Settings = ({
           box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
         }
 
-        [data-theme="dark"] .settings-hero-banner {
+        [data-theme="dark"] .modern-hero-identity-card {
           background: #292A2D;
           border-color: #3C4043;
         }
 
-        [data-theme="dark"] .profile-avatar-box {
-          background: #202124;
-          border: 1px solid #3C4043;
-          color: #8AB4F8;
-          border-radius: 50%;
-          overflow: hidden;
-        }
-
-        [data-theme="dark"] .hero-sync-box {
+        [data-theme="dark"] .hero-avatar-disc {
           background: #202124;
           border-color: #3C4043;
         }
 
-        [data-theme="dark"] .sync-box-status {
+        [data-theme="dark"] .hero-avatar-camera-btn {
+          border-color: #292A2D;
+        }
+
+        [data-theme="dark"] .hero-sync-pill {
+          background: #202124;
+          border-color: #3C4043;
+          color: #9AA0A6;
+        }
+
+        [data-theme="dark"] .hero-stat-divider {
+          background: #3C4043;
+        }
+
+        [data-theme="dark"] .hero-stat-val {
           color: #E8EAED;
+        }
+
+        [data-theme="dark"] .hero-stat-lbl {
+          color: #9AA0A6;
+        }
+
+        [data-theme="dark"] .hero-quick-btn {
+          background: #202124;
+          border-color: #3C4043;
+          color: #E8EAED;
+        }
+
+        [data-theme="dark"] .hero-quick-btn:hover {
+          background: #303134;
+          border-color: #5F6368;
+        }
+
+        [data-theme="dark"] .hero-danger-logout-btn {
+          background: rgba(239, 68, 68, 0.12);
+          border-color: rgba(239, 68, 68, 0.25);
+          color: #F87171;
+        }
+
+        [data-theme="dark"] .hero-danger-logout-btn:hover {
+          background: rgba(239, 68, 68, 0.2);
         }
 
         [data-theme="dark"] .settings-card {
@@ -4475,32 +4702,65 @@ const Settings = ({
         }
 
         /* Dark Mode Profile & Dialogs */
-        [data-theme="dark"] .profile-edit-avatar-section {
-          background: #202124;
-          border-color: #3C4043;
-        }
-
-        [data-theme="dark"] .profile-edit-avatar-preview {
+        [data-theme="dark"] .modern-profile-card {
           background: #292A2D;
           border-color: #3C4043;
         }
 
-        [data-theme="dark"] .profile-avatar-upload-btn,
-        [data-theme="dark"] .profile-avatar-gallery-btn {
-          background: #303134;
-          border-color: #5F6368;
-          color: #E8EAED;
+        [data-theme="dark"] .card-header-icon-wrap.user-icon-wrap {
+          background: rgba(138, 180, 248, 0.15);
+          color: #8AB4F8;
         }
 
-        [data-theme="dark"] .profile-avatar-upload-btn:hover,
-        [data-theme="dark"] .profile-avatar-gallery-btn:hover {
-          background: #3C4043;
+        [data-theme="dark"] .card-header-icon-wrap.social-icon-wrap {
+          background: rgba(125, 211, 252, 0.15);
+          color: #7DD3FC;
+        }
+
+        [data-theme="dark"] .card-header-icon-wrap.sparkles-icon-wrap {
+          background: rgba(251, 191, 36, 0.15);
+          color: #FBBF24;
+        }
+
+        [data-theme="dark"] .card-header-icon-wrap.cert-icon-wrap {
+          background: rgba(129, 201, 149, 0.15);
+          color: #81C995;
+        }
+
+        [data-theme="dark"] .input-field-label {
+          color: #9AA0A6;
         }
 
         [data-theme="dark"] .modern-text-input,
         [data-theme="dark"] .modern-textarea-input {
           background: #202124;
           border-color: #3C4043;
+          color: #E8EAED;
+        }
+
+        [data-theme="dark"] .modern-text-input:focus,
+        [data-theme="dark"] .modern-textarea-input:focus {
+          border-color: #8AB4F8;
+          box-shadow: 0 0 0 3px rgba(138, 180, 248, 0.2);
+        }
+
+        [data-theme="dark"] .social-input-wrap {
+          background: #202124;
+          border-color: #3C4043;
+        }
+
+        [data-theme="dark"] .social-input-wrap:focus-within {
+          border-color: #8AB4F8;
+          box-shadow: 0 0 0 3px rgba(138, 180, 248, 0.2);
+        }
+
+        [data-theme="dark"] .social-input-prefix {
+          background: #292A2D;
+          border-color: #3C4043;
+          color: #9AA0A6;
+        }
+
+        [data-theme="dark"] .social-clean-input {
           color: #E8EAED;
         }
 
@@ -4540,41 +4800,27 @@ const Settings = ({
           color: #E8EAED;
         }
 
-        [data-theme="dark"] .certificates-empty-box {
+        [data-theme="dark"] .cert-edit-year {
+          color: #9AA0A6;
+        }
+
+        [data-theme="dark"] .cert-add-dashed-card {
           background: #202124;
-          border-color: #3C4043;
-        }
-
-        [data-theme="dark"] .add-first-cert-btn {
-          background: #303134;
-          border-color: #3C4043;
-          color: #E8EAED;
-        }
-
-        [data-theme="dark"] .social-input-wrap {
-          background: #202124;
-          border-color: #3C4043;
-        }
-
-        [data-theme="dark"] .social-input-prefix {
-          background: #292A2D;
           border-color: #3C4043;
           color: #9AA0A6;
         }
 
-        [data-theme="dark"] .social-clean-input {
-          color: #E8EAED;
+        [data-theme="dark"] .cert-add-dashed-card:hover {
+          background: rgba(138, 180, 248, 0.08);
+          border-color: #8AB4F8;
+          color: #8AB4F8;
         }
 
-        [data-theme="dark"] .live-preview-section {
-          background: #202124;
-          border-color: #3C4043;
+        [data-theme="dark"] .cert-add-icon-circle {
+          background: #303134;
+          color: inherit;
         }
 
-        [data-theme="dark"] .preview-container-box {
-          background: #18191B;
-          border-color: #3C4043;
-        }
 
         [data-theme="dark"] .cert-add-dialog,
         [data-theme="dark"] .avatar-gallery-dialog {

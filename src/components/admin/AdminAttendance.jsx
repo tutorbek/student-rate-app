@@ -1,7 +1,5 @@
 import React, { useState, useMemo } from 'react';
 import { createPortal } from 'react-dom';
-import { renderAvatar } from '../../utils/studentAvatars';
-import { renderGroupIcon } from '../../utils/groupIcons';
 import { sanitizeAttendanceDate } from '../../utils/db';
 import { calculateSessionAttendance, calculateWeightedAttendanceMetrics } from '../../utils/attendanceUtils';
 import { useModalDismiss } from '../../hooks/useModalDismiss';
@@ -21,7 +19,8 @@ const TEACHER_LABELS = {
 
 const AdminAttendance = ({
   allTeachersData = {},
-  selectedTeacherFilter = 'all'
+  selectedTeacherFilter = 'all',
+  showToast
 }) => {
   const [activeTeacherFilter, setActiveTeacherFilter] = useState(selectedTeacherFilter || 'all');
   const [selectedGroupId, setSelectedGroupId] = useState('all');
@@ -90,7 +89,7 @@ const AdminAttendance = ({
 
         const group = groups.find(g => g.id === rec.groupId);
         const groupName = group ? group.name : 'Noma\'lum guruh';
-        const groupIcon = group ? group.icon : '📁';
+        const groupIcon = group ? group.icon : '';
 
         // Calculate session breakdown using unified calculation
         const breakdown = calculateSessionAttendance(rec, students);
@@ -143,7 +142,11 @@ const AdminAttendance = ({
 
   const handleExportCSV = () => {
     if (attendanceSessions.length === 0) {
-      alert("Tanlangan davrda eksport qilish uchun darslar mavjud emas!");
+      if (showToast) {
+        showToast("Tanlangan davrda eksport qilish uchun darslar mavjud emas!", "warning");
+      } else {
+        alert("Tanlangan davrda eksport qilish uchun darslar mavjud emas!");
+      }
       return;
     }
 
@@ -203,8 +206,7 @@ const AdminAttendance = ({
       {/* Page Header */}
       <div className="page-header">
         <div>
-          <h2 className="page-title">Markaziy Davomad Jurnali</h2>
-          <p className="page-subtitle">Barcha ustozlar va guruhlarning kunlik/oylik dars davomati hisoboti</p>
+          <h2 className="page-title">Davomat Jurnali</h2>
         </div>
       </div>
 
@@ -274,11 +276,6 @@ const AdminAttendance = ({
               onClick={handleExportCSV}
               title="Tanlangan oylik davomatni Excel (.csv) formatida yuklab olish"
             >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                <polyline points="7 10 12 15 17 10" />
-                <line x1="12" y1="15" x2="12" y2="3" />
-              </svg>
               <span>Excel (.csv)</span>
             </button>
 
@@ -288,11 +285,6 @@ const AdminAttendance = ({
               onClick={() => window.print()}
               title="Davomat hisobotini chop etish yoki PDF qilib saqlash"
             >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                <polyline points="6 9 6 2 18 2 18 9" />
-                <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" />
-                <rect x="6" y="14" width="12" height="8" />
-              </svg>
               <span>Chop etish / PDF</span>
             </button>
           </div>
@@ -379,7 +371,6 @@ const AdminAttendance = ({
                     </td>
                     <td>
                       <div className="admin-group-cell">
-                        <span className="admin-group-mini-icon">{renderGroupIcon(session.groupIcon, 16)}</span>
                         <span className="admin-group-name">{session.groupName}</span>
                       </div>
                     </td>
@@ -432,10 +423,7 @@ const AdminAttendance = ({
               className="modal-close-btn"
               onClick={() => setSessionDetailModal(null)}
             >
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <line x1="18" y1="6" x2="6" y2="18" />
-                <line x1="6" y1="6" x2="18" y2="18" />
-              </svg>
+              ✕
             </button>
 
             <div className="modal-header-fixed">
@@ -460,8 +448,8 @@ const AdminAttendance = ({
                 sessionDetailModal.students.map(s => (
                   <div key={s.id} className="glass-card" style={{ padding: '10px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderRadius: 'var(--radius-md)' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                      <div className="avatar-circle" style={{ background: s.color || '#F3F4F6', width: 34, height: 34, fontSize: '1rem' }}>
-                        {renderAvatar(s.emoji)}
+                      <div className="avatar-circle" style={{ background: s.color || '#F3F4F6', width: 34, height: 34, fontSize: '0.85rem', fontWeight: '700' }}>
+                        {s.name ? s.name.charAt(0).toUpperCase() : 'O'}
                       </div>
                       <span style={{ fontWeight: '600', fontSize: '0.9rem', color: 'var(--text-primary)' }}>
                         {s.name}
@@ -471,22 +459,22 @@ const AdminAttendance = ({
                     <div>
                       {s.status === 'present' && (
                         <span style={{ fontSize: '0.78rem', fontWeight: '700', padding: '3px 8px', borderRadius: 'var(--radius-full)', background: '#ECFDF5', color: '#059669' }}>
-                          ✓ Keldi
+                          Keldi
                         </span>
                       )}
                       {s.status === 'excused' && (
                         <span style={{ fontSize: '0.78rem', fontWeight: '700', padding: '3px 8px', borderRadius: 'var(--radius-full)', background: '#EFF6FF', color: '#2563EB' }}>
-                          ℹ Sababli
+                          Sababli
                         </span>
                       )}
                       {s.status === 'absent' && (
                         <span style={{ fontSize: '0.78rem', fontWeight: '700', padding: '3px 8px', borderRadius: 'var(--radius-full)', background: '#FEF2F2', color: '#DC2626' }}>
-                          ✕ Kelmadi
+                          Kelmadi
                         </span>
                       )}
                       {s.status === 'late' && (
                         <span style={{ fontSize: '0.78rem', fontWeight: '700', padding: '3px 8px', borderRadius: 'var(--radius-full)', background: '#FFFBEB', color: '#D97706' }}>
-                          ⏰ Kechikdi
+                          Kechikdi
                         </span>
                       )}
                     </div>

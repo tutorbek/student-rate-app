@@ -107,6 +107,8 @@ const GroupDetail = ({ group, allGroups = [], students, transactions, quickTags,
   const [editStudentEmoji, setEditStudentEmoji] = useState(AVATAR_GALLERY_IMAGES[0].path);
   const [editStudentColor, setEditStudentColor] = useState(COLOR_OPTIONS[0].value);
   const [editStudentGroupId, setEditStudentGroupId] = useState(group.id);
+  const [editStudentPhone, setEditStudentPhone] = useState('');
+  const [editStudentParentPhone, setEditStudentParentPhone] = useState('');
   const [transferringStudent, setTransferringStudent] = useState(null);
   const [targetGroupId, setTargetGroupId] = useState('');
   const [avatarTab, setAvatarTab] = useState('gallery');
@@ -153,6 +155,8 @@ const GroupDetail = ({ group, allGroups = [], students, transactions, quickTags,
 
   const [showAddStudentModal, setShowAddStudentModal] = useState(false);
   const [newStudentName, setNewStudentName] = useState('');
+  const [newStudentPhone, setNewStudentPhone] = useState('');
+  const [newStudentParentPhone, setNewStudentParentPhone] = useState('');
   const [selectedEmoji, setSelectedEmoji] = useState(AVATAR_GALLERY_IMAGES[0].path);
   const [selectedColor, setSelectedColor] = useState(COLOR_OPTIONS[0].value);
   const [confirmDeleteId, setConfirmDeleteId] = useState(null);
@@ -247,8 +251,10 @@ const GroupDetail = ({ group, allGroups = [], students, transactions, quickTags,
       showToast("Talaba ismini kiriting!", "error");
       return;
     }
-    onAddStudent(newStudentName, group.id, selectedEmoji, selectedColor);
+    onAddStudent(newStudentName, group.id, selectedEmoji, selectedColor, newStudentPhone, newStudentParentPhone);
     setNewStudentName('');
+    setNewStudentPhone('');
+    setNewStudentParentPhone('');
     setSelectedEmoji(AVATAR_GALLERY_IMAGES[0].path);
     setSelectedColor(COLOR_OPTIONS[0].value);
     setShowAddStudentModal(false);
@@ -262,10 +268,20 @@ const GroupDetail = ({ group, allGroups = [], students, transactions, quickTags,
       return;
     }
     const isMoved = editStudentGroupId && editStudentGroupId !== group.id;
-    onUpdateStudent(editingStudent.id, editStudentName, editStudentEmoji, editStudentColor, editStudentGroupId);
+    onUpdateStudent(
+      editingStudent.id,
+      editStudentName,
+      editStudentEmoji,
+      editStudentColor,
+      editStudentGroupId,
+      editStudentPhone,
+      editStudentParentPhone
+    );
     const targetGroup = (allGroups || []).find(g => g.id === editStudentGroupId);
     setEditingStudent(null);
     setEditStudentName('');
+    setEditStudentPhone('');
+    setEditStudentParentPhone('');
     setEditStudentEmoji('🚀');
     setEditStudentColor(COLOR_OPTIONS[0].value);
     if (isMoved && targetGroup) {
@@ -566,6 +582,8 @@ const GroupDetail = ({ group, allGroups = [], students, transactions, quickTags,
                       setEditStudentEmoji(student.emoji);
                       setEditStudentColor(student.color);
                       setEditStudentGroupId(student.groupId || group.id);
+                      setEditStudentPhone(student.phone || '');
+                      setEditStudentParentPhone(student.parentPhone || '');
                       if (!student.emoji) {
                         setEditAvatarTab('gallery');
                       } else if (isGalleryImage(student.emoji)) {
@@ -769,6 +787,29 @@ const GroupDetail = ({ group, allGroups = [], students, transactions, quickTags,
                       />
                     ))}
                   </div>
+                </div>
+
+                {/* Phone Numbers */}
+                <div className="form-group" style={{ marginTop: 12 }}>
+                  <label className="form-label">Ota-onaning telefoni</label>
+                  <input
+                    type="tel"
+                    className="form-input"
+                    placeholder="+998 90 123 45 67"
+                    value={newStudentParentPhone}
+                    onChange={(e) => setNewStudentParentPhone(e.target.value)}
+                  />
+                </div>
+
+                <div className="form-group" style={{ marginTop: 10 }}>
+                  <label className="form-label">O'quvchining telefoni (Ixtiyoriy)</label>
+                  <input
+                    type="tel"
+                    className="form-input"
+                    placeholder="+998 90 987 65 43"
+                    value={newStudentPhone}
+                    onChange={(e) => setNewStudentPhone(e.target.value)}
+                  />
                 </div>
               </div>
 
@@ -1219,6 +1260,29 @@ const GroupDetail = ({ group, allGroups = [], students, transactions, quickTags,
                       />
                     ))}
                   </div>
+                </div>
+
+                {/* Phone Numbers */}
+                <div className="form-group" style={{ marginTop: 12 }}>
+                  <label className="form-label">Ota-onaning telefoni</label>
+                  <input
+                    type="tel"
+                    className="form-input"
+                    placeholder="+998 90 123 45 67"
+                    value={editStudentParentPhone}
+                    onChange={(e) => setEditStudentParentPhone(e.target.value)}
+                  />
+                </div>
+
+                <div className="form-group" style={{ marginTop: 10 }}>
+                  <label className="form-label">O'quvchining telefoni (Ixtiyoriy)</label>
+                  <input
+                    type="tel"
+                    className="form-input"
+                    placeholder="+998 90 987 65 43"
+                    value={editStudentPhone}
+                    onChange={(e) => setEditStudentPhone(e.target.value)}
+                  />
                 </div>
 
                 {/* Group selection */}

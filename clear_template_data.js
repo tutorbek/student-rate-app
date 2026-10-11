@@ -1,12 +1,12 @@
 import { createClient } from '@supabase/supabase-js';
 
 const SUPABASE_URL = 'https://unwonvkemmmtdsinhcnn.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVud29udmtlbW1tdGRzaW5oY25uIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI5OTM0OTksImV4cCI6MjA5ODU2OTQ5OX0.gcSqvGPgeKuE-_ROmua9yaNZNHmzB0jtqtXhdorUF04';
+const SUPABASE_SERVICE_ROLE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVud29udmtlbW1tdGRzaW5oY25uIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4Mjk5MzQ5OSwiZXhwIjoyMDk4NTY5NDk5fQ.IncJtVFP8hc-8IHNG8lXYbbPqBXOTfh1mNtYf-XyutA';
 
-const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
 async function clearTemplate() {
-  const teachers = ['teacher1', 'main'];
+  const teachers = ['teacher1', 'teacher2', 'teacher3', 'teacher4', 'main'];
   for (const tId of teachers) {
     const { data: row } = await supabase.from('appdata').select('data').eq('teacher_id', tId).maybeSingle();
     if (!row || !row.data) continue;
@@ -21,7 +21,7 @@ async function clearTemplate() {
     await supabase.from('appdata').upsert({ teacher_id: tId, data: updated });
     console.log(`Cleaned template data for ${tId}.`);
   }
-  console.log('✅ Template data completely cleared!');
+  console.log('✅ Template data completely cleared across all teachers!');
 }
 
 // When run directly with: node clear_template_data.js

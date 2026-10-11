@@ -199,7 +199,7 @@ export const deleteGroup = (groups, students, transactions, groupId) => {
 };
 
 // --- Students API ---
-export const addStudent = (students, name, groupId, emoji, color) => {
+export const addStudent = (students, name, groupId, emoji, color, phone = '', parentPhone = '') => {
   const now = new Date().toISOString();
   const newStudent = {
     id: generateId(),
@@ -207,6 +207,8 @@ export const addStudent = (students, name, groupId, emoji, color) => {
     groupId,
     emoji: normalizeIconUrl(emoji || 'lion'),
     color: color || '#007AFF', // Default Apple blue
+    phone: phone ? String(phone).trim() : '',
+    parentPhone: parentPhone ? String(parentPhone).trim() : '',
     createdAt: now,
     joinedGroupAt: now,
   };
@@ -319,7 +321,7 @@ export const syncTransferredStudentsAttendance = (students = [], attendance = []
   return { updatedAttendance: currentAttendance, hasChanges };
 };
 
-export const updateStudent = (students, studentId, newName, newEmoji, newColor, newGroupId = null, attendance = []) => {
+export const updateStudent = (students, studentId, newName, newEmoji, newColor, newGroupId = null, attendance = [], phone = undefined, parentPhone = undefined) => {
   let updatedStudent = null;
   const now = new Date().toISOString();
   const sIdStr = String(studentId);
@@ -352,6 +354,8 @@ export const updateStudent = (students, studentId, newName, newEmoji, newColor, 
         groupId: newGroupId || s.groupId,
         joinedGroupAt: newJoinedGroupAt,
         groupHistory: updatedHistory,
+        phone: phone !== undefined ? String(phone || '').trim() : (s.phone || ''),
+        parentPhone: parentPhone !== undefined ? String(parentPhone || '').trim() : (s.parentPhone || ''),
       };
       return updatedStudent;
     }

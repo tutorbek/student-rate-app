@@ -218,7 +218,7 @@ export default function StudentAccountView({
       const boundName = boundStudent?.name || "boshqa o'quvchi";
       triggerHaptic('heavy');
       if (showToast) {
-        showToast(`⚠️ Siz ushbu qurilmadan allaqachon "${boundName}" profiliga PIN o'rnatgansiz! Bitta qurilmadan faqat 1 ta o'quvchiga PIN o'rnatish mumkin.`, 'error');
+        showToast(`Siz ushbu qurilmadan allaqachon "${boundName}" profiliga PIN o'rnatgansiz! Bitta qurilmadan faqat 1 ta o'quvchiga PIN o'rnatish mumkin.`, 'error');
       }
       return;
     }
