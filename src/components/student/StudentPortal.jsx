@@ -3,7 +3,6 @@ import { createPortal } from 'react-dom';
 import StudentScheduleCard from './StudentScheduleCard';
 import StudentTeacherShowcase from './StudentTeacherShowcase';
 import StudentAttendanceCalendar from './StudentAttendanceCalendar';
-import StudentCenterAddresses from './StudentCenterAddresses';
 import StudentRatingView from './StudentRatingView';
 import StudentShopComingSoon from './StudentShopComingSoon';
 import StudentAccountView from './StudentAccountView';
@@ -356,16 +355,11 @@ export default function StudentPortal({
     return `${Math.round(((present + late * 0.5) / total) * 100)}%`;
   }, [pinnedStudentId, currentGroup?.id, groupAttendance, pinnedStudent?.id]);
 
-  // Group lessons count in current month (useful for unpinned state)
-  const groupMonthLessonsCount = useMemo(() => {
-    if (!currentGroup?.id || !groupAttendance.length) return 0;
-    const now = new Date();
-    const prefix = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-    return groupAttendance.filter((rec) => rec.date && rec.date.startsWith(prefix)).length;
-  }, [currentGroup?.id, groupAttendance]);
+  const [isAvatarPickerOpen, setIsAvatarPickerOpen] = useState(false);
 
   const handleTabSelect = (newTab, targetSectionId = null) => {
     triggerHaptic('light');
+    setIsAvatarPickerOpen(false);
     const isSameTab = newTab === activeTab;
     if (!isSameTab) {
       setActiveTab(newTab);
@@ -412,7 +406,7 @@ export default function StudentPortal({
   return (
     <div className="student-portal-wrapper">
       {/* 1. Sleek Minimalist Top Navigation Header (Portaled to document.body so it is strictly fixed to viewport) */}
-      {typeof document !== 'undefined' && createPortal(
+      {!(activeTab === 'profile' && isAvatarPickerOpen) && typeof document !== 'undefined' && createPortal(
         <header className="student-navbar" aria-label="Asosiy navigatsiya paneli">
           <div className="student-navbar-inner">
             {/* Left: Brand Identity */}
@@ -466,46 +460,6 @@ export default function StudentPortal({
 
             {/* Right: Quick Profile Summary & Theme Icon */}
             <div className="navbar-actions-row">
-              <button
-                type="button"
-                className="navbar-profile-pill"
-                onClick={() => handleTabSelect('profile')}
-                title="Profil sozlamalariga o'tish"
-                aria-label="Profil"
-              >
-                {pinnedStudent ? (
-                  <>
-                    <div className="navbar-avatar-circle">
-                      {renderAvatar(pinnedStudent.emoji, 26)}
-                    </div>
-                    <div className="navbar-profile-info">
-                      <span className="navbar-user-name">
-                        {pinnedStudent.name.split(' ')[0]}
-                      </span>
-                      <span className="navbar-likes-pill">
-                        <ProjectLikeIcon size={13} />
-                        <span>{totalPinnedScore} Like</span>
-                      </span>
-                    </div>
-                  </>
-                ) : (
-                  <>
-                    <div className="navbar-avatar-circle unpinned">
-                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-                        <circle cx="12" cy="7" r="4" />
-                      </svg>
-                    </div>
-                    <div className="navbar-profile-info">
-                      <span className="navbar-unpinned-text">
-                        <span className="unpinned-text-full">Profil tanlash</span>
-                        <span className="unpinned-text-short">Profil</span>
-                      </span>
-                    </div>
-                  </>
-                )}
-              </button>
-
               {toggleTheme && (
                 <button
                   type="button"
@@ -536,6 +490,27 @@ export default function StudentPortal({
                   )}
                 </button>
               )}
+
+              <button
+                type="button"
+                className="navbar-profile-avatar-btn"
+                onClick={() => handleTabSelect('profile')}
+                title={pinnedStudent ? `${pinnedStudent.name} - Profil` : "Profil tanlash"}
+                aria-label={pinnedStudent ? `${pinnedStudent.name} profili` : "Profil"}
+              >
+                {pinnedStudent ? (
+                  <div className="navbar-avatar-circle">
+                    {renderAvatar(pinnedStudent.emoji, 30)}
+                  </div>
+                ) : (
+                  <div className="navbar-avatar-circle unpinned">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                      <circle cx="12" cy="7" r="4" />
+                    </svg>
+                  </div>
+                )}
+              </button>
             </div>
           </div>
         </header>,
@@ -626,43 +601,30 @@ export default function StudentPortal({
                 title="Profilingizni tanlang"
                 aria-label="Profilingizni tanlang"
               >
-                <div className="home-unpinned-hero-header">
-                  <div className="home-unpinned-hero-left">
-                    <div className="home-unpinned-avatar-badge">
-                      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-                        <circle cx="12" cy="7" r="4" />
-                      </svg>
-                    </div>
-                    <div className="home-unpinned-header-texts">
-                      <h2 className="home-unpinned-title">Profilingizni tanlang</h2>
-                      <span className="home-unpinned-date">{formattedToday}</span>
-                    </div>
+                <div className="home-unpinned-hero-left">
+                  <div className="home-unpinned-avatar-badge">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                      <circle cx="12" cy="7" r="4" />
+                    </svg>
                   </div>
-                  <span className="home-unpinned-status-pill">
-                    Profil tanlanmagan
-                  </span>
+                  <h2 className="home-unpinned-title">Profilingizni tanlang</h2>
                 </div>
 
-                <div className="home-unpinned-body-row">
-                  <p className="home-unpinned-desc">
-                    Guruhdagi ballaringiz, umumiy reyting va davomatingizni ko'rish uchun profilingizni belgilang.
-                  </p>
-                  <button
-                    type="button"
-                    className="home-unpinned-cta-btn"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      triggerHaptic('light');
-                      handleTabSelect('profile');
-                    }}
-                  >
-                    <span>Profilni tanlash</span>
-                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                      <polyline points="9 18 15 12 9 6" />
-                    </svg>
-                  </button>
-                </div>
+                <button
+                  type="button"
+                  className="home-unpinned-cta-btn"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    triggerHaptic('light');
+                    handleTabSelect('profile');
+                  }}
+                >
+                  <span>Profilni tanlash</span>
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="9 18 15 12 9 6" />
+                  </svg>
+                </button>
               </div>
             )}
 
@@ -724,8 +686,6 @@ export default function StudentPortal({
               extraLessons={extraLessons}
             />
 
-            {/* Insight Plus Center Addresses & Contact Card */}
-            <StudentCenterAddresses />
           </div>
         )}
 
@@ -745,6 +705,8 @@ export default function StudentPortal({
               connectedGroups={connectedGroupsList}
               onSwitchGroup={onSwitchGroup}
               initialTimeframe="month"
+              attendanceRate={pinnedAttendanceRate}
+              onOpenProfilePicker={() => handleTabSelect('profile')}
             />
           </div>
         )}
@@ -784,6 +746,8 @@ export default function StudentPortal({
               toggleTheme={toggleTheme}
               onLogout={onLogout}
               showToast={showToast}
+              isAvatarPickerOpen={isAvatarPickerOpen}
+              setIsAvatarPickerOpen={setIsAvatarPickerOpen}
             />
           </div>
         )}
@@ -791,7 +755,7 @@ export default function StudentPortal({
       </div>
 
       {/* 3. Modern Clean Mobile Floating Bottom Navigation Dock (Portal to document.body) */}
-      {typeof document !== 'undefined' && createPortal(
+      {!(activeTab === 'profile' && isAvatarPickerOpen) && typeof document !== 'undefined' && createPortal(
         <nav className="student-mobile-dock" aria-label="Mobil navigatsiya paneli">
           <div className="mobile-dock-inner">
             <button

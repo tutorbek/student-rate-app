@@ -25,13 +25,6 @@ const WEEKDAYS = [
 const DAY_ORDER = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
 const WEEKDAY_ORDER = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
 
-const formatDaysList = (days = []) => {
-  if (!Array.isArray(days) || days.length === 0) {
-    return 'Belgilanmagan';
-  }
-  const sorted = [...days].sort((a, b) => WEEKDAY_ORDER.indexOf(a) - WEEKDAY_ORDER.indexOf(b));
-  return sorted.map((d) => DAY_NAMES_UZ[d] || d).join(', ');
-};
 
 const calculateNextLesson = (group, extraLessons = [], studentId = null) => {
   if (!group) return { text: 'Belgilanmagan', isToday: false, isLive: false, isExtra: false };
@@ -181,7 +174,6 @@ export default function StudentScheduleCard({ group, extraLessons = [], studentI
   const extractedDays = useMemo(() => extractGroupDays(group), [group]);
   const times = useMemo(() => extractGroupTimes(group), [group]);
 
-  const daysText = useMemo(() => formatDaysList(extractedDays), [extractedDays]);
   const activeDaysSet = useMemo(() => new Set(extractedDays), [extractedDays]);
 
   const currentDayKey = useMemo(() => {
@@ -208,25 +200,26 @@ export default function StudentScheduleCard({ group, extraLessons = [], studentI
 
   return (
     <div className={`native-schedule-card ${nextLessonInfo.isExtra ? 'has-extra-lesson' : ''}`} id="student-schedule-card">
-      {/* Dynamic Status Strip */}
-      <div className={`native-schedule-strip ${nextLessonInfo.isExtra ? 'is-extra-lesson' : ''} ${nextLessonInfo.isLive ? 'is-live' : nextLessonInfo.isToday ? 'is-today' : ''}`}>
-        <span className="schedule-status-eyebrow" style={{ display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
-          {nextLessonInfo.isExtra && <ZapIcon size={12} color="#F59E0B" />}
-          <span>
-            {nextLessonInfo.isExtra
-              ? (nextLessonInfo.extraLesson?.targetType === 'custom'
-                  ? (nextLessonInfo.isLive ? "SHAXSIY EXTRA LESSON • DARS DAVOM ETMOQDA" : "SIZ UCHUN ALOHIDA EXTRA LESSON")
-                  : (nextLessonInfo.isLive ? "EXTRA LESSON • DARS DAVOM ETMOQDA" : "EXTRA LESSON • QO'SHIMCHA DARS"))
-              : (nextLessonInfo.isLive ? "DARS DAVOM ETMOQDA" : "KEYINGI DARS")}
-          </span>
-        </span>
-        <span className="schedule-status-time">{nextLessonInfo.text}</span>
-      </div>
 
       {/* Main Group Header Row */}
       <div className="native-schedule-header">
         <div className="schedule-header-titles">
           <h3 className="schedule-group-name">{group?.name || "Guruh"}</h3>
+          {group?.room && (
+            <span className="schedule-room-pill" title="Xona">
+              <MapPinIcon size={12} />
+              <span>{group.room}</span>
+            </span>
+          )}
+        </div>
+
+        <div className="schedule-time-badge" title="Dars vaqti">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="12" cy="12" r="10" />
+            <polyline points="12 6 12 12 16 14" />
+          </svg>
+          <span className="schedule-time-label">Dars vaqti:</span>
+          <span className="schedule-time-val">{timeText}</span>
         </div>
       </div>
 
@@ -239,9 +232,9 @@ export default function StudentScheduleCard({ group, extraLessons = [], studentI
             <div
               key={wd.key}
               className={`native-weekday-cell ${hasClass ? 'has-class' : ''} ${isToday ? 'is-today' : ''}`}
+              title={`${wd.name}${hasClass ? " • Dars kuni" : ""}${isToday ? " • Bugun" : ""}`}
             >
               <span className="cell-day-text">{wd.short}</span>
-              {hasClass && <span className="cell-dot" />}
             </div>
           );
         })}
@@ -277,18 +270,6 @@ export default function StudentScheduleCard({ group, extraLessons = [], studentI
           )}
         </div>
       )}
-
-      {/* Key Details */}
-      <div className="native-schedule-meta-grid">
-        <div className="schedule-meta-box">
-          <span className="meta-label">Dars vaqti</span>
-          <span className="meta-value">{timeText}</span>
-        </div>
-        <div className="schedule-meta-box">
-          <span className="meta-label">Doimiy kunlar</span>
-          <span className="meta-value" title={daysText}>{daysText}</span>
-        </div>
-      </div>
     </div>
   );
 }

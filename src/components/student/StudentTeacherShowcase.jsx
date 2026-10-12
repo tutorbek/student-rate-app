@@ -14,7 +14,6 @@ export default function StudentTeacherShowcase({
   const [isOpen, setIsOpen] = useState(false);
   const [isClosing, setIsClosing] = useState(false);
   const [lightboxCert, setLightboxCert] = useState(null);
-  const [touchStartY, setTouchStartY] = useState(null);
 
   const triggerHaptic = (style = 'light') => {
     try {
@@ -43,24 +42,7 @@ export default function StudentTeacherShowcase({
     setTimeout(() => {
       setIsOpen(false);
       setIsClosing(false);
-    }, 240);
-  };
-
-  const handleTouchStart = (e) => {
-    if (e.touches && e.touches[0]) {
-      setTouchStartY(e.touches[0].clientY);
-    }
-  };
-
-  const handleTouchEnd = (e) => {
-    if (touchStartY === null) return;
-    if (e.changedTouches && e.changedTouches[0]) {
-      const touchEndY = e.changedTouches[0].clientY;
-      if (touchEndY - touchStartY > 65) {
-        handleClose();
-      }
-    }
-    setTouchStartY(null);
+    }, 160);
   };
 
   // Close modal on Escape key and lock background scroll
@@ -83,7 +65,7 @@ export default function StudentTeacherShowcase({
       window.removeEventListener('keydown', handleKeyDown);
       unlockBodyScroll();
     };
-  }, [isOpen, isClosing, lightboxCert]);
+  }, [isOpen, lightboxCert]);
 
   // If teacher profile is not filled out and not preview mode, do not display anything!
   if (!isPreview && (!teacherProfile || !teacherProfile.fullName || !teacherProfile.fullName.trim())) {
@@ -346,20 +328,15 @@ export default function StudentTeacherShowcase({
         </div>
       )}
 
-      {/* 2. FULL MODAL / BOTTOM SHEET DIALOG (when clicked in normal mode) */}
+      {/* 2. FULL MODAL / POPUP DIALOG (when clicked in normal mode) */}
       {isOpen && typeof document !== 'undefined' && createPortal(
         <div
-          className={`sheet-backdrop ${isClosing ? 'is-closing' : 'animate-backdropFadeIn'}`}
+          className={`teacher-modal-backdrop ${isClosing ? 'is-closing' : ''}`}
           onClick={handleClose}
-          onTouchMove={(e) => {
-            if (e.target === e.currentTarget) e.preventDefault();
-          }}
         >
           <div
-            className={`sheet-container teacher-detail-sheet ${isClosing ? 'is-closing' : ''}`}
+            className={`teacher-detail-sheet ${isClosing ? 'is-closing' : ''}`}
             onClick={(e) => e.stopPropagation()}
-            onTouchStart={handleTouchStart}
-            onTouchEnd={handleTouchEnd}
             role="dialog"
             aria-modal="true"
             aria-labelledby="teacher-modal-name"

@@ -1,11 +1,10 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { renderAvatar, STUDENT_AVATARS } from '../../utils/studentAvatars';
-import { AVATAR_GALLERY_IMAGES } from '../../utils/avatarGallery';
-import { scrollToWithOffset } from '../../utils/scrollOffset';
+import { renderAvatar } from '../../utils/studentAvatars';
 import { getOrCreateDeviceId } from '../../utils/deviceId';
-import { ProjectLikeIcon, LockIcon, UnlockIcon, InfoIcon, AlertTriangleIcon, LightbulbIcon } from './StudentIcons';
+import { LockIcon, AlertTriangleIcon, LightbulbIcon } from './StudentIcons';
 import useModalDismiss from '../../hooks/useModalDismiss';
+import StudentAvatarPickerView from './StudentAvatarPickerView';
 
 const triggerHaptic = (style = 'light') => {
   try {
@@ -38,20 +37,28 @@ export default function StudentAccountView({
   pinnedStudent = null,
   pinnedStudentId = null,
   groupStudents = [],
-  groupTransactions = [],
+  _groupTransactions = [],
   onSwitchGroup = null,
   onAddGroup = null,
   onRemoveGroup = null,
   onUpdateAvatar = null,
   onSetStudentPin = null,
+  _onClaimStudentDevice = null,
   onSelectProfile = null,
   _handleClearProfilePin = null,
   _theme = 'light',
   _toggleTheme = null,
   onLogout = null,
   showToast = null,
+  isAvatarPickerOpen: externalPickerOpen,
+  setIsAvatarPickerOpen: externalSetPickerOpen,
 }) {
-  // Keep connected groups in a strictly stable, predictable order (never swap rows on selection)
+  // Avatar Picker View State
+  const [internalPickerOpen, setInternalPickerOpen] = useState(false);
+  const isAvatarPickerActive = externalPickerOpen !== undefined ? externalPickerOpen : internalPickerOpen;
+  const setAvatarPickerActive = externalSetPickerOpen || setInternalPickerOpen;
+
+  // Stable connected groups order
   const stableConnectedGroups = useMemo(() => {
     const list = sortedConnectedGroups && sortedConnectedGroups.length > 0
       ? sortedConnectedGroups
@@ -62,14 +69,15 @@ export default function StudentAccountView({
 
   // Sub-views & Modals
   const [profileSearchQuery, setProfileSearchQuery] = useState('');
-  const [avatarTab, setAvatarTab] = useState('gallery'); // 'gallery' | 'avatars'
+  const [isStudentListModalOpen, setIsStudentListModalOpen] = useState(false);
+  const [isGroupsModalOpen, setIsGroupsModalOpen] = useState(false);
   const [isAddingGroup, setIsAddingGroup] = useState(false);
   const [newGroupPassword, setNewGroupPassword] = useState('');
   const [isSubmittingGroup, setIsSubmittingGroup] = useState(false);
   const [groupAddError, setGroupAddError] = useState('');
   const [confirmRemoveId, setConfirmRemoveId] = useState(null);
 
-  // PIN Modal State: null | 'confirm_select' | 'entry' | 'setup' | 'change'
+  // PIN Modal State: null | 'entry' | 'setup' | 'change'
   const [pinModalMode, setPinModalMode] = useState(null);
   const [pinTargetStudent, setPinTargetStudent] = useState(null);
   const [oldPinInput, setOldPinInput] = useState('');
@@ -93,6 +101,8 @@ export default function StudentAccountView({
   const closeModals = () => {
     setPinModalMode(null);
     setShowLogoutConfirm(false);
+    setIsGroupsModalOpen(false);
+    setIsStudentListModalOpen(false);
     setPinTargetStudent(null);
     setOldPinInput('');
     setPinInput('');
@@ -105,8 +115,8 @@ export default function StudentAccountView({
     setSheetDragY(0);
   };
 
-  // Bulletproof lock of background scroll and Escape key handler
-  useModalDismiss(Boolean(pinModalMode || showLogoutConfirm), closeModals);
+  // Lock of background scroll and Escape key handler
+  useModalDismiss(Boolean(pinModalMode || showLogoutConfirm || isGroupsModalOpen || isStudentListModalOpen), closeModals);
 
   // Auto focus input when opening PIN entry
   useEffect(() => {
@@ -137,16 +147,7 @@ export default function StudentAccountView({
     setSheetDragY(0);
   };
 
-  // Pinned student total points
-  const totalScore = useMemo(() => {
-    if (!pinnedStudentId) return 0;
-    const pId = String(pinnedStudentId);
-    return (groupTransactions || [])
-      .filter((t) => !t.deleted && String(t.studentId) === pId)
-      .reduce((sum, t) => sum + (Number(t.amount) || 0), 0);
-  }, [pinnedStudentId, groupTransactions]);
-
-  // Current Device ID & Device Claimed Student (2-Yechim: 1 Qurilmadan Faqat 1 Ta Profilga PIN O'rnatish)
+  // Current Device ID & Device Claimed Student
   const currentDeviceId = useMemo(() => getOrCreateDeviceId(), []);
   const gId = currentGroup?.id ? String(currentGroup.id) : null;
 
@@ -159,7 +160,6 @@ export default function StudentAccountView({
 
     if (localClaimed) {
       const exists = (groupStudents || []).find((s) => String(s.id) === String(localClaimed));
-      // If teacher has reset both PIN and device binding for this student, release device lock
       if (exists && !exists.pin && !exists.deviceId) {
         try {
           localStorage.removeItem(`rsa_device_claimed_${gId}`);
@@ -169,7 +169,6 @@ export default function StudentAccountView({
       }
     }
 
-    // Check if current device ID is bound to a student in this group in DB
     if (currentDeviceId) {
       const dbClaimed = (groupStudents || []).find(
         (s) => s.deviceId && String(s.deviceId) === String(currentDeviceId) && s.pin
@@ -192,33 +191,27 @@ export default function StudentAccountView({
     return groupStudents.filter((s) => (s.name || '').toLowerCase().includes(q));
   }, [groupStudents, profileSearchQuery]);
 
-  // Handle clicking student to pin / login (1 Student = 1 Account policy)
+  // Handle clicking student to pin / login
   const handleStudentClick = (st) => {
     if (!st) return;
     triggerHaptic('light');
 
-    // 1. If student is currently logged in, they cannot switch to any other profile
     if (pinnedStudentId) {
       if (String(st.id) === String(pinnedStudentId)) {
         if (showToast) {
           showToast(`"${st.name}" - sizning faol profilingiz.`, 'info');
         }
-      } else {
-        if (showToast) {
-          showToast("Siz allaqachon ushbu guruhda o'z profilingizga egasiz.", 'info');
-        }
+        setIsStudentListModalOpen(false);
+        return;
       }
-      return;
     }
 
-    // 2. 2-Yechim (Texnik Cheklov): Bir qurilmadan faqat 1 ta profilga PIN o'rnatish mumkin
-    // If this device has already claimed another student profile, block claiming unclaimed classmate profiles
     if (!st.pin && deviceClaimedStudentId && String(deviceClaimedStudentId) !== String(st.id)) {
       const boundStudent = (groupStudents || []).find((s) => String(s.id) === String(deviceClaimedStudentId));
       const boundName = boundStudent?.name || "boshqa o'quvchi";
       triggerHaptic('heavy');
       if (showToast) {
-        showToast(`Siz ushbu qurilmadan allaqachon "${boundName}" profiliga PIN o'rnatgansiz! Bitta qurilmadan faqat 1 ta o'quvchiga PIN o'rnatish mumkin.`, 'error');
+        showToast(`Siz ushbu qurilmadan allaqachon "${boundName}" profiliga PIN o'rnatgansiz!`, 'error');
       }
       return;
     }
@@ -230,10 +223,12 @@ export default function StudentAccountView({
     setShowForgotPinNotice(false);
     setPinTargetStudent(st);
 
+    // Close the list modal so PIN modal is front-and-center
+    setIsStudentListModalOpen(false);
+
     if (st.pin) {
       setPinModalMode('entry');
     } else {
-      // Mandatory 4-digit PIN setup for first-time profile selection
       setPinModalMode('setup');
     }
   };
@@ -296,7 +291,6 @@ export default function StudentAccountView({
     const targetStudent = pinTargetStudent || pinnedStudent;
     if (!targetStudent || !currentGroup?.id) return;
 
-    // Resolve freshest data for student from groupStudents
     const freshTarget = (groupStudents || []).find((s) => String(s.id) === String(targetStudent.id)) || targetStudent;
     const currentActualPin = freshTarget.pin ? String(freshTarget.pin).trim() : '';
 
@@ -384,7 +378,6 @@ export default function StudentAccountView({
       localStorage.setItem('rsa_pinned_student_id', targetStr);
     } catch {}
 
-    // If student did not have deviceId registered yet, register current deviceId
     if (!freshTarget.deviceId && currentDeviceId && onSetStudentPin) {
       onSetStudentPin(freshTarget.id, cleanPin, freshTarget.name, currentDeviceId);
     }
@@ -399,7 +392,6 @@ export default function StudentAccountView({
       showToast(`Xush kelibsiz, ${freshTarget.name}!`, 'success');
     }
   };
-
 
   // Add group handler
   const handleAddGroupSubmit = async (e) => {
@@ -452,585 +444,546 @@ export default function StudentAccountView({
     }
   };
 
+  // -------------------------------------------------------------
+  // CONDITIONAL RENDER: DEDICATED AVATAR PICKER SCREEN (Image 2)
+  // -------------------------------------------------------------
+  if (isAvatarPickerActive) {
+    return (
+      <StudentAvatarPickerView
+        pinnedStudent={pinnedStudent}
+        currentGroup={currentGroup}
+        onSaveAvatar={onUpdateAvatar}
+        onBack={() => setAvatarPickerActive(false)}
+        showToast={showToast}
+      />
+    );
+  }
+
+  // -------------------------------------------------------------
+  // MAIN PROFILE SCREEN (Compact Apple Settings Architecture)
+  // -------------------------------------------------------------
   return (
-    <div className="student-account-page animate-fadeIn">
-      {/* 1. Hero Profile Card */}
-      <section className="account-hero-card" aria-label="Profil ma'lumotlari">
+    <div className="student-profile-main-page animate-fadeIn">
+      {/* 1. Top User Profile Card */}
+      <section className="account-user-card" aria-label="Profil kartasi">
+        <div className="user-card-avatar-box">
+          {pinnedStudent ? (
+            <div className="user-card-avatar-inner">
+              {renderAvatar(pinnedStudent.emoji, 58)}
+            </div>
+          ) : (
+            <div className="user-card-avatar-inner placeholder">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                <circle cx="12" cy="7" r="4" />
+              </svg>
+            </div>
+          )}
+        </div>
+
+        <div className="user-card-info">
+          <h2 className="user-card-name">
+            {pinnedStudent ? pinnedStudent.name : "Profil tanlanmagan"}
+          </h2>
+          <span className="user-card-group">
+            {currentGroup?.name || "1-guruh"}
+          </span>
+        </div>
+
         {pinnedStudent ? (
-          <div className="account-hero-inner">
-            <div className="account-avatar-wrapper">
-              <div className="account-avatar-circle">
-                {renderAvatar(pinnedStudent.emoji, 76)}
-              </div>
-              <button
-                type="button"
-                className="account-avatar-edit-btn"
-                onClick={() => {
-                  triggerHaptic('light');
-                  scrollToWithOffset('account-avatar-picker-section');
-                }}
-                title="Rasmni almashtirish"
-                aria-label="Rasmni almashtirish"
-              >
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
-                  <circle cx="12" cy="13" r="4"/>
-                </svg>
-              </button>
-            </div>
-
-            <div className="account-hero-info">
-              <div className="account-hero-badge-row">
-                <span className="account-group-tag">{currentGroup?.name || "Guruh"}</span>
-                <span className={`account-pin-status-tag ${pinnedStudent.pin ? 'has-pin' : 'no-pin'}`} style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                  {pinnedStudent.pin ? <LockIcon size={12} /> : <UnlockIcon size={12} />}
-                  <span>{pinnedStudent.pin ? "PIN faol" : "PIN yo'q"}</span>
-                </span>
-              </div>
-
-              <h2 className="account-hero-name">{pinnedStudent.name}</h2>
-
-              <div className="account-points-row">
-                <div className="account-points-pill">
-                  <ProjectLikeIcon size={18} glow />
-                  <span className="points-number">{totalScore}</span>
-                  <span className="points-label">Like to'plangan</span>
-                </div>
-              </div>
-            </div>
-
-            <div className="account-hero-actions">
-              <button
-                type="button"
-                className="account-action-pill-btn secondary"
-                onClick={() => {
-                  triggerHaptic('light');
-                  const freshPinned = (groupStudents || []).find((s) => String(s.id) === String(pinnedStudent?.id)) || pinnedStudent;
-                  setPinTargetStudent(freshPinned);
-                  setOldPinInput('');
-                  setPinInput('');
-                  setConfirmPinInput('');
-                  setShowOldPin(false);
-                  setShowNewPin(false);
-                  setShowConfirmPin(false);
-                  setPinError('');
-                  setShowForgotPinNotice(false);
-                  setPinModalMode(freshPinned.pin ? 'change' : 'setup');
-                }}
-              >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                  <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
-                  <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
-                </svg>
-                <span>{pinnedStudent.pin ? "PIN-kodni o'zgartirish" : "PIN-kod o'rnatish"}</span>
-              </button>
-            </div>
-          </div>
-        ) : (
-          <div className="account-unpinned-banner">
-            <div className="account-avatar-wrapper">
-              <div className="account-avatar-circle unpinned-hero-avatar">
-                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-                  <circle cx="12" cy="7" r="4" />
-                </svg>
-              </div>
-            </div>
-
-            <div className="account-hero-info">
-              <div className="account-hero-badge-row">
-                <span className="account-group-tag">{currentGroup?.name || "Guruh"}</span>
-                <span className="account-pin-status-tag no-pin" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                  <UnlockIcon size={12} />
-                  <span>Profil tanlanmagan</span>
-                </span>
-              </div>
-
-              <h2 className="account-hero-name">Profilingiz tanlanmagan</h2>
-
-              <div className="account-points-row">
-                <div className="account-unpinned-pill">
-                  <span className="unpinned-info-icon" style={{ display: 'inline-flex', alignItems: 'center' }}><InfoIcon size={13} /></span>
-                  <span className="unpinned-info-text">Ro'yxatdan tanlang</span>
-                </div>
-              </div>
-            </div>
-
-            <div className="account-hero-actions">
-              <button
-                type="button"
-                className="account-action-pill-btn primary-pick"
-                onClick={() => {
-                  triggerHaptic('light');
-                  scrollToWithOffset('account-student-list-section');
-                  const el = document.getElementById('account-student-list-section');
-                  if (el) {
-                    const searchInput = el.querySelector('.account-search-input');
-                    if (searchInput) {
-                      setTimeout(() => searchInput.focus(), 350);
-                    }
-                  }
-                }}
-              >
-                <span>Ismni tanlash ▾</span>
-              </button>
-            </div>
-          </div>
-        )}
-      </section>
-
-      {/* 2. Guruhlarim (My Groups) Section */}
-      <section id="account-groups-section" className="account-section-card" aria-label="Guruhlarim">
-        <div className="account-section-header">
-          <div className="section-title-wrap">
-            <h3 className="account-section-title">Guruhlarim</h3>
-            <span className="account-section-sub">
-              {connectedGroupsList.length} ta guruh ulangan
-            </span>
-          </div>
           <button
             type="button"
-            className="account-section-action-btn"
+            className="user-card-edit-btn"
             onClick={() => {
               triggerHaptic('light');
-              setIsAddingGroup(!isAddingGroup);
-              setGroupAddError('');
+              setAvatarPickerActive(true);
+            }}
+            title="Profil rasmini almashtirish"
+            aria-label="Profil rasmini almashtirish"
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M12 20h9" />
+              <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
+            </svg>
+          </button>
+        ) : (
+          <button
+            type="button"
+            className="user-card-pick-btn"
+            onClick={() => {
+              triggerHaptic('light');
+              setIsStudentListModalOpen(true);
             }}
           >
-            {isAddingGroup ? "Bekor qilish" : "+ Guruh qo'shish"}
+            Tanlash ▾
           </button>
-        </div>
-
-        {/* Add Group Form */}
-        {isAddingGroup && (
-          <form className="account-add-group-form animate-slideDown" onSubmit={handleAddGroupSubmit}>
-            <div className="add-group-input-wrap">
-              <label htmlFor="account-group-pwd" className="add-group-label">
-                Ustozingiz bergan guruh paroli:
-              </label>
-              <div className="add-group-row">
-                <input
-                  id="account-group-pwd"
-                  type="text"
-                  className="add-group-input"
-                  placeholder="Masalan: rus2026"
-                  value={newGroupPassword}
-                  onChange={(e) => {
-                    setNewGroupPassword(e.target.value);
-                    setGroupAddError('');
-                  }}
-                  autoFocus
-                  disabled={isSubmittingGroup}
-                  autoComplete="off"
-                  autoCapitalize="none"
-                />
-                <button
-                  type="submit"
-                  className="add-group-submit-btn"
-                  disabled={isSubmittingGroup || !newGroupPassword.trim()}
-                >
-                  {isSubmittingGroup ? "Ulanmoqda..." : "Ulash"}
-                </button>
-              </div>
-              {groupAddError && (
-                <div className="add-group-error-msg animate-shake">
-                  {groupAddError}
-                </div>
-              )}
-            </div>
-          </form>
         )}
+      </section>
 
-        {/* Connected Groups List */}
-        <div className="account-groups-grid">
-          {stableConnectedGroups.map((grp) => {
-            const isCurrent = String(grp.id) === String(currentGroup?.id);
-            const isConfirmingRemove = confirmRemoveId === grp.id;
+      {/* 2. Sozlamalar va Bo'limlar (Clean Apple Minimalist List) */}
+      <section className="account-settings-section" aria-label="Sozlamalar va bo'limlar">
+        <h4 className="settings-section-heading">SOZLAMALAR VA BO'LIMLAR</h4>
 
-            return (
-              <div
-                key={grp.id}
-                className={`account-group-card ${isCurrent ? 'is-active-group' : ''}`}
-              >
-                <div className="account-group-left">
-                  <div className="group-title-row">
-                    <span className="account-group-name">{grp.name}</span>
-                  </div>
-                  <div className="group-meta-row">
-                    {grp.schedule?.time && <span>{grp.schedule.time}</span>}
-                  </div>
-                </div>
+        <div className="settings-menu-card">
+          {/* Row 1: Profilni tanlash (Sheet modal trigger for clean UX) */}
+          <button
+            type="button"
+            className="settings-menu-row"
+            onClick={() => {
+              triggerHaptic('light');
+              setIsStudentListModalOpen(true);
+            }}
+          >
+            <div className="settings-menu-icon-box green">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" />
+                <circle cx="12" cy="7" r="4" />
+              </svg>
+            </div>
+            <div className="settings-menu-text">
+              <span className="settings-menu-title">Profilni tanlash</span>
+              <span className="settings-menu-subtitle">
+                {pinnedStudent
+                  ? `${pinnedStudent.name} faol • ${groupStudents.length} ta o'quvchi`
+                  : `Guruhdagi ${groupStudents.length} ta o'quvchi`}
+              </span>
+            </div>
+            <div className="settings-menu-chevron" aria-hidden="true">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="9 18 15 12 9 6" />
+              </svg>
+            </div>
+          </button>
 
-                <div className="account-group-right">
-                  {isCurrent ? (
-                    <span className="group-active-pill" aria-label="Faol guruh" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                        <polyline points="20 6 9 17 4 12" />
-                      </svg>
-                      <span>Faol</span>
-                    </span>
-                  ) : (
-                    <button
-                      type="button"
-                      className="group-switch-btn"
-                      onClick={() => {
-                        triggerHaptic('light');
-                        if (onSwitchGroup) onSwitchGroup(grp.id);
-                      }}
-                    >
-                      Tanlash
-                    </button>
-                  )}
+          <div className="settings-menu-divider" />
 
-                  {connectedGroupsList.length > 1 && (
-                    isConfirmingRemove ? (
-                      <div className="group-remove-confirm-box">
-                        <span className="remove-txt">O'chirilsinmi?</span>
-                        <button
-                          type="button"
-                          className="remove-confirm-btn yes"
-                          onClick={() => handleGroupRemoveClick(grp.id, grp.name)}
-                        >
-                          Ha
-                        </button>
-                        <button
-                          type="button"
-                          className="remove-confirm-btn no"
-                          onClick={() => setConfirmRemoveId(null)}
-                        >
-                          Yo'q
-                        </button>
-                      </div>
-                    ) : (
-                      <button
-                        type="button"
-                        className="group-delete-btn"
-                        onClick={() => setConfirmRemoveId(grp.id)}
-                        title="Guruhni ajratish"
-                        aria-label="Guruhni ajratish"
-                      >
-                        O'chirish
-                      </button>
-                    )
-                  )}
-                </div>
-              </div>
-            );
-          })}
+          {/* Row 2: Mening guruhlarim */}
+          <button
+            type="button"
+            className="settings-menu-row"
+            onClick={() => {
+              triggerHaptic('light');
+              setIsGroupsModalOpen(true);
+            }}
+          >
+            <div className="settings-menu-icon-box purple">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                <circle cx="9" cy="7" r="4" />
+                <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+                <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+              </svg>
+            </div>
+            <div className="settings-menu-text">
+              <span className="settings-menu-title">Mening guruhlarim</span>
+              <span className="settings-menu-subtitle">
+                {connectedGroupsList.length} ta guruh ulangan
+              </span>
+            </div>
+            <div className="settings-menu-chevron" aria-hidden="true">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="9 18 15 12 9 6" />
+              </svg>
+            </div>
+          </button>
+
+          <div className="settings-menu-divider" />
+
+          {/* Row 3: Xavfsizlik va parol */}
+          <button
+            type="button"
+            className="settings-menu-row"
+            onClick={() => {
+              triggerHaptic('light');
+              const freshPinned = (groupStudents || []).find((s) => String(s.id) === String(pinnedStudent?.id)) || pinnedStudent;
+              if (!freshPinned) {
+                showToast?.("Avval o'quvchi profilingizni tanlang!", "warning");
+                setIsStudentListModalOpen(true);
+                return;
+              }
+              setPinTargetStudent(freshPinned);
+              setOldPinInput('');
+              setPinInput('');
+              setConfirmPinInput('');
+              setShowOldPin(false);
+              setShowNewPin(false);
+              setShowConfirmPin(false);
+              setPinError('');
+              setShowForgotPinNotice(false);
+              setPinModalMode(freshPinned.pin ? 'change' : 'setup');
+            }}
+          >
+            <div className="settings-menu-icon-box blue">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+              </svg>
+            </div>
+            <div className="settings-menu-text">
+              <span className="settings-menu-title">Xavfsizlik va parol</span>
+              <span className="settings-menu-subtitle">Parolni yangilash</span>
+            </div>
+            <div className="settings-menu-chevron" aria-hidden="true">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="9 18 15 12 9 6" />
+              </svg>
+            </div>
+          </button>
         </div>
       </section>
 
-      {/* 3. Guruhdagi o'quvchilar (Profile Picker & PIN Switch) */}
-      <section
-        id="account-student-list-section"
-        className="account-section-card"
-        aria-label="Profil tanlash"
-      >
-        <div className="account-section-header">
-          <div className="section-title-wrap">
-            <h3 className="account-section-title">Guruhdagi o'quvchilar</h3>
-            <span className="account-section-sub">
-              {currentGroup?.name ? `${currentGroup.name} o'quvchilari` : "Profilingizni tanlang"}
-            </span>
-          </div>
-        </div>
+      {/* 3. Tizimdan chiqish (Logout Button) */}
+      <section className="account-logout-section" aria-label="Tizimdan chiqish">
+        <button
+          type="button"
+          className="account-logout-card-btn"
+          onClick={() => {
+            triggerHaptic('heavy');
+            setShowLogoutConfirm(true);
+          }}
+        >
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+            <polyline points="16 17 21 12 16 7" />
+            <line x1="21" y1="12" x2="9" y2="12" />
+          </svg>
+          <span>Tizimdan chiqish</span>
+        </button>
+      </section>
 
-        {/* Search */}
-        {groupStudents.length > 4 && (
-          <div className="account-search-bar">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="search-svg">
-              <circle cx="11" cy="11" r="8" />
-              <line x1="21" y1="21" x2="16.65" y2="16.65" />
-            </svg>
-            <input
-              type="text"
-              className="account-search-input"
-              placeholder="Ismingizni qidiring..."
-              value={profileSearchQuery}
-              onChange={(e) => setProfileSearchQuery(e.target.value)}
-            />
-            {profileSearchQuery && (
+      {/* -------------------------------------------------------------
+          MODALS & BOTTOM SHEETS
+         ------------------------------------------------------------- */}
+
+      {/* Modal 1: Guruhdagi o'quvchilar / Profilni tanlash Sheet Modal */}
+      {isStudentListModalOpen && typeof document !== 'undefined' && createPortal(
+        <div
+          className="sheet-backdrop animate-backdropFadeIn"
+          onClick={() => setIsStudentListModalOpen(false)}
+          onTouchMove={(e) => {
+            if (e.target === e.currentTarget) e.preventDefault();
+          }}
+        >
+          <div
+            className="sheet-container students-sheet-modal"
+            onClick={(e) => e.stopPropagation()}
+            role="dialog"
+            aria-modal="true"
+          >
+            <div className="sheet-drag-zone">
+              <div className="sheet-drag-handle" />
+            </div>
+
+            <div className="sheet-header">
+              <div className="sheet-title-wrap">
+                <h3 className="sheet-title">Profilni tanlash</h3>
+                <p className="sheet-sub">
+                  {currentGroup?.name ? `${currentGroup.name} • ` : ''}
+                  {groupStudents.length} ta o'quvchi
+                </p>
+              </div>
+
               <button
                 type="button"
-                className="account-search-clear"
-                onClick={() => setProfileSearchQuery('')}
-                aria-label="Tozalash"
+                className="sheet-close-btn"
+                onClick={() => setIsStudentListModalOpen(false)}
+                aria-label="Yopish"
               >
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                   <line x1="18" y1="6" x2="6" y2="18" />
                   <line x1="6" y1="6" x2="18" y2="18" />
                 </svg>
               </button>
-            )}
-          </div>
-        )}
+            </div>
 
-        {/* Student items */}
-        <div className="account-students-list">
-          {filteredStudents.length > 0 ? (
-            filteredStudents.map((st) => {
-              const isSelected = Boolean(pinnedStudentId && String(st.id) === String(pinnedStudentId));
-              const hasActivePinSelection = Boolean(pinnedStudentId);
-              const isPeer = hasActivePinSelection && !isSelected;
-              const hasPin = Boolean(st.pin);
-              const isDeviceClaimed = Boolean(
-                !hasActivePinSelection &&
-                deviceClaimedStudentId &&
-                String(deviceClaimedStudentId) === String(st.id)
-              );
-              const isDeviceBlocked = Boolean(
-                !hasActivePinSelection &&
-                !hasPin &&
-                deviceClaimedStudentId &&
-                String(deviceClaimedStudentId) !== String(st.id)
-              );
+            <div className="sheet-body students-modal-body">
+              {/* Real-time search bar */}
+              <div className="students-search-bar">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="search-svg">
+                  <circle cx="11" cy="11" r="8" />
+                  <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                </svg>
+                <input
+                  type="text"
+                  className="students-search-input"
+                  placeholder="Ismingizni qidiring..."
+                  value={profileSearchQuery}
+                  onChange={(e) => setProfileSearchQuery(e.target.value)}
+                  autoFocus
+                />
+                {profileSearchQuery && (
+                  <button
+                    type="button"
+                    className="students-search-clear"
+                    onClick={() => setProfileSearchQuery('')}
+                    aria-label="Tozalash"
+                  >
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <line x1="18" y1="6" x2="6" y2="18" />
+                      <line x1="6" y1="6" x2="18" y2="18" />
+                    </svg>
+                  </button>
+                )}
+              </div>
 
-              return (
-                <div
-                  key={st.id}
-                  className={`account-student-row ${isSelected ? 'is-selected' : ''} ${isPeer ? 'is-locked-peer' : ''} ${isDeviceBlocked ? 'is-device-blocked' : ''} ${isDeviceClaimed ? 'is-device-match' : ''}`}
-                  onClick={() => handleStudentClick(st)}
-                  role="button"
-                  tabIndex={0}
-                  aria-disabled={isPeer || isDeviceBlocked}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' || e.key === ' ') {
-                      e.preventDefault();
-                      handleStudentClick(st);
-                    }
-                  }}
-                >
-                  <div className="student-row-avatar">
-                    {renderAvatar(st.emoji, 32)}
+              {/* Scrollable list of students */}
+              <div className="students-modal-scroll-list">
+                {filteredStudents.length > 0 ? (
+                  filteredStudents.map((st, idx) => {
+                    const isSelected = Boolean(pinnedStudentId && String(st.id) === String(pinnedStudentId));
+                    const hasPin = Boolean(st.pin);
+                    const colorPaletteClass = `avatar-tint-${idx % 6}`;
+
+                    return (
+                      <div
+                        key={st.id}
+                        className={`student-row-card ${isSelected ? 'is-selected' : ''}`}
+                        onClick={() => handleStudentClick(st)}
+                        role="button"
+                        tabIndex={0}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            handleStudentClick(st);
+                          }
+                        }}
+                      >
+                        <div className={`student-row-avatar-box ${colorPaletteClass}`}>
+                          {renderAvatar(st.emoji, 32)}
+                        </div>
+
+                        <div className="student-row-info">
+                          <span className="student-row-name">{st.name}</span>
+                          {hasPin ? (
+                            <span className="student-status-badge badge-pin">
+                              <LockIcon size={11} />
+                              <span>PIN</span>
+                            </span>
+                          ) : (
+                            <span className="student-status-badge badge-new">
+                              <LockIcon size={11} />
+                              <span>Yangi</span>
+                            </span>
+                          )}
+                        </div>
+
+                        <div className="student-row-action">
+                          <button
+                            type="button"
+                            className="student-tanlash-btn"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleStudentClick(st);
+                            }}
+                          >
+                            {isSelected ? "Faol" : "Tanlash ▾"}
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })
+                ) : (
+                  <div className="students-empty-notice">
+                    {profileSearchQuery ? "Bunday ismli o'quvchi topilmadi" : "O'quvchilar ro'yxati mavjud emas"}
                   </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
 
-                  <div className="student-row-info">
-                    <div className="student-row-name-line">
-                      <span className="student-row-name">{st.name}</span>
-                      {hasPin ? (
-                        <span className="student-pin-badge protected" title="4 xonali PIN bilan himoyalangan">
-                          <span className="pin-icon" aria-hidden="true" style={{ display: 'inline-flex', alignItems: 'center' }}><LockIcon size={11} /></span>
-                          <span className="pin-text-full">Himoyalangan</span>
-                          <span className="pin-text-short">PIN</span>
-                        </span>
-                      ) : (
-                        <span className="student-pin-badge open" title="PIN belgilanmagan">
-                          <span className="pin-icon" aria-hidden="true" style={{ display: 'inline-flex', alignItems: 'center' }}><UnlockIcon size={11} /></span>
-                          <span className="pin-text-full">Yangi profil</span>
-                          <span className="pin-text-short">Yangi</span>
-                        </span>
+      {/* Modal 2: Mening guruhlarim Bottom Sheet */}
+      {isGroupsModalOpen && typeof document !== 'undefined' && createPortal(
+        <div
+          className="sheet-backdrop animate-backdropFadeIn"
+          onClick={() => setIsGroupsModalOpen(false)}
+          onTouchMove={(e) => {
+            if (e.target === e.currentTarget) e.preventDefault();
+          }}
+        >
+          <div
+            className="sheet-container groups-sheet-modal"
+            onClick={(e) => e.stopPropagation()}
+            role="dialog"
+            aria-modal="true"
+          >
+            <div className="sheet-drag-zone">
+              <div className="sheet-drag-handle" />
+            </div>
+
+            <div className="sheet-header">
+              <div className="sheet-title-wrap">
+                <h3 className="sheet-title">Mening guruhlarim</h3>
+                <p className="sheet-sub">
+                  {connectedGroupsList.length} ta guruh ulangan
+                </p>
+              </div>
+
+              <button
+                type="button"
+                className="sheet-close-btn"
+                onClick={() => setIsGroupsModalOpen(false)}
+                aria-label="Yopish"
+              >
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="18" y1="6" x2="6" y2="18" />
+                  <line x1="6" y1="6" x2="18" y2="18" />
+                </svg>
+              </button>
+            </div>
+
+            <div className="sheet-body groups-modal-body">
+              {/* Connected Groups List */}
+              <div className="account-groups-grid">
+                {stableConnectedGroups.map((grp) => {
+                  const isCurrent = String(grp.id) === String(currentGroup?.id);
+                  const isConfirmingRemove = confirmRemoveId === grp.id;
+
+                  return (
+                    <div
+                      key={grp.id}
+                      className={`account-group-card ${isCurrent ? 'is-active-group' : ''}`}
+                    >
+                      <div className="account-group-left">
+                        <div className="group-title-row">
+                          <span className="account-group-name">{grp.name}</span>
+                        </div>
+                        <div className="group-meta-row">
+                          {grp.schedule?.time && <span>{grp.schedule.time}</span>}
+                        </div>
+                      </div>
+
+                      <div className="account-group-right">
+                        {isCurrent ? (
+                          <span className="group-active-pill" aria-label="Faol guruh">
+                            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                              <polyline points="20 6 9 17 4 12" />
+                            </svg>
+                            <span>Faol</span>
+                          </span>
+                        ) : (
+                          <button
+                            type="button"
+                            className="group-switch-btn"
+                            onClick={() => {
+                              triggerHaptic('light');
+                              if (onSwitchGroup) onSwitchGroup(grp.id);
+                              setIsGroupsModalOpen(false);
+                            }}
+                          >
+                            Tanlash
+                          </button>
+                        )}
+
+                        {connectedGroupsList.length > 1 && (
+                          isConfirmingRemove ? (
+                            <div className="group-remove-confirm-box">
+                              <span className="remove-txt">O'chirilsinmi?</span>
+                              <button
+                                type="button"
+                                className="remove-confirm-btn yes"
+                                onClick={() => handleGroupRemoveClick(grp.id, grp.name)}
+                              >
+                                Ha
+                              </button>
+                              <button
+                                type="button"
+                                className="remove-confirm-btn no"
+                                onClick={() => setConfirmRemoveId(null)}
+                              >
+                                Yo'q
+                              </button>
+                            </div>
+                          ) : (
+                            <button
+                              type="button"
+                              className="group-delete-btn"
+                              onClick={() => setConfirmRemoveId(grp.id)}
+                              title="Guruhni ajratish"
+                              aria-label="Guruhni ajratish"
+                            >
+                              O'chirish
+                            </button>
+                          )
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Add Group Toggle & Form */}
+              <div className="modal-add-group-section">
+                {!isAddingGroup ? (
+                  <button
+                    type="button"
+                    className="modal-add-group-btn"
+                    onClick={() => {
+                      triggerHaptic('light');
+                      setIsAddingGroup(true);
+                      setGroupAddError('');
+                    }}
+                  >
+                    + Yangi guruh qo'shish
+                  </button>
+                ) : (
+                  <form className="account-add-group-form animate-slideDown" onSubmit={handleAddGroupSubmit}>
+                    <div className="add-group-input-wrap">
+                      <label htmlFor="account-group-pwd" className="add-group-label">
+                        Ustozingiz bergan guruh paroli:
+                      </label>
+                      <div className="add-group-row">
+                        <input
+                          id="account-group-pwd"
+                          type="text"
+                          className="add-group-input"
+                          placeholder="Masalan: rus2026"
+                          value={newGroupPassword}
+                          onChange={(e) => {
+                            setNewGroupPassword(e.target.value);
+                            setGroupAddError('');
+                          }}
+                          autoFocus
+                          disabled={isSubmittingGroup}
+                          autoComplete="off"
+                          autoCapitalize="none"
+                        />
+                        <button
+                          type="submit"
+                          className="add-group-submit-btn"
+                          disabled={isSubmittingGroup || !newGroupPassword.trim()}
+                        >
+                          {isSubmittingGroup ? "Ulanmoqda..." : "Ulash"}
+                        </button>
+                      </div>
+                      {groupAddError && (
+                        <div className="add-group-error-msg animate-shake">
+                          {groupAddError}
+                        </div>
                       )}
+                      <button
+                        type="button"
+                        className="add-group-cancel-link"
+                        onClick={() => {
+                          setIsAddingGroup(false);
+                          setGroupAddError('');
+                        }}
+                      >
+                        Bekor qilish
+                      </button>
                     </div>
-                    {isDeviceClaimed && (
-                      <span className="student-row-device-tag">
-                        <span className="device-tag-text-full">Bu qurilmadagi profilingiz</span>
-                        <span className="device-tag-text-short">Bu qurilmada</span>
-                      </span>
-                    )}
-                  </div>
-
-                  <div className="student-row-action">
-                    {isSelected ? (
-                      <span className="student-status-badge is-self">
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                          <polyline points="20 6 9 17 4 12" />
-                        </svg>
-                        <span className="self-badge-text-full">Sizning profilingiz</span>
-                        <span className="self-badge-text-short">Siz</span>
-                      </span>
-                    ) : isPeer ? (
-                      <span className="student-status-badge is-peer">
-                        Sinfdosh
-                      </span>
-                    ) : isDeviceBlocked ? (
-                      <span className="student-status-badge is-device-locked" title="Boshqa profil biriktirilgan">
-                        Cheklangan
-                      </span>
-                    ) : isDeviceClaimed ? (
-                      <span className="select-action-text device-match">Kirish ▾</span>
-                    ) : (
-                      <span className="select-action-text">Tanlash ▾</span>
-                    )}
-                  </div>
-                </div>
-              );
-            })
-          ) : (
-            <div className="account-empty-notice">
-              {profileSearchQuery ? "Bunday ismli o'quvchi topilmadi" : "O'quvchilar ro'yxati mavjud emas"}
+                  </form>
+                )}
+              </div>
             </div>
-          )}
-        </div>
-      </section>
-
-      {/* 4. Avatar & Surat Tanlash */}
-      <section
-        id="account-avatar-picker-section"
-        className="account-section-card"
-        aria-label="Profil rasmi"
-      >
-        <div className="account-section-header">
-          <div className="section-title-wrap">
-            <h3 className="account-section-title">Profil rasmi yoki avatari</h3>
-            <span className="account-section-sub">
-              {pinnedStudent ? `${pinnedStudent.name} uchun yangi rasm tanlang` : "O'zingizga yoqqan rasmni tanlang"}
-            </span>
           </div>
-        </div>
+        </div>,
+        document.body
+      )}
 
-        {/* Segmented Picker Tabs */}
-        <div className="account-picker-tab-bar">
-          <button
-            type="button"
-            className={`picker-tab-pill ${avatarTab === 'gallery' ? 'active' : ''}`}
-            onClick={() => {
-              triggerHaptic('light');
-              setAvatarTab('gallery');
-            }}
-          >
-            Suratlar ({AVATAR_GALLERY_IMAGES.length})
-          </button>
-          <button
-            type="button"
-            className={`picker-tab-pill ${avatarTab === 'avatars' ? 'active' : ''}`}
-            onClick={() => {
-              triggerHaptic('light');
-              setAvatarTab('avatars');
-            }}
-          >
-            3D Avatarlar ({STUDENT_AVATARS.length})
-          </button>
-        </div>
-
-        {/* Gallery / Avatars Body */}
-        <div className="account-avatar-grid-container">
-          {avatarTab === 'gallery' ? (
-            <div className="account-gallery-grid">
-              {AVATAR_GALLERY_IMAGES.map((img) => {
-                const isSelected = pinnedStudent && (
-                  pinnedStudent.emoji === img.path ||
-                  pinnedStudent.emoji === img.cdnPath ||
-                  pinnedStudent.emoji === img.id ||
-                  pinnedStudent.emoji === img.legacyPath ||
-                  pinnedStudent.emoji === img.name
-                );
-
-                return (
-                  <button
-                    key={img.id}
-                    type="button"
-                    className={`gallery-grid-btn ${isSelected ? 'selected' : ''}`}
-                    onClick={() => {
-                      triggerHaptic('medium');
-                      if (pinnedStudent && onUpdateAvatar) {
-                        onUpdateAvatar(img.path, pinnedStudent.id, pinnedStudent.name);
-                      }
-                      showToast?.("Profilingiz rasmi muvaffaqiyatli saqlandi!", "success");
-                    }}
-                    title={img.label || 'Surat'}
-                    aria-label={img.label || 'Surat'}
-                  >
-                    <img
-                      src={img.path}
-                      alt={img.label || 'avatar'}
-                      loading="lazy"
-                      decoding="async"
-                      className="gallery-thumb-img"
-                      onError={(e) => {
-                        if (img.cdnPath && e.currentTarget.src !== img.cdnPath) {
-                          e.currentTarget.src = img.cdnPath;
-                        }
-                      }}
-                    />
-                    {isSelected && (
-                      <div className="avatar-check-badge">
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round">
-                          <polyline points="20 6 9 17 4 12" />
-                        </svg>
-                      </div>
-                    )}
-                  </button>
-                );
-              })}
-            </div>
-          ) : (
-            <div className="account-svg-grid">
-              {STUDENT_AVATARS.map((item) => {
-                const isSelected = pinnedStudent && (
-                  pinnedStudent.emoji === item.id ||
-                  pinnedStudent.emoji === item.label
-                );
-
-                return (
-                  <button
-                    key={item.id}
-                    type="button"
-                    className={`svg-grid-btn ${isSelected ? 'selected' : ''}`}
-                    onClick={() => {
-                      triggerHaptic('medium');
-                      if (pinnedStudent && onUpdateAvatar) {
-                        onUpdateAvatar(item.id, pinnedStudent.id, pinnedStudent.name);
-                      }
-                      showToast?.("Profilingiz avatari muvaffaqiyatli saqlandi!", "success");
-                    }}
-                    title={item.label}
-                    aria-label={item.label}
-                  >
-                    <div className="svg-item-icon">
-                      {item.svg(42)}
-                    </div>
-                    <span className="svg-item-name">{item.label}</span>
-                    {isSelected && (
-                      <div className="avatar-check-badge">
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round">
-                          <polyline points="20 6 9 17 4 12" />
-                        </svg>
-                      </div>
-                    )}
-                  </button>
-                );
-              })}
-            </div>
-          )}
-        </div>
-      </section>
-
-
-
-      {/* 6. Chiqish (Logout) */}
-      <section className="account-section-card danger-zone" aria-label="Tizimdan chiqish">
-        <div className="account-section-header">
-          <div className="section-title-wrap">
-            <h3 className="account-section-title">Tizimdan chiqish</h3>
-            <span className="account-section-sub">
-              Barcha guruh va parollarni qurilmadan tozalash
-            </span>
-          </div>
-        </div>
-
-        <div className="account-logout-card">
-          <p className="account-logout-desc">
-            Agar boshqa qurilmaga o'tayotgan bo'lsangiz yoki qayta parollash kerak bo'lsa, tizimdan chiqishingiz mumkin.
-          </p>
-          <button
-            type="button"
-            className="account-logout-btn"
-            onClick={() => {
-              triggerHaptic('heavy');
-              setShowLogoutConfirm(true);
-            }}
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
-              <polyline points="16 17 21 12 16 7"/>
-              <line x1="21" y1="12" x2="9" y2="12"/>
-            </svg>
-            <span>Tizimdan butunlay chiqish</span>
-          </button>
-        </div>
-      </section>
-
-      {/* PIN Modals (Entry / Setup / Change) Rendered via Portal */}
+      {/* Modal 3: PIN Entry / Setup / Change Sheet */}
       {pinModalMode && typeof document !== 'undefined' && createPortal(
         <div
           className="sheet-backdrop animate-backdropFadeIn"
@@ -1049,7 +1002,6 @@ export default function StudentAccountView({
             role="dialog"
             aria-modal="true"
           >
-            {/* Mobile Pull Drag Indicator */}
             <div
               className="sheet-drag-zone"
               onTouchStart={handleSheetTouchStart}
@@ -1108,7 +1060,6 @@ export default function StudentAccountView({
                     <p className="pin-preview-hint">Profilga kirish uchun 4 xonali PIN-kodni tering</p>
                   </div>
 
-                  {/* Visual 4-Digit Indicator Boxes */}
                   <div className="pin-boxes-container">
                     <div
                       className="pin-boxes-row"
@@ -1406,7 +1357,7 @@ export default function StudentAccountView({
         document.body
       )}
 
-      {/* Logout Confirmation Modal Rendered via Portal */}
+      {/* Modal 4: Logout Confirmation Dialog */}
       {showLogoutConfirm && typeof document !== 'undefined' && createPortal(
         <div
           className="sheet-backdrop animate-backdropFadeIn"

@@ -348,23 +348,6 @@ export default function StudentAttendanceCalendar({
         </div>
       )}
 
-      {/* If profile is not chosen */}
-      {!pinnedStudent && (
-        <div className="native-unpinned-card">
-          <span className="unpinned-title">Shaxsiy davomat</span>
-          <span className="unpinned-sub">Shaxsiy davomatingizni ko'rish uchun Profil bo'limidan ismingizni tanlang.</span>
-          {onOpenProfilePicker && (
-            <button
-              type="button"
-              className="account-action-pill-btn secondary"
-              onClick={onOpenProfilePicker}
-              style={{ marginTop: 8 }}
-            >
-              Profilni tanlash ▾
-            </button>
-          )}
-        </div>
-      )}
 
       {/* 7-col Weekday Headers */}
       <div className="calendar-weekdays-header">
@@ -443,40 +426,7 @@ export default function StudentAttendanceCalendar({
         </div>
       )}
 
-      {/* Legend Bar */}
-      <div className="native-legend-bar">
-        {pinnedStudent ? (
-          <>
-            <div className="legend-item">
-              <span className="legend-swatch status-present" />
-              <span>Kelgan</span>
-            </div>
-            <div className="legend-item">
-              <span className="legend-swatch status-late" />
-              <span>Kechikkan</span>
-            </div>
-            <div className="legend-item">
-              <span className="legend-swatch status-absent" />
-              <span>Kelmagan</span>
-            </div>
-            <div className="legend-item">
-              <span className="legend-swatch status-scheduled" />
-              <span>Dars kuni</span>
-            </div>
-          </>
-        ) : (
-          <>
-            <div className="legend-item">
-              <span className="legend-swatch status-group-lesson" />
-              <span>Dars o'tilgan</span>
-            </div>
-            <div className="legend-item">
-              <span className="legend-swatch status-scheduled" />
-              <span>Dars kuni</span>
-            </div>
-          </>
-        )}
-      </div>
+
     </div>
   );
 }
