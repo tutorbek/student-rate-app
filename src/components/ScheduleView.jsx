@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { renderGroupIcon, GROUP_COLOR_OPTIONS, getGroupColorOption } from '../utils/groupIcons';
+import { renderGroupIcon, getGroupColorOption } from '../utils/groupIcons';
 import { renderAvatar } from '../utils/studentAvatars';
 import { getGroupCategory } from '../utils/db';
 import Time24Input from './Time24Input';
@@ -166,8 +166,6 @@ const ScheduleView = ({
     return DAY_KEYS_MAP[dayIdx];
   }, []);
 
-  const [mobileDay, setMobileDay] = useState(todayKey === 'sun' ? 'mon' : todayKey);
-
   // Check if Sunday has any classes scheduled
   const hasSundayClasses = useMemo(() => {
     const hasRegularSun = groups.some((g) => g.schedule?.days?.includes('sun'));
@@ -178,6 +176,19 @@ const ScheduleView = ({
   const activeWeekdays = useMemo(() => {
     return hasSundayClasses ? [...WEEKDAYS, SUNDAY] : WEEKDAYS;
   }, [hasSundayClasses]);
+
+  const [mobileDay, setMobileDay] = useState(() => {
+    if (todayKey === 'sun') {
+      return hasSundayClasses ? 'sun' : 'mon';
+    }
+    return todayKey;
+  });
+
+  useEffect(() => {
+    if (!activeWeekdays.some((d) => d.key === mobileDay)) {
+      setMobileDay(activeWeekdays[0]?.key || 'mon');
+    }
+  }, [activeWeekdays, mobileDay]);
 
   // Count students in each group
   const getStudentCount = (groupId) => {
@@ -533,8 +544,8 @@ const ScheduleView = ({
         <div
           className="weekly-timetable-grid"
           style={{
-            gridTemplateColumns: `repeat(${activeWeekdays.length}, minmax(0, 1fr))`,
-            minWidth: activeWeekdays.length > 6 ? '980px' : '850px'
+            '--grid-cols': activeWeekdays.length,
+            '--grid-min-width': activeWeekdays.length > 6 ? '980px' : '850px',
           }}
         >
           {activeWeekdays.map((day) => {
@@ -1646,29 +1657,41 @@ const ScheduleView = ({
         /* Mobile day tabs */
         .mobile-day-tabs {
           display: none;
-          gap: 6px;
+          gap: 5px;
           overflow-x: auto;
-          padding-bottom: 4px;
+          padding-bottom: 2px;
           -webkit-overflow-scrolling: touch;
+          scrollbar-width: none;
+          -ms-overflow-style: none;
+          width: 100%;
+          box-sizing: border-box;
+        }
+
+        .mobile-day-tabs::-webkit-scrollbar {
+          display: none;
+          width: 0;
+          height: 0;
         }
 
         .mobile-day-pill {
-          flex: 1;
+          flex: 1 1 0;
           display: flex;
           flex-direction: column;
           align-items: center;
           justify-content: center;
-          padding: 10px 8px;
+          padding: 8px 3px;
           background: #FFFFFF;
           border: 1px solid rgba(0, 0, 0, 0.08);
           border-radius: var(--radius-md);
           cursor: pointer;
           color: var(--text-secondary);
           font-weight: 600;
-          font-size: 0.86rem;
+          font-size: 0.82rem;
           transition: all var(--transition-fast);
-          min-width: 50px;
+          min-width: 0;
           position: relative;
+          touch-action: manipulation;
+          user-select: none;
         }
 
         [data-theme="dark"] .mobile-day-pill {
@@ -1680,17 +1703,30 @@ const ScheduleView = ({
           background: #1D1D1F;
           color: #FFFFFF;
           border-color: #1D1D1F;
+          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
         }
 
         [data-theme="dark"] .mobile-day-pill.active {
           background: var(--apple-blue);
           color: #1D1D1F;
           border-color: var(--apple-blue);
+          box-shadow: 0 2px 8px rgba(0, 113, 227, 0.3);
         }
 
         .mobile-day-pill.is-today:not(.active) {
           border-color: var(--apple-blue);
           color: var(--apple-blue);
+          background: rgba(0, 113, 227, 0.04);
+        }
+
+        [data-theme="dark"] .mobile-day-pill.is-today:not(.active) {
+          border-color: var(--apple-blue);
+          color: var(--apple-blue);
+          background: rgba(138, 180, 248, 0.08);
+        }
+
+        .mobile-day-short {
+          line-height: 1.2;
         }
 
         .mobile-day-dot {
@@ -1698,20 +1734,21 @@ const ScheduleView = ({
           height: 5px;
           border-radius: 50%;
           background: currentColor;
-          margin-top: 4px;
+          margin-top: 3px;
         }
 
         /* Weekly timetable grid */
         .weekly-grid-wrapper {
           width: 100%;
           overflow-x: auto;
+          -webkit-overflow-scrolling: touch;
         }
 
         .weekly-timetable-grid {
           display: grid;
-          grid-template-columns: repeat(6, minmax(0, 1fr));
+          grid-template-columns: repeat(var(--grid-cols, 6), minmax(0, 1fr));
           gap: 12px;
-          min-width: 850px;
+          min-width: var(--grid-min-width, 850px);
           width: 100%;
         }
 
@@ -3479,32 +3516,216 @@ const ScheduleView = ({
           padding: 8px 14px;
         }
 
-        /* Responsive Breakpoints */
-        @media (max-width: 768px) {
+        /* Responsive Breakpoints (<= 900px aligned with application mobile layout) */
+        @media (max-width: 900px) {
+          .schedule-container {
+            gap: 14px;
+            width: 100%;
+            max-width: 100%;
+            overflow-x: clip;
+          }
+
           .mobile-day-tabs {
             display: flex;
           }
 
           .weekly-grid-wrapper {
             overflow: visible;
+            width: 100% !important;
+            max-width: 100% !important;
           }
 
           .weekly-timetable-grid {
-            display: block;
-            min-width: 0;
+            display: block !important;
+            min-width: 0 !important;
+            width: 100% !important;
+            max-width: 100% !important;
+            grid-template-columns: none !important;
           }
 
           .timetable-day-col {
-            display: none;
+            display: none !important;
             min-height: auto;
+            width: 100% !important;
+            max-width: 100% !important;
+            box-sizing: border-box !important;
+            border-radius: var(--radius-lg);
+            padding: 14px 12px;
           }
 
           .timetable-day-col.mobile-selected-day {
+            display: flex !important;
+          }
+
+          .day-col-header {
+            padding-bottom: 10px;
+            margin-bottom: 2px;
+          }
+
+          .day-col-name {
+            font-size: 0.98rem;
+          }
+
+          .day-classes-count {
+            font-size: 0.76rem;
+            width: auto;
+            min-width: 22px;
+            height: 22px;
+            padding: 0 6px;
+            border-radius: 11px;
+          }
+
+          .schedule-lesson-card {
+            padding: 14px;
+            border-radius: var(--radius-lg);
+            gap: 10px;
+            width: 100% !important;
+            max-width: 100% !important;
+            box-sizing: border-box !important;
+          }
+
+          .lesson-time-range {
+            font-size: 0.88rem;
+          }
+
+          .lesson-group-title {
+            font-size: 0.95rem;
+          }
+
+          .lesson-group-icon {
+            width: 30px;
+            height: 30px;
+          }
+
+          .lesson-card-action-btn,
+          .extra-action-icon-btn {
+            width: 32px;
+            height: 32px;
+            border-radius: 6px;
+            background: rgba(0, 0, 0, 0.04);
+            color: var(--text-secondary);
+            touch-action: manipulation;
+          }
+
+          [data-theme="dark"] .lesson-card-action-btn,
+          [data-theme="dark"] .extra-action-icon-btn {
+            background: rgba(255, 255, 255, 0.08);
+            color: #E8EAED;
+          }
+
+          .extra-actions-group {
+            gap: 6px;
+          }
+
+          .day-empty-slot {
+            min-height: 120px;
+            padding: 22px 16px;
+            border: 1.5px dashed var(--border-color);
+            background: rgba(0, 0, 0, 0.015);
+            border-radius: var(--radius-lg);
+            gap: 8px;
+          }
+
+          [data-theme="dark"] .day-empty-slot {
+            background: rgba(255, 255, 255, 0.02);
+            border-color: rgba(255, 255, 255, 0.12);
+          }
+
+          .empty-slot-text {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+          }
+
+          .empty-slot-plus {
+            opacity: 1 !important;
+            font-size: 0.82rem;
+            font-weight: 700;
+            padding: 6px 14px;
+            background: rgba(0, 113, 227, 0.08);
+            border-radius: var(--radius-full);
+            color: var(--apple-blue);
+          }
+
+          [data-theme="dark"] .empty-slot-plus {
+            background: rgba(138, 180, 248, 0.15);
+            color: #8AB4F8;
+          }
+
+          /* Modals responsive adjustments */
+          .schedule-modal-box,
+          .student-list-modal-box,
+          .extra-lesson-modal-box {
+            max-width: 100% !important;
+            width: 100% !important;
+            box-sizing: border-box !important;
+          }
+
+          .student-list-modal-box {
+            padding: 18px 14px 16px !important;
+            max-height: calc(100dvh - 24px) !important;
+          }
+
+          .student-list-modal-footer {
+            flex-direction: column-reverse !important;
+            gap: 8px !important;
+            width: 100% !important;
+          }
+
+          .student-list-modal-footer .btn {
+            width: 100% !important;
+            justify-content: center !important;
+          }
+
+          .modal-actions-footer {
+            flex-direction: column-reverse !important;
+            gap: 8px !important;
+            margin-top: 18px !important;
+          }
+
+          .modal-actions-footer .btn-danger-outline {
+            width: 100% !important;
+            text-align: center !important;
+            padding: 10px !important;
+          }
+
+          .modal-actions-right {
+            width: 100% !important;
+            margin-left: 0 !important;
+            gap: 8px !important;
+          }
+
+          .modal-actions-right .btn {
+            flex: 1 !important;
+            justify-content: center !important;
+          }
+
+          .modal-actions-fixed {
             display: flex;
+            gap: 8px;
+            width: 100%;
+          }
+
+          .modal-actions-fixed .btn {
+            flex: 1;
+            justify-content: center;
+          }
+
+          .days-chip-grid {
+            gap: 4px;
+          }
+
+          .day-chip-btn {
+            padding: 8px 2px;
           }
 
           .day-chip-name {
-            display: none;
+            display: none !important;
+          }
+
+          .schedule-time-row {
+            flex-direction: row;
+            gap: 8px;
           }
 
           .today-schedule-banner {
