@@ -190,21 +190,15 @@ const Sidebar = ({ activeTab, setActiveTab, userRole, onLogout, theme, toggleThe
             onClick={() => setActiveTab(userRole === 'student' ? 'leaderboard' : (userRole === 'admin' ? 'dashboard' : 'schedule'))}
             title="Bosh sahifa"
           >
+            <img
+              src={theme === 'dark' ? "/apple-touch-icon-dark.png" : "/apple-touch-icon.png"}
+              alt="Epchil Logo"
+              className="sidebar-brand-icon"
+            />
             <h1 className="sidebar-logo-text">
               EPCHIL <span className="logo-badge">ROBOT</span>
             </h1>
           </div>
-          {toggleTheme && (
-            <button
-              type="button"
-              className="sidebar-theme-btn scale-active"
-              onClick={toggleTheme}
-              aria-label="Mavzuni o'zgartirish"
-              title={theme === 'dark' ? "Yorug' rejim" : "Qorong'i rejim"}
-            >
-              {theme === 'dark' ? <IconSun size={15} /> : <IconMoon size={15} />}
-            </button>
-          )}
         </div>
 
         {/* Top Navigation Group (directly below logo) */}
@@ -250,6 +244,20 @@ const Sidebar = ({ activeTab, setActiveTab, userRole, onLogout, theme, toggleThe
                 {userRole === 'admin' ? 'ADMINISTRATOR' : "O'QITUVCHI"}
               </span>
               <div className="user-card-actions">
+                {toggleTheme && (
+                  <button
+                    type="button"
+                    className="user-card-action-btn scale-active"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      toggleTheme();
+                    }}
+                    aria-label="Mavzuni o'zgartirish"
+                    title={theme === 'dark' ? "Yorug' rejim" : "Qorong'i rejim"}
+                  >
+                    {theme === 'dark' ? <IconSun size={14} /> : <IconMoon size={14} />}
+                  </button>
+                )}
                 <button
                   type="button"
                   className={`user-card-action-btn scale-active ${activeTab === 'settings' ? 'active' : ''}`}
@@ -298,6 +306,11 @@ const Sidebar = ({ activeTab, setActiveTab, userRole, onLogout, theme, toggleThe
           className="mobile-brand scale-active"
           onClick={() => setActiveTab(userRole === 'student' ? 'leaderboard' : (userRole === 'admin' ? 'dashboard' : 'schedule'))}
         >
+          <img
+            src={theme === 'dark' ? "/apple-touch-icon-dark.png" : "/apple-touch-icon.png"}
+            alt="Epchil Logo"
+            className="sidebar-brand-icon"
+          />
           <h1 className="sidebar-logo-text">
             EPCHIL <span className="logo-badge">ROBOT</span>
           </h1>
@@ -412,6 +425,15 @@ const Sidebar = ({ activeTab, setActiveTab, userRole, onLogout, theme, toggleThe
           cursor: pointer;
           display: flex;
           align-items: center;
+          gap: 8px;
+        }
+
+        .sidebar-brand-icon {
+          width: 28px;
+          height: 28px;
+          object-fit: contain;
+          flex-shrink: 0;
+          border-radius: 6px;
         }
 
         .sidebar-logo-text {
@@ -436,7 +458,7 @@ const Sidebar = ({ activeTab, setActiveTab, userRole, onLogout, theme, toggleThe
         }
 
         .admin-nav-role-badge {
-          background: #8B5CF6;
+          background: var(--apple-blue, #0171E3);
           color: #FFFFFF;
           padding: 1.5px 7px;
           border-radius: var(--radius-full);
@@ -754,6 +776,7 @@ const Sidebar = ({ activeTab, setActiveTab, userRole, onLogout, theme, toggleThe
           user-select: none;
           display: flex;
           align-items: center;
+          gap: 8px;
         }
 
         .mobile-header-actions {
@@ -823,7 +846,7 @@ const Sidebar = ({ activeTab, setActiveTab, userRole, onLogout, theme, toggleThe
         }
 
         .mobile-tab-btn.active {
-          color: var(--apple-blue, #0071E3);
+          color: var(--apple-blue, #0171E3);
         }
 
         .mobile-tab-btn.active .mobile-tab-label {
@@ -869,9 +892,13 @@ const Sidebar = ({ activeTab, setActiveTab, userRole, onLogout, theme, toggleThe
           color: #E8EAED;
         }
 
+        [data-theme="dark"] .sidebar-brand-icon {
+          content: url("/apple-touch-icon-dark.png");
+        }
+
         [data-theme="dark"] .logo-badge {
-          background: #3C4043;
-          color: #E8EAED;
+          background: #FFFFFF;
+          color: #000000;
         }
 
         [data-theme="dark"] .sidebar-theme-btn {
@@ -951,7 +978,7 @@ const Sidebar = ({ activeTab, setActiveTab, userRole, onLogout, theme, toggleThe
         }
 
         [data-theme="dark"] .user-card-avatar-initials {
-          background: #0071E3;
+          background: #0171E3;
           box-shadow: 0 2px 8px rgba(0, 113, 227, 0.35);
         }
 

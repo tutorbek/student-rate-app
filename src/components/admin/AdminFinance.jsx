@@ -1895,9 +1895,9 @@ const AdminFinance = ({
           display: inline-block;
         }
 
-        .badge-paid { background: #D1FAE5; color: #047857; }
-        .badge-partial { background: #FEF3C7; color: #B45309; }
-        .badge-unpaid { background: #FEE2E2; color: #B91C1C; }
+        .badge-paid { background: rgba(52, 199, 89, 0.14); color: #34C759; border: 1px solid rgba(52, 199, 89, 0.25); }
+        .badge-partial { background: rgba(255, 149, 0, 0.14); color: #FF9500; border: 1px solid rgba(255, 149, 0, 0.25); }
+        .badge-unpaid { background: rgba(255, 59, 48, 0.14); color: #FF3B30; border: 1px solid rgba(255, 59, 48, 0.25); }
 
         /* Action Buttons */
         .student-card-actions {
@@ -2085,9 +2085,9 @@ const AdminFinance = ({
         }
 
         .fee-preset-pill.active {
-          background: var(--accent, #007AFF);
+          background: var(--apple-blue);
           color: #FFFFFF;
-          border-color: var(--accent, #007AFF);
+          border-color: var(--apple-blue);
         }
 
         /* Dark Mode Overrides */
@@ -2098,7 +2098,7 @@ const AdminFinance = ({
         [data-theme="dark"] .finance-history-item,
         [data-theme="dark"] .finance-empty-card {
           background: #292A2D;
-          border-color: #3C4043;
+          border-color: #363739;
         }
 
         [data-theme="dark"] .month-nav-btn,
@@ -2109,13 +2109,13 @@ const AdminFinance = ({
         [data-theme="dark"] .history-group-badge,
         [data-theme="dark"] .fee-preset-pill {
           background: #202124;
-          border-color: #3C4043;
+          border-color: #363739;
           color: #E8EAED;
         }
 
         [data-theme="dark"] .finance-subtab-btn {
           background: #202124;
-          border-color: #3C4043;
+          border-color: #363739;
           color: #9AA0A6;
         }
 
@@ -2125,13 +2125,17 @@ const AdminFinance = ({
         }
 
         [data-theme="dark"] .kpi-progress-bar-bg {
-          background: #3C4043;
+          background: #363739;
         }
 
         [data-theme="dark"] .tab-counter-badge {
-          background: #3C4043;
+          background: #363739;
           color: #E8EAED;
         }
+
+        [data-theme="dark"] .badge-paid { background: rgba(52, 199, 89, 0.18); color: #81C995; border-color: rgba(52, 199, 89, 0.35); }
+        [data-theme="dark"] .badge-partial { background: rgba(255, 149, 0, 0.18); color: #FDD663; border-color: rgba(255, 149, 0, 0.35); }
+        [data-theme="dark"] .badge-unpaid { background: rgba(255, 59, 48, 0.18); color: #F28B82; border-color: rgba(255, 59, 48, 0.35); }
       `}</style>
     </div>
   );

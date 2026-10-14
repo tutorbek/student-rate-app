@@ -735,21 +735,21 @@ const AdminAttendance = ({
         }
 
         .rate-good {
-          background: #ECFDF5;
-          color: #059669;
-          border: 1px solid #A7F3D0;
+          background: rgba(52, 199, 89, 0.14);
+          color: #34C759;
+          border: 1px solid rgba(52, 199, 89, 0.25);
         }
 
         .rate-avg {
-          background: #FFFBEB;
-          color: #D97706;
-          border: 1px solid #FDE68A;
+          background: rgba(255, 149, 0, 0.14);
+          color: #FF9500;
+          border: 1px solid rgba(255, 149, 0, 0.25);
         }
 
         .rate-bad {
-          background: #FEF2F2;
-          color: #DC2626;
-          border: 1px solid #FECACA;
+          background: rgba(255, 59, 48, 0.14);
+          color: #FF3B30;
+          border: 1px solid rgba(255, 59, 48, 0.25);
         }
 
         /* Dark Mode */
@@ -757,15 +757,15 @@ const AdminAttendance = ({
         [data-theme="dark"] .admin-metric-card,
         [data-theme="dark"] .admin-sessions-card {
           background: #292A2D;
-          border-color: #3C4043;
+          border-color: #363739;
         }
 
         [data-theme="dark"] .admin-sessions-table th {
-          border-color: #3C4043;
+          border-color: #363739;
         }
 
         [data-theme="dark"] .admin-sessions-table td {
-          border-color: #3C4043;
+          border-color: #363739;
         }
 
         [data-theme="dark"] .admin-sessions-table tr:hover td {
@@ -773,8 +773,26 @@ const AdminAttendance = ({
         }
 
         [data-theme="dark"] .pill-muted {
-          background: #3C4043;
+          background: #363739;
           color: #9AA0A6;
+        }
+
+        [data-theme="dark"] .rate-good {
+          background: rgba(52, 199, 89, 0.18);
+          color: #81C995;
+          border-color: rgba(52, 199, 89, 0.35);
+        }
+
+        [data-theme="dark"] .rate-avg {
+          background: rgba(255, 149, 0, 0.18);
+          color: #FDD663;
+          border-color: rgba(255, 149, 0, 0.35);
+        }
+
+        [data-theme="dark"] .rate-bad {
+          background: rgba(255, 59, 48, 0.18);
+          color: #F28B82;
+          border-color: rgba(255, 59, 48, 0.35);
         }
 
         /* Print Media Styles */

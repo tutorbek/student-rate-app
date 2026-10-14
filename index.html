@@ -13,6 +13,73 @@
           document.documentElement.setAttribute('data-theme', theme);
           document.documentElement.style.backgroundColor = isDark ? '#202124' : '#F5F5F7';
           document.documentElement.style.colorScheme = theme;
+
+          function syncFavicons(currentTheme) {
+            var dark = currentTheme === 'dark';
+            var cacheTag = dark ? 'dark-v2' : 'light-v2';
+            var icon32Url = dark ? '/favicon-32x32-dark.png' : '/favicon-32x32.png';
+            var icon16Url = dark ? '/favicon-16x16-dark.png' : '/favicon-16x16.png';
+            var iconSvgUrl = dark ? '/favicon-dark.svg' : '/favicon.svg';
+            var appleUrl = dark ? '/apple-touch-icon-dark.png' : '/apple-touch-icon.png';
+
+            // Remove existing icon links to force Chromium/WebKit to re-evaluate the tab icon
+            var existing = document.querySelectorAll('link[rel*="icon"]');
+            for (var i = 0; i < existing.length; i++) {
+              if (existing[i].parentNode) {
+                existing[i].parentNode.removeChild(existing[i]);
+              }
+            }
+
+            // 1. Vector SVG (modern browsers prioritize this and support native scaling)
+            var linkSvg = document.createElement('link');
+            linkSvg.rel = 'icon';
+            linkSvg.type = 'image/svg+xml';
+            linkSvg.href = iconSvgUrl + '?v=' + cacheTag;
+            document.head.appendChild(linkSvg);
+
+            // 2. High-res 32x32 PNG
+            var link32 = document.createElement('link');
+            link32.rel = 'icon';
+            link32.type = 'image/png';
+            link32.sizes = '32x32';
+            link32.href = icon32Url + '?v=' + cacheTag;
+            document.head.appendChild(link32);
+
+            // 3. Crisp 16x16 PNG
+            var link16 = document.createElement('link');
+            link16.rel = 'icon';
+            link16.type = 'image/png';
+            link16.sizes = '16x16';
+            link16.href = icon16Url + '?v=' + cacheTag;
+            document.head.appendChild(link16);
+
+            // 4. Apple Touch Icon (180x180)
+            var linkApple = document.createElement('link');
+            linkApple.rel = 'apple-touch-icon';
+            linkApple.sizes = '180x180';
+            linkApple.href = appleUrl + '?v=' + cacheTag;
+            document.head.appendChild(linkApple);
+          }
+
+          window.syncFavicons = syncFavicons;
+
+          if (typeof MutationObserver !== 'undefined') {
+            new MutationObserver(function(mutations) {
+              for (var i = 0; i < mutations.length; i++) {
+                if (mutations[i].attributeName === 'data-theme') {
+                  syncFavicons(document.documentElement.getAttribute('data-theme'));
+                }
+              }
+            }).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+          }
+
+          if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', function() {
+              syncFavicons(document.documentElement.getAttribute('data-theme') || theme);
+            });
+          } else {
+            syncFavicons(theme);
+          }
         } catch (e) {}
       })();
     </script>
@@ -56,12 +123,12 @@
         color-scheme: light;
       }
     </style>
-    <!-- Favicons -->
-    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
-    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
-    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
-    <link rel="manifest" href="/site.webmanifest">
-    <link rel="shortcut icon" href="/favicon.ico">
+    <!-- Favicons (Dynamic Light/Dark Support with #D8F10A Volt) -->
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg?v=2">
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png?v=2">
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png?v=2">
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=2">
+    <link rel="manifest" href="/site.webmanifest?v=2">
 
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
     <meta name="apple-mobile-web-app-capable" content="yes" />

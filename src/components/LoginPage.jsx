@@ -18,7 +18,7 @@ export default function LoginPage({
   }, []);
 
   return (
-    <div className="landing-root login-root w-full min-h-screen min-h-[100dvh] bg-[var(--bg-primary)] text-[var(--text-primary)] select-none relative flex flex-col justify-between font-sans antialiased overflow-hidden selection:bg-[#0071E3] selection:text-white">
+    <div className="landing-root login-root w-full min-h-screen min-h-[100dvh] bg-[var(--bg-primary)] text-[var(--text-primary)] select-none relative flex flex-col justify-between font-sans antialiased overflow-hidden selection:bg-[#0171E3] selection:text-white">
 
       {/* 1. Top Navigation Bar (Brand Header matching Landing Page exactly) */}
       <header className="sticky top-0 z-50 w-full backdrop-blur-2xl bg-[var(--bg-primary)]/90 dark:bg-[#202124]/90 border-b border-[var(--border-color)] pt-[env(safe-area-inset-top,0px)] transition-colors">
@@ -40,13 +40,15 @@ export default function LoginPage({
               <button
                 type="button"
                 onClick={onBackToLanding}
-                className="group h-10 sm:h-11 xl:h-12 px-4 sm:px-6 xl:px-7 rounded-full border border-black/10 dark:border-white/10 bg-white/80 dark:bg-white/5 hover:bg-black/5 dark:hover:bg-white/10 text-xs sm:text-sm xl:text-base font-semibold text-[var(--text-primary)] transition-all duration-300 ease-out cursor-pointer shadow-md active:scale-95 flex items-center gap-2 sm:gap-2.5 min-h-[44px]"
+                className="group h-10 sm:h-11 xl:h-12 p-1 pr-3.5 pl-1.5 sm:pr-6 sm:pl-2 xl:pr-7 xl:pl-2.5 rounded-full bg-[#0C1016] text-white hover:bg-[#1E242C] dark:bg-white dark:text-[#0C1016] dark:hover:bg-[#EBEBEF] transition-all duration-300 ease-out flex items-center gap-2 sm:gap-3 xl:gap-3.5 cursor-pointer shadow-md active:scale-95 min-h-[44px]"
               >
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="transition-transform group-hover:-translate-x-0.5">
-                  <path d="M19 12H5" />
-                  <path d="m12 19-7-7 7-7" />
-                </svg>
-                <span>Bosh sahifa</span>
+                <span className="w-7 h-7 sm:w-8 sm:h-8 xl:w-9 xl:h-9 rounded-full bg-white/15 dark:bg-black/10 flex items-center justify-center transition-transform duration-300 group-hover:-translate-x-0.5 shrink-0">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M19 12H5" />
+                    <path d="m12 19-7-7 7-7" />
+                  </svg>
+                </span>
+                <span className="text-xs sm:text-sm xl:text-base font-semibold tracking-wide uppercase">Bosh sahifa</span>
               </button>
             </div>
           )}
@@ -58,7 +60,7 @@ export default function LoginPage({
         <div className="w-full max-w-[440px] rounded-3xl sm:rounded-[32px] bg-white dark:bg-[#1C1C1E] p-7 sm:p-9 shadow-[0_20px_60px_-15px_rgba(0,0,0,0.08),0_1px_3px_rgba(0,0,0,0.04)] dark:shadow-[0_25px_60px_-15px_rgba(0,0,0,0.6)] border border-black/[0.08] dark:border-white/[0.12] transition-all">
 
           {/* Icon Badge */}
-          <div className="w-12 h-12 rounded-2xl bg-[#0071E3]/10 dark:bg-[#0071E3]/20 text-[#0071E3] flex items-center justify-center mb-5 shadow-xs">
+          <div className="w-12 h-12 rounded-2xl bg-[#0171E3]/10 dark:bg-[#0171E3]/20 text-[#0171E3] flex items-center justify-center mb-5 shadow-xs">
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
               <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
               <path d="M7 11V7a5 5 0 0 1 10 0v4" />
@@ -95,7 +97,7 @@ export default function LoginPage({
                   disabled={loginLoading}
                   autoComplete="current-password"
                   required
-                  className="w-full bg-[#F5F5F7] dark:bg-[#2C2C2E] text-[var(--text-primary)] placeholder-[var(--text-secondary)]/50 border border-black/10 dark:border-white/10 rounded-2xl px-4 py-3.5 pr-11 text-base sm:text-sm font-medium focus:outline-none focus:ring-4 focus:ring-[#0071E3]/20 focus:border-[#0071E3] transition-all"
+                  className="w-full bg-[#F5F5F7] dark:bg-[#2C2C2E] text-[var(--text-primary)] placeholder-[var(--text-secondary)]/50 border border-black/10 dark:border-white/10 rounded-2xl px-4 py-3.5 pr-11 text-base sm:text-sm font-medium focus:outline-none focus:ring-4 focus:ring-[#0171E3]/20 focus:border-[#0171E3] transition-all"
                 />
                 <button
                   type="button"
@@ -151,7 +153,7 @@ export default function LoginPage({
                   href="https://t.me/bkzd19?text=Assalomu%20alaykum!%20Epchil%20Robot%20platformasiga%20kirish%20paroli%20bo'yicha%20bog'lanayotgan%20edim."
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-[#0071E3] hover:underline font-semibold"
+                  className="text-[#0171E3] hover:underline font-semibold"
                 >
                   Admin bilan bog'lanish
                 </a>

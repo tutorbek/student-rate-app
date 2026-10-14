@@ -419,6 +419,11 @@ export default function StudentPortal({
                 aria-label="Asosiy sahifa"
               >
                 <span className="navbar-logo-text">
+                  <img
+                    src={theme === 'dark' ? "/apple-touch-icon-dark.png" : "/apple-touch-icon.png"}
+                    alt="Epchil Logo"
+                    className="navbar-logo-icon"
+                  />
                   EPCHIL <span className="logo-badge">ROBOT</span>
                 </span>
               </button>

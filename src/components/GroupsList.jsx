@@ -1246,7 +1246,7 @@ const GroupsList = ({
 
         [data-theme="dark"] .section-segmented-control {
           background: #202124;
-          border-color: #3C4043;
+          border-color: #363739;
         }
 
         .segmented-btn {
@@ -1385,9 +1385,9 @@ const GroupsList = ({
         }
 
         .category-modal-card.selected {
-          border-color: var(--apple-blue, #0071e3);
+          border-color: var(--apple-blue, #0171E3);
           background: rgba(0, 113, 227, 0.06);
-          box-shadow: 0 0 0 1px var(--apple-blue, #0071e3);
+          box-shadow: 0 0 0 1px var(--apple-blue, #0171E3);
         }
 
         [data-theme="dark"] .category-modal-card {
@@ -1401,9 +1401,9 @@ const GroupsList = ({
         }
 
         [data-theme="dark"] .category-modal-card.selected {
-          border-color: var(--apple-blue, #8ab4f8);
+          border-color: var(--apple-blue, #0171E3);
           background: rgba(138, 180, 248, 0.12);
-          box-shadow: 0 0 0 1px var(--apple-blue, #8ab4f8);
+          box-shadow: 0 0 0 1px var(--apple-blue, #0171E3);
         }
 
         .category-modal-header-row {
@@ -1424,12 +1424,12 @@ const GroupsList = ({
           font-weight: 700;
           padding: 2px 7px;
           border-radius: var(--radius-sm, 6px);
-          background: var(--apple-blue, #0071e3);
+          background: var(--apple-blue, #0171E3);
           color: #ffffff;
         }
 
         [data-theme="dark"] .category-selected-tag {
-          background: var(--apple-blue, #8ab4f8);
+          background: var(--apple-blue, #0171E3);
           color: #202124;
         }
 
@@ -1602,7 +1602,7 @@ const GroupsList = ({
 
         [data-theme="dark"] .preset-btn {
           background: #202124;
-          border-color: #3C4043;
+          border-color: #363739;
           color: var(--text-secondary);
         }
 
@@ -1632,7 +1632,7 @@ const GroupsList = ({
 
         [data-theme="dark"] .day-chip-btn {
           background: #202124;
-          border-color: #3C4043;
+          border-color: #363739;
         }
 
         .day-chip-short {
@@ -1713,7 +1713,7 @@ const GroupsList = ({
 
         [data-theme="dark"] .time-preset-chip {
           background: #202124;
-          border-color: #3C4043;
+          border-color: #363739;
           color: var(--text-secondary);
         }
 
@@ -1782,7 +1782,7 @@ const GroupsList = ({
         }
 
         [data-theme="dark"] .group-list-item .group-schedule-pill {
-          color: #0071E3 !important;
+          color: #0171E3 !important;
           background: rgba(0, 113, 227, 0.08) !important;
           border-color: rgba(0, 113, 227, 0.22) !important;
         }
@@ -1897,7 +1897,7 @@ const GroupsList = ({
 
         [data-theme="dark"] .group-folder-icon {
           background: #202124;
-          border-color: #3C4043;
+          border-color: #363739;
         }
 
         .group-item-info {
@@ -2068,8 +2068,8 @@ const GroupsList = ({
 
         .group-color-btn.selected {
           transform: translateY(-1px) scale(1.04);
-          box-shadow: 0 0 0 2.5px #0071E3, 0 4px 12px rgba(0, 113, 227, 0.25);
-          border-color: #0071E3 !important;
+          box-shadow: 0 0 0 2.5px #0171E3, 0 4px 12px rgba(0, 113, 227, 0.25);
+          border-color: #0171E3 !important;
         }
 
         [data-theme="dark"] .group-color-btn {
@@ -2081,8 +2081,8 @@ const GroupsList = ({
         }
 
         [data-theme="dark"] .group-color-btn.selected {
-          box-shadow: 0 0 0 2.5px #0A84FF, 0 4px 14px rgba(10, 132, 255, 0.4);
-          border-color: #0A84FF !important;
+          box-shadow: 0 0 0 2.5px #0171E3, 0 4px 14px rgba(10, 132, 255, 0.4);
+          border-color: #0171E3 !important;
         }
 
         .empty-groups-placeholder {

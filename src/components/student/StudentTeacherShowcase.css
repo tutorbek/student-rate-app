@@ -133,7 +133,7 @@
 .showcase-action-cue {
   font-size: 0.74rem;
   font-weight: 600;
-  color: var(--apple-blue, #0071E3);
+  color: var(--apple-blue, #0171E3);
   flex-shrink: 0;
   white-space: nowrap;
 }
@@ -404,7 +404,7 @@
   padding: 2.5px 9px;
   border-radius: 9999px;
   background: rgba(0, 113, 227, 0.08);
-  color: var(--apple-blue, #0071E3);
+  color: var(--apple-blue, #0171E3);
 }
 
 [data-theme="dark"] .teacher-modal-role-pill {
@@ -479,7 +479,7 @@
   top: 8px;
   font-size: 1.4rem;
   font-weight: 700;
-  color: var(--apple-blue, #0071E3);
+  color: var(--apple-blue, #0171E3);
   opacity: 0.45;
   line-height: 1;
 }

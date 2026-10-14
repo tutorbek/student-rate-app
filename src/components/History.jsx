@@ -563,17 +563,17 @@ const History = ({ groups = [], students = [], transactions = [], onDeleteTransa
         /* History Dark Mode Overrides */
         [data-theme="dark"] .history-card {
           background: #292A2D;
-          border-color: #3C4043;
+          border-color: #363739;
         }
 
         [data-theme="dark"] .history-header {
           background: #202124;
-          border-bottom-color: #3C4043;
+          border-bottom-color: #363739;
           color: #9AA0A6;
         }
 
         [data-theme="dark"] .history-row {
-          border-bottom-color: #3C4043;
+          border-bottom-color: #363739;
         }
 
         [data-theme="dark"] .history-row:hover {
@@ -606,12 +606,12 @@ const History = ({ groups = [], students = [], transactions = [], onDeleteTransa
 
         [data-theme="dark"] .custom-dropdown-list {
           background: #202124;
-          border-color: #3C4043;
+          border-color: #363739;
         }
 
         [data-theme="dark"] .custom-dropdown-item {
           color: #E8EAED;
-          border-bottom-color: #3C4043;
+          border-bottom-color: #363739;
         }
 
         [data-theme="dark"] .custom-dropdown-item:hover,
@@ -622,7 +622,7 @@ const History = ({ groups = [], students = [], transactions = [], onDeleteTransa
 
         [data-theme="dark"] .filter-select-btn {
           background: #202124;
-          border-color: #3C4043;
+          border-color: #363739;
           color: #E8EAED;
         }
       `}</style>

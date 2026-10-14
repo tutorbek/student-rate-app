@@ -276,13 +276,13 @@ const Time24Input = ({
 
         [data-theme="dark"] .time24-dropdown {
           background: #292A2D;
-          border-color: #3C4043;
+          border-color: #363739;
           box-shadow: 0 12px 28px rgba(0, 0, 0, 0.5);
         }
 
         [data-theme="dark"] .time24-slot-btn {
           background: #202124;
-          border-color: #3C4043;
+          border-color: #363739;
           color: #E8EAED;
         }
 

@@ -369,10 +369,10 @@ export const XIcon = ({ size = 14, className = '', color = 'currentColor' }) => 
 export const REWARD_VISUALS = {
   pen_set: {
     theme: 'blue',
-    bg: 'rgba(0, 113, 227, 0.1)',
-    color: '#0071E3',
-    darkBg: 'rgba(0, 113, 227, 0.22)',
-    darkColor: '#58A6FF',
+    bg: 'rgba(1, 113, 227, 0.1)',
+    color: '#0171E3',
+    darkBg: 'rgba(1, 113, 227, 0.22)',
+    darkColor: '#0171E3',
     svg: (
       <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
         <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
@@ -458,10 +458,10 @@ export const REWARD_VISUALS = {
   },
   full_writing_kit: {
     theme: 'cyan',
-    bg: 'rgba(50, 173, 230, 0.12)',
-    color: '#007AFF',
-    darkBg: 'rgba(50, 173, 230, 0.22)',
-    darkColor: '#5AC8FA',
+    bg: 'rgba(1, 113, 227, 0.12)',
+    color: '#0171E3',
+    darkBg: 'rgba(1, 113, 227, 0.22)',
+    darkColor: '#0171E3',
     svg: (
       <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
         <path d="m14 12-8.5 8.5a2.12 2.12 0 1 1-3-3L11 9" />
@@ -489,10 +489,10 @@ export const REWARD_VISUALS = {
   },
   school_backpack: {
     theme: 'blue',
-    bg: 'rgba(0, 122, 255, 0.12)',
-    color: '#007AFF',
-    darkBg: 'rgba(0, 122, 255, 0.22)',
-    darkColor: '#60A5FA',
+    bg: 'rgba(1, 113, 227, 0.12)',
+    color: '#0171E3',
+    darkBg: 'rgba(1, 113, 227, 0.22)',
+    darkColor: '#0171E3',
     svg: (
       <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
         <path d="M4 10a4 4 0 0 1 4-4h8a4 4 0 0 1 4 4v10a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2Z" />

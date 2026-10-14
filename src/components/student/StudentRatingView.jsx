@@ -197,7 +197,7 @@ const CrownIcon = ({ size = 32 }) => (
 );
 
 const TrophyIcon = ({ size = 20 }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="#7000FF" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="#0171E3" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
     <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6" />
     <path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18" />
     <path d="M4 22h16" />
@@ -221,7 +221,7 @@ const MedalCheckIcon = ({ size = 18 }) => (
 );
 
 const ZapIcon = ({ size = 18 }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="#7000FF" stroke="#7000FF" strokeWidth="1" style={{ flexShrink: 0 }}>
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="#0171E3" stroke="#0171E3" strokeWidth="1" style={{ flexShrink: 0 }}>
     <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
   </svg>
 );

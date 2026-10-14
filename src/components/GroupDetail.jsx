@@ -8,6 +8,7 @@ import ProjectLikeIcon from './common/ProjectLikeIcon';
 import { useModalDismiss } from '../hooks/useModalDismiss';
 
 const COLOR_OPTIONS = [
+  { name: 'Oq', value: '#FFFFFF' },
   { name: 'Burnt Sienna', value: '#E35336' },
   { name: 'Beige', value: '#F5F5DC' },
   { name: 'Sandy Brown', value: '#F4A460' },
@@ -526,7 +527,7 @@ const GroupDetail = ({ group, allGroups = [], students, transactions, quickTags,
                   className="student-item-main clickable-info" 
                   onClick={() => openScoreModal(student, '')}
                 >
-                  <div className="avatar-circle student-avatar" style={{ background: student.color, overflow: 'hidden' }}>
+                  <div className="avatar-circle student-avatar" style={{ background: student.color || '#FFFFFF', overflow: 'hidden' }}>
                     {renderAvatar(student.emoji)}
                   </div>
                   <div className="student-item-info">
@@ -580,7 +581,7 @@ const GroupDetail = ({ group, allGroups = [], students, transactions, quickTags,
                       setEditingStudent(student);
                       setEditStudentName(student.name);
                       setEditStudentEmoji(student.emoji);
-                      setEditStudentColor(student.color);
+                      setEditStudentColor('#FFFFFF');
                       setEditStudentGroupId(student.groupId || group.id);
                       setEditStudentPhone(student.phone || '');
                       setEditStudentParentPhone(student.parentPhone || '');
@@ -1161,7 +1162,7 @@ const GroupDetail = ({ group, allGroups = [], students, transactions, quickTags,
                     <label className="form-label" style={{ margin: 0 }}>Talaba Avatari</label>
                     <div className="avatar-preview-badge" style={{ display: 'inline-flex', alignItems: 'center' }}>
                       <span style={{ fontSize: '0.72rem', fontWeight: 800, textTransform: 'uppercase', marginRight: '6px' }}>Tanlandi:</span>
-                      <div className="avatar-circle" style={{ width: 32, height: 32, background: editStudentColor, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', padding: 0, border: '1px solid rgba(0,0,0,0.08)', borderRadius: 'var(--radius-sm)' }}>
+                      <div className="avatar-circle" style={{ width: 32, height: 32, background: editStudentColor || '#FFFFFF', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', padding: 0, border: '1px solid rgba(0,0,0,0.08)', borderRadius: 'var(--radius-sm)' }}>
                         {renderAvatar(editStudentEmoji)}
                       </div>
                     </div>
@@ -1246,21 +1247,6 @@ const GroupDetail = ({ group, allGroups = [], students, transactions, quickTags,
                   )}
                 </div>
 
-                {/* Color Picker */}
-                <div className="form-group">
-                  <label className="form-label">Avatar Rangi</label>
-                  <div className="color-picker-grid">
-                    {COLOR_OPTIONS.map((color) => (
-                      <button
-                        key={color.value}
-                        type="button"
-                        className={`color-btn ${editStudentColor === color.value ? 'selected' : ''}`}
-                        style={{ background: color.value }}
-                        onClick={() => setEditStudentColor(color.value)}
-                      />
-                    ))}
-                  </div>
-                </div>
 
                 {/* Phone Numbers */}
                 <div className="form-group" style={{ marginTop: 12 }}>
@@ -1303,7 +1289,7 @@ const GroupDetail = ({ group, allGroups = [], students, transactions, quickTags,
                       ))}
                     </select>
                     {editStudentGroupId !== group.id && (
-                      <p style={{ margin: '6px 0 0 0', fontSize: '0.8rem', color: 'var(--primary-color, #007AFF)' }}>
+                      <p style={{ margin: '6px 0 0 0', fontSize: '0.8rem', color: 'var(--primary-color, #0171E3)' }}>
                         ℹ️ Saqlash bosilgach, talaba ushbu guruhga ko'chiriladi.
                       </p>
                     )}
@@ -1456,7 +1442,7 @@ const GroupDetail = ({ group, allGroups = [], students, transactions, quickTags,
                               gap: 12,
                               padding: '10px 14px',
                               borderRadius: 'var(--radius-md)',
-                              border: isSelected ? '2px solid var(--accent-color, #007AFF)' : '1px solid var(--border-color)',
+                              border: isSelected ? '2px solid var(--accent-color, #0171E3)' : '1px solid var(--border-color)',
                               background: isSelected ? 'var(--bg-segment, rgba(0,122,255,0.06))' : 'var(--bg-card, #FFFFFF)',
                               cursor: 'pointer',
                               transition: 'all 0.15s ease'
@@ -1482,7 +1468,7 @@ const GroupDetail = ({ group, allGroups = [], students, transactions, quickTags,
                               </div>
                             </div>
                             {isSelected && (
-                              <div style={{ color: 'var(--accent-color, #007AFF)', display: 'flex', alignItems: 'center' }}>
+                              <div style={{ color: 'var(--accent-color, #0171E3)', display: 'flex', alignItems: 'center' }}>
                                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
                                   <polyline points="20 6 9 17 4 12" />
                                 </svg>
@@ -1769,9 +1755,9 @@ const GroupDetail = ({ group, allGroups = [], students, transactions, quickTags,
         }
 
         .category-modal-card.selected {
-          border-color: var(--apple-blue, #0071e3);
+          border-color: var(--apple-blue, #0171E3);
           background: rgba(0, 113, 227, 0.06);
-          box-shadow: 0 0 0 1px var(--apple-blue, #0071e3);
+          box-shadow: 0 0 0 1px var(--apple-blue, #0171E3);
         }
 
         [data-theme="dark"] .category-modal-card {
@@ -1785,9 +1771,9 @@ const GroupDetail = ({ group, allGroups = [], students, transactions, quickTags,
         }
 
         [data-theme="dark"] .category-modal-card.selected {
-          border-color: var(--apple-blue, #8ab4f8);
+          border-color: var(--apple-blue, #0171E3);
           background: rgba(138, 180, 248, 0.12);
-          box-shadow: 0 0 0 1px var(--apple-blue, #8ab4f8);
+          box-shadow: 0 0 0 1px var(--apple-blue, #0171E3);
         }
 
         .category-modal-header-row {
@@ -1808,12 +1794,12 @@ const GroupDetail = ({ group, allGroups = [], students, transactions, quickTags,
           font-weight: 700;
           padding: 2px 7px;
           border-radius: var(--radius-sm, 6px);
-          background: var(--apple-blue, #0071e3);
+          background: var(--apple-blue, #0171E3);
           color: #ffffff;
         }
 
         [data-theme="dark"] .category-selected-tag {
-          background: var(--apple-blue, #8ab4f8);
+          background: var(--apple-blue, #0171E3);
           color: #202124;
         }
 
@@ -2571,7 +2557,7 @@ const GroupDetail = ({ group, allGroups = [], students, transactions, quickTags,
         [data-theme="dark"] .group-pwd-badge-text {
           background: #303134;
           color: #E8EAED;
-          border-color: #3C4043;
+          border-color: #363739;
         }
 
         [data-theme="dark"] .student-search-input-box {
@@ -2607,7 +2593,7 @@ const GroupDetail = ({ group, allGroups = [], students, transactions, quickTags,
 
         [data-theme="dark"] .student-list-item {
           background: #292A2D;
-          border-color: #3C4043;
+          border-color: #363739;
         }
 
         [data-theme="dark"] .student-avatar {
@@ -2616,7 +2602,7 @@ const GroupDetail = ({ group, allGroups = [], students, transactions, quickTags,
 
         [data-theme="dark"] .student-score-badge {
           background: #303134;
-          border-color: #3C4043;
+          border-color: #363739;
         }
 
         [data-theme="dark"] .student-score-badge .score-num {
@@ -2652,26 +2638,26 @@ const GroupDetail = ({ group, allGroups = [], students, transactions, quickTags,
         [data-theme="dark"] .btn-custom {
           background: #303134 !important;
           color: #8AB4F8 !important;
-          border: 1px solid #3C4043 !important;
+          border: 1px solid #363739 !important;
         }
 
         [data-theme="dark"] .btn-custom:hover {
-          background: #3C4043 !important;
+          background: #363739 !important;
           border-color: #5F6368 !important;
         }
 
         [data-theme="dark"] .student-svg-picker-grid {
           background: #202124;
-          border-color: #3C4043;
+          border-color: #363739;
         }
 
         [data-theme="dark"] .student-svg-btn {
           background: #303134;
-          border-color: #3C4043;
+          border-color: #363739;
         }
 
         [data-theme="dark"] .student-svg-btn:hover {
-          background: #3C4043;
+          background: #363739;
         }
 
         [data-theme="dark"] .student-svg-btn.selected {
@@ -2682,16 +2668,16 @@ const GroupDetail = ({ group, allGroups = [], students, transactions, quickTags,
 
         [data-theme="dark"] .profile-stat-box {
           background: #202124;
-          border-color: #3C4043;
+          border-color: #363739;
         }
 
         [data-theme="dark"] .profile-timeline-list {
           background: #202124;
-          border-color: #3C4043;
+          border-color: #363739;
         }
 
         [data-theme="dark"] .profile-timeline-item {
-          border-bottom-color: #3C4043;
+          border-bottom-color: #363739;
         }
 
         [data-theme="dark"] .profile-timeline-time {
@@ -2717,7 +2703,7 @@ const GroupDetail = ({ group, allGroups = [], students, transactions, quickTags,
         /* Score Modal Quick Tags Dark Mode */
         [data-theme="dark"] .quick-tag-card {
           background: #202124 !important;
-          border-color: #3C4043 !important;
+          border-color: #363739 !important;
           color: #E8EAED !important;
         }
 
@@ -2942,7 +2928,7 @@ const GroupDetail = ({ group, allGroups = [], students, transactions, quickTags,
           display: inline-flex;
           align-items: center;
           justify-content: center;
-          color: var(--accent-blue, #0071E3);
+          color: var(--accent-blue, #0171E3);
         }
 
         .teacher-pin-status-badge {
@@ -3022,7 +3008,7 @@ const GroupDetail = ({ group, allGroups = [], students, transactions, quickTags,
         }
 
         .teacher-pin-state-label strong {
-          color: var(--accent-blue, #0071E3);
+          color: var(--accent-blue, #0171E3);
           font-weight: 700;
         }
 
@@ -3251,7 +3237,7 @@ const GroupDetail = ({ group, allGroups = [], students, transactions, quickTags,
           display: inline-block;
           font-size: 0.74rem;
           font-weight: 600;
-          color: var(--accent-blue, #0071E3);
+          color: var(--accent-blue, #0171E3);
           background: rgba(0, 113, 227, 0.08);
           padding: 2px 8px;
           border-radius: 6px;

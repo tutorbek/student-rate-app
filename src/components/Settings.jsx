@@ -3006,7 +3006,7 @@ const Settings = ({
           width: 28px;
           height: 28px;
           border-radius: 50%;
-          background: var(--apple-blue, #0071E3);
+          background: var(--apple-blue, #0171E3);
           color: #FFFFFF;
           border: 2.5px solid #FFFFFF;
           display: flex;
@@ -3018,7 +3018,7 @@ const Settings = ({
         }
 
         .hero-avatar-camera-btn:hover {
-          background: #0077ED;
+          background: #0155AB;
           transform: scale(1.08);
         }
 
@@ -3149,7 +3149,7 @@ const Settings = ({
           align-items: center;
           gap: 6px;
           padding: 9px 18px;
-          background: var(--apple-blue, #0071E3);
+          background: var(--apple-blue, #0171E3);
           color: #FFFFFF;
           border: none;
           border-radius: 10px;
@@ -3903,7 +3903,7 @@ const Settings = ({
 
         .card-header-icon-wrap.user-icon-wrap {
           background: rgba(0, 113, 227, 0.1);
-          color: #0071E3;
+          color: #0171E3;
         }
 
         .card-header-icon-wrap.social-icon-wrap {
@@ -3964,7 +3964,7 @@ const Settings = ({
 
         .modern-text-input:focus,
         .modern-textarea-input:focus {
-          border-color: var(--apple-blue, #0071E3);
+          border-color: var(--apple-blue, #0171E3);
           box-shadow: 0 0 0 3px rgba(0, 113, 227, 0.12);
         }
 
@@ -3998,7 +3998,7 @@ const Settings = ({
         }
 
         .social-input-wrap:focus-within {
-          border-color: var(--apple-blue, #0071E3);
+          border-color: var(--apple-blue, #0171E3);
           box-shadow: 0 0 0 3px rgba(0, 113, 227, 0.12);
         }
 
@@ -4103,7 +4103,7 @@ const Settings = ({
           align-items: center;
           gap: 6px;
           padding: 10px 18px;
-          background: var(--apple-blue, #0071E3);
+          background: var(--apple-blue, #0171E3);
           color: #FFFFFF;
           border: none;
           border-radius: var(--radius-sm, 9px);
@@ -4158,7 +4158,7 @@ const Settings = ({
 
         .suggestion-chip-btn:hover {
           background: #E8EAED;
-          color: var(--apple-blue, #0071E3);
+          color: var(--apple-blue, #0171E3);
           border-color: rgba(0, 113, 227, 0.2);
           transform: translateY(-1px);
         }
@@ -4285,8 +4285,8 @@ const Settings = ({
 
         .cert-add-dashed-card:hover {
           background: rgba(0, 113, 227, 0.04);
-          border-color: var(--apple-blue, #0071E3);
-          color: var(--apple-blue, #0071E3);
+          border-color: var(--apple-blue, #0171E3);
+          color: var(--apple-blue, #0171E3);
         }
 
         .cert-add-icon-circle {
@@ -4301,7 +4301,7 @@ const Settings = ({
         }
 
         .cert-add-dashed-card:hover .cert-add-icon-circle {
-          background: var(--apple-blue, #0071E3);
+          background: var(--apple-blue, #0171E3);
           color: #FFFFFF;
         }
 
@@ -4371,7 +4371,7 @@ const Settings = ({
 
         .cert-dropzone-label:hover {
           background: #F5F5F7;
-          border-color: var(--apple-blue, #0071E3);
+          border-color: var(--apple-blue, #0171E3);
         }
 
         .dropzone-icon {
@@ -4475,7 +4475,7 @@ const Settings = ({
         }
 
         .settings-gallery-item.is-selected {
-          border-color: var(--apple-blue, #0071E3);
+          border-color: var(--apple-blue, #0171E3);
           box-shadow: 0 0 0 3px rgba(0, 113, 227, 0.25);
         }
 
@@ -5270,7 +5270,7 @@ const Settings = ({
         }
 
         .calc-payout-card.advance .calc-payout-amount {
-          color: #0071E3;
+          color: #0171E3;
         }
 
         .calc-payout-card.remaining .calc-payout-amount {
@@ -5308,7 +5308,7 @@ const Settings = ({
         }
 
         .payout-bar-lbl.advance strong {
-          color: #0071E3;
+          color: #0171E3;
         }
 
         .payout-bar-lbl.remaining strong {
@@ -5326,7 +5326,7 @@ const Settings = ({
 
         .calc-payout-bar-advance {
           height: 100%;
-          background: #0071E3;
+          background: #0171E3;
           transition: width 0.3s ease;
         }
 
@@ -5605,7 +5605,7 @@ const Settings = ({
         }
 
         .calc-student-stat-item.advance-box .stat-value {
-          color: #0071E3;
+          color: #0171E3;
         }
 
         .calc-student-stat-item.remaining-box .stat-value {
@@ -5825,11 +5825,11 @@ const Settings = ({
 
         .calc-payout-chip.advance {
           background: rgba(0, 113, 227, 0.08);
-          color: #0071E3;
+          color: #0171E3;
         }
 
         .calc-payout-chip.advance strong {
-          color: #0071E3;
+          color: #0171E3;
         }
 
         .calc-payout-chip.remaining {
@@ -6049,7 +6049,7 @@ const Settings = ({
         [data-theme="dark"] .tab-control-brutalist,
         [data-theme="dark"] .settings-page-header .tab-control-brutalist {
           background: #202124;
-          border-color: #3C4043;
+          border-color: #363739;
         }
 
         [data-theme="dark"] .tab-btn-brutalist {
@@ -6096,12 +6096,12 @@ const Settings = ({
 
         [data-theme="dark"] .modern-hero-identity-card {
           background: #292A2D;
-          border-color: #3C4043;
+          border-color: #363739;
         }
 
         [data-theme="dark"] .hero-avatar-disc {
           background: #202124;
-          border-color: #3C4043;
+          border-color: #363739;
         }
 
         [data-theme="dark"] .hero-avatar-camera-btn {
@@ -6110,12 +6110,12 @@ const Settings = ({
 
         [data-theme="dark"] .hero-sync-pill {
           background: #202124;
-          border-color: #3C4043;
+          border-color: #363739;
           color: #9AA0A6;
         }
 
         [data-theme="dark"] .hero-stat-divider {
-          background: #3C4043;
+          background: #363739;
         }
 
         [data-theme="dark"] .hero-stat-val {
@@ -6128,7 +6128,7 @@ const Settings = ({
 
         [data-theme="dark"] .hero-quick-btn {
           background: #202124;
-          border-color: #3C4043;
+          border-color: #363739;
           color: #E8EAED;
         }
 
@@ -6149,7 +6149,7 @@ const Settings = ({
 
         [data-theme="dark"] .settings-card {
           background: #292A2D;
-          border-color: #3C4043;
+          border-color: #363739;
         }
 
         [data-theme="dark"] .card-title {
@@ -6163,13 +6163,13 @@ const Settings = ({
         [data-theme="dark"] .tag-input-modern,
         [data-theme="dark"] .tag-pts-modern {
           background: #202124;
-          border-color: #3C4043;
+          border-color: #363739;
           color: #E8EAED;
         }
 
         [data-theme="dark"] .tag-card-modern {
           background: #202124;
-          border-color: #3C4043;
+          border-color: #363739;
           box-shadow: none;
         }
 
@@ -6210,7 +6210,7 @@ const Settings = ({
 
         [data-theme="dark"] .trash-segmented-filter {
           background: #202124;
-          border-color: #3C4043;
+          border-color: #363739;
         }
 
         [data-theme="dark"] .trash-seg-btn {
@@ -6225,13 +6225,13 @@ const Settings = ({
 
         [data-theme="dark"] .trash-search-input {
           background: #202124;
-          border-color: #3C4043;
+          border-color: #363739;
           color: #E8EAED;
         }
 
         [data-theme="dark"] .trash-item-row {
           background: #202124;
-          border-color: #3C4043;
+          border-color: #363739;
         }
 
         [data-theme="dark"] .trash-item-title {
@@ -6254,7 +6254,7 @@ const Settings = ({
 
         [data-theme="dark"] .backup-action-card {
           background: #202124;
-          border-color: #3C4043;
+          border-color: #363739;
         }
 
         [data-theme="dark"] .backup-card-title {
@@ -6277,7 +6277,7 @@ const Settings = ({
 
         [data-theme="dark"] .snapshot-row-modern {
           background: #202124;
-          border-color: #3C4043;
+          border-color: #363739;
         }
 
         [data-theme="dark"] .snapshot-num-badge {
@@ -6312,7 +6312,7 @@ const Settings = ({
 
         [data-theme="dark"] .empty-subtle-box {
           background: #202124;
-          border-color: #3C4043;
+          border-color: #363739;
           color: #9AA0A6;
         }
 
@@ -6334,7 +6334,7 @@ const Settings = ({
         /* Dark Mode Profile & Dialogs */
         [data-theme="dark"] .modern-profile-card {
           background: #292A2D;
-          border-color: #3C4043;
+          border-color: #363739;
         }
 
         [data-theme="dark"] .card-header-icon-wrap.user-icon-wrap {
@@ -6364,7 +6364,7 @@ const Settings = ({
         [data-theme="dark"] .modern-text-input,
         [data-theme="dark"] .modern-textarea-input {
           background: #202124;
-          border-color: #3C4043;
+          border-color: #363739;
           color: #E8EAED;
         }
 
@@ -6376,7 +6376,7 @@ const Settings = ({
 
         [data-theme="dark"] .social-input-wrap {
           background: #202124;
-          border-color: #3C4043;
+          border-color: #363739;
         }
 
         [data-theme="dark"] .social-input-wrap:focus-within {
@@ -6386,7 +6386,7 @@ const Settings = ({
 
         [data-theme="dark"] .social-input-prefix {
           background: #292A2D;
-          border-color: #3C4043;
+          border-color: #363739;
           color: #9AA0A6;
         }
 
@@ -6396,34 +6396,34 @@ const Settings = ({
 
         [data-theme="dark"] .achievements-editor-chips-wrap {
           background: #202124;
-          border-color: #3C4043;
+          border-color: #363739;
         }
 
         [data-theme="dark"] .achievement-edit-pill {
           background: #303134;
-          border-color: #3C4043;
+          border-color: #363739;
           color: #E8EAED;
         }
 
         [data-theme="dark"] .suggestion-chip-btn {
           background: #303134;
-          border-color: #3C4043;
+          border-color: #363739;
           color: #9AA0A6;
         }
 
         [data-theme="dark"] .suggestion-chip-btn:hover {
-          background: #3C4043;
+          background: #363739;
           color: #8AB4F8;
         }
 
         [data-theme="dark"] .cert-edit-item-card {
           background: #202124;
-          border-color: #3C4043;
+          border-color: #363739;
         }
 
         [data-theme="dark"] .cert-edit-thumbnail {
           background: #292A2D;
-          border-color: #3C4043;
+          border-color: #363739;
         }
 
         [data-theme="dark"] .cert-edit-title {
@@ -6436,7 +6436,7 @@ const Settings = ({
 
         [data-theme="dark"] .cert-add-dashed-card {
           background: #202124;
-          border-color: #3C4043;
+          border-color: #363739;
           color: #9AA0A6;
         }
 
@@ -6460,7 +6460,7 @@ const Settings = ({
 
         [data-theme="dark"] .cert-dropzone-label {
           background: #202124;
-          border-color: #3C4043;
+          border-color: #363739;
         }
 
         [data-theme="dark"] .dropzone-text {
@@ -6474,7 +6474,7 @@ const Settings = ({
         /* Dark Mode Calculator Overrides */
         [data-theme="dark"] .calc-sync-pill {
           background: #202124;
-          border-color: #3C4043;
+          border-color: #363739;
           color: #E8EAED;
         }
 
@@ -6484,12 +6484,12 @@ const Settings = ({
 
         [data-theme="dark"] .calc-input-block {
           background: #202124;
-          border-color: #3C4043;
+          border-color: #363739;
         }
 
         [data-theme="dark"] .calc-stepper-row {
           background: #292A2D;
-          border-color: #3C4043;
+          border-color: #363739;
         }
 
         [data-theme="dark"] .calc-step-btn {
@@ -6506,7 +6506,7 @@ const Settings = ({
 
         [data-theme="dark"] .calc-price-input-wrap {
           background: #292A2D;
-          border-color: #3C4043;
+          border-color: #363739;
         }
 
         [data-theme="dark"] .calc-price-input {
@@ -6519,7 +6519,7 @@ const Settings = ({
 
         [data-theme="dark"] .calc-chip-clean {
           background: #292A2D;
-          border-color: #3C4043;
+          border-color: #363739;
           color: #9AA0A6;
         }
 
@@ -6535,7 +6535,7 @@ const Settings = ({
         }
 
         [data-theme="dark"] .calc-range-slider {
-          background: #3C4043;
+          background: #363739;
         }
 
         [data-theme="dark"] .calc-range-slider::-webkit-slider-thumb {
@@ -6544,12 +6544,12 @@ const Settings = ({
 
         [data-theme="dark"] .calc-hero-clean {
           background: #202124;
-          border: 1px solid #3C4043;
+          border: 1px solid #363739;
         }
 
         [data-theme="dark"] .calc-stat-clean {
           background: #202124;
-          border-color: #3C4043;
+          border-color: #363739;
         }
 
         [data-theme="dark"] .calc-stat-num {
@@ -6557,12 +6557,12 @@ const Settings = ({
         }
 
         [data-theme="dark"] .calc-dates-row {
-          border-top-color: #3C4043;
+          border-top-color: #363739;
         }
 
         [data-theme="dark"] .calc-date-trigger-btn {
           background: #202124;
-          border-color: #3C4043;
+          border-color: #363739;
           color: #E8EAED;
         }
 
@@ -6589,13 +6589,13 @@ const Settings = ({
 
         [data-theme="dark"] .calc-mini-calendar-popover {
           background: #252629;
-          border-color: #3C4043;
+          border-color: #363739;
           box-shadow: 0 16px 36px rgba(0, 0, 0, 0.55), 0 4px 12px rgba(0, 0, 0, 0.3);
         }
 
         [data-theme="dark"] .cal-mini-nav-btn {
           background: #2D2F31;
-          border-color: #3C4043;
+          border-color: #363739;
           color: #E8EAED;
         }
 
@@ -6616,12 +6616,12 @@ const Settings = ({
         }
 
         [data-theme="dark"] .cal-mini-footer {
-          border-top-color: #3C4043;
+          border-top-color: #363739;
         }
 
         [data-theme="dark"] .cal-mini-preset-chip {
           background: #2D2F31;
-          border-color: #3C4043;
+          border-color: #363739;
           color: #9AA0A6;
         }
 
@@ -6643,7 +6643,7 @@ const Settings = ({
 
         [data-theme="dark"] .calc-payout-card {
           background: #202124;
-          border-color: #3C4043;
+          border-color: #363739;
         }
 
         [data-theme="dark"] .calc-payout-card.advance {
@@ -6682,11 +6682,11 @@ const Settings = ({
 
         [data-theme="dark"] .calc-payout-bar-wrap {
           background: #202124;
-          border-color: #3C4043;
+          border-color: #363739;
         }
 
         [data-theme="dark"] .calc-payout-bar-track {
-          background: #3C4043;
+          background: #363739;
         }
 
         [data-theme="dark"] .calc-payout-bar-advance {
@@ -6713,7 +6713,7 @@ const Settings = ({
         }
 
         [data-theme="dark"] .calc-groups-table {
-          border-color: #3C4043;
+          border-color: #363739;
         }
 
         [data-theme="dark"] .calc-group-row {
@@ -6727,7 +6727,7 @@ const Settings = ({
 
         [data-theme="dark"] .calc-group-row-icon {
           background: #292A2D;
-          border-color: #3C4043;
+          border-color: #363739;
           color: #E8EAED;
         }
 
@@ -6741,7 +6741,7 @@ const Settings = ({
 
         [data-theme="dark"] .calc-student-list-modal {
           background: #292A2D;
-          border-color: #3C4043;
+          border-color: #363739;
           box-shadow: 0 24px 60px rgba(0, 0, 0, 0.65);
         }
 
@@ -6760,7 +6760,7 @@ const Settings = ({
 
         [data-theme="dark"] .calc-student-modal-stats-banner {
           background: #202124;
-          border-color: #3C4043;
+          border-color: #363739;
         }
 
         [data-theme="dark"] .calc-student-stat-item .stat-value {
@@ -6781,7 +6781,7 @@ const Settings = ({
 
         [data-theme="dark"] .calc-student-search-wrap {
           background: #202124;
-          border-color: #3C4043;
+          border-color: #363739;
         }
 
         [data-theme="dark"] .calc-student-search-wrap:focus-within {
@@ -6815,7 +6815,7 @@ const Settings = ({
 
         [data-theme="dark"] .calc-groups-total-bar {
           background: #202124;
-          border-color: #3C4043;
+          border-color: #363739;
         }
 
         [data-theme="dark"] .calc-groups-total-bar .val {

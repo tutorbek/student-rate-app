@@ -2288,16 +2288,16 @@ const Leaderboard = ({
         /* Leaderboard Profile Modal Dark Mode Styles */
         [data-theme="dark"] .profile-stat-box {
           background: #202124;
-          border-color: #3C4043;
+          border-color: #363739;
         }
 
         [data-theme="dark"] .profile-timeline-list {
           background: #202124;
-          border-color: #3C4043;
+          border-color: #363739;
         }
 
         [data-theme="dark"] .profile-timeline-item {
-          border-bottom-color: #3C4043;
+          border-bottom-color: #363739;
         }
 
         [data-theme="dark"] .profile-timeline-time {
@@ -2319,7 +2319,7 @@ const Leaderboard = ({
         /* History Tab Dark Mode Overrides */
         [data-theme="dark"] .history-card {
           background: #292A2D;
-          border-color: #3C4043;
+          border-color: #363739;
         }
 
         [data-theme="dark"] .empty-history {
@@ -2328,7 +2328,7 @@ const Leaderboard = ({
 
         [data-theme="dark"] .empty-leaderboard-placeholder {
           background: #292A2D;
-          border-color: #3C4043;
+          border-color: #363739;
           box-shadow: none;
         }
 
@@ -2344,12 +2344,12 @@ const Leaderboard = ({
 
         [data-theme="dark"] .history-header {
           background: #202124;
-          border-bottom-color: #3C4043;
+          border-bottom-color: #363739;
           color: #9AA0A6;
         }
 
         [data-theme="dark"] .history-row {
-          border-bottom-color: #3C4043;
+          border-bottom-color: #363739;
         }
 
         [data-theme="dark"] .history-row:hover {
@@ -2381,12 +2381,12 @@ const Leaderboard = ({
 
         [data-theme="dark"] .history-mobile-card {
           background: #292A2D;
-          border-bottom-color: #3C4043;
+          border-bottom-color: #363739;
         }
 
         [data-theme="dark"] .history-mobile-score {
           background: #202124;
-          border-color: #3C4043;
+          border-color: #363739;
         }
 
         [data-theme="dark"] .history-mobile-comment {
@@ -2396,12 +2396,12 @@ const Leaderboard = ({
 
         [data-theme="dark"] .custom-dropdown-list {
           background: #202124;
-          border-color: #3C4043;
+          border-color: #363739;
         }
 
         [data-theme="dark"] .custom-dropdown-item {
           color: #E8EAED;
-          border-bottom-color: #3C4043;
+          border-bottom-color: #363739;
         }
 
         [data-theme="dark"] .custom-dropdown-item:hover,
@@ -2412,24 +2412,24 @@ const Leaderboard = ({
 
         [data-theme="dark"] .filter-select-btn {
           background: #202124;
-          border-color: #3C4043;
+          border-color: #363739;
           color: #E8EAED;
         }
 
         /* Leaderboard Standings Table & Timeframe Dark Mode Overrides */
         [data-theme="dark"] .standings-card {
           background: #292A2D;
-          border-color: #3C4043;
+          border-color: #363739;
         }
 
         [data-theme="dark"] .standings-header {
           background: #202124;
-          border-bottom-color: #3C4043;
+          border-bottom-color: #363739;
           color: #9AA0A6;
         }
 
         [data-theme="dark"] .standings-row {
-          border-bottom-color: #3C4043;
+          border-bottom-color: #363739;
         }
 
         [data-theme="dark"] .standings-row:hover {
@@ -2437,7 +2437,7 @@ const Leaderboard = ({
         }
 
         [data-theme="dark"] .standings-row.clickable-row:active {
-          background: #3C4043 !important;
+          background: #363739 !important;
         }
 
         [data-theme="dark"] .student-table-name {
@@ -2451,7 +2451,7 @@ const Leaderboard = ({
 
         [data-theme="dark"] .rank-badge {
           background: #202124;
-          border-color: #3C4043;
+          border-color: #363739;
           color: #E8EAED;
         }
 
@@ -2469,7 +2469,7 @@ const Leaderboard = ({
 
         [data-theme="dark"] .timeframe-toggle {
           background: #202124;
-          border-color: #3C4043;
+          border-color: #363739;
         }
 
         [data-theme="dark"] .toggle-btn {

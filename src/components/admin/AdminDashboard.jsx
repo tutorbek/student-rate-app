@@ -511,8 +511,8 @@ const AdminDashboard = ({
         .admin-preview-card {
           padding: 20px 22px;
           border-radius: var(--radius-xl);
-          background: #FFFFFF;
-          border: 1px solid rgba(0, 0, 0, 0.07);
+          background: var(--bg-card);
+          border: 1px solid var(--border-color);
           box-shadow: var(--shadow-sm);
         }
 
@@ -543,7 +543,8 @@ const AdminDashboard = ({
           font-size: 0.75rem;
           font-weight: 600;
           color: var(--text-secondary);
-          background: rgba(0, 0, 0, 0.05);
+          background: var(--bg-secondary);
+          border: 1px solid var(--border-color);
           padding: 3px 8px;
           border-radius: var(--radius-sm);
         }
@@ -561,13 +562,23 @@ const AdminDashboard = ({
         }
 
         .admin-stat-box {
-          background: var(--bg-primary, #F8FAFC);
-          border: 1px solid rgba(0, 0, 0, 0.05);
+          background: var(--bg-primary);
+          border: 1px solid var(--border-color);
           border-radius: var(--radius-md);
           padding: 14px 16px;
           display: flex;
           flex-direction: column;
           gap: 4px;
+        }
+
+        [data-theme="dark"] .admin-preview-card {
+          background: #292A2D;
+          border-color: #363739;
+        }
+
+        [data-theme="dark"] .admin-stat-box {
+          background: #18191B;
+          border-color: #363739;
         }
 
         .box-stat-label {

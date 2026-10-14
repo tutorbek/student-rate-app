@@ -174,6 +174,9 @@ function App() {
     document.documentElement.style.backgroundColor = newTheme === 'dark' ? '#202124' : '#F5F5F7';
     document.documentElement.style.colorScheme = newTheme;
     localStorage.setItem('rsa_theme', newTheme);
+    if (typeof window !== 'undefined' && typeof window.syncFavicons === 'function') {
+      window.syncFavicons(newTheme);
+    }
 
     // Force style recalculation
     const _ = window.getComputedStyle(css).opacity;
@@ -192,12 +195,18 @@ function App() {
       document.documentElement.setAttribute('data-theme', 'light');
       document.documentElement.style.backgroundColor = '#F5F5F7';
       document.documentElement.style.colorScheme = 'light';
+      if (typeof window !== 'undefined' && typeof window.syncFavicons === 'function') {
+        window.syncFavicons('light');
+      }
       return;
     }
     document.documentElement.setAttribute('data-theme', theme);
     document.documentElement.style.backgroundColor = theme === 'dark' ? '#202124' : '#F5F5F7';
     document.documentElement.style.colorScheme = theme;
     localStorage.setItem('rsa_theme', theme);
+    if (typeof window !== 'undefined' && typeof window.syncFavicons === 'function') {
+      window.syncFavicons(theme);
+    }
   }, [theme, isAuthenticated]);
 
   const toggleTheme = useCallback(() => {

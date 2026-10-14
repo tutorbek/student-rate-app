@@ -258,7 +258,7 @@ export default function StudentScheduleCard({ group, extraLessons = [], studentI
           </div>
           {nextLessonInfo.extraLesson.topic && (
             <div className="extra-callout-topic" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <span className="extra-topic-icon" style={{ display: 'inline-flex', alignItems: 'center' }}><TargetIcon size={14} color="#0071E3" /></span>
+              <span className="extra-topic-icon" style={{ display: 'inline-flex', alignItems: 'center' }}><TargetIcon size={14} color="#0171E3" /></span>
               <span><strong>Mavzu:</strong> {nextLessonInfo.extraLesson.topic}</span>
             </div>
           )}

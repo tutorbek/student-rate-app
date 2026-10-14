@@ -6,18 +6,18 @@
 :root {
   --student-navbar-height: 56px;
 
-  /* Electric Violet Signature Palette (#7000FF, #6763F1, #7032E4) */
-  --electric-violet: #7000FF;
-  --electric-indigo: #6763F1;
-  --electric-purple: #7032E4;
-  --electric-hero-gradient: linear-gradient(135deg, #6763F1 0%, #7032E4 50%, #7000FF 100%);
-  --electric-btn-gradient: linear-gradient(135deg, #6763F1 0%, #7000FF 100%);
-  --electric-glow-shadow: 0 10px 32px rgba(112, 0, 255, 0.28);
-  --electric-btn-glow: 0 4px 18px rgba(112, 0, 255, 0.35);
+  /* Unified Sapphire Sky & Sapphire Palette (#0171E3, #0155AB) */
+  --electric-violet: #0171E3;
+  --electric-indigo: #0155AB;
+  --electric-purple: #0171E3;
+  --electric-hero-gradient: linear-gradient(135deg, #0155AB 0%, #0171E3 100%);
+  --electric-btn-gradient: linear-gradient(135deg, #0171E3 0%, #0155AB 100%);
+  --electric-glow-shadow: 0 8px 24px rgba(1, 113, 227, 0.22);
+  --electric-btn-glow: 0 4px 14px rgba(1, 113, 227, 0.28);
 
-  --electric-sky: #0EA5E9;
-  --electric-mint: #10B981;
-  --electric-rose: #F43F5E;
+  --electric-sky: #0171E3;
+  --electric-mint: #34C759;
+  --electric-rose: #FF3B30;
 }
 
 @media (max-width: 680px) {
@@ -274,6 +274,14 @@ html {
   gap: 8px;
 }
 
+.navbar-brand-btn .navbar-logo-icon {
+  width: 26px;
+  height: 26px;
+  object-fit: contain;
+  flex-shrink: 0;
+  border-radius: 6px;
+}
+
 .navbar-brand-btn .logo-badge {
   background: #1D1D1F;
   color: #FFFFFF;
@@ -284,9 +292,13 @@ html {
   letter-spacing: 0.02em;
 }
 
+[data-theme="dark"] .navbar-brand-btn .navbar-logo-icon {
+  content: url("/apple-touch-icon-dark.png");
+}
+
 [data-theme="dark"] .navbar-brand-btn .logo-badge {
   background: #FFFFFF;
-  color: #1D1D1F;
+  color: #000000;
 }
 
 /* Center Desktop Navigation Tabs (Hidden on mobile) */
@@ -545,13 +557,13 @@ html {
 }
 
 .dock-tab-btn.active {
-  color: var(--electric-violet, #7000FF);
-  background: rgba(112, 0, 255, 0.08);
+  color: var(--apple-blue, #0171E3);
+  background: rgba(1, 113, 227, 0.08);
 }
 
 [data-theme="dark"] .dock-tab-btn.active {
-  color: #B47CFF;
-  background: rgba(180, 124, 255, 0.14);
+  color: #0171E3;
+  background: rgba(1, 113, 227, 0.14);
 }
 
 .dock-tab-icon {
@@ -2363,11 +2375,11 @@ html {
 
 /* 5. Personal Standing Hero Card (Electric Violet Gradient) */
 .rating-blue-hero-card {
-  background: linear-gradient(135deg, #6763F1 0%, #7032E4 50%, #7000FF 100%);
+  background: linear-gradient(135deg, #0155AB 0%, #0171E3 100%);
   border-radius: 20px;
   padding: 16px 18px;
   color: #FFFFFF;
-  box-shadow: 0 10px 32px rgba(112, 0, 255, 0.28);
+  box-shadow: 0 10px 32px rgba(1, 113, 227, 0.28);
   box-sizing: border-box;
   margin-bottom: 12px;
   position: relative;
@@ -4508,11 +4520,11 @@ html {
 
 /* 2. Balance Hero Card (Electric Violet Gradient) */
 .shop-balance-hero-card {
-  background: linear-gradient(135deg, #6763F1 0%, #7032E4 50%, #7000FF 100%);
+  background: linear-gradient(135deg, #0155AB 0%, #0171E3 100%);
   border-radius: 20px;
   padding: 20px 22px;
   color: #FFFFFF;
-  box-shadow: 0 10px 32px rgba(112, 0, 255, 0.28);
+  box-shadow: 0 10px 32px rgba(1, 113, 227, 0.28);
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
@@ -4576,7 +4588,7 @@ html {
 
 .balance-hero-help-btn {
   background: #FFFFFF;
-  color: #7000FF;
+  color: #0171E3;
   border: none;
   border-radius: 9999px;
   padding: 8px 18px;
@@ -4710,12 +4722,12 @@ html {
 }
 
 .goal-product-count .count-curr {
-  color: var(--electric-violet, #7000FF);
+  color: var(--apple-blue, #0171E3);
   font-weight: 700;
 }
 
 [data-theme="dark"] .goal-product-count .count-curr {
-  color: #B47CFF;
+  color: #0171E3;
 }
 
 .goal-progress-track {
@@ -4733,7 +4745,7 @@ html {
 
 .goal-progress-bar {
   height: 100%;
-  background: linear-gradient(90deg, #6763F1, #7000FF);
+  background: linear-gradient(90deg, #0155AB, #0171E3);
   border-radius: 9999px;
   transition: width 0.35s ease;
 }
@@ -4766,8 +4778,8 @@ html {
 }
 
 .goal-buy-cta-btn {
-  background: #7000FF;
-  background: linear-gradient(135deg, #6763F1 0%, #7000FF 100%);
+  background: #0171E3;
+  background: linear-gradient(135deg, #0171E3 0%, #0155AB 100%);
   color: #FFFFFF;
   border: none;
   border-radius: 8px;
@@ -4780,7 +4792,7 @@ html {
   gap: 4px;
   white-space: nowrap;
   flex-shrink: 0;
-  box-shadow: 0 2px 10px rgba(112, 0, 255, 0.28);
+  box-shadow: 0 2px 10px rgba(1, 113, 227, 0.28);
   transition: all 0.15s ease;
 }
 
@@ -4789,8 +4801,8 @@ html {
 }
 
 .goal-pct-pill {
-  background: rgba(112, 0, 255, 0.08);
-  color: var(--electric-violet, #7000FF);
+  background: rgba(1, 113, 227, 0.08);
+  color: var(--apple-blue, #0171E3);
   padding: 2px 8px;
   border-radius: 9999px;
   font-size: 0.72rem;
@@ -4798,8 +4810,8 @@ html {
 }
 
 [data-theme="dark"] .goal-pct-pill {
-  background: rgba(112, 0, 255, 0.18);
-  color: #B47CFF;
+  background: rgba(1, 113, 227, 0.18);
+  color: #0171E3;
 }
 
 /* 4. Category Filter Pills */
@@ -4823,8 +4835,8 @@ html {
   font-size: 0.8rem;
   font-weight: 600;
   border: none;
-  background: rgba(112, 0, 255, 0.08);
-  color: var(--electric-violet, #7000FF);
+  background: rgba(1, 113, 227, 0.08);
+  color: var(--apple-blue, #0171E3);
   white-space: nowrap;
   cursor: pointer;
   transition: all 0.15s ease;
@@ -4840,20 +4852,20 @@ html {
 }
 
 [data-theme="dark"] .shop-category-pill-btn {
-  background: rgba(112, 0, 255, 0.16);
-  color: #B47CFF;
+  background: rgba(1, 113, 227, 0.16);
+  color: #0171E3;
 }
 
 .shop-category-pill-btn.active {
-  background: #7000FF;
-  background: linear-gradient(135deg, #6763F1 0%, #7000FF 100%);
+  background: #0171E3;
+  background: linear-gradient(135deg, #0171E3 0%, #0155AB 100%);
   color: #FFFFFF;
   font-weight: 700;
-  box-shadow: 0 2px 10px rgba(112, 0, 255, 0.35);
+  box-shadow: 0 2px 10px rgba(1, 113, 227, 0.35);
 }
 
 [data-theme="dark"] .shop-category-pill-btn.active {
-  background: #7000FF;
+  background: #0171E3;
   color: #FFFFFF;
 }
 
@@ -5071,11 +5083,11 @@ html {
   gap: 3px;
   font-size: 0.82rem;
   font-weight: 800;
-  color: var(--electric-violet, #7000FF);
+  color: var(--apple-blue, #0171E3);
 }
 
 [data-theme="dark"] .product-price-tag {
-  color: #B47CFF;
+  color: #0171E3;
 }
 
 .product-like-lbl {
@@ -5099,8 +5111,8 @@ html {
 
 .product-buy-btn {
   width: 100%;
-  background: #7000FF;
-  background: linear-gradient(135deg, #6763F1 0%, #7000FF 100%);
+  background: #0171E3;
+  background: linear-gradient(135deg, #0171E3 0%, #0155AB 100%);
   color: #FFFFFF;
   border: none;
   border-radius: 10px;
@@ -5112,13 +5124,13 @@ html {
   justify-content: center;
   gap: 5px;
   cursor: pointer;
-  box-shadow: 0 3px 12px rgba(112, 0, 255, 0.25);
+  box-shadow: 0 3px 12px rgba(1, 113, 227, 0.25);
   transition: all 0.15s ease;
   outline: none;
 }
 
 .product-buy-btn:hover {
-  box-shadow: 0 4px 16px rgba(112, 0, 255, 0.35);
+  box-shadow: 0 4px 16px rgba(1, 113, 227, 0.35);
   transform: translateY(-1px);
 }
 
@@ -6727,13 +6739,13 @@ input[type="text"].picker-search-input {
   width: 38px;
   height: 38px;
   border-radius: 12px;
-  background: #7000FF;
+  background: #0171E3;
   color: #FFF;
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  box-shadow: 0 2px 8px rgba(112, 0, 255, 0.35);
+  box-shadow: 0 2px 8px rgba(1, 113, 227, 0.35);
 }
 
 [data-theme="dark"] .locked-pack-icon-box {
@@ -6780,8 +6792,8 @@ input[type="text"].picker-search-input {
   width: 100%;
   height: 52px;
   border-radius: 16px;
-  background: #7000FF;
-  background: linear-gradient(135deg, #6763F1 0%, #7000FF 100%);
+  background: #0171E3;
+  background: linear-gradient(135deg, #0171E3 0%, #0155AB 100%);
   color: #FFF;
   font-size: 0.98rem;
   font-weight: 600;
@@ -6791,12 +6803,12 @@ input[type="text"].picker-search-input {
   justify-content: center;
   gap: 8px;
   cursor: pointer;
-  box-shadow: 0 4px 18px rgba(112, 0, 255, 0.35);
+  box-shadow: 0 4px 18px rgba(1, 113, 227, 0.35);
   transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .picker-save-primary-btn:hover {
-  box-shadow: 0 6px 24px rgba(112, 0, 255, 0.45);
+  box-shadow: 0 6px 24px rgba(1, 113, 227, 0.45);
   transform: translateY(-1px);
 }
 

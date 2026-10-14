@@ -1510,19 +1510,19 @@ const AdminLeads = ({
           box-shadow: var(--shadow-md);
         }
         .lead-item-card.status-new {
-          border-left-color: #F59E0B;
+          border-left-color: var(--apple-orange, #FF9500);
         }
         .lead-item-card.status-contacted {
-          border-left-color: #2563EB;
+          border-left-color: var(--apple-blue, #0171E3);
         }
         .lead-item-card.status-trial {
-          border-left-color: #7C3AED;
+          border-left-color: var(--apple-purple, #AF52DE);
         }
         .lead-item-card.status-converted {
-          border-left-color: #059669;
+          border-left-color: var(--apple-green, #34C759);
         }
         .lead-item-card.status-cancelled {
-          border-left-color: #9CA3AF;
+          border-left-color: var(--text-tertiary, #86868B);
         }
 
         /* Card Header */
@@ -1536,14 +1536,14 @@ const AdminLeads = ({
           width: 44px;
           height: 44px;
           border-radius: var(--radius-full);
-          background: linear-gradient(135deg, #0071E3, #AF52DE);
+          background: linear-gradient(135deg, #0155AB, #0171E3);
           color: #FFFFFF;
           display: flex;
           align-items: center;
           justify-content: center;
           font-size: 1.2rem;
           font-weight: 700;
-          box-shadow: 0 2px 8px rgba(0, 113, 227, 0.25);
+          box-shadow: 0 2px 8px rgba(1, 113, 227, 0.25);
           flex-shrink: 0;
         }
         .lead-header-info {

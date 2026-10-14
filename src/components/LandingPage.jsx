@@ -167,7 +167,7 @@ const TESTIMONIALS = [
     quote: "Qog'oz jurnallarga ruchka bilan belgi qo'yish va oy oxirida foiz hisoblab o'tirishdan butunlay qutuldik. Bitta telefon orqali 1 soniyada Like beraman, qolgan barcha jadvallarni platformaning o'zi avtomatik tayyorlaydi.",
     metricValue: "15 daqiqa",
     metricLabel: "Har darsdan tejalgan vaqt",
-    accent: "#0071E3"
+    accent: "#0171E3"
   },
   {
     author: "Azizbek Mansurov",
@@ -284,7 +284,7 @@ export default function LandingPage({ onNavigateToLogin }) {
   };
 
   return (
-    <div className="landing-root w-full bg-[var(--bg-primary)] text-[var(--text-primary)] relative font-sans antialiased selection:bg-[#0071E3] selection:text-white md:snap-y md:snap-proximity">
+    <div className="landing-root w-full bg-[var(--bg-primary)] text-[var(--text-primary)] relative font-sans antialiased selection:bg-[#0171E3] selection:text-white md:snap-y md:snap-proximity">
       
       {/* 1. Header & Navigation (Responsive Mobile-first Header with Slide-out Drawer) */}
       <header className="sticky top-0 z-50 w-full backdrop-blur-2xl bg-[var(--bg-primary)]/90 dark:bg-[#202124]/90 border-b border-[var(--border-color)] pt-[env(safe-area-inset-top,0px)] transition-colors">
@@ -436,7 +436,7 @@ export default function LandingPage({ onNavigateToLogin }) {
                 key={plan.id}
                 className={`relative rounded-2xl sm:rounded-[28px] p-5 sm:p-6 lg:p-7 flex flex-col justify-between transition-all duration-300 min-w-0 ${
                   plan.highlighted
-                    ? 'bg-[#0C1016] text-white border-2 border-[#0071E3] shadow-2xl shadow-[#0071E3]/20 lg:-translate-y-2'
+                    ? 'bg-[#0C1016] text-white border-2 border-[#0171E3] shadow-2xl shadow-[#0171E3]/20 lg:-translate-y-2'
                     : 'bg-[var(--bg-card)] text-[var(--text-primary)] border border-[var(--border-color)] shadow-md hover:shadow-lg'
                 }`}
               >
@@ -445,7 +445,7 @@ export default function LandingPage({ onNavigateToLogin }) {
                     <span
                       className={`text-[10px] min-[380px]:text-[11px] font-bold px-2.5 py-0.5 rounded-full uppercase tracking-wider ${
                         plan.highlighted
-                          ? 'bg-[#0071E3] text-white'
+                          ? 'bg-[#0171E3] text-white'
                           : 'bg-black/10 dark:bg-white/10 text-[var(--text-primary)]'
                       }`}
                     >
@@ -481,7 +481,7 @@ export default function LandingPage({ onNavigateToLogin }) {
                     {plan.features.map((feat, fIdx) => (
                       <div key={fIdx} className="flex items-start gap-2">
                         <div className={`w-3.5 h-3.5 rounded-full flex items-center justify-center shrink-0 mt-0.5 ${
-                          plan.highlighted ? 'bg-[#0071E3] text-white' : 'bg-green-500/20 text-green-600 dark:text-green-400'
+                          plan.highlighted ? 'bg-[#0171E3] text-white' : 'bg-green-500/20 text-green-600 dark:text-green-400'
                         }`}>
                           <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
                             <polyline points="20 6 9 17 4 12" />
@@ -504,7 +504,7 @@ export default function LandingPage({ onNavigateToLogin }) {
                   rel="noopener noreferrer"
                   className={`w-full py-2.5 sm:py-3 px-4 rounded-full font-bold text-center text-xs sm:text-sm uppercase tracking-wider transition-all duration-200 cursor-pointer shadow-md active:scale-98 flex items-center justify-center gap-2 no-underline min-h-[42px] sm:min-h-[44px] ${
                     plan.highlighted
-                      ? 'bg-[#0071E3] text-white hover:bg-[#0077ED]'
+                      ? 'bg-[#0171E3] text-white hover:bg-[#0155AB]'
                       : 'bg-[#0C1016] text-white hover:bg-[#1E242C] dark:bg-white dark:text-[#0C1016] dark:hover:bg-[#EBEBEF]'
                   }`}
                 >
@@ -528,7 +528,7 @@ export default function LandingPage({ onNavigateToLogin }) {
               href="https://t.me/bkzd19?text=Assalomu%20alaykum!%20200%2B%20o'quvchilar%20uchun%20maxsus%20tarif%20bo'yicha%20bog'lanayotgan%20edim."
               target="_blank"
               rel="noopener noreferrer"
-              className="shrink-0 px-5 py-2.5 rounded-full bg-[#0071E3] hover:bg-[#0077ED] text-white font-semibold text-xs transition-colors cursor-pointer no-underline flex items-center gap-1.5 shadow-sm"
+              className="shrink-0 px-5 py-2.5 rounded-full bg-[#0171E3] hover:bg-[#0155AB] text-white font-semibold text-xs transition-colors cursor-pointer no-underline flex items-center gap-1.5 shadow-sm"
             >
               <span>Bog'lanish</span>
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -688,7 +688,7 @@ export default function LandingPage({ onNavigateToLogin }) {
                   <button
                     type="button"
                     onClick={() => setActiveScreenIndex((prev) => (prev > 0 ? prev - 1 : SOHUB_SCREENS.length - 1))}
-                    className="w-10 h-10 rounded-full border border-black/10 dark:border-white/10 bg-white dark:bg-[#1E1E1E] text-[var(--text-primary)] hover:bg-[#0071E3] hover:text-white dark:hover:bg-[#0071E3] transition-all cursor-pointer shadow-sm active:scale-95 flex items-center justify-center shrink-0"
+                    className="w-10 h-10 rounded-full border border-black/10 dark:border-white/10 bg-white dark:bg-[#1E1E1E] text-[var(--text-primary)] hover:bg-[#0171E3] hover:text-white dark:hover:bg-[#0171E3] transition-all cursor-pointer shadow-sm active:scale-95 flex items-center justify-center shrink-0"
                     aria-label="Oldingi ekran"
                     title="Oldingi"
                   >
@@ -705,7 +705,7 @@ export default function LandingPage({ onNavigateToLogin }) {
                         type="button"
                         onClick={() => setActiveScreenIndex(idx)}
                         className={`h-2 rounded-full transition-all duration-200 cursor-pointer ${
-                          activeScreenIndex === idx ? 'w-6 sm:w-8 bg-[#0071E3]' : 'w-2 bg-black/20 dark:bg-white/20 hover:bg-black/40 dark:hover:bg-white/40'
+                          activeScreenIndex === idx ? 'w-6 sm:w-8 bg-[#0171E3]' : 'w-2 bg-black/20 dark:bg-white/20 hover:bg-black/40 dark:hover:bg-white/40'
                         }`}
                         aria-label={s.name}
                         title={s.name}
@@ -717,7 +717,7 @@ export default function LandingPage({ onNavigateToLogin }) {
                   <button
                     type="button"
                     onClick={() => setActiveScreenIndex((prev) => (prev < SOHUB_SCREENS.length - 1 ? prev + 1 : 0))}
-                    className="w-10 h-10 rounded-full border border-black/10 dark:border-white/10 bg-white dark:bg-[#1E1E1E] text-[var(--text-primary)] hover:bg-[#0071E3] hover:text-white dark:hover:bg-[#0071E3] transition-all cursor-pointer shadow-sm active:scale-95 flex items-center justify-center shrink-0"
+                    className="w-10 h-10 rounded-full border border-black/10 dark:border-white/10 bg-white dark:bg-[#1E1E1E] text-[var(--text-primary)] hover:bg-[#0171E3] hover:text-white dark:hover:bg-[#0171E3] transition-all cursor-pointer shadow-sm active:scale-95 flex items-center justify-center shrink-0"
                     aria-label="Keyingi ekran"
                     title="Keyingi"
                   >
@@ -742,7 +742,7 @@ export default function LandingPage({ onNavigateToLogin }) {
           <div className="mb-4 sm:mb-8 text-center sm:text-left">
             <h2 className="text-2xl min-[360px]:text-3xl sm:text-4xl lg:text-5xl 2xl:text-6xl font-black tracking-tight text-[var(--text-primary)] leading-[1.1]">
               Bilim olishlarini <br className="hidden sm:inline" />
-              <span className="text-[#0071E3]">"Like" bilan taqdirlang.</span>
+              <span className="text-[#0171E3]">"Like" bilan taqdirlang.</span>
             </h2>
           </div>
 
@@ -853,7 +853,7 @@ export default function LandingPage({ onNavigateToLogin }) {
                 className="p-4 sm:p-6 lg:p-7 rounded-xl sm:rounded-2xl bg-[var(--bg-card)] border border-[var(--border-color)] shadow-sm flex flex-col justify-start min-w-0"
               >
                 <div className="flex items-start gap-3 mb-2">
-                  <span className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-[#0071E3]/10 text-[#0071E3] flex items-center justify-center font-mono text-xs sm:text-sm font-bold shrink-0 mt-0.5">
+                  <span className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-[#0171E3]/10 text-[#0171E3] flex items-center justify-center font-mono text-xs sm:text-sm font-bold shrink-0 mt-0.5">
                     ?
                   </span>
                   <h3 className="text-sm sm:text-base lg:text-lg font-bold text-[var(--text-primary)] leading-snug break-words">
@@ -908,7 +908,7 @@ export default function LandingPage({ onNavigateToLogin }) {
             {/* Col 1: Brend va Maqsad */}
             <div className="sm:col-span-2 md:col-span-5 min-w-0">
               <h3 className="font-black text-lg lg:text-xl text-white tracking-tight mb-1.5">
-                EPCHIL <span className="text-[#0071E3]">ROBOT</span>
+                EPCHIL <span className="text-[#0171E3]">ROBOT</span>
               </h3>
               <p className="text-xs sm:text-sm text-white/60 leading-relaxed max-w-sm">
                 Ustozlar uchun o'quvchilar bilimini jonli "Like"lar bilan rag'batlantirish, guruhlararo sog'lom raqobat va oylik shaffof davomat platformasi.
@@ -988,7 +988,7 @@ export default function LandingPage({ onNavigateToLogin }) {
                   href="tel:+998332220301"
                   className="flex items-center gap-2 hover:text-white transition-colors no-underline py-0.5"
                 >
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[#0071E3] shrink-0">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[#0171E3] shrink-0">
                     <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
                   </svg>
                   <span className="truncate">+998 (33) 222-03-01</span>
@@ -1000,7 +1000,7 @@ export default function LandingPage({ onNavigateToLogin }) {
                   rel="noopener noreferrer"
                   className="flex items-center gap-2 hover:text-white transition-colors no-underline py-0.5"
                 >
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[#0071E3] shrink-0">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[#0171E3] shrink-0">
                     <line x1="22" y1="2" x2="11" y2="13" />
                     <polygon points="22 2 15 22 11 13 2 9 22 2" />
                   </svg>
@@ -1013,7 +1013,7 @@ export default function LandingPage({ onNavigateToLogin }) {
                   rel="noopener noreferrer"
                   className="flex items-center gap-2 hover:text-white transition-colors no-underline py-0.5"
                 >
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[#0071E3] shrink-0">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[#0171E3] shrink-0">
                     <rect x="2" y="2" width="20" height="20" rx="5" ry="5" />
                     <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" />
                     <line x1="17.5" y1="6.5" x2="17.51" y2="6.5" />
@@ -1027,7 +1027,7 @@ export default function LandingPage({ onNavigateToLogin }) {
                   rel="noopener noreferrer"
                   className="flex items-center gap-2 hover:text-white transition-colors no-underline py-0.5"
                 >
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[#0071E3] shrink-0">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[#0171E3] shrink-0">
                     <rect x="2" y="2" width="20" height="20" rx="5" ry="5" />
                     <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" />
                     <line x1="17.5" y1="6.5" x2="17.51" y2="6.5" />
@@ -1143,7 +1143,7 @@ export default function LandingPage({ onNavigateToLogin }) {
                 type="button"
                 onClick={() => setActiveScreenIndex(idx)}
                 className={`h-2 sm:h-2.5 rounded-full transition-all duration-200 cursor-pointer ${
-                  activeScreenIndex === idx ? 'w-8 bg-[#0071E3]' : 'w-2 sm:w-2.5 bg-white/30 hover:bg-white/60'
+                  activeScreenIndex === idx ? 'w-8 bg-[#0171E3]' : 'w-2 sm:w-2.5 bg-white/30 hover:bg-white/60'
                 }`}
                 aria-label={s.name}
               />

@@ -566,9 +566,6 @@ const ScheduleView = ({
                     <span className="day-col-name">{day.name}</span>
                     {isToday && <span className="day-today-indicator">Bugun</span>}
                   </div>
-                  <span className="day-classes-count">
-                    {dayClasses.length}
-                  </span>
                 </div>
 
                 {/* Day Classes List */}
@@ -1494,7 +1491,7 @@ const ScheduleView = ({
 
         [data-theme="dark"] .today-schedule-banner {
           background: #292A2D;
-          border-color: #3C4043;
+          border-color: #363739;
         }
 
         .today-header-row {
@@ -1546,7 +1543,7 @@ const ScheduleView = ({
 
         [data-theme="dark"] .today-count-pill {
           background: #202124;
-          border-color: #3C4043;
+          border-color: #363739;
           color: var(--text-secondary);
         }
 
@@ -1572,7 +1569,7 @@ const ScheduleView = ({
 
         [data-theme="dark"] .today-lesson-card {
           background-color: var(--card-bg-dark, #292A2D) !important;
-          border-color: var(--card-border-dark, #3C4043) !important;
+          border-color: var(--card-border-dark, #363739) !important;
         }
 
         .today-lesson-card:hover {
@@ -1603,7 +1600,7 @@ const ScheduleView = ({
 
         [data-theme="dark"] .today-group-icon {
           background: #202124;
-          border-color: #3C4043;
+          border-color: #363739;
         }
 
         .today-card-info {
@@ -1696,7 +1693,7 @@ const ScheduleView = ({
 
         [data-theme="dark"] .mobile-day-pill {
           background: #292A2D;
-          border-color: #3C4043;
+          border-color: #363739;
         }
 
         .mobile-day-pill.active {
@@ -2234,7 +2231,7 @@ const ScheduleView = ({
 
         [data-theme="dark"] .extra-target-segmented {
           background: rgba(255, 255, 255, 0.05);
-          border-color: #3C4043;
+          border-color: #363739;
         }
 
         .extra-target-seg-btn {
@@ -2260,7 +2257,7 @@ const ScheduleView = ({
 
         .extra-target-seg-btn.active {
           background: #FFFFFF;
-          color: var(--apple-blue, #0071E3);
+          color: var(--apple-blue, #0171E3);
           box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
         }
 
@@ -2284,7 +2281,7 @@ const ScheduleView = ({
 
         [data-theme="dark"] .extra-student-picker-card {
           background: rgba(255, 255, 255, 0.02);
-          border-color: #3C4043;
+          border-color: #363739;
         }
 
         .extra-student-picker-header {
@@ -2308,13 +2305,13 @@ const ScheduleView = ({
         }
 
         .extra-student-search-wrap:focus-within {
-          border-color: var(--apple-blue, #0071E3);
+          border-color: var(--apple-blue, #0171E3);
           box-shadow: 0 0 0 2px rgba(0, 113, 227, 0.15);
         }
 
         [data-theme="dark"] .extra-student-search-wrap {
           background: #202124;
-          border-color: #3C4043;
+          border-color: #363739;
         }
 
         [data-theme="dark"] .extra-student-search-wrap:focus-within {
@@ -2354,7 +2351,7 @@ const ScheduleView = ({
           border: none;
           font-size: 0.78rem;
           font-weight: 600;
-          color: var(--apple-blue, #0071E3);
+          color: var(--apple-blue, #0171E3);
           cursor: pointer;
           padding: 4px 6px;
           white-space: nowrap;
@@ -2402,7 +2399,7 @@ const ScheduleView = ({
 
         .extra-student-checkbox {
           cursor: pointer;
-          accent-color: var(--apple-blue, #0071E3);
+          accent-color: var(--apple-blue, #0171E3);
           width: 16px;
           height: 16px;
           flex-shrink: 0;
@@ -2421,7 +2418,7 @@ const ScheduleView = ({
 
         .extra-student-picker-item.selected .extra-student-name {
           font-weight: 600;
-          color: var(--apple-blue, #0071E3);
+          color: var(--apple-blue, #0171E3);
         }
 
         [data-theme="dark"] .extra-student-picker-item.selected .extra-student-name {
@@ -2633,7 +2630,7 @@ const ScheduleView = ({
 
         [data-theme="dark"] .lesson-group-icon {
           background: #202124;
-          border-color: #3C4043;
+          border-color: #363739;
         }
 
         .lesson-group-title {
@@ -2932,7 +2929,7 @@ const ScheduleView = ({
         /* Dark Theme Support */
         [data-theme="dark"] .schedule-custom-select-btn {
           background: #202124;
-          border-color: #3C4043;
+          border-color: #363739;
           color: #E8EAED;
         }
 
@@ -2944,7 +2941,7 @@ const ScheduleView = ({
 
         [data-theme="dark"] .schedule-custom-dropdown-list {
           background: #292A2D;
-          border-color: #3C4043;
+          border-color: #363739;
           box-shadow: 0 12px 28px rgba(0, 0, 0, 0.5);
         }
 
@@ -3000,7 +2997,7 @@ const ScheduleView = ({
 
         [data-theme="dark"] .preset-btn {
           background: #202124;
-          border-color: #3C4043;
+          border-color: #363739;
           color: var(--text-secondary);
         }
 
@@ -3031,7 +3028,7 @@ const ScheduleView = ({
 
         [data-theme="dark"] .day-chip-btn {
           background: #202124;
-          border-color: #3C4043;
+          border-color: #363739;
         }
 
         .day-chip-short {
@@ -3119,7 +3116,7 @@ const ScheduleView = ({
 
         [data-theme="dark"] .time-preset-chip {
           background: #202124;
-          border-color: #3C4043;
+          border-color: #363739;
           color: var(--text-secondary);
         }
 
@@ -3154,7 +3151,7 @@ const ScheduleView = ({
 
         [data-theme="dark"] .student-list-modal-box {
           background: #292A2D;
-          border-color: #3C4043;
+          border-color: #363739;
           box-shadow: 0 24px 60px rgba(0, 0, 0, 0.65);
         }
 
@@ -3257,7 +3254,7 @@ const ScheduleView = ({
 
         [data-theme="dark"] .student-list-room-pill {
           background: #202124;
-          border-color: #3C4043;
+          border-color: #363739;
           color: #9AA0A6;
         }
 
@@ -3312,7 +3309,7 @@ const ScheduleView = ({
 
         [data-theme="dark"] .student-list-search-wrap {
           background: #202124;
-          border-color: #3C4043;
+          border-color: #363739;
         }
 
         [data-theme="dark"] .student-list-search-wrap:focus-within {

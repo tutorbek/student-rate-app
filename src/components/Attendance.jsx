@@ -2340,7 +2340,7 @@ const Attendance = ({ groups = [], students = [], attendance = [], onSaveAttenda
           padding: 1px 7px;
           border-radius: var(--radius-full);
           background: rgba(0, 122, 255, 0.1);
-          color: #007AFF;
+          color: #0171E3;
           border: 1px solid rgba(0, 122, 255, 0.2);
           margin-left: 6px;
           display: inline-flex;
@@ -2626,7 +2626,7 @@ const Attendance = ({ groups = [], students = [], attendance = [], onSaveAttenda
         }
 
         .cal-weekday.hdr-toq {
-          color: #0071E3;
+          color: #0171E3;
           background: #EFF6FF;
           font-weight: 700;
           border: 1px solid rgba(0, 113, 227, 0.15);
@@ -3033,17 +3033,10 @@ const Attendance = ({ groups = [], students = [], attendance = [], onSaveAttenda
         }
 
         .save-att-btn.has-changes {
-          background: linear-gradient(135deg, #10B981 0%, #059669 100%) !important;
+          background: linear-gradient(135deg, #0171E3 0%, #0155AB 100%) !important;
           color: #FFFFFF !important;
-          border: 1px solid #059669 !important;
-          box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.25), 0 2px 8px rgba(16, 185, 129, 0.35) !important;
-          animation: pulse-green 2s infinite ease-in-out;
-        }
-
-        @keyframes pulse-green {
-          0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4), 0 2px 8px rgba(16, 185, 129, 0.35); }
-          70% { box-shadow: 0 0 0 6px rgba(16, 185, 129, 0), 0 2px 8px rgba(16, 185, 129, 0.35); }
-          100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0), 0 2px 8px rgba(16, 185, 129, 0.35); }
+          border: 1px solid #0155AB !important;
+          box-shadow: 0 2px 8px rgba(1, 113, 227, 0.35) !important;
         }
 
         .save-att-btn:not(.has-changes) {
@@ -3153,30 +3146,30 @@ const Attendance = ({ groups = [], students = [], attendance = [], onSaveAttenda
         }
 
         .att-status-btn.present.active {
-          background: #ECFDF5;
-          color: #059669;
-          border-color: #A7F3D0;
+          background: rgba(52, 199, 89, 0.14);
+          color: #34C759;
+          border-color: rgba(52, 199, 89, 0.35);
           font-weight: 700;
         }
 
         .att-status-btn.excused.active {
-          background: #EFF6FF;
-          color: #2563EB;
-          border-color: #BFDBFE;
+          background: rgba(1, 113, 227, 0.12);
+          color: #0171E3;
+          border-color: rgba(1, 113, 227, 0.3);
           font-weight: 700;
         }
 
         .att-status-btn.absent.active {
-          background: #FEF2F2;
-          color: #DC2626;
-          border-color: #FECACA;
+          background: rgba(255, 59, 48, 0.12);
+          color: #FF3B30;
+          border-color: rgba(255, 59, 48, 0.3);
           font-weight: 700;
         }
 
         .att-status-btn.late.active {
-          background: #FFFBEB;
-          color: #D97706;
-          border-color: #FDE68A;
+          background: rgba(255, 149, 0, 0.14);
+          color: #FF9500;
+          border-color: rgba(255, 149, 0, 0.35);
           font-weight: 700;
         }
 
@@ -3373,7 +3366,7 @@ const Attendance = ({ groups = [], students = [], attendance = [], onSaveAttenda
         }
 
         .legend-dot.toq {
-          background: #0071E3;
+          background: #0171E3;
         }
 
         .legend-dot.juft {
@@ -3403,7 +3396,7 @@ const Attendance = ({ groups = [], students = [], attendance = [], onSaveAttenda
         }
 
         .journal-cal-weekday-name.hdr-toq {
-          color: #0071E3;
+          color: #0171E3;
           background: #EFF6FF;
           border: 1px solid rgba(0, 113, 227, 0.18);
         }
@@ -3535,7 +3528,7 @@ const Attendance = ({ groups = [], students = [], attendance = [], onSaveAttenda
         }
 
         .journal-cal-cell.today-cell {
-          border: 2px solid #0071E3 !important;
+          border: 2px solid #0171E3 !important;
           box-shadow: 0 0 0 2px rgba(0, 113, 227, 0.18), 0 4px 12px rgba(0, 113, 227, 0.12) !important;
         }
 
@@ -3557,7 +3550,7 @@ const Attendance = ({ groups = [], students = [], attendance = [], onSaveAttenda
         .cell-today-pill {
           font-size: 0.64rem;
           font-weight: 800;
-          background: #0071E3;
+          background: #0171E3;
           color: #FFFFFF;
           padding: 2px 7px;
           border-radius: var(--radius-full);
@@ -5990,12 +5983,12 @@ const Attendance = ({ groups = [], students = [], attendance = [], onSaveAttenda
         /* Attendance Dark Mode Overrides */
         [data-theme="dark"] .attendance-search-filter-bar {
           background: #292A2D;
-          border-color: #3C4043;
+          border-color: #363739;
         }
 
         [data-theme="dark"] .attendance-search-input {
           background: #202124;
-          border-color: #3C4043;
+          border-color: #363739;
           color: #E8EAED;
         }
 
@@ -6006,13 +5999,13 @@ const Attendance = ({ groups = [], students = [], attendance = [], onSaveAttenda
         }
 
         [data-theme="dark"] .search-clear-btn {
-          background: #3C4043;
+          background: #363739;
           color: #9AA0A6;
         }
 
         [data-theme="dark"] .prev-absent-info-badge {
           background: #202124;
-          border-color: #3C4043;
+          border-color: #363739;
           color: #9AA0A6;
         }
 
@@ -6040,12 +6033,12 @@ const Attendance = ({ groups = [], students = [], attendance = [], onSaveAttenda
 
         [data-theme="dark"] .quick-actions-bar {
           background: #292A2D;
-          border-color: #3C4043;
+          border-color: #363739;
         }
 
         [data-theme="dark"] .summary-pill {
           background: #202124;
-          border-color: #3C4043;
+          border-color: #363739;
           color: #E8EAED;
         }
 
@@ -6073,7 +6066,7 @@ const Attendance = ({ groups = [], students = [], attendance = [], onSaveAttenda
 
         [data-theme="dark"] .student-attendance-row {
           background: #292A2D;
-          border-color: #3C4043;
+          border-color: #363739;
         }
 
         [data-theme="dark"] .student-avatar-circle {
@@ -6086,48 +6079,48 @@ const Attendance = ({ groups = [], students = [], attendance = [], onSaveAttenda
 
         [data-theme="dark"] .att-status-btn {
           background: #202124;
-          border-color: #3C4043;
+          border-color: #363739;
           color: #9AA0A6;
         }
 
         [data-theme="dark"] .att-status-btn:hover {
-          background: #303134;
-          color: #E8EAED;
+          background: #363739;
+          color: #FFFFFF;
         }
 
         [data-theme="dark"] .att-status-btn.present.active {
-          background: rgba(129, 201, 149, 0.2) !important;
+          background: rgba(52, 199, 89, 0.2) !important;
           color: #81C995 !important;
-          border-color: rgba(129, 201, 149, 0.45) !important;
+          border-color: rgba(52, 199, 89, 0.45) !important;
         }
 
         [data-theme="dark"] .att-status-btn.excused.active {
-          background: rgba(138, 180, 248, 0.2) !important;
+          background: rgba(1, 113, 227, 0.2) !important;
           color: #8AB4F8 !important;
-          border-color: rgba(138, 180, 248, 0.45) !important;
+          border-color: rgba(1, 113, 227, 0.45) !important;
         }
 
         [data-theme="dark"] .att-status-btn.absent.active {
-          background: rgba(242, 139, 130, 0.2) !important;
+          background: rgba(255, 59, 48, 0.2) !important;
           color: #F28B82 !important;
-          border-color: rgba(242, 139, 130, 0.45) !important;
+          border-color: rgba(255, 59, 48, 0.45) !important;
         }
 
         [data-theme="dark"] .att-status-btn.late.active {
-          background: rgba(253, 214, 99, 0.2) !important;
+          background: rgba(255, 149, 0, 0.2) !important;
           color: #FDD663 !important;
-          border-color: rgba(253, 214, 99, 0.45) !important;
+          border-color: rgba(255, 149, 0, 0.45) !important;
         }
 
         [data-theme="dark"] .btn-date-nav {
           background: #202124;
-          border-color: #3C4043;
+          border-color: #363739;
           color: #E8EAED;
         }
 
         [data-theme="dark"] .btn-today-quick {
           background: #202124;
-          border-color: #3C4043;
+          border-color: #363739;
           color: #E8EAED;
         }
 
@@ -6139,12 +6132,12 @@ const Attendance = ({ groups = [], students = [], attendance = [], onSaveAttenda
 
         [data-theme="dark"] .journal-cal-card {
           background: #292A2D;
-          border-color: #3C4043;
+          border-color: #363739;
         }
 
         [data-theme="dark"] .journal-cal-count-badge {
           background: #202124;
-          border-color: #3C4043;
+          border-color: #363739;
           color: #9AA0A6;
         }
 
@@ -6288,7 +6281,7 @@ const Attendance = ({ groups = [], students = [], attendance = [], onSaveAttenda
 
         [data-theme="dark"] .stats-kpi-card {
           background: #202124;
-          border-color: #3C4043;
+          border-color: #363739;
         }
 
         [data-theme="dark"] .kpi-label {
@@ -6301,12 +6294,12 @@ const Attendance = ({ groups = [], students = [], attendance = [], onSaveAttenda
 
         [data-theme="dark"] .section-container {
           background: #292A2D;
-          border-color: #3C4043;
+          border-color: #363739;
         }
 
         [data-theme="dark"] .brutalist-table th {
           background: #202124;
-          border-bottom-color: #3C4043;
+          border-bottom-color: #363739;
           color: #9AA0A6;
         }
 
@@ -6326,12 +6319,12 @@ const Attendance = ({ groups = [], students = [], attendance = [], onSaveAttenda
 
         [data-theme="dark"] .mobile-sort-select {
           background: #202124;
-          border-color: #3C4043;
+          border-color: #363739;
           color: #E8EAED;
         }
 
         [data-theme="dark"] .brutalist-table td {
-          border-bottom-color: #3C4043;
+          border-bottom-color: #363739;
           color: #E8EAED;
         }
 
@@ -6374,11 +6367,11 @@ const Attendance = ({ groups = [], students = [], attendance = [], onSaveAttenda
         /* Dark Mode Overrides for Mobile Stat Cards */
         [data-theme="dark"] .student-stat-mobile-card {
           background: #202124;
-          border-color: #3C4043;
+          border-color: #363739;
         }
 
         [data-theme="dark"] .stat-card-metrics {
-          border-top-color: #3C4043;
+          border-top-color: #363739;
         }
 
         [data-theme="dark"] .mobile-metric-item.metric-present {
@@ -6423,7 +6416,7 @@ const Attendance = ({ groups = [], students = [], attendance = [], onSaveAttenda
 
         [data-theme="dark"] .mobile-metric-item.metric-total {
           background: #292A2D;
-          border-color: #3C4043;
+          border-color: #363739;
         }
 
         [data-theme="dark"] .mobile-metric-item.metric-total .m-label {
@@ -6438,28 +6431,28 @@ const Attendance = ({ groups = [], students = [], attendance = [], onSaveAttenda
         [data-theme="dark"] .late-day-item,
         [data-theme="dark"] .excused-day-item {
           background: #202124;
-          border-color: #3C4043;
+          border-color: #363739;
         }
 
         [data-theme="dark"] .modal-metric-box {
           background: #202124;
-          border-color: #3C4043;
+          border-color: #363739;
         }
 
         [data-theme="dark"] .journal-modal-student-row {
           background: #202124;
-          border-color: #3C4043;
+          border-color: #363739;
         }
 
         [data-theme="dark"] .empty-state,
         [data-theme="dark"] .empty-history {
           background: #292A2D;
-          border-color: #3C4043;
+          border-color: #363739;
         }
 
         [data-theme="dark"] .journal-cal-stats-badge {
           background: #202124 !important;
-          border-color: #3C4043 !important;
+          border-color: #363739 !important;
           color: #9AA0A6 !important;
         }
 
@@ -6469,7 +6462,7 @@ const Attendance = ({ groups = [], students = [], attendance = [], onSaveAttenda
 
         [data-theme="dark"] .cal-nav-action-btn {
           background: #202124 !important;
-          border-color: #3C4043 !important;
+          border-color: #363739 !important;
           color: #E8EAED !important;
         }
 
@@ -6479,7 +6472,7 @@ const Attendance = ({ groups = [], students = [], attendance = [], onSaveAttenda
 
         [data-theme="dark"] .month-jump-nav {
           background: #202124 !important;
-          border-color: #3C4043 !important;
+          border-color: #363739 !important;
         }
 
         [data-theme="dark"] .month-nav-arrow-btn {
@@ -6511,7 +6504,7 @@ const Attendance = ({ groups = [], students = [], attendance = [], onSaveAttenda
 
         [data-theme="dark"] .stats-month-picker-popup {
           background: #202124 !important;
-          border-color: #3C4043 !important;
+          border-color: #363739 !important;
           box-shadow: 0 12px 32px rgba(0, 0, 0, 0.55) !important;
         }
 
@@ -6521,7 +6514,7 @@ const Attendance = ({ groups = [], students = [], attendance = [], onSaveAttenda
 
         [data-theme="dark"] .month-picker-cell {
           background: #2A2B2E !important;
-          border-color: #3C4043 !important;
+          border-color: #363739 !important;
           color: #9AA0A6 !important;
         }
 
@@ -6557,7 +6550,7 @@ const Attendance = ({ groups = [], students = [], attendance = [], onSaveAttenda
 
         [data-theme="dark"] .segmented-control {
           background: #202124 !important;
-          border-color: #3C4043 !important;
+          border-color: #363739 !important;
         }
 
         [data-theme="dark"] .seg-btn {
@@ -6621,7 +6614,7 @@ const Attendance = ({ groups = [], students = [], attendance = [], onSaveAttenda
 
         [data-theme="dark"] .kpi-mini-card {
           background: #202124 !important;
-          border-color: #3C4043 !important;
+          border-color: #363739 !important;
         }
 
         [data-theme="dark"] .kpi-mini-card.card-present {
@@ -6717,12 +6710,12 @@ const Attendance = ({ groups = [], students = [], attendance = [], onSaveAttenda
 
         [data-theme="dark"] .calendar-popover {
           background: #202124 !important;
-          border-color: #3C4043 !important;
+          border-color: #363739 !important;
         }
 
         [data-theme="dark"] .cal-nav-btn {
           background: #303134 !important;
-          border-color: #3C4043 !important;
+          border-color: #363739 !important;
           color: #E8EAED !important;
         }
 
@@ -6746,7 +6739,7 @@ const Attendance = ({ groups = [], students = [], attendance = [], onSaveAttenda
 
         [data-theme="dark"] .cal-day-cell {
           background: #202124 !important;
-          border-color: #3C4043 !important;
+          border-color: #363739 !important;
           color: #E8EAED !important;
         }
 
@@ -6765,25 +6758,25 @@ const Attendance = ({ groups = [], students = [], attendance = [], onSaveAttenda
 
         [data-theme="dark"] .cal-today-btn {
           background: #303134 !important;
-          border-color: #3C4043 !important;
+          border-color: #363739 !important;
           color: #8AB4F8 !important;
         }
 
         [data-theme="dark"] .save-att-btn.has-changes {
-          background: linear-gradient(135deg, #059669 0%, #047857 100%) !important;
-          border-color: #10B981 !important;
+          background: linear-gradient(135deg, #0171E3 0%, #0155AB 100%) !important;
+          border-color: #0171E3 !important;
           color: #FFFFFF !important;
-          box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.3), 0 2px 8px rgba(16, 185, 129, 0.4) !important;
+          box-shadow: 0 2px 8px rgba(1, 113, 227, 0.4) !important;
         }
 
         [data-theme="dark"] .save-att-btn:not(.has-changes) {
-          background: #303134 !important;
+          background: #292A2D !important;
           color: #E8EAED !important;
-          border-color: #3C4043 !important;
+          border-color: #363739 !important;
         }
 
         [data-theme="dark"] .save-att-btn:not(.has-changes):hover {
-          background: #3C4043 !important;
+          background: #363739 !important;
         }
 
         [data-theme="dark"] .summary-pill.pill-unsaved {
@@ -6796,7 +6789,7 @@ const Attendance = ({ groups = [], students = [], attendance = [], onSaveAttenda
         [data-theme="dark"] .unified-journal-toolbar,
         [data-theme="dark"] .matrix-journal-card {
           background: #202124 !important;
-          border-color: #3C4043 !important;
+          border-color: #363739 !important;
         }
 
         [data-theme="dark"] .toolbar-title {
@@ -6806,12 +6799,12 @@ const Attendance = ({ groups = [], students = [], attendance = [], onSaveAttenda
         [data-theme="dark"] .toolbar-chip {
           background: #303134 !important;
           color: #BDC1C6 !important;
-          border-color: #3C4043 !important;
+          border-color: #363739 !important;
         }
 
         [data-theme="dark"] .unified-month-nav {
           background: #303134 !important;
-          border-color: #3C4043 !important;
+          border-color: #363739 !important;
         }
 
         [data-theme="dark"] .btn-today-pill {
@@ -6838,19 +6831,19 @@ const Attendance = ({ groups = [], students = [], attendance = [], onSaveAttenda
         [data-theme="dark"] .btn-export-toolbar,
         [data-theme="dark"] .btn-print-toolbar {
           background: #303134 !important;
-          border-color: #3C4043 !important;
+          border-color: #363739 !important;
           color: #E8EAED !important;
         }
 
         [data-theme="dark"] .btn-export-toolbar:hover,
         [data-theme="dark"] .btn-print-toolbar:hover {
-          background: #3C4043 !important;
+          background: #363739 !important;
           border-color: #5F6368 !important;
         }
 
         [data-theme="dark"] .matrix-search-input {
           background: #303134 !important;
-          border-color: #3C4043 !important;
+          border-color: #363739 !important;
           color: #E8EAED !important;
         }
 
@@ -6866,26 +6859,26 @@ const Attendance = ({ groups = [], students = [], attendance = [], onSaveAttenda
         }
 
         [data-theme="dark"] .matrix-table-scroll-container {
-          border-color: #3C4043 !important;
+          border-color: #363739 !important;
         }
 
         [data-theme="dark"] .matrix-table thead th {
           background: #282A2D !important;
-          border-color: #3C4043 !important;
+          border-color: #363739 !important;
           color: #E8EAED !important;
         }
 
         [data-theme="dark"] .sticky-col-rank,
         [data-theme="dark"] .sticky-col-name {
           background: #202124 !important;
-          border-color: #3C4043 !important;
+          border-color: #363739 !important;
           color: #E8EAED !important;
         }
 
         [data-theme="dark"] thead th.sticky-col-rank,
         [data-theme="dark"] thead th.sticky-col-name {
           background: #282A2D !important;
-          border-color: #3C4043 !important;
+          border-color: #363739 !important;
         }
 
         [data-theme="dark"] .matrix-student-row td {
@@ -6908,18 +6901,18 @@ const Attendance = ({ groups = [], students = [], attendance = [], onSaveAttenda
 
         [data-theme="dark"] .toolbar-group-selector-btn {
           background: #303134 !important;
-          border-color: #3C4043 !important;
+          border-color: #363739 !important;
           color: #E8EAED !important;
         }
 
         [data-theme="dark"] .toolbar-group-selector-btn:hover {
-          background: #3C4043 !important;
+          background: #363739 !important;
         }
 
         [data-theme="dark"] .matrix-student-avatar {
           background: #303134 !important;
           color: #E8EAED !important;
-          border-color: #3C4043 !important;
+          border-color: #363739 !important;
         }
 
         [data-theme="dark"] .matrix-badge.present {
@@ -6954,7 +6947,7 @@ const Attendance = ({ groups = [], students = [], attendance = [], onSaveAttenda
 
         [data-theme="dark"] .matrix-badge.unmarked {
           background: transparent !important;
-          color: #3C4043 !important;
+          color: #363739 !important;
           border: none !important;
         }
 
@@ -7003,11 +6996,11 @@ const Attendance = ({ groups = [], students = [], attendance = [], onSaveAttenda
         }
 
         [data-theme="dark"] .matrix-date-th:hover {
-          background: #3C4043 !important;
+          background: #363739 !important;
         }
 
         [data-theme="dark"] .th-summary {
-          border-color: #3C4043 !important;
+          border-color: #363739 !important;
         }
 
         [data-theme="dark"] .th-summary-p {
@@ -7038,7 +7031,7 @@ const Attendance = ({ groups = [], students = [], attendance = [], onSaveAttenda
         [data-theme="dark"] .th-summary-rate {
           color: #E8EAED !important;
           background: #303134 !important;
-          border-left-color: #3C4043 !important;
+          border-left-color: #363739 !important;
         }
 
         [data-theme="dark"] .matrix-sum-cell {
@@ -7047,7 +7040,7 @@ const Attendance = ({ groups = [], students = [], attendance = [], onSaveAttenda
 
         [data-theme="dark"] .matrix-rate-cell {
           border-color: #303134 !important;
-          border-left-color: #3C4043 !important;
+          border-left-color: #363739 !important;
         }
 
         /* Student Modal Period Tabs */
@@ -7076,9 +7069,9 @@ const Attendance = ({ groups = [], students = [], attendance = [], onSaveAttenda
         }
 
         .student-period-tab-btn.active {
-          background: var(--primary-color, #007AFF);
+          background: var(--primary-color, #0171E3);
           color: #FFFFFF;
-          border-color: var(--primary-color, #007AFF);
+          border-color: var(--primary-color, #0171E3);
           box-shadow: 0 1px 4px rgba(0, 122, 255, 0.25);
         }
 
@@ -7186,7 +7179,7 @@ const Attendance = ({ groups = [], students = [], attendance = [], onSaveAttenda
         /* Dark Mode Overrides for Footer and Tabs */
         [data-theme="dark"] .student-period-tab-btn {
           background: #202124;
-          border-color: #3C4043;
+          border-color: #363739;
           color: #9AA0A6;
         }
 
@@ -7203,14 +7196,14 @@ const Attendance = ({ groups = [], students = [], attendance = [], onSaveAttenda
 
         [data-theme="dark"] .matrix-footer-row td {
           background: #282A2D !important;
-          border-color: #3C4043 !important;
+          border-color: #363739 !important;
           color: #E8EAED !important;
         }
 
         [data-theme="dark"] .footer-rank-cell,
         [data-theme="dark"] .footer-label-cell {
           background: #303134 !important;
-          border-color: #3C4043 !important;
+          border-color: #363739 !important;
           color: #E8EAED !important;
         }
 
