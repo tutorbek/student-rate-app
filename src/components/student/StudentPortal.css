@@ -260,40 +260,49 @@ html {
 @media (max-width: 900px) {
   [data-is-tma="true"] .student-navbar,
   [data-tg-fullscreen="true"] .student-navbar {
-    height: var(--tma-header-height, var(--student-header-total-height, 90px)) !important;
-    padding-top: max(env(safe-area-inset-top, 0px), var(--tg-safe-top, 0px)) !important;
+    height: var(--tma-header-height, var(--student-header-total-height, 84px)) !important;
+    padding-top: var(--tma-status-bar-height, max(env(safe-area-inset-top, 0px), var(--tg-safe-top, 0px), 36px)) !important;
     padding-bottom: 0 !important;
     padding-left: 0 !important;
     padding-right: 0 !important;
+    box-sizing: border-box !important;
   }
 
   [data-is-tma="true"] .student-navbar-inner,
   [data-tg-fullscreen="true"] .student-navbar-inner {
-    position: relative;
-    height: 100%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    /* Reserve clear zone for Telegram's floating 'Close' (left) and '...' (right) pills */
-    padding-left: max(74px, calc(var(--tg-safe-left, 0px) + 70px)) !important;
-    padding-right: max(74px, calc(var(--tg-safe-right, 0px) + 70px)) !important;
-    box-sizing: border-box;
+    position: relative !important;
+    height: 48px !important;
+    min-height: 48px !important;
+    max-height: 48px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    /* Clear zone for Telegram's floating 'Close' (left, ~88px) and '...' (right, ~60px) capsules */
+    padding-left: max(88px, calc(var(--tg-safe-left, 0px) + 76px)) !important;
+    padding-right: max(88px, calc(var(--tg-safe-right, 0px) + 76px)) !important;
+    box-sizing: border-box !important;
   }
 
   [data-is-tma="true"] .navbar-brand-col,
   [data-tg-fullscreen="true"] .navbar-brand-col {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    width: 100%;
-    min-width: 0;
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+    gap: 8px !important;
+    width: auto !important;
+    min-width: 0 !important;
   }
 
   [data-is-tma="true"] .navbar-brand-btn,
   [data-tg-fullscreen="true"] .navbar-brand-btn {
-    display: inline-flex;
-    justify-content: center;
-    align-items: center;
+    display: inline-flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+  }
+
+  [data-is-tma="true"] .navbar-brand-theme-btn,
+  [data-tg-fullscreen="true"] .navbar-brand-theme-btn {
+    display: inline-flex !important;
   }
 
   [data-is-tma="true"] .navbar-actions-row,
@@ -303,13 +312,41 @@ html {
 
   [data-is-tma="true"] .student-portal-container,
   [data-tg-fullscreen="true"] .student-portal-container {
-    padding-top: calc(var(--tma-header-height, var(--student-header-total-height, 90px)) + 12px) !important;
+    padding-top: calc(var(--tma-header-height, 84px) + 12px) !important;
+    padding-bottom: calc(100px + max(env(safe-area-inset-bottom, 0px), var(--tg-safe-bottom, 0px), var(--tma-bottom-clearance, 54px))) !important;
   }
 
   [data-is-tma="true"] .student-mobile-dock,
   [data-tg-fullscreen="true"] .student-mobile-dock {
-    padding-bottom: max(8px, env(safe-area-inset-bottom, 8px), var(--tg-safe-bottom, 8px), var(--tg-content-safe-bottom, 0px)) !important;
+    padding-bottom: max(env(safe-area-inset-bottom, 0px), var(--tg-safe-bottom, 0px), var(--tg-content-safe-bottom, 0px), var(--tma-bottom-clearance, 54px)) !important;
   }
+}
+
+.navbar-brand-theme-btn {
+  display: none;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.05);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  color: var(--text-primary);
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 0;
+  margin: 0;
+  flex-shrink: 0;
+  transition: all 0.15s ease;
+}
+
+[data-theme="dark"] .navbar-brand-theme-btn {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.14);
+  color: #FDD663;
+}
+
+.navbar-brand-theme-btn:active {
+  transform: scale(0.92);
 }
 
 /* Navbar Brand Identity */

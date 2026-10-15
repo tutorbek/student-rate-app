@@ -14,6 +14,11 @@
           document.documentElement.style.backgroundColor = isDark ? '#202124' : '#F5F5F7';
           document.documentElement.style.colorScheme = theme;
 
+          var metaThemeColor = document.getElementById('meta-theme-color');
+          if (metaThemeColor) {
+            metaThemeColor.setAttribute('content', isDark ? '#202124' : '#F5F5F7');
+          }
+
           // Early Telegram Mini App detection to prevent layout jumps/flash
           try {
             var tg = window.Telegram && window.Telegram.WebApp;
@@ -28,8 +33,10 @@
 
             if (isTMA) {
               document.documentElement.setAttribute('data-is-tma', 'true');
-              document.documentElement.style.setProperty('--tma-header-height', '90px');
-              document.documentElement.style.setProperty('--student-header-total-height', '90px');
+              document.documentElement.style.setProperty('--tma-status-bar-height', '36px');
+              document.documentElement.style.setProperty('--tma-header-height', '84px');
+              document.documentElement.style.setProperty('--student-header-total-height', '84px');
+              document.documentElement.style.setProperty('--tma-bottom-clearance', '54px');
               if (tg && tg.ready) tg.ready();
               if (tg && tg.expand) tg.expand();
             } else {
@@ -155,7 +162,8 @@
 
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="theme-color" content="#F5F5F7" id="meta-theme-color" />
     
     <!-- SEO Meta Teglar -->
     <title>Epchil Robot - Bilimni Like bilan taqdirlash va faol ta'lim platformasi</title>

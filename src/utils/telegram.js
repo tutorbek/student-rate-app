@@ -44,6 +44,8 @@ export function syncTelegramMetrics(theme) {
     root.style.removeProperty('--tg-content-safe-right');
     root.style.removeProperty('--student-header-total-height');
     root.style.removeProperty('--tma-header-height');
+    root.style.removeProperty('--tma-status-bar-height');
+    root.style.removeProperty('--tma-bottom-clearance');
     return;
   }
 
@@ -67,25 +69,36 @@ export function syncTelegramMetrics(theme) {
   root.style.setProperty('--tg-content-safe-left', `${csaLeft}px`);
   root.style.setProperty('--tg-content-safe-right', `${csaRight}px`);
 
-  // Calculate reliable, collision-free header height for TMA on mobile (<= 900px)
-  // In Fullscreen and TMA modes: Telegram displays native floating 'Close' (left) and '...' (right) capsules.
-  // Their bottom edge ends around y = 88px..96px. Content must start strictly below this.
-  let tmaHeaderHeight = 52;
   const isMobile = window.innerWidth <= 900;
+  let statusBarHeight = 0;
+  let bottomClearance = 0;
 
   if (isMobile) {
-    if (csaTop > 0) {
-      tmaHeaderHeight = Math.max(csaTop, saTop + 48, 88);
-    } else if (saTop > 0) {
-      tmaHeaderHeight = Math.max(saTop + 48, 88);
+    // Dedicated status bar clearance keeping clock, battery, and signal elements visible
+    if (saTop > 0) {
+      statusBarHeight = saTop;
     } else {
-      // Safe fallback when safe area metrics have not yet been asynchronously reported
-      tmaHeaderHeight = 90;
+      // Standard Android status bar fallback (36px)
+      statusBarHeight = 36;
     }
-  } else {
-    tmaHeaderHeight = 56;
+
+    // Bottom clearance preventing Android's 3-button navigation (Square, Circle, Triangle) from overlapping
+    if (saBottom > 0) {
+      bottomClearance = Math.max(saBottom, 20);
+    } else if (csaBottom > 0) {
+      bottomClearance = Math.max(csaBottom, 20);
+    } else {
+      // Safe fallback for Android 3-button navigation bar (48px + 6px padding)
+      bottomClearance = 54;
+    }
   }
 
+  // The action bar row inside header is 48px high.
+  // Total header height = status bar clearance + 48px action row
+  const tmaHeaderHeight = isMobile ? (statusBarHeight + 48) : 56;
+
+  root.style.setProperty('--tma-status-bar-height', `${statusBarHeight}px`);
+  root.style.setProperty('--tma-bottom-clearance', `${bottomClearance}px`);
   root.style.setProperty('--tma-header-height', `${tmaHeaderHeight}px`);
   root.style.setProperty('--student-header-total-height', `${tmaHeaderHeight}px`);
 
@@ -95,6 +108,11 @@ export function syncTelegramMetrics(theme) {
     const isDark = currentTheme === 'dark';
     const bgHex = isDark ? '#202124' : '#F5F5F7';
     const bottomBarHex = isDark ? '#1C1C1E' : '#FFFFFF';
+
+    const metaThemeColor = document.getElementById('meta-theme-color');
+    if (metaThemeColor) {
+      metaThemeColor.setAttribute('content', bgHex);
+    }
 
     try {
       tg.setHeaderColor?.(bgHex);

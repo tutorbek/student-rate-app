@@ -327,6 +327,20 @@ const Sidebar = ({ activeTab, setActiveTab, userRole, onLogout, theme, toggleThe
           <h1 className="sidebar-logo-text">
             EPCHIL <span className="logo-badge">ROBOT</span>
           </h1>
+          {toggleTheme && (
+            <button
+              type="button"
+              className="navbar-brand-theme-btn"
+              onClick={(e) => {
+                e.stopPropagation();
+                toggleTheme();
+              }}
+              aria-label="Mavzuni o'zgartirish"
+              title="Mavzuni o'zgartirish"
+            >
+              {theme === 'dark' ? <IconSun size={15} /> : <IconMoon size={15} />}
+            </button>
+          )}
         </div>
 
         <div className="mobile-header-actions">
@@ -893,11 +907,11 @@ const Sidebar = ({ activeTab, setActiveTab, userRole, onLogout, theme, toggleThe
           /* Telegram Mini App Adaptations: avoid overlap with floating capsules */
           [data-is-tma="true"] .mobile-top-header,
           [data-tg-fullscreen="true"] .mobile-top-header {
-            height: var(--tma-header-height, 90px) !important;
-            padding-top: max(env(safe-area-inset-top, 0px), var(--tg-safe-top, 0px)) !important;
+            height: var(--tma-header-height, 84px) !important;
+            padding-top: var(--tma-status-bar-height, max(env(safe-area-inset-top, 0px), var(--tg-safe-top, 0px), 36px)) !important;
             padding-bottom: 0 !important;
-            padding-left: max(74px, calc(var(--tg-safe-left, 0px) + 70px)) !important;
-            padding-right: max(74px, calc(var(--tg-safe-right, 0px) + 70px)) !important;
+            padding-left: max(88px, calc(var(--tg-safe-left, 0px) + 76px)) !important;
+            padding-right: max(88px, calc(var(--tg-safe-right, 0px) + 76px)) !important;
             justify-content: center !important;
           }
 
@@ -906,7 +920,14 @@ const Sidebar = ({ activeTab, setActiveTab, userRole, onLogout, theme, toggleThe
             display: flex !important;
             justify-content: center !important;
             align-items: center !important;
-            width: 100% !important;
+            height: 48px !important;
+            width: auto !important;
+            gap: 8px !important;
+          }
+
+          [data-is-tma="true"] .navbar-brand-theme-btn,
+          [data-tg-fullscreen="true"] .navbar-brand-theme-btn {
+            display: inline-flex !important;
           }
 
           [data-is-tma="true"] .mobile-top-header .mobile-header-actions,
@@ -916,8 +937,8 @@ const Sidebar = ({ activeTab, setActiveTab, userRole, onLogout, theme, toggleThe
 
           [data-is-tma="true"] .mobile-bottom-navbar,
           [data-tg-fullscreen="true"] .mobile-bottom-navbar {
-            padding-bottom: max(env(safe-area-inset-bottom, 10px), var(--tg-safe-bottom, 10px), var(--tg-content-safe-bottom, 0px)) !important;
-            height: calc(64px + max(env(safe-area-inset-bottom, 10px), var(--tg-safe-bottom, 10px), var(--tg-content-safe-bottom, 0px))) !important;
+            padding-bottom: max(env(safe-area-inset-bottom, 0px), var(--tg-safe-bottom, 0px), var(--tg-content-safe-bottom, 0px), var(--tma-bottom-clearance, 48px)) !important;
+            height: calc(56px + max(env(safe-area-inset-bottom, 0px), var(--tg-safe-bottom, 0px), var(--tg-content-safe-bottom, 0px), var(--tma-bottom-clearance, 48px))) !important;
           }
         }
 
