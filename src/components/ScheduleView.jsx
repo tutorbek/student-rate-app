@@ -168,7 +168,10 @@ const ScheduleView = ({
 
   // Check if Sunday has any classes scheduled
   const hasSundayClasses = useMemo(() => {
-    const hasRegularSun = groups.some((g) => g.schedule?.days?.includes('sun'));
+    const hasRegularSun = groups.some((g) => {
+      const days = g.schedule?.days?.length ? g.schedule.days : guessScheduleFromName(g.name).days;
+      return days.includes('sun');
+    });
     const hasExtraSun = (extraLessons || []).some((el) => el && el.date && getDayKeyFromDateStr(el.date) === 'sun');
     return hasRegularSun || hasExtraSun;
   }, [groups, extraLessons]);
@@ -183,6 +186,12 @@ const ScheduleView = ({
     }
     return todayKey;
   });
+
+  useEffect(() => {
+    if (todayKey === 'sun' && hasSundayClasses && mobileDay === 'mon') {
+      setMobileDay('sun');
+    }
+  }, [hasSundayClasses, todayKey, mobileDay]);
 
   useEffect(() => {
     if (!activeWeekdays.some((d) => d.key === mobileDay)) {
@@ -450,7 +459,10 @@ const ScheduleView = ({
     activeWeekdays.forEach((day) => {
       // 1. Regular weekly classes
       const regularClasses = groups
-        .filter((g) => g.schedule?.days?.includes(day.key))
+        .filter((g) => {
+          const days = g.schedule?.days?.length ? g.schedule.days : guessScheduleFromName(g.name).days;
+          return days.includes(day.key);
+        })
         .map((g) => ({
           type: 'regular',
           key: `reg_${g.id}_${day.key}`,
@@ -464,7 +476,7 @@ const ScheduleView = ({
       const extraClasses = (extraLessons || [])
         .filter((el) => el && el.date && getDayKeyFromDateStr(el.date) === day.key)
         .map((el) => {
-          const matchedGroup = groups.find((g) => g.id === el.groupId);
+          const matchedGroup = groups.find((g) => String(g.id) === String(el.groupId));
           return {
             type: 'extra',
             key: `extra_${el.id}`,
@@ -545,7 +557,7 @@ const ScheduleView = ({
           className="weekly-timetable-grid"
           style={{
             '--grid-cols': activeWeekdays.length,
-            '--grid-min-width': activeWeekdays.length > 6 ? '980px' : '850px',
+            '--grid-min-width': activeWeekdays.length > 6 ? '1230px' : '1050px',
           }}
         >
           {activeWeekdays.map((day) => {
@@ -566,6 +578,9 @@ const ScheduleView = ({
                     <span className="day-col-name">{day.name}</span>
                     {isToday && <span className="day-today-indicator">Bugun</span>}
                   </div>
+                  {dayClasses.length > 0 && (
+                    <span className="day-classes-count">{dayClasses.length}</span>
+                  )}
                 </div>
 
                 {/* Day Classes List */}
@@ -582,27 +597,18 @@ const ScheduleView = ({
                             className="schedule-lesson-card extra-lesson-card scale-active"
                             onClick={() => setSelectedGroupForStudents(group)}
                           >
+                            {/* Unified Top Row: Clean Extra + Date badge on left, Edit & Delete on right */}
                             <div className="extra-lesson-top-row">
-                              <span className="extra-lesson-badge">
+                              <span className="extra-lesson-badge" title={`Qo'shimcha dars sanasi: ${extraLesson.date}`}>
                                 <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor" stroke="none">
                                   <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
                                 </svg>
                                 <span>Extra</span>
+                                <span className="extra-badge-separator">•</span>
+                                <span className="extra-badge-date">{formatExtraLessonDateLabel(extraLesson.date)}</span>
                               </span>
-                              <span className="extra-lesson-date-pill">
-                                {formatExtraLessonDateLabel(extraLesson.date)}
-                              </span>
-                            </div>
 
-                            <div className="lesson-time-and-actions">
-                              <span className="lesson-time-range">
-                                {item.startTime}
-                                {item.endTime ? ` - ${item.endTime}` : ''}
-                              </span>
                               <div className="extra-actions-group">
-                                {item.room && (
-                                  <span className="lesson-room-pill">{item.room}</span>
-                                )}
                                 <button
                                   type="button"
                                   className="extra-action-icon-btn edit-btn"
@@ -612,7 +618,7 @@ const ScheduleView = ({
                                     handleOpenEditExtraLesson(extraLesson);
                                   }}
                                 >
-                                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                                     <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
                                     <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
                                   </svg>
@@ -628,7 +634,7 @@ const ScheduleView = ({
                                     }
                                   }}
                                 >
-                                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                                     <polyline points="3 6 5 6 21 6" />
                                     <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
                                   </svg>
@@ -636,6 +642,18 @@ const ScheduleView = ({
                               </div>
                             </div>
 
+                            {/* Lesson Time & Room Header (Dedicated full-width row) */}
+                            <div className="lesson-time-header">
+                              <span className="lesson-time-range">
+                                {item.startTime}
+                                {item.endTime ? ` - ${item.endTime}` : ''}
+                              </span>
+                              {item.room && (
+                                <span className="lesson-room-pill">{item.room}</span>
+                              )}
+                            </div>
+
+                            {/* Group Name & Icon */}
                             <div className="lesson-group-main">
                               <div className="lesson-group-icon avatar-circle">
                                 {renderGroupIcon(group.icon, 16)}
@@ -643,8 +661,8 @@ const ScheduleView = ({
                               <span className="lesson-group-title">{group.name}</span>
                             </div>
 
-                            {/* Targeted Students Display on Card */}
-                            {extraLesson.targetType === 'custom' && Array.isArray(extraLesson.studentIds) && extraLesson.studentIds.length > 0 ? (() => {
+                            {/* Targeted Students Display on Card (Custom individual students) */}
+                            {extraLesson.targetType === 'custom' && Array.isArray(extraLesson.studentIds) && extraLesson.studentIds.length > 0 && (() => {
                               const targetedList = students.filter(
                                 (s) => extraLesson.studentIds.some((id) => String(id) === String(s.id)) && !s.deleted
                               );
@@ -665,40 +683,35 @@ const ScheduleView = ({
                                   <span className="extra-target-label">
                                     {targetedList.length === 1
                                       ? targetedList[0].name
-                                      : `${targetedList.length} ta: ${targetedList.slice(0, 2).map((s) => s.name.split(' ')[0]).join(', ')}${targetedList.length > 2 ? ` +${targetedList.length - 2}` : ''}`}
+                                      : `${targetedList.length} ta o'quvchi`}
                                   </span>
                                 </div>
                               );
-                            })() : (
-                              <div className="extra-lesson-target-badge all-group" title={`Guruhning barcha talabalari uchun (${getStudentCount(group.id)} ta)`}>
-                                <span className="extra-target-icon">
-                                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-                                    <circle cx="9" cy="7" r="4" />
-                                    <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
-                                    <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-                                  </svg>
-                                </span>
-                                <span className="extra-target-label">Guruh ({getStudentCount(group.id)})</span>
-                              </div>
-                            )}
+                            })()}
 
+                            {/* Lesson Topic (If set) */}
                             {extraLesson.topic && (
                               <div className="extra-lesson-topic-box" title={extraLesson.topic}>
                                 <span className="extra-topic-icon">
                                   <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                                     <circle cx="12" cy="12" r="10" />
                                     <circle cx="12" cy="12" r="6" />
-                                    <circle cx="12" cy="12" r="2" />
+                                    <circle cx="12" cy="2" />
                                   </svg>
                                 </span>
                                 <span className="extra-topic-text">{extraLesson.topic}</span>
                               </div>
                             )}
 
+                            {/* Footer: Category & Student count */}
                             <div className="lesson-card-footer">
                               <span className={`group-category-pill group-category-${getGroupCategory(group)}`}>
                                 {getGroupCategory(group) === 'kids' ? 'Kids' : 'Teens'}
+                              </span>
+                              <span className="lesson-students-count">
+                                {extraLesson.targetType === 'custom'
+                                  ? `${extraLesson.studentIds?.length || 0} ta tanlangan`
+                                  : `${getStudentCount(group.id)} ta o'quvchi`}
                               </span>
                             </div>
                           </div>
@@ -751,6 +764,9 @@ const ScheduleView = ({
                           <div className="lesson-card-footer">
                             <span className={`group-category-pill group-category-${getGroupCategory(group)}`}>
                               {getGroupCategory(group) === 'kids' ? 'Kids' : 'Teens'}
+                            </span>
+                            <span className="lesson-students-count">
+                              {getStudentCount(group.id)} ta o'quvchi
                             </span>
                           </div>
                         </div>
@@ -1754,14 +1770,38 @@ const ScheduleView = ({
           width: 100%;
           overflow-x: auto;
           -webkit-overflow-scrolling: touch;
+          padding-bottom: 6px;
+        }
+
+        .weekly-grid-wrapper::-webkit-scrollbar {
+          height: 6px;
+        }
+
+        .weekly-grid-wrapper::-webkit-scrollbar-track {
+          background: rgba(0, 0, 0, 0.03);
+          border-radius: 999px;
+        }
+
+        .weekly-grid-wrapper::-webkit-scrollbar-thumb {
+          background: rgba(0, 0, 0, 0.16);
+          border-radius: 999px;
+        }
+
+        [data-theme="dark"] .weekly-grid-wrapper::-webkit-scrollbar-track {
+          background: rgba(255, 255, 255, 0.03);
+        }
+
+        [data-theme="dark"] .weekly-grid-wrapper::-webkit-scrollbar-thumb {
+          background: rgba(255, 255, 255, 0.2);
         }
 
         .weekly-timetable-grid {
           display: grid;
-          grid-template-columns: repeat(var(--grid-cols, 6), minmax(0, 1fr));
+          grid-template-columns: repeat(var(--grid-cols, 6), minmax(165px, 1fr));
           gap: 12px;
-          min-width: var(--grid-min-width, 850px);
+          min-width: var(--grid-min-width, 1050px);
           width: 100%;
+          box-sizing: border-box;
         }
 
         .timetable-day-col {
@@ -1771,12 +1811,10 @@ const ScheduleView = ({
           background: #FBFBFC;
           border: 1px solid rgba(0, 0, 0, 0.06);
           border-radius: var(--radius-lg);
-          padding: 12px;
+          padding: 10px;
           min-height: 280px;
           min-width: 0;
-          max-width: 100%;
           box-sizing: border-box;
-          overflow: hidden;
         }
 
         [data-theme="dark"] .timetable-day-col {
@@ -1868,7 +1906,7 @@ const ScheduleView = ({
         }
 
         .schedule-lesson-card {
-          padding: 12px;
+          padding: 10px 11px;
           border-radius: var(--radius-md);
           background-color: var(--card-bg-light, #FFFFFF);
           border: 1px solid var(--card-border-light, rgba(0, 0, 0, 0.06));
@@ -1877,7 +1915,7 @@ const ScheduleView = ({
           transition: all var(--transition-fast);
           display: flex;
           flex-direction: column;
-          gap: 8px;
+          gap: 7px;
           min-width: 0;
           max-width: 100%;
           box-sizing: border-box;
@@ -2012,17 +2050,16 @@ const ScheduleView = ({
           align-items: center;
           justify-content: space-between;
           width: 100%;
-          gap: 4px;
-          margin-bottom: 2px;
+          gap: 6px;
+          margin-bottom: 1px;
           min-width: 0;
-          flex-wrap: wrap;
         }
 
         .extra-lesson-badge {
           display: inline-flex;
           align-items: center;
-          gap: 4px;
-          padding: 2px 6px;
+          gap: 3.5px;
+          padding: 2.5px 6.5px;
           border-radius: 999px;
           font-size: 0.65rem;
           font-weight: 700;
@@ -2032,8 +2069,11 @@ const ScheduleView = ({
           color: #7C3AED;
           border: 1px solid rgba(124, 58, 237, 0.25);
           white-space: nowrap;
-          flex-shrink: 0;
+          min-width: 0;
+          overflow: hidden;
+          text-overflow: ellipsis;
           line-height: 1.2;
+          flex-shrink: 1;
         }
 
         [data-theme="dark"] .extra-lesson-badge {
@@ -2042,38 +2082,31 @@ const ScheduleView = ({
           border-color: rgba(167, 139, 250, 0.35);
         }
 
-        .extra-lesson-date-pill {
-          font-size: 0.65rem;
-          font-weight: 700;
-          padding: 2px 5px;
-          border-radius: 4px;
-          background: rgba(245, 158, 11, 0.12);
-          color: #D97706;
-          border: 1px solid rgba(245, 158, 11, 0.25);
-          white-space: nowrap;
+        .extra-badge-separator {
+          opacity: 0.45;
+          font-size: 0.6rem;
           flex-shrink: 0;
-          line-height: 1.2;
         }
 
-        [data-theme="dark"] .extra-lesson-date-pill {
-          background: rgba(245, 158, 11, 0.2);
+        .extra-badge-date {
+          font-weight: 700;
+          color: #D97706;
+          text-transform: none;
+          letter-spacing: normal;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+        }
+
+        [data-theme="dark"] .extra-badge-date {
           color: #FBBF24;
-          border-color: rgba(245, 158, 11, 0.35);
-        }
-
-        .lesson-time-and-actions {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          width: 100%;
-          gap: 6px;
-          min-width: 0;
         }
 
         .extra-actions-group {
           display: flex;
           align-items: center;
-          gap: 4px;
+          gap: 3px;
+          flex-shrink: 0;
         }
 
         .extra-action-icon-btn {
@@ -2083,26 +2116,36 @@ const ScheduleView = ({
           display: inline-flex;
           align-items: center;
           justify-content: center;
-          background: transparent;
-          border: none;
+          background: rgba(0, 0, 0, 0.03);
+          border: 1px solid rgba(0, 0, 0, 0.05);
           cursor: pointer;
           color: var(--text-tertiary);
           transition: all 0.15s ease;
           padding: 0;
+          flex-shrink: 0;
         }
 
         .extra-action-icon-btn:hover {
           color: var(--text-primary);
-          background: rgba(0, 0, 0, 0.06);
+          background: rgba(0, 0, 0, 0.08);
+          border-color: rgba(0, 0, 0, 0.12);
+        }
+
+        [data-theme="dark"] .extra-action-icon-btn {
+          background: rgba(255, 255, 255, 0.06);
+          border-color: rgba(255, 255, 255, 0.08);
+          color: #9CA3AF;
         }
 
         [data-theme="dark"] .extra-action-icon-btn:hover {
-          background: rgba(255, 255, 255, 0.1);
+          background: rgba(255, 255, 255, 0.14);
+          color: #FFFFFF;
         }
 
         .extra-action-icon-btn.delete-btn:hover {
-          color: #EF4444;
-          background: rgba(239, 68, 68, 0.12);
+          color: #EF4444 !important;
+          background: rgba(239, 68, 68, 0.12) !important;
+          border-color: rgba(239, 68, 68, 0.25) !important;
         }
 
         .lesson-card-action-btn {
@@ -2669,9 +2712,11 @@ const ScheduleView = ({
         .lesson-card-footer {
           display: flex;
           align-items: center;
-          justify-content: flex-start;
-          padding-top: 4px;
+          justify-content: space-between;
+          gap: 6px;
+          padding-top: 5px;
           border-top: 1px dashed rgba(0, 0, 0, 0.06);
+          min-width: 0;
         }
 
         [data-theme="dark"] .lesson-card-footer {
@@ -2679,9 +2724,17 @@ const ScheduleView = ({
         }
 
         .lesson-students-count {
-          font-size: 0.72rem;
+          font-size: 0.7rem;
           font-weight: 600;
           color: var(--text-secondary);
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          text-align: right;
+        }
+
+        [data-theme="dark"] .lesson-students-count {
+          color: #9CA3AF !important;
         }
 
         .lesson-edit-hint {
