@@ -1,16 +1,24 @@
 /**
  * Telegram Mini App Fullscreen & Safe Area Integration Utility
  * Compliant with Telegram Bot API 8.0+ Fullscreen Mode specification.
- * Handles safeAreaInset, contentSafeAreaInset, header coloring, and orientation shifts.
+ * Handles safeAreaInset, contentSafeAreaInset, header coloring, BackButton, and orientation shifts.
  */
 
 export function isTelegramWebApp() {
   if (typeof window === 'undefined') return false;
-  return Boolean(
-    window.Telegram?.WebApp?.initData ||
+  const tg = window.Telegram?.WebApp;
+  if (!tg) return false;
+
+  // Strict verification: only returns true inside an actual Telegram client webview
+  const hasInitData = typeof tg.initData === 'string' && tg.initData.trim().length > 0;
+  const hasProxy = Boolean(
     window.TelegramWebviewProxy ||
-    (window.Telegram?.WebApp?.platform && window.Telegram.WebApp.platform !== 'unknown')
+    window.webkit?.messageHandlers?.telegramWebviewProxy ||
+    window.webkit?.messageHandlers?.telegram
   );
+  const isKnownPlatform = Boolean(tg.platform && tg.platform !== 'unknown');
+
+  return Boolean(hasInitData || hasProxy || isKnownPlatform);
 }
 
 export function syncTelegramMetrics(theme) {
@@ -22,6 +30,22 @@ export function syncTelegramMetrics(theme) {
 
   root.setAttribute('data-is-tma', isTMA ? 'true' : 'false');
   root.setAttribute('data-tg-fullscreen', isFullscreen ? 'true' : 'false');
+
+  if (!isTMA) {
+    // When opened in a standard mobile browser (Safari, Chrome, etc.),
+    // remove all TMA-specific CSS variables to guarantee zero layout shifts or regressions.
+    root.style.removeProperty('--tg-safe-top');
+    root.style.removeProperty('--tg-safe-bottom');
+    root.style.removeProperty('--tg-safe-left');
+    root.style.removeProperty('--tg-safe-right');
+    root.style.removeProperty('--tg-content-safe-top');
+    root.style.removeProperty('--tg-content-safe-bottom');
+    root.style.removeProperty('--tg-content-safe-left');
+    root.style.removeProperty('--tg-content-safe-right');
+    root.style.removeProperty('--student-header-total-height');
+    root.style.removeProperty('--tma-header-height');
+    return;
+  }
 
   const saTop = Number(tg?.safeAreaInset?.top) || 0;
   const saBottom = Number(tg?.safeAreaInset?.bottom) || 0;
@@ -43,42 +67,41 @@ export function syncTelegramMetrics(theme) {
   root.style.setProperty('--tg-content-safe-left', `${csaLeft}px`);
   root.style.setProperty('--tg-content-safe-right', `${csaRight}px`);
 
-  // Calculate total header height for Student Portal
-  // In Fullscreen mode: Telegram draws native floating 'Close' (left) and '...' (right) pills.
-  // Their bottom edge ends around y = 88px..96px. Content must start below this.
-  let totalHeaderHeight = 52;
+  // Calculate reliable, collision-free header height for TMA on mobile (<= 900px)
+  // In Fullscreen and TMA modes: Telegram displays native floating 'Close' (left) and '...' (right) capsules.
+  // Their bottom edge ends around y = 88px..96px. Content must start strictly below this.
+  let tmaHeaderHeight = 52;
   const isMobile = window.innerWidth <= 900;
 
   if (isMobile) {
-    if (isFullscreen || isTMA) {
-      if (csaTop > 0) {
-        // contentSafeAreaInset.top reports the full clearance from the screen top
-        totalHeaderHeight = Math.max(csaTop, saTop + 46, 88);
-      } else if (saTop > 0) {
-        // Hardware safe area (notch/status bar) + navbar content row height
-        totalHeaderHeight = saTop + 48;
-      } else if (isFullscreen) {
-        // Reliable fallback in fullscreen before Telegram insets are dispatched
-        totalHeaderHeight = 92;
-      } else {
-        totalHeaderHeight = 52;
-      }
+    if (csaTop > 0) {
+      tmaHeaderHeight = Math.max(csaTop, saTop + 48, 88);
+    } else if (saTop > 0) {
+      tmaHeaderHeight = Math.max(saTop + 48, 88);
     } else {
-      totalHeaderHeight = 52;
+      // Safe fallback when safe area metrics have not yet been asynchronously reported
+      tmaHeaderHeight = 90;
     }
   } else {
-    totalHeaderHeight = 56;
+    tmaHeaderHeight = 56;
   }
 
-  root.style.setProperty('--student-header-total-height', `${totalHeaderHeight}px`);
+  root.style.setProperty('--tma-header-height', `${tmaHeaderHeight}px`);
+  root.style.setProperty('--student-header-total-height', `${tmaHeaderHeight}px`);
 
-  // Synchronize Telegram native window background and header chrome colors
+  // Synchronize Telegram native chrome colors to seamlessly blend with the application
   if (tg) {
     const currentTheme = theme || root.getAttribute('data-theme') || 'light';
-    const bgHex = currentTheme === 'dark' ? '#202124' : '#F5F5F7';
+    const isDark = currentTheme === 'dark';
+    const bgHex = isDark ? '#202124' : '#F5F5F7';
+    const bottomBarHex = isDark ? '#1C1C1E' : '#FFFFFF';
+
     try {
       tg.setHeaderColor?.(bgHex);
       tg.setBackgroundColor?.(bgHex);
+      if (typeof tg.setBottomBarColor === 'function') {
+        tg.setBottomBarColor(bottomBarHex);
+      }
     } catch {}
   }
 }
@@ -86,7 +109,7 @@ export function syncTelegramMetrics(theme) {
 export function setupTelegramFullscreen(theme) {
   if (typeof window === 'undefined') return () => {};
   const tg = window.Telegram?.WebApp;
-  if (!tg) {
+  if (!tg || !isTelegramWebApp()) {
     syncTelegramMetrics(theme);
     return () => {};
   }
@@ -130,5 +153,32 @@ export function setupTelegramFullscreen(theme) {
     } catch {}
     window.removeEventListener('resize', handler);
     window.removeEventListener('orientationchange', handler);
+  };
+}
+
+/**
+ * Binds a callback to Telegram's native BackButton.
+ * Shows the native back button if inside TMA and returns a cleanup function to hide it.
+ *
+ * @param {Function} onBack - Handler to invoke when native back button is pressed.
+ * @returns {Function} Cleanup function to unbind and hide BackButton.
+ */
+export function bindTelegramBackButton(onBack) {
+  if (typeof window === 'undefined') return () => {};
+  const tg = window.Telegram?.WebApp;
+  if (!tg?.BackButton || !isTelegramWebApp() || typeof onBack !== 'function') {
+    return () => {};
+  }
+
+  try {
+    tg.BackButton.show();
+    tg.BackButton.onClick(onBack);
+  } catch {}
+
+  return () => {
+    try {
+      tg.BackButton.offClick(onBack);
+      tg.BackButton.hide();
+    } catch {}
   };
 }

@@ -14,7 +14,7 @@ import AdminLeads from './components/admin/AdminLeads';
 import LoginPage from './components/LoginPage';
 import LandingPage from './components/LandingPage';
 import StudentPortal from './components/student/StudentPortal';
-import { setupTelegramFullscreen, syncTelegramMetrics } from './utils/telegram';
+import { setupTelegramFullscreen, syncTelegramMetrics, isTelegramWebApp, bindTelegramBackButton } from './utils/telegram';
 import { useModalDismiss } from './hooks/useModalDismiss';
 import {
   loadFromSupabase as loadFromFirestore,
@@ -147,7 +147,7 @@ function App() {
       if (params.get('auth') === 'login' || window.location.hash === '#login') {
         return 'login';
       }
-      if (window.Telegram?.WebApp?.initData || window.TelegramWebviewProxy) {
+      if (isTelegramWebApp()) {
         return 'login';
       }
     }
@@ -427,6 +427,18 @@ function App() {
       }
     }
   }, [userRole, activeTab]);
+
+  // Handle Telegram native BackButton for Teacher & Admin navigation tabs
+  useEffect(() => {
+    if (!isAuthenticated || userRole === 'student') return;
+    const defaultTab = userRole === 'admin' ? 'dashboard' : 'schedule';
+    if (activeTab !== defaultTab) {
+      const unbind = bindTelegramBackButton(() => {
+        setActiveTab(defaultTab);
+      });
+      return unbind;
+    }
+  }, [isAuthenticated, userRole, activeTab]);
 
   // Sync body class for mobile viewport lock
   useEffect(() => {
@@ -1591,7 +1603,7 @@ function App() {
     setLoginPassword('');
     setLoginError('');
 
-    if (typeof window !== 'undefined' && (window.Telegram?.WebApp?.initData || window.TelegramWebviewProxy || new URLSearchParams(window.location.search).get('auth') === 'login')) {
+    if (typeof window !== 'undefined' && (isTelegramWebApp() || new URLSearchParams(window.location.search).get('auth') === 'login')) {
       setAuthView('login');
     } else {
       setAuthView('landing');

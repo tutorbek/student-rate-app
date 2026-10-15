@@ -260,7 +260,7 @@ html {
 @media (max-width: 900px) {
   [data-is-tma="true"] .student-navbar,
   [data-tg-fullscreen="true"] .student-navbar {
-    height: var(--student-header-total-height, 92px) !important;
+    height: var(--tma-header-height, var(--student-header-total-height, 90px)) !important;
     padding-top: max(env(safe-area-inset-top, 0px), var(--tg-safe-top, 0px)) !important;
     padding-bottom: 0 !important;
     padding-left: 0 !important;
@@ -275,8 +275,8 @@ html {
     align-items: center;
     justify-content: center;
     /* Reserve clear zone for Telegram's floating 'Close' (left) and '...' (right) pills */
-    padding-left: max(72px, calc(var(--tg-safe-left, 0px) + 68px)) !important;
-    padding-right: max(72px, calc(var(--tg-safe-right, 0px) + 68px)) !important;
+    padding-left: max(74px, calc(var(--tg-safe-left, 0px) + 70px)) !important;
+    padding-right: max(74px, calc(var(--tg-safe-right, 0px) + 70px)) !important;
     box-sizing: border-box;
   }
 
@@ -299,6 +299,16 @@ html {
   [data-is-tma="true"] .navbar-actions-row,
   [data-tg-fullscreen="true"] .navbar-actions-row {
     display: none !important;
+  }
+
+  [data-is-tma="true"] .student-portal-container,
+  [data-tg-fullscreen="true"] .student-portal-container {
+    padding-top: calc(var(--tma-header-height, var(--student-header-total-height, 90px)) + 12px) !important;
+  }
+
+  [data-is-tma="true"] .student-mobile-dock,
+  [data-tg-fullscreen="true"] .student-mobile-dock {
+    padding-bottom: max(8px, env(safe-area-inset-bottom, 8px), var(--tg-safe-bottom, 8px), var(--tg-content-safe-bottom, 0px)) !important;
   }
 }
 

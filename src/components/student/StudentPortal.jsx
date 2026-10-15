@@ -10,7 +10,7 @@ import { renderAvatar } from '../../utils/studentAvatars';
 import { scrollToWithOffset } from '../../utils/scrollOffset';
 import { isStudentTargetedByExtraLesson } from '../../utils/scheduleUtils';
 import { ProjectLikeIcon, ZapIcon, CalendarIcon, MapPinIcon } from './StudentIcons';
-import { setupTelegramFullscreen, syncTelegramMetrics } from '../../utils/telegram';
+import { setupTelegramFullscreen, syncTelegramMetrics, bindTelegramBackButton } from '../../utils/telegram';
 import './StudentPortal.css';
 
 const triggerHaptic = (style = 'light') => {
@@ -100,6 +100,16 @@ export default function StudentPortal({
 
   useEffect(() => {
     localStorage.setItem('rsa_student_portal_tab', activeTab);
+  }, [activeTab]);
+
+  // Bind Telegram native BackButton when not on 'main' tab
+  useEffect(() => {
+    if (activeTab !== 'main') {
+      const unbind = bindTelegramBackButton(() => {
+        handleTabSelect('main');
+      });
+      return unbind;
+    }
   }, [activeTab]);
 
   // Synchronize Telegram Fullscreen Mode, safe area CSS metrics and header colors

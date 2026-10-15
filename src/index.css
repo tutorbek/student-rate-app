@@ -206,6 +206,11 @@ html, body, #root, * {
     padding-top: calc(54px + env(safe-area-inset-top, 0px));
     padding-left: 0;
   }
+
+  [data-is-tma="true"] .app-container:not(.student-app-root),
+  [data-tg-fullscreen="true"] .app-container:not(.student-app-root) {
+    padding-top: calc(var(--tma-header-height, 90px) + 8px) !important;
+  }
 }
 
 .app-container.student-app-root {
@@ -246,6 +251,11 @@ html, body, #root, * {
   .main-content.student-main-content {
     padding: 0 !important;
     padding-bottom: 0 !important;
+  }
+
+  [data-is-tma="true"] .main-content:not(.student-main-content),
+  [data-tg-fullscreen="true"] .main-content:not(.student-main-content) {
+    padding-bottom: calc(76px + max(env(safe-area-inset-bottom, 12px), var(--tg-safe-bottom, 12px), var(--tg-content-safe-bottom, 0px))) !important;
   }
 }
 
@@ -2430,6 +2440,42 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
   max-width: 100%;
   width: 100%;
   position: relative;
+}
+
+/* Telegram Mini App Adaptations for Landing & Login Headers */
+@media (max-width: 900px) {
+  [data-is-tma="true"] .landing-root header,
+  [data-is-tma="true"] .login-root header,
+  [data-tg-fullscreen="true"] .landing-root header,
+  [data-tg-fullscreen="true"] .login-root header {
+    padding-top: max(env(safe-area-inset-top, 0px), var(--tg-safe-top, 0px)) !important;
+    min-height: var(--tma-header-height, 90px) !important;
+  }
+
+  [data-is-tma="true"] .landing-root header > div,
+  [data-is-tma="true"] .login-root header > div,
+  [data-tg-fullscreen="true"] .landing-root header > div,
+  [data-tg-fullscreen="true"] .login-root header > div {
+    height: 100% !important;
+    min-height: calc(var(--tma-header-height, 90px) - max(env(safe-area-inset-top, 0px), var(--tg-safe-top, 0px))) !important;
+    padding-left: max(74px, calc(var(--tg-safe-left, 0px) + 70px)) !important;
+    padding-right: max(74px, calc(var(--tg-safe-right, 0px) + 70px)) !important;
+    justify-content: center !important;
+  }
+
+  [data-is-tma="true"] .landing-root header .navbar-brand-section,
+  [data-is-tma="true"] .login-root header .navbar-brand-section,
+  [data-tg-fullscreen="true"] .landing-root header .navbar-brand-section,
+  [data-tg-fullscreen="true"] .login-root header .navbar-brand-section {
+    margin: 0 auto !important;
+  }
+
+  [data-is-tma="true"] .landing-root header .shrink-0:not(.navbar-brand-section),
+  [data-is-tma="true"] .login-root header .shrink-0:not(.navbar-brand-section),
+  [data-tg-fullscreen="true"] .landing-root header .shrink-0:not(.navbar-brand-section),
+  [data-tg-fullscreen="true"] .login-root header .shrink-0:not(.navbar-brand-section) {
+    display: none !important;
+  }
 }
 
 /* Landing & Login Page 125% Scale on Desktop */

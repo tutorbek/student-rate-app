@@ -1,4 +1,5 @@
 import React, { useEffect } from 'react';
+import { bindTelegramBackButton } from '../utils/telegram';
 
 export default function LoginPage({
   handleLoginSubmit,
@@ -16,6 +17,13 @@ export default function LoginPage({
       document.documentElement.classList.remove('landing-page-active');
     };
   }, []);
+
+  useEffect(() => {
+    if (typeof onBackToLanding === 'function') {
+      const unbind = bindTelegramBackButton(onBackToLanding);
+      return unbind;
+    }
+  }, [onBackToLanding]);
 
   return (
     <div className="landing-root login-root w-full min-h-screen min-h-[100dvh] bg-[var(--bg-primary)] text-[var(--text-primary)] select-none relative flex flex-col justify-between font-sans antialiased overflow-hidden selection:bg-[#0171E3] selection:text-white">

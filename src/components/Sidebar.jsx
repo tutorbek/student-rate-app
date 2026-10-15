@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 
 const IconSun = ({ size = 15 }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
@@ -179,6 +179,19 @@ const Sidebar = ({ activeTab, setActiveTab, userRole, onLogout, theme, toggleThe
 
   const hasSettings = filteredMenuItems.some((item) => item.id === 'settings');
 
+  const mobileMenuItems = useMemo(() => {
+    const items = [...filteredMenuItems];
+    if (userRole !== 'student' && !items.some((item) => item.id === 'settings')) {
+      items.push({
+        id: 'settings',
+        label: 'Sozlamalar',
+        shortLabel: 'Profil',
+        icon: <IconSettings size={19} />,
+      });
+    }
+    return items;
+  }, [filteredMenuItems, userRole]);
+
   return (
     <>
       {/* Desktop Left Sidebar: Compact, Apple Minimalist with Centered Navigation & Magnification */}
@@ -356,7 +369,7 @@ const Sidebar = ({ activeTab, setActiveTab, userRole, onLogout, theme, toggleThe
       {/* Fixed Mobile Bottom Navigation Bar (<= 900px) */}
       {userRole !== 'student' && (
         <nav className="mobile-bottom-navbar" aria-label="Mobil navigatsiya">
-          {filteredMenuItems.map((item) => (
+          {mobileMenuItems.map((item) => (
             <button
               key={item.id}
               type="button"
@@ -875,6 +888,36 @@ const Sidebar = ({ activeTab, setActiveTab, userRole, onLogout, theme, toggleThe
           }
           .mobile-bottom-navbar {
             display: flex !important;
+          }
+
+          /* Telegram Mini App Adaptations: avoid overlap with floating capsules */
+          [data-is-tma="true"] .mobile-top-header,
+          [data-tg-fullscreen="true"] .mobile-top-header {
+            height: var(--tma-header-height, 90px) !important;
+            padding-top: max(env(safe-area-inset-top, 0px), var(--tg-safe-top, 0px)) !important;
+            padding-bottom: 0 !important;
+            padding-left: max(74px, calc(var(--tg-safe-left, 0px) + 70px)) !important;
+            padding-right: max(74px, calc(var(--tg-safe-right, 0px) + 70px)) !important;
+            justify-content: center !important;
+          }
+
+          [data-is-tma="true"] .mobile-top-header .mobile-brand,
+          [data-tg-fullscreen="true"] .mobile-top-header .mobile-brand {
+            display: flex !important;
+            justify-content: center !important;
+            align-items: center !important;
+            width: 100% !important;
+          }
+
+          [data-is-tma="true"] .mobile-top-header .mobile-header-actions,
+          [data-tg-fullscreen="true"] .mobile-top-header .mobile-header-actions {
+            display: none !important;
+          }
+
+          [data-is-tma="true"] .mobile-bottom-navbar,
+          [data-tg-fullscreen="true"] .mobile-bottom-navbar {
+            padding-bottom: max(env(safe-area-inset-bottom, 10px), var(--tg-safe-bottom, 10px), var(--tg-content-safe-bottom, 0px)) !important;
+            height: calc(64px + max(env(safe-area-inset-bottom, 10px), var(--tg-safe-bottom, 10px), var(--tg-content-safe-bottom, 0px))) !important;
           }
         }
 
