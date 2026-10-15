@@ -118,6 +118,13 @@ export default function StudentAccountView({
   // Lock of background scroll and Escape key handler
   useModalDismiss(Boolean(pinModalMode || showLogoutConfirm || isGroupsModalOpen || isStudentListModalOpen), closeModals);
 
+  // Reset student search query when sheet closes
+  useEffect(() => {
+    if (!isStudentListModalOpen) {
+      setProfileSearchQuery('');
+    }
+  }, [isStudentListModalOpen]);
+
   // Auto focus input when opening PIN entry
   useEffect(() => {
     if (pinModalMode === 'entry') {
@@ -709,7 +716,6 @@ export default function StudentAccountView({
                   placeholder="Ismingizni qidiring..."
                   value={profileSearchQuery}
                   onChange={(e) => setProfileSearchQuery(e.target.value)}
-                  autoFocus
                 />
                 {profileSearchQuery && (
                   <button
