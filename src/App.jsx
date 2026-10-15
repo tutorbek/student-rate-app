@@ -14,6 +14,7 @@ import AdminLeads from './components/admin/AdminLeads';
 import LoginPage from './components/LoginPage';
 import LandingPage from './components/LandingPage';
 import StudentPortal from './components/student/StudentPortal';
+import { setupTelegramFullscreen, syncTelegramMetrics } from './utils/telegram';
 import { useModalDismiss } from './hooks/useModalDismiss';
 import {
   loadFromSupabase as loadFromFirestore,
@@ -220,29 +221,23 @@ function App() {
     }
   }, [applyThemeInstantly]);
 
-  // Initialize Telegram WebApp and handle deep links / URL parameters
+  // Initialize Telegram WebApp Fullscreen, Safe Areas, and Deep Links
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      if (window.Telegram?.WebApp) {
-        try {
-          window.Telegram.WebApp.ready();
-          window.Telegram.WebApp.expand();
-        } catch (e) {
-          console.warn('Telegram WebApp init error:', e);
-        }
-      }
+    const cleanupTg = setupTelegramFullscreen(theme);
 
-      const checkAuthParam = () => {
-        const params = new URLSearchParams(window.location.search);
-        if (params.get('auth') === 'login' || window.location.hash === '#login') {
-          setAuthView('login');
-        }
-      };
-      checkAuthParam();
-      window.addEventListener('hashchange', checkAuthParam);
-      return () => window.removeEventListener('hashchange', checkAuthParam);
-    }
-  }, []);
+    const checkAuthParam = () => {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('auth') === 'login' || window.location.hash === '#login') {
+        setAuthView('login');
+      }
+    };
+    checkAuthParam();
+    window.addEventListener('hashchange', checkAuthParam);
+    return () => {
+      cleanupTg?.();
+      window.removeEventListener('hashchange', checkAuthParam);
+    };
+  }, [theme]);
 
   const handleLoginSubmit = async (e) => {
     e.preventDefault();

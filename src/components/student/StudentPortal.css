@@ -5,6 +5,17 @@
 
 :root {
   --student-navbar-height: 56px;
+  --student-header-total-height: 56px;
+
+  /* Telegram WebApp Safe Area and Content Inset Fallbacks */
+  --tg-safe-top: 0px;
+  --tg-safe-bottom: 0px;
+  --tg-safe-left: 0px;
+  --tg-safe-right: 0px;
+  --tg-content-safe-top: 0px;
+  --tg-content-safe-bottom: 0px;
+  --tg-content-safe-left: 0px;
+  --tg-content-safe-right: 0px;
 
   /* Unified Sapphire Sky & Sapphire Palette (#0171E3, #0155AB) */
   --electric-violet: #0171E3;
@@ -40,12 +51,12 @@
 
 /* --- Global Scroll Offset for Fixed Navbar --- */
 html {
-  scroll-padding-top: calc(var(--student-navbar-height) + 24px);
+  scroll-padding-top: calc(var(--student-header-total-height, var(--student-navbar-height)) + 24px);
 }
 
 @media (max-width: 680px) {
   html {
-    scroll-padding-top: calc(var(--student-navbar-height) + 16px);
+    scroll-padding-top: calc(var(--student-header-total-height, var(--student-navbar-height)) + 16px);
   }
 }
 
@@ -57,7 +68,7 @@ html {
 #student-attendance-calendar,
 .student-schedule-wrap,
 .student-calendar-card {
-  scroll-margin-top: calc(var(--student-navbar-height) + 24px);
+  scroll-margin-top: calc(var(--student-header-total-height, var(--student-navbar-height)) + 24px);
 }
 
 @media (max-width: 680px) {
@@ -69,7 +80,7 @@ html {
   #student-attendance-calendar,
   .student-schedule-wrap,
   .student-calendar-card {
-    scroll-margin-top: calc(var(--student-navbar-height) + 16px);
+    scroll-margin-top: calc(var(--student-header-total-height, var(--student-navbar-height)) + 16px);
   }
 }
 
@@ -88,12 +99,18 @@ html {
   max-width: 860px;
   margin: 0 auto;
   box-sizing: border-box;
-  padding: calc(var(--student-navbar-height) + 16px) 14px 78px;
+  padding-top: calc(var(--student-header-total-height, var(--student-navbar-height)) + 14px);
+  padding-left: max(14px, env(safe-area-inset-left, 0px), var(--tg-safe-left, 0px));
+  padding-right: max(14px, env(safe-area-inset-right, 0px), var(--tg-safe-right, 0px));
+  padding-bottom: calc(98px + max(env(safe-area-inset-bottom, 16px), var(--tg-safe-bottom, 16px)));
 }
 
 @media (max-width: 480px) {
   .student-portal-container {
-    padding: calc(var(--student-navbar-height) + 10px) 10px calc(98px + env(safe-area-inset-bottom, 24px));
+    padding-top: calc(var(--student-header-total-height, var(--student-navbar-height)) + 10px);
+    padding-left: max(10px, env(safe-area-inset-left, 0px), var(--tg-safe-left, 0px));
+    padding-right: max(10px, env(safe-area-inset-right, 0px), var(--tg-safe-right, 0px));
+    padding-bottom: calc(98px + max(env(safe-area-inset-bottom, 16px), var(--tg-safe-bottom, 16px)));
     max-width: 100vw;
     overflow-x: clip;
   }
@@ -101,13 +118,16 @@ html {
 
 @media (max-width: 390px) {
   .student-portal-container {
-    padding: calc(var(--student-navbar-height) + 8px) 8px calc(98px + env(safe-area-inset-bottom, 24px));
+    padding-top: calc(var(--student-header-total-height, var(--student-navbar-height)) + 8px);
+    padding-left: max(8px, env(safe-area-inset-left, 0px), var(--tg-safe-left, 0px));
+    padding-right: max(8px, env(safe-area-inset-right, 0px), var(--tg-safe-right, 0px));
+    padding-bottom: calc(98px + max(env(safe-area-inset-bottom, 16px), var(--tg-safe-bottom, 16px)));
   }
 }
 
 @media (min-width: 901px) {
   .student-portal-container {
-    padding-top: calc(var(--student-navbar-height) + 20px);
+    padding-top: calc(var(--student-header-total-height, var(--student-navbar-height)) + 20px);
     padding-bottom: 40px;
   }
 }
@@ -197,13 +217,13 @@ html {
   left: 0;
   right: 0;
   width: 100%;
-  height: var(--student-navbar-height);
+  height: var(--student-header-total-height, var(--student-navbar-height));
   z-index: 999;
   background: var(--bg-card);
   border-bottom: 1px solid var(--border-color);
   border-radius: 0 !important;
   margin: 0 !important;
-  padding: 0 !important;
+  padding: max(env(safe-area-inset-top, 0px), var(--tg-safe-top, 0px)) 0 0 0 !important;
   box-shadow: none !important;
   box-sizing: border-box;
   transform: translateZ(0);
@@ -233,6 +253,52 @@ html {
   .student-navbar-inner {
     padding: 0 16px;
     gap: 8px;
+  }
+}
+
+/* Telegram Mini App & Fullscreen Adaptive Header on Mobile */
+@media (max-width: 900px) {
+  [data-is-tma="true"] .student-navbar,
+  [data-tg-fullscreen="true"] .student-navbar {
+    height: var(--student-header-total-height, 92px) !important;
+    padding-top: max(env(safe-area-inset-top, 0px), var(--tg-safe-top, 0px)) !important;
+    padding-bottom: 0 !important;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+  }
+
+  [data-is-tma="true"] .student-navbar-inner,
+  [data-tg-fullscreen="true"] .student-navbar-inner {
+    position: relative;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    /* Reserve clear zone for Telegram's floating 'Close' (left) and '...' (right) pills */
+    padding-left: max(72px, calc(var(--tg-safe-left, 0px) + 68px)) !important;
+    padding-right: max(72px, calc(var(--tg-safe-right, 0px) + 68px)) !important;
+    box-sizing: border-box;
+  }
+
+  [data-is-tma="true"] .navbar-brand-col,
+  [data-tg-fullscreen="true"] .navbar-brand-col {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    min-width: 0;
+  }
+
+  [data-is-tma="true"] .navbar-brand-btn,
+  [data-tg-fullscreen="true"] .navbar-brand-btn {
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+  }
+
+  [data-is-tma="true"] .navbar-actions-row,
+  [data-tg-fullscreen="true"] .navbar-actions-row {
+    display: none !important;
   }
 }
 
@@ -483,7 +549,7 @@ html {
   right: 0;
   z-index: 1000;
   pointer-events: none;
-  padding: 0 10px max(8px, env(safe-area-inset-bottom, 8px));
+  padding: 0 10px max(8px, env(safe-area-inset-bottom, 8px), var(--tg-safe-bottom, 8px));
   box-sizing: border-box;
   transform: translateZ(0);
   -webkit-transform: translateZ(0);
@@ -763,6 +829,36 @@ html {
   display: flex;
   flex-direction: column;
   gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+
+.welcome-theme-toggle-btn {
+  width: 36px;
+  height: 36px;
+  min-width: 36px;
+  border-radius: 50%;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-secondary);
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: all 0.18s ease;
+  padding: 0;
+  margin-left: auto;
+}
+
+.welcome-theme-toggle-btn:hover {
+  color: var(--text-primary);
+  background: var(--bg-hover);
+  border-color: var(--border-hover);
+}
+
+.welcome-theme-toggle-btn:active {
+  transform: scale(0.92);
 }
 
 .welcome-title {
@@ -976,6 +1072,7 @@ html {
   align-items: center;
   justify-content: space-between;
   gap: 8px;
+  flex-wrap: wrap;
 }
 
 .extra-banner-badge {
@@ -991,6 +1088,8 @@ html {
   background: rgba(124, 58, 237, 0.14);
   color: #7C3AED;
   border: 1px solid rgba(124, 58, 237, 0.25);
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 [data-theme="dark"] .extra-banner-badge {
@@ -1004,12 +1103,10 @@ html {
   height: 6px;
   border-radius: 50%;
   background: #7C3AED;
-  box-shadow: 0 0 6px #7C3AED;
 }
 
 [data-theme="dark"] .extra-banner-dot {
   background: #A78BFA;
-  box-shadow: 0 0 6px #A78BFA;
 }
 
 .extra-banner-date-badge {
@@ -1020,6 +1117,8 @@ html {
   background: rgba(245, 158, 11, 0.14);
   color: #D97706;
   border: 1px solid rgba(245, 158, 11, 0.25);
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 [data-theme="dark"] .extra-banner-date-badge {
@@ -1072,12 +1171,15 @@ html {
   align-items: center;
   justify-content: space-between;
   gap: 6px;
+  flex-wrap: wrap;
 }
 
 .extra-callout-badge {
   font-size: 0.7rem;
   font-weight: 700;
   color: #7C3AED;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .extra-callout-badge.personal {
@@ -1087,6 +1189,8 @@ html {
   border-radius: 999px;
   border: 1px solid rgba(147, 51, 234, 0.25);
   font-weight: 800;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 [data-theme="dark"] .extra-callout-badge {
@@ -1103,6 +1207,8 @@ html {
   font-size: 0.72rem;
   font-weight: 700;
   color: var(--text-primary);
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .extra-callout-topic {
@@ -1336,6 +1442,31 @@ html {
 [data-theme="dark"] .native-weekday-cell.has-class.is-today {
   background: rgba(138, 180, 248, 0.2);
   border-color: #8AB4F8;
+}
+
+.native-weekday-cell.has-extra {
+  background: rgba(124, 58, 237, 0.08);
+  border-color: rgba(124, 58, 237, 0.35);
+  font-weight: 700;
+  color: #7C3AED;
+}
+
+.native-weekday-cell.has-extra.is-today {
+  background: rgba(124, 58, 237, 0.14);
+  border-color: #7C3AED;
+  box-shadow: 0 0 0 2px rgba(124, 58, 237, 0.2);
+}
+
+[data-theme="dark"] .native-weekday-cell.has-extra {
+  background: rgba(167, 139, 250, 0.14);
+  border-color: rgba(167, 139, 250, 0.4);
+  color: #C4B5FD;
+}
+
+[data-theme="dark"] .native-weekday-cell.has-extra.is-today {
+  background: rgba(167, 139, 250, 0.22);
+  border-color: #C4B5FD;
+  box-shadow: 0 0 0 2px rgba(167, 139, 250, 0.25);
 }
 
 .cell-day-text {
@@ -6885,7 +7016,7 @@ input[type="text"].picker-search-input {
   backface-visibility: hidden;
   contain: paint layout;
   animation: slideUpSheet 0.32s cubic-bezier(0.2, 0.9, 0.2, 1) forwards;
-  padding-bottom: max(12px, env(safe-area-inset-bottom, 12px));
+  padding-bottom: max(12px, env(safe-area-inset-bottom, 12px), var(--tg-safe-bottom, 12px));
 }
 
 .sheet-container.is-closing {
@@ -7388,7 +7519,9 @@ input[type="text"].picker-search-input {
 /* Navbar Mobile Tightness Optimization */
 @media (max-width: 480px) {
   .student-navbar {
-    padding: 0 !important;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+    padding-bottom: 0 !important;
   }
 
   .student-navbar-inner {

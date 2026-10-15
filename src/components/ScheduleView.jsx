@@ -584,8 +584,10 @@ const ScheduleView = ({
                           >
                             <div className="extra-lesson-top-row">
                               <span className="extra-lesson-badge">
-                                <span className="extra-lesson-badge-pulse" />
-                                ⚡ Extra Lesson
+                                <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor" stroke="none">
+                                  <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+                                </svg>
+                                <span>Extra</span>
                               </span>
                               <span className="extra-lesson-date-pill">
                                 {formatExtraLessonDateLabel(extraLesson.date)}
@@ -663,20 +665,33 @@ const ScheduleView = ({
                                   <span className="extra-target-label">
                                     {targetedList.length === 1
                                       ? targetedList[0].name
-                                      : `${targetedList.length} ta talaba: ${targetedList.slice(0, 2).map((s) => s.name.split(' ')[0]).join(', ')}${targetedList.length > 2 ? ` +${targetedList.length - 2}` : ''}`}
+                                      : `${targetedList.length} ta: ${targetedList.slice(0, 2).map((s) => s.name.split(' ')[0]).join(', ')}${targetedList.length > 2 ? ` +${targetedList.length - 2}` : ''}`}
                                   </span>
                                 </div>
                               );
                             })() : (
                               <div className="extra-lesson-target-badge all-group" title={`Guruhning barcha talabalari uchun (${getStudentCount(group.id)} ta)`}>
-                                <span className="extra-target-icon">👥</span>
-                                <span className="extra-target-label">Butun guruh ({getStudentCount(group.id)})</span>
+                                <span className="extra-target-icon">
+                                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                                    <circle cx="9" cy="7" r="4" />
+                                    <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+                                    <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+                                  </svg>
+                                </span>
+                                <span className="extra-target-label">Guruh ({getStudentCount(group.id)})</span>
                               </div>
                             )}
 
                             {extraLesson.topic && (
                               <div className="extra-lesson-topic-box" title={extraLesson.topic}>
-                                <span className="extra-topic-icon">🎯</span>
+                                <span className="extra-topic-icon">
+                                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                                    <circle cx="12" cy="12" r="10" />
+                                    <circle cx="12" cy="12" r="6" />
+                                    <circle cx="12" cy="12" r="2" />
+                                  </svg>
+                                </span>
                                 <span className="extra-topic-text">{extraLesson.topic}</span>
                               </div>
                             )}
@@ -1937,46 +1952,54 @@ const ScheduleView = ({
         }
 
         [data-theme="dark"] .schedule-lesson-card.extra-lesson-card {
-          background: linear-gradient(135deg, rgba(124, 58, 237, 0.08) 0%, rgba(245, 158, 11, 0.06) 100%), #FFFFFF !important;
-          border: 1.5px solid rgba(124, 58, 237, 0.45) !important;
-          box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+          background: linear-gradient(135deg, rgba(124, 58, 237, 0.16) 0%, rgba(245, 158, 11, 0.08) 100%), #292A2D !important;
+          border: 1.5px solid rgba(167, 139, 250, 0.45) !important;
+          box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
         }
 
-        [data-theme="dark"] .schedule-lesson-card.extra-lesson-card .extra-lesson-badge {
-          background: rgba(124, 58, 237, 0.12) !important;
-          color: #7C3AED !important;
-          border-color: rgba(124, 58, 237, 0.25) !important;
+        [data-theme="dark"] .schedule-lesson-card.extra-lesson-card .lesson-time-range {
+          color: #FFFFFF !important;
         }
 
-        [data-theme="dark"] .schedule-lesson-card.extra-lesson-card .extra-lesson-badge-pulse {
-          background: #7C3AED !important;
-          box-shadow: 0 0 6px #7C3AED !important;
+        [data-theme="dark"] .schedule-lesson-card.extra-lesson-card .lesson-group-title {
+          color: #FFFFFF !important;
         }
 
-        [data-theme="dark"] .schedule-lesson-card.extra-lesson-card .extra-lesson-date-pill {
-          background: rgba(245, 158, 11, 0.12) !important;
-          color: #D97706 !important;
-          border-color: rgba(245, 158, 11, 0.25) !important;
+        [data-theme="dark"] .schedule-lesson-card.extra-lesson-card .lesson-room-pill {
+          background: rgba(255, 255, 255, 0.08) !important;
+          color: #E5E7EB !important;
         }
 
         [data-theme="dark"] .schedule-lesson-card.extra-lesson-card .extra-action-icon-btn {
-          color: #4B5563 !important;
+          color: #9CA3AF !important;
         }
 
         [data-theme="dark"] .schedule-lesson-card.extra-lesson-card .extra-action-icon-btn:hover {
-          color: #111827 !important;
-          background: rgba(0, 0, 0, 0.08) !important;
+          color: #FFFFFF !important;
+          background: rgba(255, 255, 255, 0.1) !important;
+        }
+
+        [data-theme="dark"] .schedule-lesson-card.extra-lesson-card .extra-lesson-badge {
+          background: rgba(167, 139, 250, 0.18) !important;
+          color: #C4B5FD !important;
+          border-color: rgba(167, 139, 250, 0.35) !important;
+        }
+
+        [data-theme="dark"] .schedule-lesson-card.extra-lesson-card .extra-lesson-date-pill {
+          background: rgba(245, 158, 11, 0.18) !important;
+          color: #FBBF24 !important;
+          border-color: rgba(245, 158, 11, 0.35) !important;
         }
 
         [data-theme="dark"] .schedule-lesson-card.extra-lesson-card .extra-lesson-topic-box {
-          background: rgba(0, 0, 0, 0.04) !important;
-          color: #374151 !important;
+          background: rgba(255, 255, 255, 0.06) !important;
+          color: #D1D5DB !important;
         }
 
         [data-theme="dark"] .schedule-lesson-card.extra-lesson-card .extra-lesson-target-badge {
-          background: rgba(124, 58, 237, 0.1) !important;
-          color: #6D28D9 !important;
-          border-color: rgba(124, 58, 237, 0.25) !important;
+          background: rgba(167, 139, 250, 0.12) !important;
+          color: #C4B5FD !important;
+          border-color: rgba(167, 139, 250, 0.25) !important;
         }
 
         .schedule-lesson-card.extra-lesson-card:hover {
@@ -1989,24 +2012,28 @@ const ScheduleView = ({
           align-items: center;
           justify-content: space-between;
           width: 100%;
-          gap: 6px;
+          gap: 4px;
           margin-bottom: 2px;
           min-width: 0;
+          flex-wrap: wrap;
         }
 
         .extra-lesson-badge {
           display: inline-flex;
           align-items: center;
-          gap: 5px;
-          padding: 2px 7px;
+          gap: 4px;
+          padding: 2px 6px;
           border-radius: 999px;
-          font-size: 0.66rem;
-          font-weight: 800;
-          letter-spacing: 0.03em;
+          font-size: 0.65rem;
+          font-weight: 700;
+          letter-spacing: 0.02em;
           text-transform: uppercase;
           background: rgba(124, 58, 237, 0.12);
           color: #7C3AED;
           border: 1px solid rgba(124, 58, 237, 0.25);
+          white-space: nowrap;
+          flex-shrink: 0;
+          line-height: 1.2;
         }
 
         [data-theme="dark"] .extra-lesson-badge {
@@ -2015,27 +2042,17 @@ const ScheduleView = ({
           border-color: rgba(167, 139, 250, 0.35);
         }
 
-        .extra-lesson-badge-pulse {
-          width: 5px;
-          height: 5px;
-          border-radius: 50%;
-          background: #7C3AED;
-          box-shadow: 0 0 6px #7C3AED;
-        }
-
-        [data-theme="dark"] .extra-lesson-badge-pulse {
-          background: #A78BFA;
-          box-shadow: 0 0 6px #A78BFA;
-        }
-
         .extra-lesson-date-pill {
-          font-size: 0.67rem;
+          font-size: 0.65rem;
           font-weight: 700;
-          padding: 2px 6px;
+          padding: 2px 5px;
           border-radius: 4px;
           background: rgba(245, 158, 11, 0.12);
           color: #D97706;
           border: 1px solid rgba(245, 158, 11, 0.25);
+          white-space: nowrap;
+          flex-shrink: 0;
+          line-height: 1.2;
         }
 
         [data-theme="dark"] .extra-lesson-date-pill {

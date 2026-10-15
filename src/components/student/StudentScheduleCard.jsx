@@ -176,6 +176,23 @@ export default function StudentScheduleCard({ group, extraLessons = [], studentI
 
   const activeDaysSet = useMemo(() => new Set(extractedDays), [extractedDays]);
 
+  const extraDaysSet = useMemo(() => {
+    const set = new Set();
+    if (Array.isArray(extraLessons) && group?.id) {
+      extraLessons.forEach((el) => {
+        if (el && String(el.groupId) === String(group.id) && el.date) {
+          if (studentId && !isStudentTargetedByExtraLesson(el, studentId)) return;
+          const parts = el.date.split('-');
+          if (parts.length === 3) {
+            const dt = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
+            set.add(DAY_ORDER[dt.getDay()]);
+          }
+        }
+      });
+    }
+    return set;
+  }, [extraLessons, group?.id, studentId]);
+
   const currentDayKey = useMemo(() => {
     return DAY_ORDER[new Date().getDay()];
   }, []);
@@ -227,12 +244,13 @@ export default function StudentScheduleCard({ group, extraLessons = [], studentI
       <div className="native-weekdays-row" aria-label="Haftalik dars jadvali">
         {WEEKDAYS.map((wd) => {
           const hasClass = activeDaysSet.has(wd.key);
+          const hasExtra = !hasClass && extraDaysSet.has(wd.key);
           const isToday = currentDayKey === wd.key;
           return (
             <div
               key={wd.key}
-              className={`native-weekday-cell ${hasClass ? 'has-class' : ''} ${isToday ? 'is-today' : ''}`}
-              title={`${wd.name}${hasClass ? " • Dars kuni" : ""}${isToday ? " • Bugun" : ""}`}
+              className={`native-weekday-cell ${hasClass ? 'has-class' : ''} ${hasExtra ? 'has-extra' : ''} ${isToday ? 'is-today' : ''}`}
+              title={`${wd.name}${hasClass ? " • Dars kuni" : ""}${hasExtra ? " • Extra dars kuni" : ""}${isToday ? " • Bugun" : ""}`}
             >
               <span className="cell-day-text">{wd.short}</span>
             </div>
@@ -245,11 +263,11 @@ export default function StudentScheduleCard({ group, extraLessons = [], studentI
         <div className="student-extra-card-callout">
           <div className="extra-callout-header">
             <span className={`extra-callout-badge ${nextLessonInfo.extraLesson.targetType === 'custom' ? 'personal' : ''}`} style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-              <ZapIcon size={11} color="#F59E0B" />
+              <ZapIcon size={11} color="#7C3AED" />
               <span>
                 {nextLessonInfo.extraLesson.targetType === 'custom'
                   ? "Siz uchun alohida dars"
-                  : "Belgilangan Qo'shimcha Dars"}
+                  : "Extra Dars"}
               </span>
             </span>
             <span className="extra-callout-time">

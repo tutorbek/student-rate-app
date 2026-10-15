@@ -10,6 +10,7 @@ import { renderAvatar } from '../../utils/studentAvatars';
 import { scrollToWithOffset } from '../../utils/scrollOffset';
 import { isStudentTargetedByExtraLesson } from '../../utils/scheduleUtils';
 import { ProjectLikeIcon, ZapIcon, CalendarIcon, MapPinIcon } from './StudentIcons';
+import { setupTelegramFullscreen, syncTelegramMetrics } from '../../utils/telegram';
 import './StudentPortal.css';
 
 const triggerHaptic = (style = 'light') => {
@@ -100,6 +101,12 @@ export default function StudentPortal({
   useEffect(() => {
     localStorage.setItem('rsa_student_portal_tab', activeTab);
   }, [activeTab]);
+
+  // Synchronize Telegram Fullscreen Mode, safe area CSS metrics and header colors
+  useEffect(() => {
+    const cleanup = setupTelegramFullscreen(theme);
+    return cleanup;
+  }, [theme]);
 
   // Determine current student group
   const currentGroup = useMemo(() => {
@@ -549,6 +556,37 @@ export default function StudentPortal({
                     </h2>
                     <span className="welcome-date-sub">{formattedToday}</span>
                   </div>
+
+                  {toggleTheme && (
+                    <button
+                      type="button"
+                      className="welcome-theme-toggle-btn"
+                      onClick={() => {
+                        triggerHaptic('light');
+                        toggleTheme();
+                      }}
+                      title="Mavzuni o'zgartirish"
+                      aria-label="Mavzuni o'zgartirish"
+                    >
+                      {theme === 'dark' ? (
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                          <circle cx="12" cy="12" r="5"/>
+                          <line x1="12" y1="1" x2="12" y2="3"/>
+                          <line x1="12" y1="21" x2="12" y2="23"/>
+                          <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
+                          <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+                          <line x1="1" y1="12" x2="3" y2="12"/>
+                          <line x1="21" y1="12" x2="23" y2="12"/>
+                          <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
+                          <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+                        </svg>
+                      ) : (
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+                        </svg>
+                      )}
+                    </button>
+                  )}
                 </div>
 
                 {/* 2 Quick Stat Cards Row - Interactive */}
@@ -638,8 +676,8 @@ export default function StudentPortal({
               <div className="student-extra-lesson-banner scale-active">
                 <div className="extra-banner-top">
                   <span className="extra-banner-badge" style={{ display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
-                    <ZapIcon size={12} color="#F59E0B" />
-                    <span>Qo'shimcha Dars (Extra Lesson)</span>
+                    <ZapIcon size={12} color="#7C3AED" />
+                    <span>Extra Dars</span>
                   </span>
                   <span className="extra-banner-date-badge">
                     {formatExtraLessonDateLabel(upcomingGroupExtraLesson.date)}
