@@ -24,7 +24,6 @@ export default function LandingPage({
     return 'en';
   });
   const [isLangMenuOpen, setIsLangMenuOpen] = useState(false);
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [activeNav, setActiveNav] = useState('');
 
   const activeLang = propLang || localLang;
@@ -62,18 +61,8 @@ export default function LandingPage({
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  useEffect(() => {
-    if (!isMobileMenuOpen) return;
-    const handleKeyDown = (e) => {
-      if (e.key === 'Escape') setIsMobileMenuOpen(false);
-    };
-    document.addEventListener('keydown', handleKeyDown);
-    return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [isMobileMenuOpen]);
-
   // Smooth scroll directly so section top lands flush (0px gap) against sticky navbar bottom wall
   const scrollToTarget = useCallback((hash) => {
-    setIsMobileMenuOpen(false);
     if (!hash || hash.length <= 1) return;
 
     if (hash === '#top') {
@@ -590,27 +579,6 @@ export default function LandingPage({
           </nav>
 
           <div className="nav-actions">
-            {/* Mobile Navigation Toggle (Mobile only) */}
-            <button
-              type="button"
-              className="nav-mobile-toggle"
-              onClick={() => setIsMobileMenuOpen((prev) => !prev)}
-              aria-expanded={isMobileMenuOpen}
-              aria-label="Bo'limlar menyusi"
-            >
-              {isMobileMenuOpen ? (
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                  <line x1="18" y1="6" x2="6" y2="18" />
-                  <line x1="6" y1="6" x2="18" y2="18" />
-                </svg>
-              ) : (
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                  <line x1="4" y1="7" x2="20" y2="7" />
-                  <line x1="4" y1="17" x2="20" y2="17" />
-                </svg>
-              )}
-            </button>
-
             {/* Language Selector: Minimal, text + single arrow only, options: uz / ru / eng */}
             <div className="nav-lang-dropdown" ref={langDropdownRef}>
               <button
@@ -695,47 +663,6 @@ export default function LandingPage({
           </div>
         </div>
 
-        {/* Mobile Section Menu Dropdown */}
-        {isMobileMenuOpen && (
-          <div className="nav-mobile-menu" role="menu">
-            <a
-              href="#imkoniyatlar"
-              onClick={(e) => handleNavClick(e, '#imkoniyatlar')}
-              className={`nav-mobile-item ${activeNav === 'imkoniyatlar' ? 'active' : ''}`}
-              role="menuitem"
-            >
-              <span>{t('nav_sec_modules')}</span>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="m9 18 6-6-6-6"/></svg>
-            </a>
-            <a
-              href="#narx"
-              onClick={(e) => handleNavClick(e, '#narx')}
-              className={`nav-mobile-item ${activeNav === 'narx' ? 'active' : ''}`}
-              role="menuitem"
-            >
-              <span>{t('nav_sec_pricing')}</span>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="m9 18 6-6-6-6"/></svg>
-            </a>
-            <a
-              href="#savollar"
-              onClick={(e) => handleNavClick(e, '#savollar')}
-              className={`nav-mobile-item ${activeNav === 'savollar' ? 'active' : ''}`}
-              role="menuitem"
-            >
-              <span>{t('nav_sec_faq')}</span>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="m9 18 6-6-6-6"/></svg>
-            </a>
-            <a
-              href="#aloqa"
-              onClick={(e) => handleNavClick(e, '#aloqa')}
-              className={`nav-mobile-item ${activeNav === 'aloqa' ? 'active' : ''}`}
-              role="menuitem"
-            >
-              <span>{t('nav_sec_contact')}</span>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="m9 18 6-6-6-6"/></svg>
-            </a>
-          </div>
-        )}
       </header>
 
       <main>
