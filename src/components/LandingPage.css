@@ -1532,11 +1532,20 @@ html[data-theme="dark"] .landing-root .nav-lang-item.active,
   font: 900 min(22vw, 16vh)/.78 var(--d);
   letter-spacing: -.045em;
   color: var(--b);
+  opacity: 0.04;
   white-space: nowrap;
   margin-bottom: -.04em;
   user-select: none;
   pointer-events: none;
-  will-change: transform, opacity;
+}
+
+@media (max-width: 799px) {
+  .landing-root .giant {
+    animation: none !important;
+    transform: none !important;
+    will-change: auto !important;
+    transition: none !important;
+  }
 }
 
 /* fork / audience (Designed for tutors of all kinds) */
@@ -2742,7 +2751,7 @@ html[data-theme="dark"] .landing-root .cta-organic-blob-wrap {
 }
 
 .lite .giant {
-  animation: rise 1s var(--out) both;
+  animation: none !important;
 }
 
 @keyframes rise {

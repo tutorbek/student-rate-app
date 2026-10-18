@@ -1141,11 +1141,20 @@
       font: 900 min(22vw, 16vh)/.78 var(--d);
       letter-spacing: -.045em;
       color: var(--b);
+      opacity: 0.04;
       white-space: nowrap;
       margin-bottom: -.04em;
       user-select: none;
       pointer-events: none;
-      will-change: transform, opacity;
+    }
+
+    @media (max-width: 799px) {
+      .giant {
+        animation: none !important;
+        transform: none !important;
+        will-change: auto !important;
+        transition: none !important;
+      }
     }
 
     /* fork / audience (Designed for tutors of all kinds) */
@@ -2297,7 +2306,7 @@
     }
 
     .lite .giant {
-      animation: rise 1s var(--out) both
+      animation: none !important
     }
 
     @keyframes rise {
@@ -3479,7 +3488,7 @@
       };
 
       // 1. HERO (Smooth coordinated entrance on page load)
-      gsap
+      const heroTl = gsap
         .timeline({ delay: 0.1 })
         .fromTo(
           ['.hero .kick', '.hero h1', '.hero .sub', '.hero .ctas'],
@@ -3503,24 +3512,27 @@
           { opacity: 0, y: 24, scale: 0.96 },
           { opacity: 1, y: 0, scale: 1, duration: 0.85, ease: 'power3.out' },
           '<.2'
-        )
-        .fromTo(
+        );
+
+      if (window.matchMedia('(min-width: 800px)').matches) {
+        heroTl.fromTo(
           '.hero .giant',
           { opacity: 0 },
           { opacity: 0.04, duration: 1.2, ease: 'power3.out' },
           '<.1'
         );
 
-      gsap.to('.giant', {
-        xPercent: -8,
-        ease: 'none',
-        scrollTrigger: {
-          trigger: '.hero',
-          start: 'top top',
-          end: 'bottom top',
-          scrub: 0.5,
-        },
-      });
+        gsap.to('.giant', {
+          xPercent: -8,
+          ease: 'none',
+          scrollTrigger: {
+            trigger: '.hero',
+            start: 'top top',
+            end: 'bottom top',
+            scrub: 0.5,
+          },
+        });
+      }
 
       // 2. FORK: audience cards (Designed for tutors of all kinds)
       animTxt('.fork .lab', '.fork');

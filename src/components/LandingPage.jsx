@@ -306,7 +306,7 @@ export default function LandingPage({
         };
 
         // 1. HERO (Smooth coordinated entrance on page load)
-        gsap
+        const heroTl = gsap
           .timeline({ delay: 0.1 })
           .fromTo(
             ['.hero .kick', '.hero h1', '.hero .sub', '.hero .ctas'],
@@ -330,24 +330,28 @@ export default function LandingPage({
             { opacity: 0, y: 24, scale: 0.96 },
             { opacity: 1, y: 0, scale: 1, duration: 0.85, ease: 'power3.out' },
             '<.2'
-          )
-          .fromTo(
+          );
+
+        // Giant EPCHIL watermark entrance and parallax scroll: desktop view only (completely static on mobile)
+        if (window.matchMedia('(min-width: 800px)').matches) {
+          heroTl.fromTo(
             '.hero .giant',
             { opacity: 0 },
             { opacity: 0.04, duration: 1.2, ease: 'power3.out' },
             '<.1'
           );
 
-        gsap.to('.giant', {
-          xPercent: -8,
-          ease: 'none',
-          scrollTrigger: {
-            trigger: '.hero',
-            start: 'top top',
-            end: 'bottom top',
-            scrub: 0.5,
-          },
-        });
+          gsap.to('.giant', {
+            xPercent: -8,
+            ease: 'none',
+            scrollTrigger: {
+              trigger: '.hero',
+              start: 'top top',
+              end: 'bottom top',
+              scrub: 0.5,
+            },
+          });
+        }
 
         // 2. FORK: audience cards (Designed for tutors of all kinds)
         animTxt('.fork .lab', '.fork');
