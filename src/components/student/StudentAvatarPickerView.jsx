@@ -1,7 +1,6 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo } from 'react';
 import { renderAvatar, STUDENT_AVATARS } from '../../utils/studentAvatars';
 import { AVATAR_GALLERY_IMAGES } from '../../utils/avatarGallery';
-import { bindTelegramBackButton } from '../../utils/telegram';
 
 const triggerHaptic = (style = 'light') => {
   try {
@@ -20,13 +19,6 @@ export default function StudentAvatarPickerView({
   onBack = null,
   showToast = null,
 }) {
-  useEffect(() => {
-    if (typeof onBack === 'function') {
-      const unbind = bindTelegramBackButton(onBack);
-      return unbind;
-    }
-  }, [onBack]);
-
   // Current working avatar (preview)
   const [selectedAvatar, setSelectedAvatar] = useState(
     pinnedStudent?.emoji || AVATAR_GALLERY_IMAGES[0]?.path

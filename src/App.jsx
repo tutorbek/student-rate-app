@@ -14,7 +14,7 @@ import AdminLeads from './components/admin/AdminLeads';
 import LoginPage from './components/LoginPage';
 import LandingPage from './components/LandingPage';
 import StudentPortal from './components/student/StudentPortal';
-import { setupTelegramFullscreen, syncTelegramMetrics, isTelegramWebApp, bindTelegramBackButton } from './utils/telegram';
+import { setupTelegramFullscreen, syncTelegramMetrics } from './utils/telegram';
 import { useModalDismiss } from './hooks/useModalDismiss';
 import {
   loadFromSupabase as loadFromFirestore,
@@ -147,12 +147,28 @@ function App() {
       if (params.get('auth') === 'login' || window.location.hash === '#login') {
         return 'login';
       }
-      if (isTelegramWebApp()) {
+      if (window.Telegram?.WebApp?.initData || window.TelegramWebviewProxy) {
         return 'login';
       }
     }
     return 'landing';
   });
+
+  const [appLang, setAppLang] = useState(() => {
+    try {
+      const saved = localStorage.getItem('rsa_landing_lang');
+      if (saved === 'ru' || saved === 'en' || saved === 'uz') return saved;
+    } catch (e) {}
+    return 'en';
+  });
+
+  const handleSetAppLang = useCallback((selectedLang) => {
+    setAppLang(selectedLang);
+    try {
+      localStorage.setItem('rsa_landing_lang', selectedLang);
+      document.documentElement.lang = selectedLang;
+    } catch (e) {}
+  }, []);
 
   const applyThemeInstantly = useCallback((newTheme) => {
     // Temporarily disable CSS transitions so that background, text, and cards switch in 0ms without white flicker
@@ -427,18 +443,6 @@ function App() {
       }
     }
   }, [userRole, activeTab]);
-
-  // Handle Telegram native BackButton for Teacher & Admin navigation tabs
-  useEffect(() => {
-    if (!isAuthenticated || userRole === 'student') return;
-    const defaultTab = userRole === 'admin' ? 'dashboard' : 'schedule';
-    if (activeTab !== defaultTab) {
-      const unbind = bindTelegramBackButton(() => {
-        setActiveTab(defaultTab);
-      });
-      return unbind;
-    }
-  }, [isAuthenticated, userRole, activeTab]);
 
   // Sync body class for mobile viewport lock
   useEffect(() => {
@@ -1603,7 +1607,7 @@ function App() {
     setLoginPassword('');
     setLoginError('');
 
-    if (typeof window !== 'undefined' && (isTelegramWebApp() || new URLSearchParams(window.location.search).get('auth') === 'login')) {
+    if (typeof window !== 'undefined' && (window.Telegram?.WebApp?.initData || window.TelegramWebviewProxy || new URLSearchParams(window.location.search).get('auth') === 'login')) {
       setAuthView('login');
     } else {
       setAuthView('landing');
@@ -2490,10 +2494,14 @@ function App() {
       <div className="unauthenticated-root" style={{ width: '100%', minHeight: '100vh' }}>
         {authView === 'landing' ? (
           <LandingPage
+            lang={appLang}
+            onSelectLang={handleSetAppLang}
             onNavigateToLogin={() => setAuthView('login')}
           />
         ) : (
           <LoginPage
+            lang={appLang}
+            onSelectLang={handleSetAppLang}
             handleLoginSubmit={handleLoginSubmit}
             loginPassword={loginPassword}
             setLoginPassword={setLoginPassword}

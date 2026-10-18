@@ -483,7 +483,7 @@ const AdminFinance = ({
     };
 
     // 1. Title & Metadata
-    rows.push([escapeCSV("EPCHIL ROBOT O'QUV MARKAZI - OYLIK MOLIYAVIY HISOBOT")]);
+    rows.push([escapeCSV("EPCHIL COM O'QUV MARKAZI - OYLIK MOLIYAVIY HISOBOT")]);
     rows.push([escapeCSV(`Davr: ${selectedMonthName} ${selectedYear}-yil`)]);
     rows.push([escapeCSV(`Chop etilgan vaqt: ${new Date().toLocaleString('uz-UZ')}`)]);
     rows.push([]);

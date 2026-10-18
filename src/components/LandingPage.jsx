@@ -1,1158 +1,1729 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
+import gsap from 'gsap';
+import { ScrollTrigger } from 'gsap/ScrollTrigger';
+import Lenis from 'lenis';
+import { getLandingText, getPricingBreakdown } from './landingTranslations';
+import './LandingPage.css';
 
-// Platform Screens data with high-res screenshots & browser metadata
-const SOHUB_SCREENS = [
-  {
-    id: 1,
-    name: "Guruhlar",
-    title: "Guruhlar boshqaruvi",
-    path: "/groups",
-    src: "/screens/1.png",
-    alt: "Guruhlar ro'yxati boshqaruvi",
-    tag: "O'quv guruhlari"
-  },
-  {
-    id: 2,
-    name: "Dashboard",
-    title: "Boshqaruv paneli",
-    path: "/dashboard",
-    src: "/screens/2.png",
-    alt: "Boshqaruv paneli Dashboard",
-    tag: "Statistika & Reyting"
-  },
-  {
-    id: 3,
-    name: "Jonli Reyting",
-    title: "Reyting va Leaderboard",
-    path: "/leaderboard",
-    src: "/screens/3.png",
-    alt: "Jonli Reyting va Leaderboard",
-    tag: "Top-3 Shohsupasi"
-  },
-  {
-    id: 4,
-    name: "Davomat",
-    title: "Tezkor davomat belgilash",
-    path: "/attendance",
-    src: "/screens/4.png",
-    alt: "Tezkor Davomat belgilash",
-    tag: "1-Soniya davomat"
-  },
-  {
-    id: 5,
-    name: "Dars Jadvali",
-    title: "Haftalik dars jadvali",
-    path: "/schedule",
-    src: "/screens/5.png",
-    alt: "Haftalik dars jadvali",
-    tag: "Taqvim & darslar"
-  },
-  {
-    id: 6,
-    name: "Davomat Jurnali",
-    title: "Oylik davomat va statistika",
-    path: "/journal",
-    src: "/screens/6.png",
-    alt: "Davomat jurnali va statistika",
-    tag: "Excel & PDF eksport"
-  },
-  {
-    id: 7,
-    name: "Like Tarixi",
-    title: "Jonli like berish tarixi",
-    path: "/likes-history",
-    src: "/screens/7.png",
-    alt: "Jonli likelar tarixi auditi",
-    tag: "Shaffof audit"
-  },
-];
+gsap.registerPlugin(ScrollTrigger);
 
-// Core Platform Features (Line Cards)
-const CORE_FEATURES = [
-  {
-    badge: "Motivatsiya & Havas",
-    title: "Jonli Oylik va Umumiy Reyting",
-    description: "Top-3 shohsupasi va jonli Like jadvali orqali o'quvchilarda darsga bo'lgan ichki qiziqish va intilishni yuksaltiring.",
-    color: "#f6511d",
-  },
-  {
-    badge: "1-Soniya Baholash",
-    title: "Tezkor Rag'bat va Davomat",
-    description: "Qog'oz jurnallardan xalos bo'ling. Dars davomida 1 ta bosish bilan 'Like' bering va davomatni bir necha soniyada belgilang.",
-    color: "#ffb400",
-  },
-  {
-    badge: "Jamoaviy Ruh",
-    title: "Guruhlararo Sog'lom Raqobat",
-    description: "O'quvchilarni jamoaviy birlashtiring. Guruhlar bo'yicha umumiy reyting orqali do'stona va faol ta'lim muhitini yarating.",
-    color: "#00a6ed",
-  },
-];
+export default function LandingPage({
+  onNavigateToLogin,
+  lang: propLang,
+  onSelectLang: propOnSelectLang,
+}) {
+  const containerRef = useRef(null);
+  const langDropdownRef = useRef(null);
+  const lenisRef = useRef(null);
+  const [tutorCount, setTutorCount] = useState(1);
+  const [localLang, setLocalLang] = useState(() => {
+    try {
+      const saved = localStorage.getItem('rsa_landing_lang');
+      if (saved === 'ru' || saved === 'en' || saved === 'uz') return saved;
+    } catch (e) {}
+    return 'en';
+  });
+  const [isLangMenuOpen, setIsLangMenuOpen] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [activeNav, setActiveNav] = useState('');
 
-
-
-
-// Ustozlar uchun 3 bosqichli narx tizimi (o'quvchilar soniga ko'ra)
-const PRICING_PLANS = [
-  {
-    id: "tier_50",
-    name: "0–50 O'quvchi",
-    badge: "BOSHLANG'ICH",
-    price: "50 000 so'm",
-    period: "/ oyiga",
-    description: "Yakka repetitorlar va kichik guruh o'qituvchilari uchun eng hamyonbop boshlang'ich tarif.",
-    features: [
-      "Barcha 7 moduldan to'liq foydalanish",
-      "Guruhlar boshqaruvi va parolli kirish",
-      "Davomat, taqvim va jonli reyting",
-      "Standart yordam (chat/bot orqali)"
-    ],
-    ctaText: "Tanlash",
-    ctaLink: "https://t.me/bkzd19?text=Assalomu%20alaykum!%20Epchil%20Robot%200-50%20o'quvchi%20tarifini%20(50%20000%20so'm/oy)%20tanlamoqchi%20edim.",
-    highlighted: false
-  },
-  {
-    id: "tier_100",
-    name: "50–100 O'quvchi",
-    badge: "TAVSIYA ETILADI",
-    price: "100 000 so'm",
-    period: "/ oyiga",
-    description: "Bir nechta guruhlari bor professional repetitorlar va faol ustozlar uchun eng maqbul tanlov.",
-    features: [
-      "Barcha 7 modul + cheksiz guruhlar",
-      "To'liq reyting va Top-3 shohsupasi",
-      "Davomat, taqvim va avtomatik foizlar",
-      "Ustuvor tezkor texnik yordam"
-    ],
-    ctaText: "Tanlash",
-    ctaLink: "https://t.me/bkzd19?text=Assalomu%20alaykum!%20Epchil%20Robot%2050-100%20o'quvchi%20tarifini%20(100%20000%20so'm/oy)%20tanlamoqchi%20edim.",
-    highlighted: true
-  },
-  {
-    id: "tier_200",
-    name: "100–200 O'quvchi",
-    badge: "PROFESSIONAL",
-    price: "200 000 so'm",
-    period: "/ oyiga",
-    description: "Ko'p sonli o'quvchilarga ega tajribali ustozlar va yirik guruhlar uchun to'liq imkoniyatlar to'plami.",
-    features: [
-      "Barcha 7 modulga to'liq cheksiz kirish",
-      "Guruhlararo umumiy reyting va tahlil",
-      "Excel (.csv) va PDF hisobotlar",
-      "24/7 VIP darajadagi texnik xizmat"
-    ],
-    ctaText: "Tanlash",
-    ctaLink: "https://t.me/bkzd19?text=Assalomu%20alaykum!%20Epchil%20Robot%20100-200%20o'quvchi%20tarifini%20(200%20000%20so'm/oy)%20tanlamoqchi%20edim.",
-    highlighted: false
-  }
-];
-
-
-
-// 4. Testimonials (Mijozlar fikri - Edge-to-Edge 3 Ustunli To'liq Oq - #FFFFFF)
-const TESTIMONIALS = [
-  {
-    author: "Diyorbek Rahimov",
-    role: "Direktor",
-    school: "ZiyoNur LC",
-    quote: "Epchil Robot'ni joriy qilganimizdan so'ng o'quvchilar darsga kechikmay keladigan va savollarga javob berishga qo'l ko'tarib talashadigan bo'lib qolishdi. Top-3 shohsupasi bolalarda aqlbovar qilmas havas uyg'otdi!",
-    metricValue: "+40%",
-    metricLabel: "Darsdagi faollik oshishi",
-    accent: "#00A6ED"
-  },
-  {
-    author: "Dilshod Rizayev",
-    role: "Bosh o'qituvchi",
-    school: "Insight Plus",
-    quote: "Qog'oz jurnallarga ruchka bilan belgi qo'yish va oy oxirida foiz hisoblab o'tirishdan butunlay qutuldik. Bitta telefon orqali 1 soniyada Like beraman, qolgan barcha jadvallarni platformaning o'zi avtomatik tayyorlaydi.",
-    metricValue: "15 daqiqa",
-    metricLabel: "Har darsdan tejalgan vaqt",
-    accent: "#0171E3"
-  },
-  {
-    author: "Azizbek Mansurov",
-    role: "O'quv ishlari koordinatori",
-    school: "Yuksalish School",
-    quote: "Guruhlar o'rtasidagi reyting tufayli o'quvchilar bir-biriga yordam bera boshladi — jamoaviy ruh paydo bo'ldi. Ota-onalar ham farzandining oylik natijalaridan va davomatidan juda mamnun.",
-    metricValue: "98%",
-    metricLabel: "Ota-onalar mamnuniyati",
-    accent: "#D97706"
-  }
-];
-
-// 6. FAQ (2 ustunli ochiq savol-javoblar)
-const FAQS = [
-  {
-    q: "Epchil Robot platformasidan foydalanish qanchalik oson?",
-    a: "Platforma Apple uslubidagi juda sodda va tushunarli interfeysga ega. O'qituvchi 5 daqiqa ichida unga to'liq o'rganib oladi va dars jarayonida ortiqcha qiyinchiliksiz foydalana oladi."
-  },
-  {
-    q: "Dars paytida o'quvchilarga Like berish va davomat belgilash qancha vaqt oladi?",
-    a: "Har bir o'quvchiga Like berish yoki davomat belgilash atigi 1 soniya vaqt oladi. Bu o'qituvchining dars o'tish ritmini buzmaydi va diqqatni chalg'itmaydi."
-  },
-  {
-    q: "Tizimga necha nafar o'quvchi va guruh kiritish mumkin?",
-    a: "Hech qanday cheklov yo'q! 1 ta kichik guruhdan tortib, 200 va undan ortiq o'quvchiga ega ustozlar barcha guruhlarini bemalol tizimda boshqarishi mumkin."
-  },
-  {
-    q: "Ma'lumotlarimiz xavfsizligi qanday ta'minlanadi?",
-    a: "Barcha ma'lumotlar xalqaro darajada shifrlangan xavfsiz bulutli serverlarda (PostgreSQL) saqlanadi. Har bir guruh uchun alohida kirish paroli o'rnatiladi va muntazam zaxira nusxasi olinadi."
-  },
-  {
-    q: "O'quvchilar soni bo'yicha qaysi tarifni tanlash kerak?",
-    a: "O'quvchilaringiz soniga qarab tanlaysiz: 0–50 ta o'quvchi uchun — 50 000 so'm/oy, 50–100 ta o'quvchi uchun — 100 000 so'm/oy, 100–200 ta o'quvchi uchun esa — 200 000 so'm/oy."
-  },
-  {
-    q: "Tizimni guruhlarimizga sozlashda yordam berasizlarmi?",
-    a: "Albatta! Mutaxassislarimiz barcha dars guruhlaringiz va o'quvchilaringizni tizimga joylashda, foydalanishni o'rgatishda boshidan oxirigacha ko'maklashadi."
-  }
-];
-
-export default function LandingPage({ onNavigateToLogin }) {
-  // Video tayyor bo'lguncha vaqtincha yashirilgan (tayyor bo'lganda true qilinadi)
-  const SHOW_VIDEO = false;
-  const [isVideoPlaying, setIsVideoPlaying] = useState(false);
-  const [activeScreenIndex, setActiveScreenIndex] = useState(0);
-  const [isLightboxOpen, setIsLightboxOpen] = useState(false);
-
-  // Touch swipe gesture support for mobile screenshot showcase
-  const [touchStart, setTouchStart] = useState(null);
-  const [touchEnd, setTouchEnd] = useState(null);
-
-  const handleTouchStart = (e) => {
-    setTouchEnd(null);
-    setTouchStart(e.targetTouches[0].clientX);
-  };
-
-  const handleTouchMove = (e) => {
-    setTouchEnd(e.targetTouches[0].clientX);
-  };
-
-  const handleTouchEnd = () => {
-    if (!touchStart || !touchEnd) return;
-    const distance = touchStart - touchEnd;
-    if (distance > 45) {
-      // Swiped left -> next screen
-      setActiveScreenIndex((prev) => (prev < SOHUB_SCREENS.length - 1 ? prev + 1 : 0));
-    } else if (distance < -45) {
-      // Swiped right -> prev screen
-      setActiveScreenIndex((prev) => (prev > 0 ? prev - 1 : SOHUB_SCREENS.length - 1));
-    }
-  };
-
-  // Prevent background page scrolling when Lightbox is active
-  useEffect(() => {
-    if (isLightboxOpen) {
-      const prevBodyOverflow = document.body.style.overflow;
-      const prevHtmlOverflow = document.documentElement.style.overflow;
-      document.body.style.overflow = 'hidden';
-      document.documentElement.style.overflow = 'hidden';
-
-      return () => {
-        document.body.style.overflow = prevBodyOverflow;
-        document.documentElement.style.overflow = prevHtmlOverflow;
-      };
-    }
-  }, [isLightboxOpen]);
+  const activeLang = propLang || localLang;
+  const t = (key) => getLandingText(key, activeLang);
 
   useEffect(() => {
-    document.documentElement.classList.add('landing-page-active');
-    return () => {
-      document.documentElement.classList.remove('landing-page-active');
+    const sectionIds = ['imkoniyatlar', 'narx', 'savollar', 'aloqa'];
+    const handleScroll = () => {
+      const navEl = document.querySelector('.nav');
+      const navH = navEl ? Math.round(navEl.offsetHeight || navEl.getBoundingClientRect().height) : 60;
+
+      const scrollY = window.pageYOffset || window.scrollY || document.documentElement.scrollTop || 0;
+      const isAtBottom = window.innerHeight + scrollY >= document.documentElement.scrollHeight - 50;
+      if (isAtBottom) {
+        setActiveNav('aloqa');
+        return;
+      }
+
+      let current = '';
+      for (const id of sectionIds) {
+        const el = document.getElementById(id);
+        if (el) {
+          const rect = el.getBoundingClientRect();
+          if (rect.top <= navH + 4 && rect.bottom > navH + 4) {
+            current = id;
+            break;
+          }
+        }
+      }
+      setActiveNav(current);
     };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    handleScroll();
+    return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
   useEffect(() => {
+    if (!isMobileMenuOpen) return;
     const handleKeyDown = (e) => {
-      if (e.key === 'ArrowRight') {
-        setActiveScreenIndex((prev) => (prev < SOHUB_SCREENS.length - 1 ? prev + 1 : 0));
-      } else if (e.key === 'ArrowLeft') {
-        setActiveScreenIndex((prev) => (prev > 0 ? prev - 1 : SOHUB_SCREENS.length - 1));
-      } else if (e.key === 'Escape') {
-        setIsLightboxOpen(false);
+      if (e.key === 'Escape') setIsMobileMenuOpen(false);
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [isMobileMenuOpen]);
+
+  // Smooth scroll directly so section top lands flush (0px gap) against sticky navbar bottom wall
+  const scrollToTarget = useCallback((hash) => {
+    setIsMobileMenuOpen(false);
+    if (!hash || hash.length <= 1) return;
+
+    if (hash === '#top') {
+      if (lenisRef.current) {
+        lenisRef.current.scrollTo(0, { duration: 1.1 });
+      } else {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+      return;
+    }
+
+    const target = document.querySelector(hash);
+    if (!target) return;
+
+    const navEl = document.querySelector('.nav');
+    // Exact height of the sticky navbar so section top lands flush against navbar bottom wall
+    const navH = navEl ? Math.round(navEl.offsetHeight || navEl.getBoundingClientRect().height) : 0;
+    const pageY = window.pageYOffset || window.scrollY || document.documentElement.scrollTop || 0;
+    const targetDocTop = target.getBoundingClientRect().top + pageY;
+    const destY = Math.max(0, Math.round(targetDocTop - navH));
+
+    if (lenisRef.current) {
+      lenisRef.current.scrollTo(destY, {
+        duration: 1.1,
+      });
+    } else {
+      window.scrollTo({
+        top: destY,
+        behavior: 'smooth',
+      });
+    }
+  }, []);
+
+  const handleNavClick = (e, hash) => {
+    e.preventDefault();
+    scrollToTarget(hash);
+  };
+
+  const handleSelectLang = (selectedLang) => {
+    if (propOnSelectLang) {
+      propOnSelectLang(selectedLang);
+    } else {
+      setLocalLang(selectedLang);
+      try {
+        localStorage.setItem('rsa_landing_lang', selectedLang);
+        document.documentElement.lang = selectedLang;
+      } catch (e) {}
+    }
+    setIsLangMenuOpen(false);
+  };
+
+  useEffect(() => {
+    try {
+      document.documentElement.lang = activeLang;
+    } catch (e) {}
+  }, [activeLang]);
+
+  useEffect(() => {
+    if (!isLangMenuOpen) return;
+    const handleClickOutside = (e) => {
+      if (langDropdownRef.current && !langDropdownRef.current.contains(e.target)) {
+        setIsLangMenuOpen(false);
       }
     };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []);
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        setIsLangMenuOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isLangMenuOpen]);
 
-  const scrollToSection = (id) => {
-    const element = document.getElementById(id);
-    if (element) {
-      element.scrollIntoView({ behavior: 'smooth' });
+  const displayCount = typeof tutorCount === 'number' && tutorCount >= 1 ? tutorCount : 1;
+  const calculatedTotal = (16.95 + Math.max(0, displayCount - 1) * 4.95).toFixed(2);
+  const pricingBreakdown = getPricingBreakdown(activeLang, displayCount, ((displayCount - 1) * 4.95).toFixed(2));
+
+  const handleDecrement = () => {
+    setTutorCount((prev) => Math.max(1, (typeof prev === 'number' ? prev : 1) - 1));
+  };
+
+  const handleIncrement = () => {
+    setTutorCount((prev) => Math.min(500, (typeof prev === 'number' ? prev : 1) + 1));
+  };
+
+  const handleInputChange = (e) => {
+    const val = e.target.value.replace(/[^0-9]/g, '');
+    if (val === '') {
+      setTutorCount('');
+    } else {
+      const num = parseInt(val, 10);
+      setTutorCount(Math.min(500, Math.max(1, num)));
     }
   };
 
+  const handleInputBlur = () => {
+    if (!tutorCount || tutorCount < 1) {
+      setTutorCount(1);
+    }
+  };
+
+  useEffect(() => {
+    const H = document.documentElement;
+    let lenisInstance = null;
+    let activeIO = null;
+    const addedListeners = [];
+
+    const addEvt = (target, type, fn, opts) => {
+      target.addEventListener(type, fn, opts);
+      addedListeners.push({ target, type, fn, opts });
+    };
+
+    H.classList.add('landing-page-active');
+    H.classList.add('js');
+    H.classList.add('ready');
+
+    const RM = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    window.dataLayer = window.dataLayer || [];
+
+    const rootEl = containerRef.current;
+    if (!rootEl) return;
+
+    const $ = (selector, parent = rootEl) => [...parent.querySelectorAll(selector)];
+
+    // Navigation and Action links
+    const handleCtaClick = (e) => {
+      const a = e.target.closest('a[data-app], a[href^="https://t.me"], a[href^="tel:"], a[href*="instagram.com"]');
+      if (!a) return;
+
+      const isApp = a.hasAttribute('data-app');
+      const k = isApp
+        ? a.hasAttribute('data-cta')
+          ? 'cta'
+          : 'login'
+        : a.href.startsWith('tel')
+        ? 'phone'
+        : a.href.includes('instagram')
+        ? 'instagram'
+        : 'telegram';
+
+      const s = a.closest('[data-scene]');
+      const scene = s ? s.dataset.scene : '';
+
+      if (window.dataLayer) {
+        window.dataLayer.push({
+          event: isApp ? 'app_click' : 'contact_click',
+          type: k,
+          scene,
+        });
+      }
+
+      if (window.posthog) {
+        window.posthog.capture(isApp ? 'landing_app_click' : 'landing_contact_click', {
+          type: k,
+          scene,
+        });
+      }
+
+      if (isApp && onNavigateToLogin) {
+        e.preventDefault();
+        onNavigateToLogin();
+      }
+    };
+
+    addEvt(rootEl, 'click', handleCtaClick);
+
+    let gsapCtx = null;
+    let tickerFn = null;
+
+    if (!RM) {
+      ScrollTrigger.config({ ignoreMobileResize: true, limitCallbacks: true });
+
+      const isDesk = window.matchMedia('(min-width:800px) and (hover:hover) and (pointer:fine)').matches;
+
+      if (isDesk) {
+        lenisInstance = new Lenis({ lerp: 0.1, wheelMultiplier: 1.0, syncTouch: true });
+        lenisRef.current = lenisInstance;
+        lenisInstance.on('scroll', ScrollTrigger.update);
+        tickerFn = (time) => {
+          if (lenisInstance) {
+            lenisInstance.raf(time * 1000);
+          }
+        };
+        gsap.ticker.add(tickerFn);
+        gsap.ticker.lagSmoothing(0);
+      }
+
+      // Anchor smooth scrolling using unified scrollToTarget
+      $('a[href^="#"]').forEach((a) => {
+        const onAnchorClick = (e) => {
+          if (e.defaultPrevented) return;
+          const hash = a.getAttribute('href');
+          if (!hash || hash.length <= 1) return;
+          e.preventDefault();
+          scrollToTarget(hash);
+        };
+        addEvt(a, 'click', onAnchorClick);
+      });
+
+      // Wrap all GSAP animations in gsap.context for flawless scoping and zero-leak cleanup
+      gsapCtx = gsap.context(() => {
+        // Universal helper for clean, simple, uniform text fade-up animation across all sections
+        const animTxt = (targets, trigger, opts = {}) => {
+          const { start, stagger, once = true, ...tweenVars } = opts;
+          const elements = typeof targets === 'string' ? $(targets) : targets;
+          if (!elements || (Array.isArray(elements) && !elements.length)) return null;
+          return gsap.fromTo(
+            elements,
+            { opacity: 0, y: 22 },
+            {
+              opacity: 1,
+              y: 0,
+              duration: 0.8,
+              ease: 'power3.out',
+              stagger: stagger !== undefined ? stagger : 0.08,
+              scrollTrigger: trigger
+                ? {
+                    trigger: typeof trigger === 'string' ? $(trigger)[0] || trigger : trigger,
+                    start: start || 'top 82%',
+                    once,
+                  }
+                : undefined,
+              ...tweenVars,
+            }
+          );
+        };
+
+        // 1. HERO (Smooth coordinated entrance on page load)
+        gsap
+          .timeline({ delay: 0.1 })
+          .fromTo(
+            ['.hero .kick', '.hero h1', '.hero .sub', '.hero .ctas'],
+            { opacity: 0, y: 22 },
+            { opacity: 1, y: 0, duration: 0.85, ease: 'power3.out', stagger: 0.1 }
+          )
+          .fromTo(
+            ['.hero-blob', '.hero-doodle-confetti', '.hero-doodle-zigzag', '.hero-doodle-curve'],
+            { opacity: 0, scale: 0.92 },
+            { opacity: 1, scale: 1, duration: 1.1, ease: 'power2.out', stagger: 0.08 },
+            '<.1'
+          )
+          .fromTo(
+            '.mock-calendar',
+            { opacity: 0, y: 28 },
+            { opacity: 1, y: 0, duration: 0.9, ease: 'power3.out' },
+            '<.15'
+          )
+          .fromTo(
+            '.mock-students-card',
+            { opacity: 0, y: 24, scale: 0.96 },
+            { opacity: 1, y: 0, scale: 1, duration: 0.85, ease: 'power3.out' },
+            '<.2'
+          )
+          .fromTo(
+            '.hero .giant',
+            { opacity: 0 },
+            { opacity: 0.04, duration: 1.2, ease: 'power3.out' },
+            '<.1'
+          );
+
+        gsap.to('.giant', {
+          xPercent: -8,
+          ease: 'none',
+          scrollTrigger: {
+            trigger: '.hero',
+            start: 'top top',
+            end: 'bottom top',
+            scrub: 0.5,
+          },
+        });
+
+        // 2. FORK: audience cards (Designed for tutors of all kinds)
+        animTxt('.fork .lab', '.fork');
+        animTxt(['.fork-title', '.fork-subtitle'], '.fork', { stagger: 0.1 });
+        animTxt('.fork-card', '.fork-grid', { stagger: 0.12, start: 'top 78%' });
+        animTxt('.fork .more', '.fork', { start: 'top 85%' });
+
+        // 3. STATEMENT
+        animTxt('.stm p', '.stm');
+        animTxt('.stm-card', '.stm-compare', { stagger: 0.12, start: 'top 82%' });
+        gsap.fromTo(
+          '.stm .ghost',
+          { yPercent: -15 },
+          {
+            yPercent: 20,
+            ease: 'none',
+            scrollTrigger: { trigger: '.stm', scrub: 0.5 },
+          }
+        );
+
+        // 4. STEPS: how it works
+        animTxt('.how .lab', '.how');
+        $('.step').forEach((s) => {
+          gsap
+            .timeline({ scrollTrigger: { trigger: s, start: 'top 82%', once: true } })
+            .fromTo($('.hl', s), { scaleX: 0 }, { scaleX: 1, duration: 1, ease: 'power3.inOut' })
+            .fromTo($('p', s), { opacity: 0, y: 22 }, { opacity: 1, y: 0, duration: 0.8, ease: 'power3.out' }, '<.15');
+        });
+        gsap.fromTo(
+          '.how-zigzag-wrap',
+          { opacity: 0, y: 35, scale: 0.92 },
+          {
+            opacity: 0.88,
+            y: 0,
+            scale: 1,
+            duration: 1.1,
+            ease: 'power3.out',
+            scrollTrigger: { trigger: '.how', start: 'top 75%', once: true },
+          }
+        );
+        animTxt('.how .more', '.how', { start: 'top 70%' });
+
+        // 5. PAYMENTS: online payments & financial control
+        animTxt('.pay-sc .lab', '.pay-sc');
+        animTxt(['.pay-sc h2', '.pay-sc .sub-lead', '.pay-sc .pay-methods'], '.pay-sc', {
+          stagger: 0.09,
+          start: 'top 80%',
+        });
+        animTxt('.pay-card', '.pay-grid', { stagger: 0.1, start: 'top 82%' });
+        gsap.fromTo(
+          '.pay-sc .ghost',
+          { yPercent: -15 },
+          {
+            yPercent: 20,
+            ease: 'none',
+            scrollTrigger: { trigger: '.pay-sc', scrub: 0.5 },
+          }
+        );
+        gsap.fromTo(
+          '.pay-organic-blob-wrap',
+          { opacity: 0, x: 60, scale: 0.95 },
+          {
+            opacity: 0.85,
+            x: 0,
+            scale: 1,
+            duration: 1.4,
+            ease: 'power3.out',
+            scrollTrigger: { trigger: '.pay-sc', start: 'top 80%', once: true },
+          }
+        );
+        animTxt('.pay-sc .more', '.pay-sc', { start: 'top 70%' });
+
+        // 6. MODULES: 8 modules
+        animTxt('#imkoniyatlar .lab', '#imkoniyatlar');
+        $('#imkoniyatlar li').forEach((li) => {
+          gsap
+            .timeline({ scrollTrigger: { trigger: li, start: 'top 88%', once: true } })
+            .fromTo($('.hl', li), { scaleX: 0 }, { scaleX: 1, duration: 1, ease: 'power3.inOut' })
+            .fromTo($('.row', li), { opacity: 0, y: 22 }, { opacity: 1, y: 0, duration: 0.8, ease: 'power3.out' }, '<.15');
+        });
+
+        // 8. PRICING: horizontal card
+        animTxt(['#narx .lab', '#narx .tq'], '#narx', { stagger: 0.09 });
+        animTxt('.price-horizontal-card', '#narx', { start: 'top 85%' });
+
+        // 9. FAQ: frequently asked questions
+        animTxt('.faqsc .lab', '.faqsc');
+        animTxt('.faq details', '.faq', { stagger: 0.08, start: 'top 85%' });
+        gsap.fromTo(
+          '.faq-ribbon-wrap',
+          { opacity: 0, rotate: -10, scale: 0.9 },
+          {
+            opacity: 0.9,
+            rotate: 0,
+            scale: 1,
+            duration: 1.3,
+            ease: 'power3.out',
+            scrollTrigger: { trigger: '.faqsc', start: 'top 80%', once: true },
+          }
+        );
+        animTxt('.faqsc .more', '.faqsc', { start: 'top 70%' });
+
+        // 10. FINAL CTA & FOOTER
+        animTxt(['.cta-headline', '.cta .more', '.cta-subnote', '.foot'], '.cta', {
+          stagger: 0.08,
+          start: 'top 80%',
+        });
+        gsap.fromTo(
+          '.cta-organic-blob-wrap',
+          { opacity: 0, x: 60, scale: 0.94 },
+          {
+            opacity: 1,
+            x: 0,
+            scale: 1,
+            duration: 1.2,
+            ease: 'power3.out',
+            scrollTrigger: { trigger: '.cta', start: 'top 82%', once: true },
+          }
+        );
+      }, rootEl);
+
+      // Refresh ScrollTrigger once DOM settled and fonts ready (only when at page top to avoid scroll snap)
+      ScrollTrigger.refresh();
+      if (document.fonts && document.fonts.ready) {
+        document.fonts.ready.then(() => {
+          if (window.scrollY === 0) {
+            ScrollTrigger.refresh();
+          }
+        });
+      }
+      addEvt(window, 'load', () => {
+        if (window.scrollY === 0) {
+          ScrollTrigger.refresh();
+        }
+      });
+    }
+
+    return () => {
+      addedListeners.forEach(({ target, type, fn, opts }) => {
+        try {
+          target.removeEventListener(type, fn, opts);
+        } catch {}
+      });
+
+      if (activeIO) {
+        activeIO.disconnect();
+        activeIO = null;
+      }
+
+      if (gsapCtx) {
+        try {
+          gsapCtx.revert();
+        } catch {}
+        gsapCtx = null;
+      }
+
+      if (tickerFn) {
+        try {
+          gsap.ticker.remove(tickerFn);
+        } catch {}
+      }
+
+      try {
+        gsap.ticker.lagSmoothing(500, 33);
+      } catch {}
+
+      if (lenisInstance) {
+        try {
+          lenisInstance.destroy();
+        } catch {}
+        lenisInstance = null;
+      }
+      lenisRef.current = null;
+
+      try {
+        ScrollTrigger.getAll().forEach((t) => t.kill());
+      } catch {}
+
+      H.classList.remove('landing-page-active', 'fx', 'lite', 'ready', 'lenis');
+    };
+  }, [onNavigateToLogin]);
+
   return (
-    <div className="landing-root w-full bg-[var(--bg-primary)] text-[var(--text-primary)] relative font-sans antialiased selection:bg-[#0171E3] selection:text-white md:snap-y md:snap-proximity">
-      
-      {/* 1. Header & Navigation (Responsive Mobile-first Header with Slide-out Drawer) */}
-      <header className="sticky top-0 z-50 w-full backdrop-blur-2xl bg-[var(--bg-primary)]/90 dark:bg-[#202124]/90 border-b border-[var(--border-color)] pt-[env(safe-area-inset-top,0px)] transition-colors">
-        <div className="max-w-7xl 2xl:max-w-[1440px] mx-auto px-4 sm:px-8 lg:px-12 2xl:px-16 flex items-center justify-between h-16 sm:h-20 xl:h-22 gap-2 min-w-0">
-          
-          {/* Logo Brand */}
-          <div
-            className="navbar-brand-section scale-active cursor-pointer shrink-0 min-h-[44px] flex items-center select-none"
-            onClick={() => {
-              window.scrollTo({ top: 0, behavior: 'smooth' });
-            }}
+    <div ref={containerRef} className="landing-root">
+      {/* Navbar: 1:1 copy of epchil.com */}
+      <header className="nav" data-scene="nav">
+        <div className="nav-in">
+          <a
+            className="nav-brand"
+            href="#top"
+            onClick={(e) => handleNavClick(e, '#top')}
+            aria-label="EPCHIL COM: sahifa boshiga"
           >
-            <h1 className="navbar-logo-text text-lg min-[360px]:text-xl sm:text-2xl 2xl:text-3xl font-bold tracking-tight text-[var(--text-primary)]">
-              EPCHIL <span className="logo-badge">ROBOT</span>
-            </h1>
-          </div>
+            <span className="nav-logo">
+              <img
+                src="/apple-touch-icon.png"
+                alt="Epchil Logo"
+                className="nav-logo-icon"
+                width="28"
+                height="28"
+              />
+              EPCHIL <span className="logo-badge">COM</span>
+            </span>
+          </a>
 
+          {/* Section Navigation Buttons (Desktop) */}
+          <nav className="nav-links" aria-label="Asosiy bo'limlar">
+            <a
+              href="#imkoniyatlar"
+              onClick={(e) => handleNavClick(e, '#imkoniyatlar')}
+              className={`nav-link-btn ${activeNav === 'imkoniyatlar' ? 'active' : ''}`}
+            >
+              {t('nav_sec_modules')}
+            </a>
+            <a
+              href="#narx"
+              onClick={(e) => handleNavClick(e, '#narx')}
+              className={`nav-link-btn ${activeNav === 'narx' ? 'active' : ''}`}
+            >
+              {t('nav_sec_pricing')}
+            </a>
+            <a
+              href="#savollar"
+              onClick={(e) => handleNavClick(e, '#savollar')}
+              className={`nav-link-btn ${activeNav === 'savollar' ? 'active' : ''}`}
+            >
+              {t('nav_sec_faq')}
+            </a>
+            <a
+              href="#aloqa"
+              onClick={(e) => handleNavClick(e, '#aloqa')}
+              className={`nav-link-btn ${activeNav === 'aloqa' ? 'active' : ''}`}
+            >
+              {t('nav_sec_contact')}
+            </a>
+          </nav>
 
-          {/* Right Header Actions */}
-          <div className="flex items-center gap-2 sm:gap-3 xl:gap-4 shrink-0">
-
-
-            {/* Kirish Button */}
+          <div className="nav-actions">
+            {/* Mobile Navigation Toggle (Mobile only) */}
             <button
               type="button"
-              onClick={onNavigateToLogin}
-              className="group h-10 sm:h-11 xl:h-12 p-1 pl-3.5 pr-1.5 sm:pl-6 sm:pr-2 xl:pl-7 xl:pr-2.5 rounded-full bg-[#0C1016] text-white hover:bg-[#1E242C] dark:bg-white dark:text-[#0C1016] dark:hover:bg-[#EBEBEF] transition-all duration-300 ease-out flex items-center gap-2 sm:gap-3 xl:gap-3.5 cursor-pointer shadow-md active:scale-95 min-h-[44px]"
+              className="nav-mobile-toggle"
+              onClick={() => setIsMobileMenuOpen((prev) => !prev)}
+              aria-expanded={isMobileMenuOpen}
+              aria-label="Bo'limlar menyusi"
             >
-              <span className="text-xs sm:text-sm xl:text-base font-semibold tracking-wide uppercase">Kirish</span>
-              <span className="w-7 h-7 sm:w-8 sm:h-8 xl:w-9 xl:h-9 rounded-full bg-white/15 dark:bg-black/10 flex items-center justify-center transition-transform duration-300 group-hover:translate-x-0.5 shrink-0">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              {isMobileMenuOpen ? (
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="18" y1="6" x2="6" y2="18" />
+                  <line x1="6" y1="6" x2="18" y2="18" />
+                </svg>
+              ) : (
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="4" y1="7" x2="20" y2="7" />
+                  <line x1="4" y1="17" x2="20" y2="17" />
+                </svg>
+              )}
+            </button>
+
+            {/* Language Selector: Minimal, text + single arrow only, options: uz / ru / eng */}
+            <div className="nav-lang-dropdown" ref={langDropdownRef}>
+              <button
+                type="button"
+                className="nav-lang-btn"
+                onClick={() => setIsLangMenuOpen((prev) => !prev)}
+                aria-expanded={isLangMenuOpen}
+                aria-haspopup="menu"
+                aria-label="Tilni tanlash / Выбор языка / Select language"
+              >
+                <span className="nav-lang-current">{activeLang.toUpperCase()}</span>
+                <svg
+                  className={`nav-lang-arrow ${isLangMenuOpen ? 'open' : ''}`}
+                  width="8"
+                  height="8"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden="true"
+                >
+                  <path d="m6 9 6 6 6-6" />
+                </svg>
+              </button>
+
+              {isLangMenuOpen && (
+                <div className="nav-lang-menu" role="menu">
+                  <button
+                    type="button"
+                    className={`nav-lang-item ${activeLang === 'en' ? 'active' : ''}`}
+                    onClick={() => handleSelectLang('en')}
+                    role="menuitem"
+                  >
+                    ENG
+                  </button>
+                  <button
+                    type="button"
+                    className={`nav-lang-item ${activeLang === 'uz' ? 'active' : ''}`}
+                    onClick={() => handleSelectLang('uz')}
+                    role="menuitem"
+                  >
+                    UZ
+                  </button>
+                  <button
+                    type="button"
+                    className={`nav-lang-item ${activeLang === 'ru' ? 'active' : ''}`}
+                    onClick={() => handleSelectLang('ru')}
+                    role="menuitem"
+                  >
+                    RU
+                  </button>
+                </div>
+              )}
+            </div>
+
+            <a
+              className="nav-btn"
+              href={onNavigateToLogin ? '#login' : 'https://epchilrobot.uz/'}
+              data-app
+              rel="noopener"
+            >
+              <span className="nav-lab">{t('nav_login')}</span>
+              <span className="nav-circ">
+                <svg
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden="true"
+                >
                   <path d="M5 12h14" />
                   <path d="m12 5 7 7-7 7" />
                 </svg>
               </span>
-            </button>
-
-          </div>
-        </div>
-      </header>
-
-      {/* 2. Hero Section (One Full Screen) */}
-      <section className="relative w-full min-h-[calc(100dvh-4rem)] sm:min-h-[calc(100dvh-5rem)] flex flex-col justify-center py-8 sm:py-12 snap-start overflow-hidden">
-        <div className={`max-w-7xl 2xl:max-w-[1440px] mx-auto px-4 sm:px-8 lg:px-12 2xl:px-16 w-full ${SHOW_VIDEO ? 'mb-12 sm:mb-20 2xl:mb-24' : ''}`}>
-          <div className="flex flex-col items-start gap-4 sm:gap-6 max-w-5xl my-auto">
-            <h1
-              className="w-full text-3xl min-[360px]:text-4xl sm:text-6xl md:text-7xl lg:text-7xl 2xl:text-[5.5rem] font-black tracking-[-0.03em] leading-[1.08] sm:leading-[0.96] text-[var(--text-primary)] select-none break-words [overflow-wrap:anywhere]"
-            >
-              O'quvchilarni rag'batlantirishning <br className="hidden sm:inline" />
-              zamonaviy usuli.
-            </h1>
-            
-            <p className="text-sm min-[360px]:text-base sm:text-xl md:text-2xl lg:text-2xl 2xl:text-3xl text-[var(--text-secondary)] font-normal max-w-4xl mt-1 sm:mt-2 leading-relaxed">
-              O'quvchilar faolligini jonli "Like"lar orqali baholang, oylik reytingni yuritib boring va sog'lom raqobat muhitini shakllantiring.
-            </p>
-            
-            <div className="flex flex-wrap items-center gap-3 sm:gap-4 lg:gap-5 mt-2 sm:mt-4 w-full">
-              {/* Primary Login Button */}
-              <button
-                type="button"
-                onClick={onNavigateToLogin}
-                className="group p-1.5 pl-5 pr-2 sm:p-2.5 sm:pl-8 sm:pr-3 lg:p-3 lg:pl-10 lg:pr-3.5 2xl:p-3.5 2xl:pl-12 2xl:pr-4 rounded-full bg-[#0C1016] text-white hover:bg-[#1E242C] dark:bg-white dark:text-[#0C1016] dark:hover:bg-[#EBEBEF] transition-all duration-300 ease-out flex items-center gap-2.5 sm:gap-4 2xl:gap-5 cursor-pointer shadow-lg active:scale-95 min-h-[48px] sm:min-h-[54px] lg:min-h-[60px] 2xl:min-h-[64px]"
-              >
-                <span className="text-xs sm:text-base lg:text-lg 2xl:text-xl font-semibold tracking-wider uppercase">Tizimga kirish</span>
-                <span className="w-8 h-8 sm:w-11 sm:h-11 lg:w-12 lg:h-12 2xl:w-13 2xl:h-13 rounded-full bg-white/15 dark:bg-black/10 flex items-center justify-center transition-transform duration-300 group-hover:translate-x-1 shrink-0">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="sm:w-5 sm:h-5">
-                    <path d="M5 12h14" />
-                    <path d="m12 5 7 7-7 7" />
-                  </svg>
-                </span>
-              </button>
-              
-              <button
-                type="button"
-                onClick={() => scrollToSection('pricing-section')}
-                className="px-5 py-3.5 sm:px-8 sm:py-4 lg:px-10 lg:py-5 2xl:px-12 2xl:py-5.5 rounded-full bg-[var(--bg-card)] hover:bg-[var(--bg-secondary)] text-[var(--text-primary)] font-semibold text-xs sm:text-base lg:text-lg 2xl:text-xl border border-[var(--border-color)] transition-all duration-200 cursor-pointer shadow-sm active:scale-95 min-h-[48px] sm:min-h-[54px] lg:min-h-[60px] 2xl:min-h-[64px] flex items-center"
-              >
-                Tariflar ↓
-              </button>
-            </div>
-          </div>
-        </div>
-
-        {/* Video Showcase Card */}
-        {SHOW_VIDEO && (
-          <div className="max-w-7xl 2xl:max-w-[1440px] mx-auto px-4 sm:px-8 lg:px-12 2xl:px-16">
-            <div className="rounded-2xl sm:rounded-3xl lg:rounded-[3rem] bg-[#0C1016] shadow-[0_30px_70px_rgba(0,0,0,0.3)] border border-white/10 aspect-video relative overflow-hidden flex items-center justify-center group">
-            {isVideoPlaying ? (
-              <iframe
-                className="w-full h-full border-0 pointer-events-auto rounded-[inherit] relative z-10"
-                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                src="https://www.youtube-nocookie.com/embed/g7xkVEWrX8E?autoplay=1&controls=1&rel=0&modestbranding=1"
-                title="Epchil Robot Showcase"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                referrerPolicy="strict-origin-when-cross-origin"
-                allowFullScreen
-              />
-            ) : (
-              <div
-                className="w-full h-full relative cursor-pointer flex items-center justify-center"
-                onClick={() => setIsVideoPlaying(true)}
-              >
-                <img
-                  src="https://img.youtube.com/vi/g7xkVEWrX8E/maxresdefault.jpg"
-                  alt="Epchil Robot Video Sharhi"
-                  className="absolute inset-0 w-full h-full object-cover rounded-[inherit] group-hover:scale-[1.02] transition-transform duration-500"
-                  loading="eager"
-                />
-                <div className="absolute inset-0 bg-black/35 group-hover:bg-black/45 transition-colors duration-300 rounded-[inherit]" />
-                
-                <button
-                  type="button"
-                  className="relative z-20 w-14 h-14 min-[420px]:w-16 min-[420px]:h-16 sm:w-20 sm:h-20 rounded-full bg-white/95 backdrop-blur-xl shadow-[0_15px_50px_rgba(0,0,0,0.4)] border border-white/60 flex items-center justify-center text-[#0C1016] group-hover:scale-110 group-active:scale-95 transition-all duration-300 cursor-pointer"
-                  aria-label="Videoni ijro etish"
-                >
-                  <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" className="ml-1 text-[#0C1016] sm:w-7 sm:h-7">
-                    <polygon points="6 3 20 12 6 21 6 3" />
-                  </svg>
-                </button>
-                
-                <div className="absolute bottom-3 left-3 sm:bottom-8 sm:left-8 z-20 flex items-center bg-black/70 backdrop-blur-md px-3 py-1.5 sm:px-5 sm:py-2.5 rounded-full text-white text-[11px] sm:text-sm font-medium border border-white/10 max-w-[85%]">
-                  <span className="truncate">Epchil Robot Video Sharhi</span>
-                </div>
-              </div>
-            )}
-            </div>
-          </div>
-        )}
-      </section>
-
-      {/* 2. Pricing Section (One Full Screen) */}
-      <section
-        id="pricing-section"
-        className="relative w-full min-h-screen min-h-[100dvh] border-t border-[var(--border-color)] bg-[var(--bg-secondary)] flex flex-col justify-center py-8 sm:py-12 lg:py-14 snap-start scroll-mt-16 sm:scroll-mt-20 overflow-hidden"
-      >
-        <div className="max-w-7xl 2xl:max-w-[1440px] mx-auto px-4 sm:px-8 lg:px-12 2xl:px-16 w-full my-auto">
-          
-          {/* Section Header */}
-          <div className="mb-6 sm:mb-8 text-center sm:text-left">
-            <h2 className="text-2xl min-[360px]:text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight leading-tight text-[var(--text-primary)]">
-              Darslaringizni bugunoq qulay narxda boshlang
-            </h2>
-          </div>
-
-          {/* Pricing Plans Grid (3 columns for teachers) */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 lg:gap-6 items-stretch">
-            {PRICING_PLANS.map((plan) => (
-              <div
-                key={plan.id}
-                className={`relative rounded-2xl sm:rounded-[28px] p-5 sm:p-6 lg:p-7 flex flex-col justify-between transition-all duration-300 min-w-0 ${
-                  plan.highlighted
-                    ? 'bg-[#0C1016] text-white border-2 border-[#0171E3] shadow-2xl shadow-[#0171E3]/20 lg:-translate-y-2'
-                    : 'bg-[var(--bg-card)] text-[var(--text-primary)] border border-[var(--border-color)] shadow-md hover:shadow-lg'
-                }`}
-              >
-                <div>
-                  <div className="flex items-center justify-between gap-2 mb-3 flex-wrap">
-                    <span
-                      className={`text-[10px] min-[380px]:text-[11px] font-bold px-2.5 py-0.5 rounded-full uppercase tracking-wider ${
-                        plan.highlighted
-                          ? 'bg-[#0171E3] text-white'
-                          : 'bg-black/10 dark:bg-white/10 text-[var(--text-primary)]'
-                      }`}
-                    >
-                      {plan.badge}
-                    </span>
-                  </div>
-
-                  <h3 className="text-xl sm:text-2xl font-black tracking-tight mb-1.5">
-                    {plan.name}
-                  </h3>
-                  <p className={`text-xs sm:text-sm leading-relaxed mb-4 min-h-[36px] ${
-                    plan.highlighted ? 'text-white/70' : 'text-[var(--text-secondary)]'
-                  }`}>
-                    {plan.description}
-                  </p>
-
-                  {/* Price & Period */}
-                  <div className="mb-4 pb-4 border-b border-black/10 dark:border-white/10">
-                    <div className="flex flex-col gap-0.5">
-                      <span className="text-2xl sm:text-3xl font-black tracking-tight break-words">
-                        {plan.price}
-                      </span>
-                      <span className={`text-xs break-words ${
-                        plan.highlighted ? 'text-white/60' : 'text-[var(--text-secondary)]'
-                      }`}>
-                        {plan.period}
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Features List */}
-                  <div className="space-y-2 mb-5">
-                    {plan.features.map((feat, fIdx) => (
-                      <div key={fIdx} className="flex items-start gap-2">
-                        <div className={`w-3.5 h-3.5 rounded-full flex items-center justify-center shrink-0 mt-0.5 ${
-                          plan.highlighted ? 'bg-[#0171E3] text-white' : 'bg-green-500/20 text-green-600 dark:text-green-400'
-                        }`}>
-                          <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                            <polyline points="20 6 9 17 4 12" />
-                          </svg>
-                        </div>
-                        <span className={`text-xs sm:text-sm font-medium leading-snug ${
-                          plan.highlighted ? 'text-white/90' : 'text-[var(--text-primary)]'
-                        }`}>
-                          {feat}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Action CTA Button */}
-                <a
-                  href={plan.ctaLink}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className={`w-full py-2.5 sm:py-3 px-4 rounded-full font-bold text-center text-xs sm:text-sm uppercase tracking-wider transition-all duration-200 cursor-pointer shadow-md active:scale-98 flex items-center justify-center gap-2 no-underline min-h-[42px] sm:min-h-[44px] ${
-                    plan.highlighted
-                      ? 'bg-[#0171E3] text-white hover:bg-[#0155AB]'
-                      : 'bg-[#0C1016] text-white hover:bg-[#1E242C] dark:bg-white dark:text-[#0C1016] dark:hover:bg-[#EBEBEF]'
-                  }`}
-                >
-                  <span className="truncate">{plan.ctaText}</span>
-                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
-                    <path d="M5 12h14" />
-                    <path d="m12 5 7 7-7 7" />
-                  </svg>
-                </a>
-
-              </div>
-            ))}
-          </div>
-
-          {/* Custom / 200+ Students Note */}
-          <div className="mt-5 sm:mt-6 p-4 sm:p-5 rounded-2xl bg-[var(--bg-card)] border border-[var(--border-color)] flex flex-col sm:flex-row items-center justify-between gap-3 text-center sm:text-left shadow-sm">
-            <h4 className="text-xs sm:text-sm lg:text-base font-bold text-[var(--text-primary)]">
-              200 dan ortiq o'quvchingiz yoki maxsus talablaringiz bormi?
-            </h4>
-            <a
-              href="https://t.me/bkzd19?text=Assalomu%20alaykum!%20200%2B%20o'quvchilar%20uchun%20maxsus%20tarif%20bo'yicha%20bog'lanayotgan%20edim."
-              target="_blank"
-              rel="noopener noreferrer"
-              className="shrink-0 px-5 py-2.5 rounded-full bg-[#0171E3] hover:bg-[#0155AB] text-white font-semibold text-xs transition-colors cursor-pointer no-underline flex items-center gap-1.5 shadow-sm"
-            >
-              <span>Bog'lanish</span>
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M5 12h14" />
-                <path d="m12 5 7 7-7 7" />
-              </svg>
             </a>
           </div>
-
         </div>
-      </section>
 
-
-
-      {/* 3. Platform Screens Showcase (Full-Width High-Impact Display) */}
-      <section
-        id="platform-screens"
-        className="relative w-full min-h-screen min-h-[100dvh] border-t border-[var(--border-color)] bg-[var(--bg-secondary)] flex flex-col justify-center py-3 sm:py-5 lg:py-6 snap-start scroll-mt-16 sm:scroll-mt-20 overflow-hidden"
-      >
-        <div className="max-w-[1140px] 2xl:max-w-[1200px] mx-auto px-3 sm:px-6 w-full flex flex-col justify-center my-auto">
-          
-          {/* Top Bar: Title + Desktop Quick Nav */}
-          <div className="flex items-center justify-between gap-3 mb-2.5 sm:mb-3.5">
-            <h2 className="text-xl min-[360px]:text-2xl sm:text-3xl font-black tracking-tight text-[var(--text-primary)] leading-tight">
-              Platformasi Ichkaridan
-            </h2>
-
-            {/* Quick Next/Prev pill for desktop/tablet */}
-            <div className="hidden sm:flex items-center gap-1 border border-black/10 dark:border-white/10 bg-white/80 dark:bg-white/5 p-1 rounded-full shadow-xs select-none">
-              <button
-                type="button"
-                onClick={() => setActiveScreenIndex((prev) => (prev > 0 ? prev - 1 : SOHUB_SCREENS.length - 1))}
-                className="w-8 h-8 rounded-full hover:bg-black/5 dark:hover:bg-white/10 text-[var(--text-primary)] flex items-center justify-center transition-colors cursor-pointer"
-                aria-label="Oldingi"
-                title="Oldingi"
-              >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <polyline points="15 18 9 12 15 6" />
-                </svg>
-              </button>
-              <span className="font-mono text-xs font-semibold px-2 text-[var(--text-secondary)]">
-                {activeScreenIndex + 1} / {SOHUB_SCREENS.length}
-              </span>
-              <button
-                type="button"
-                onClick={() => setActiveScreenIndex((prev) => (prev < SOHUB_SCREENS.length - 1 ? prev + 1 : 0))}
-                className="w-8 h-8 rounded-full hover:bg-black/5 dark:hover:bg-white/10 text-[var(--text-primary)] flex items-center justify-center transition-colors cursor-pointer"
-                aria-label="Keyingi"
-                title="Keyingi"
-              >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <polyline points="9 18 15 12 9 6" />
-                </svg>
-              </button>
-            </div>
-          </div>
-
-          {/* Authentic Apple Safari Window Frame (Tightly Wrapped around Screenshot) */}
-          {(() => {
-            const currentScreen = SOHUB_SCREENS[activeScreenIndex];
-            return (
-              <div className="relative w-full">
-                <div className="w-full rounded-2xl sm:rounded-[22px] border border-black/[0.12] dark:border-white/[0.15] bg-white dark:bg-[#1E1E1E] shadow-[0_25px_60px_-15px_rgba(0,0,0,0.18),0_0_0_1px_rgba(0,0,0,0.06)] dark:shadow-[0_25px_60px_-15px_rgba(0,0,0,0.7),0_0_0_1px_rgba(255,255,255,0.1)] overflow-hidden flex flex-col transition-all duration-300">
-                  
-                  {/* macOS Safari Window Bar */}
-                  <div className="flex items-center justify-between gap-2 sm:gap-4 px-3.5 sm:px-5 py-2.5 sm:py-3 border-b border-black/[0.08] dark:border-white/10 bg-[#F6F6F6] dark:bg-[#252528] select-none shrink-0">
-                    
-                    {/* Left: macOS Traffic Lights + Chevrons */}
-                    <div className="flex items-center gap-2.5 sm:gap-3 shrink-0">
-                      <div className="flex items-center gap-2">
-                        <span className="w-3 h-3 rounded-full bg-[#FF5F56] border border-[#E0443E]/60 shadow-[inset_0_1px_1px_rgba(255,255,255,0.4)] inline-block" />
-                        <span className="w-3 h-3 rounded-full bg-[#FFBD2E] border border-[#DEA123]/60 shadow-[inset_0_1px_1px_rgba(255,255,255,0.4)] inline-block" />
-                        <span className="w-3 h-3 rounded-full bg-[#27C93F] border border-[#1AAB29]/60 shadow-[inset_0_1px_1px_rgba(255,255,255,0.4)] inline-block" />
-                      </div>
-                      
-                      {/* Safari Navigation Chevrons */}
-                      <div className="hidden sm:flex items-center gap-0.5 text-black/35 dark:text-white/35 ml-1">
-                        <button
-                          type="button"
-                          onClick={() => setActiveScreenIndex((prev) => (prev > 0 ? prev - 1 : SOHUB_SCREENS.length - 1))}
-                          className="p-1 rounded-md hover:bg-black/5 dark:hover:bg-white/10 hover:text-black/70 dark:hover:text-white/70 transition-colors cursor-pointer"
-                          title="Oldingi"
-                        >
-                          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                            <polyline points="15 18 9 12 15 6" />
-                          </svg>
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setActiveScreenIndex((prev) => (prev < SOHUB_SCREENS.length - 1 ? prev + 1 : 0))}
-                          className="p-1 rounded-md hover:bg-black/5 dark:hover:bg-white/10 hover:text-black/70 dark:hover:text-white/70 transition-colors cursor-pointer"
-                          title="Keyingi"
-                        >
-                          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                            <polyline points="9 18 15 12 9 6" />
-                          </svg>
-                        </button>
-                      </div>
-                    </div>
-
-                    {/* Center: Safari Address Pill */}
-                    <div className="flex items-center justify-between gap-2 px-3 sm:px-4 py-1 sm:py-1.5 rounded-lg bg-black/[0.05] dark:bg-white/[0.08] border border-black/[0.04] dark:border-white/[0.06] text-xs font-mono text-[var(--text-secondary)] max-w-xs sm:max-w-md w-full mx-auto shadow-[inset_0_1px_2px_rgba(0,0,0,0.03)]">
-                      <div className="flex items-center gap-1.5 min-w-0 truncate">
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-emerald-500 shrink-0">
-                          <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
-                          <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-                        </svg>
-                        <span className="font-semibold text-[var(--text-primary)] truncate">epchilrobot.uz</span>
-                        <span className="opacity-40 truncate">{currentScreen.path}</span>
-                      </div>
-                      <span className="text-black/30 dark:text-white/30 shrink-0 hidden sm:inline">
-                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                          <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.19" />
-                        </svg>
-                      </span>
-                    </div>
-
-                    {/* Right: Fullscreen Zoom */}
-                    <div className="flex items-center gap-1.5 shrink-0">
-                      <button
-                        type="button"
-                        onClick={() => setIsLightboxOpen(true)}
-                        title="To'liq ekranda ko'rish (Kattalashtirish)"
-                        className="px-2.5 py-1 rounded-lg text-xs font-semibold text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-black/5 dark:hover:bg-white/10 transition-colors cursor-pointer flex items-center gap-1.5"
-                      >
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                          <polyline points="15 3 21 3 21 9" />
-                          <polyline points="9 21 3 21 3 15" />
-                          <line x1="21" y1="3" x2="14" y2="10" />
-                          <line x1="3" y1="21" x2="10" y2="14" />
-                        </svg>
-                        <span className="hidden sm:inline">Kattalashtirish</span>
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Screenshot Image (Clean Edge-to-Edge with Zero Overlapping Buttons) */}
-                  <div 
-                    className="relative w-full overflow-hidden cursor-zoom-in group bg-[#F8F9FA] dark:bg-[#141517]"
-                    onClick={() => setIsLightboxOpen(true)}
-                    onTouchStart={handleTouchStart}
-                    onTouchMove={handleTouchMove}
-                    onTouchEnd={handleTouchEnd}
-                  >
-                    <img
-                      src={currentScreen.src}
-                      alt={currentScreen.alt}
-                      className="w-full h-auto block select-none transition-transform duration-300 group-hover:scale-[1.008]"
-                      loading="eager"
-                    />
-                  </div>
-                </div>
-
-                {/* Bottom Navigation & Pagination Bar (Completely Outside the Screenshot) */}
-                <div className="flex items-center justify-between sm:justify-center gap-3 sm:gap-4 mt-3 sm:mt-4 select-none px-1">
-                  {/* Prev Button */}
-                  <button
-                    type="button"
-                    onClick={() => setActiveScreenIndex((prev) => (prev > 0 ? prev - 1 : SOHUB_SCREENS.length - 1))}
-                    className="w-10 h-10 rounded-full border border-black/10 dark:border-white/10 bg-white dark:bg-[#1E1E1E] text-[var(--text-primary)] hover:bg-[#0171E3] hover:text-white dark:hover:bg-[#0171E3] transition-all cursor-pointer shadow-sm active:scale-95 flex items-center justify-center shrink-0"
-                    aria-label="Oldingi ekran"
-                    title="Oldingi"
-                  >
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                      <polyline points="15 18 9 12 15 6" />
-                    </svg>
-                  </button>
-
-                  {/* Pagination Dots with Tooltips */}
-                  <div className="flex items-center gap-1.5 sm:gap-2">
-                    {SOHUB_SCREENS.map((s, idx) => (
-                      <button
-                        key={s.id}
-                        type="button"
-                        onClick={() => setActiveScreenIndex(idx)}
-                        className={`h-2 rounded-full transition-all duration-200 cursor-pointer ${
-                          activeScreenIndex === idx ? 'w-6 sm:w-8 bg-[#0171E3]' : 'w-2 bg-black/20 dark:bg-white/20 hover:bg-black/40 dark:hover:bg-white/40'
-                        }`}
-                        aria-label={s.name}
-                        title={s.name}
-                      />
-                    ))}
-                  </div>
-
-                  {/* Next Button */}
-                  <button
-                    type="button"
-                    onClick={() => setActiveScreenIndex((prev) => (prev < SOHUB_SCREENS.length - 1 ? prev + 1 : 0))}
-                    className="w-10 h-10 rounded-full border border-black/10 dark:border-white/10 bg-white dark:bg-[#1E1E1E] text-[var(--text-primary)] hover:bg-[#0171E3] hover:text-white dark:hover:bg-[#0171E3] transition-all cursor-pointer shadow-sm active:scale-95 flex items-center justify-center shrink-0"
-                    aria-label="Keyingi ekran"
-                    title="Keyingi"
-                  >
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                      <polyline points="9 18 15 12 9 6" />
-                    </svg>
-                  </button>
-                </div>
-              </div>
-            );
-          })()}
-
-        </div>
-      </section>
-
-      {/* 4. Core Features Section (One Full Screen 3-Column Grid) */}
-      <section
-        id="platform-features"
-        className="relative w-full min-h-screen min-h-[100dvh] border-t border-[var(--border-color)] bg-[var(--bg-tertiary)] flex flex-col justify-center py-6 sm:py-10 lg:py-14 snap-start scroll-mt-16 sm:scroll-mt-20 overflow-hidden"
-      >
-        <div className="max-w-7xl 2xl:max-w-[1440px] mx-auto px-4 sm:px-8 lg:px-12 2xl:px-16 w-full flex flex-col justify-center my-auto">
-          <div className="mb-4 sm:mb-8 text-center sm:text-left">
-            <h2 className="text-2xl min-[360px]:text-3xl sm:text-4xl lg:text-5xl 2xl:text-6xl font-black tracking-tight text-[var(--text-primary)] leading-[1.1]">
-              Bilim olishlarini <br className="hidden sm:inline" />
-              <span className="text-[#0171E3]">"Like" bilan taqdirlang.</span>
-            </h2>
-          </div>
-
-          {/* 3-Column Feature Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6 items-stretch">
-            {CORE_FEATURES.map((item, index) => (
-              <div
-                key={index}
-                style={{ backgroundColor: item.color }}
-                className="p-5 sm:p-7 lg:p-8 rounded-2xl sm:rounded-3xl text-black flex flex-col justify-between shadow-lg transition-transform duration-300 hover:-translate-y-1 select-none min-h-[200px] sm:min-h-[260px]"
-              >
-                <div>
-                  <span className="text-[11px] sm:text-xs font-black uppercase tracking-widest text-black/75 mb-2 sm:mb-3 block">
-                    {item.badge}
-                  </span>
-                  <h3 className="text-xl sm:text-2xl lg:text-3xl font-black text-black tracking-tight leading-snug">
-                    {item.title}
-                  </h3>
-                </div>
-                <p className="text-xs sm:text-sm lg:text-base text-black/85 leading-relaxed font-semibold mt-4">
-                  {item.description}
-                </p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* 5. Mijozlar Fikri (Testimonials - One Full Screen 3-Column Grid) */}
-      <section
-        id="testimonials"
-        className="relative w-full min-h-screen min-h-[100dvh] border-t border-[var(--border-color)] bg-[var(--bg-primary)] flex flex-col justify-center py-6 sm:py-10 lg:py-14 snap-start scroll-mt-16 sm:scroll-mt-20 overflow-hidden"
-      >
-        <div className="max-w-7xl 2xl:max-w-[1440px] mx-auto px-4 sm:px-8 lg:px-12 2xl:px-16 w-full flex flex-col justify-center my-auto">
-          <div className="mb-4 sm:mb-8 text-center sm:text-left">
-            <h2 className="text-2xl min-[360px]:text-3xl sm:text-4xl lg:text-5xl 2xl:text-6xl font-black tracking-tight text-[var(--text-primary)]">
-              Ustoz va murabbiylar nima deydi?
-            </h2>
-          </div>
-
-          {/* 3-Column Architectural Testimonials Grid */}
-          <div className="w-full rounded-2xl sm:rounded-3xl border border-black/15 dark:border-white/20 overflow-hidden grid grid-cols-1 lg:grid-cols-3 divide-y lg:divide-y-0 lg:divide-x divide-black/15 dark:divide-white/20 shadow-lg">
-            {TESTIMONIALS.map((item, idx) => (
-              <div
-                key={idx}
-                className="flex flex-col justify-between p-5 sm:p-7 lg:p-8 text-[#0C1016]"
-                style={{ backgroundColor: '#FFFFFF' }}
-              >
-                <div className="flex flex-col">
-                  {/* School Tag */}
-                  <div className="flex items-center justify-start mb-3 sm:mb-5">
-                    <span className="font-mono text-xs sm:text-sm font-semibold uppercase tracking-wider px-2.5 py-1 rounded border border-black/10 bg-black/[0.04] text-[#0C1016]">
-                      {item.school}
-                    </span>
-                  </div>
-
-                  {/* Hero Metric Stat */}
-                  <div className="mb-3 sm:mb-5 pb-3 sm:pb-5 border-b border-black/10">
-                    <div
-                      className="text-4xl sm:text-5xl font-black font-mono tracking-tight"
-                      style={{ color: item.accent }}
-                    >
-                      {item.metricValue}
-                    </div>
-                    <div className="text-xs sm:text-sm font-semibold uppercase tracking-wider text-[#0C1016]/60 mt-1">
-                      {item.metricLabel}
-                    </div>
-                  </div>
-
-                  {/* Quotation */}
-                  <p className="text-sm sm:text-base lg:text-lg font-medium leading-relaxed text-[#0C1016]/90 italic">
-                    “{item.quote}”
-                  </p>
-                </div>
-
-                {/* Author & Role Footer */}
-                <div className="pt-3 sm:pt-5 mt-4 sm:mt-6 border-t border-black/10 flex flex-col">
-                  <h4 className="text-base sm:text-lg font-bold tracking-tight text-[#0C1016]">
-                    {item.author}
-                  </h4>
-                  <p className="text-xs sm:text-sm font-medium text-[#0C1016]/60">
-                    {item.role}, <span className="text-[#0C1016] font-semibold">{item.school}</span>
-                  </p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* 6. FAQ: Ko'p beriladigan savollar (One Full Screen 2-Column Grid) */}
-      <section
-        id="faq"
-        className="relative w-full min-h-screen min-h-[100dvh] border-t border-[var(--border-color)] bg-[var(--bg-secondary)] flex flex-col justify-center py-6 sm:py-10 lg:py-14 snap-start scroll-mt-16 sm:scroll-mt-20 overflow-hidden"
-      >
-        <div className="max-w-7xl 2xl:max-w-[1440px] mx-auto px-4 sm:px-8 lg:px-12 2xl:px-16 w-full flex flex-col justify-center my-auto">
-          <div className="mb-4 sm:mb-8 text-center sm:text-left">
-            <h2 className="text-2xl min-[360px]:text-3xl sm:text-4xl lg:text-5xl 2xl:text-6xl font-black tracking-tight text-[var(--text-primary)]">
-              Ko'p beriladigan savollar
-            </h2>
-          </div>
-
-          {/* 2-Column Grid of 6 FAQs */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5 sm:gap-5 lg:gap-6">
-            {FAQS.map((faq, fIdx) => (
-              <div
-                key={fIdx}
-                className="p-4 sm:p-6 lg:p-7 rounded-xl sm:rounded-2xl bg-[var(--bg-card)] border border-[var(--border-color)] shadow-sm flex flex-col justify-start min-w-0"
-              >
-                <div className="flex items-start gap-3 mb-2">
-                  <span className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-[#0171E3]/10 text-[#0171E3] flex items-center justify-center font-mono text-xs sm:text-sm font-bold shrink-0 mt-0.5">
-                    ?
-                  </span>
-                  <h3 className="text-sm sm:text-base lg:text-lg font-bold text-[var(--text-primary)] leading-snug break-words">
-                    {faq.q}
-                  </h3>
-                </div>
-                <p className="text-xs sm:text-sm lg:text-base text-[var(--text-secondary)] leading-relaxed pl-10">
-                  {faq.a}
-                </p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* 7. Fullscreen Edge-to-Edge Black CTA & Footer Section */}
-      <section className="relative w-full min-h-screen min-h-[100dvh] bg-black text-white flex flex-col justify-between px-4 sm:px-8 lg:px-12 2xl:px-16 pt-8 pb-4 sm:py-8 lg:py-10 border-t border-white/10 snap-start scroll-mt-16 sm:scroll-mt-20 overflow-hidden">
-        <div className="max-w-7xl 2xl:max-w-[1440px] mx-auto w-full flex-1 flex flex-col justify-center my-auto py-4 sm:py-6">
-          <h2 className="text-2xl min-[360px]:text-3xl sm:text-4xl md:text-5xl lg:text-6xl 2xl:text-7xl font-black tracking-tight text-white leading-tight break-words max-w-full mb-6 sm:mb-8">
-            Darslaringizni <br className="hidden sm:inline" />
-            <span className="text-white">yangi bosqichga olib chiqing.</span>
-          </h2>
-          <div className="flex flex-wrap items-center gap-3 sm:gap-4 lg:gap-6 w-full">
-            <button
-              type="button"
-              onClick={onNavigateToLogin}
-              className="group inline-flex p-2 pl-4 sm:p-3 sm:pl-8 lg:p-3.5 lg:pl-10 pr-2 sm:pr-3.5 rounded-full bg-white text-black hover:bg-[#F5F5F7] transition-all duration-300 ease-out items-center gap-2 sm:gap-4 cursor-pointer shadow-2xl active:scale-95 min-h-[44px] sm:min-h-[52px]"
+        {/* Mobile Section Menu Dropdown */}
+        {isMobileMenuOpen && (
+          <div className="nav-mobile-menu" role="menu">
+            <a
+              href="#imkoniyatlar"
+              onClick={(e) => handleNavClick(e, '#imkoniyatlar')}
+              className={`nav-mobile-item ${activeNav === 'imkoniyatlar' ? 'active' : ''}`}
+              role="menuitem"
             >
-              <span className="text-xs min-[360px]:text-sm sm:text-base lg:text-lg font-bold tracking-wider uppercase">Tizimga kirish</span>
-              <span className="w-7 h-7 sm:w-10 sm:h-10 lg:w-12 lg:h-12 rounded-full bg-black/10 flex items-center justify-center transition-transform duration-300 group-hover:translate-x-1.5 shrink-0">
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="sm:w-4 sm:h-4 lg:w-5 lg:h-5">
-                  <path d="M5 12h14" />
-                  <path d="m12 5 7 7-7 7" />
-                </svg>
-              </span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => scrollToSection('pricing-section')}
-              className="px-4 py-2.5 sm:px-6 sm:py-3.5 lg:px-8 lg:py-4 rounded-full border border-white/20 hover:border-white/40 text-white font-bold text-xs sm:text-sm lg:text-base uppercase tracking-wider transition-all duration-200 cursor-pointer active:scale-95 min-h-[44px] sm:min-h-[52px]"
+              <span>{t('nav_sec_modules')}</span>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+            </a>
+            <a
+              href="#narx"
+              onClick={(e) => handleNavClick(e, '#narx')}
+              className={`nav-mobile-item ${activeNav === 'narx' ? 'active' : ''}`}
+              role="menuitem"
             >
-              Tariflar
-            </button>
+              <span>{t('nav_sec_pricing')}</span>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+            </a>
+            <a
+              href="#savollar"
+              onClick={(e) => handleNavClick(e, '#savollar')}
+              className={`nav-mobile-item ${activeNav === 'savollar' ? 'active' : ''}`}
+              role="menuitem"
+            >
+              <span>{t('nav_sec_faq')}</span>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+            </a>
+            <a
+              href="#aloqa"
+              onClick={(e) => handleNavClick(e, '#aloqa')}
+              className={`nav-mobile-item ${activeNav === 'aloqa' ? 'active' : ''}`}
+              role="menuitem"
+            >
+              <span>{t('nav_sec_contact')}</span>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+            </a>
           </div>
-        </div>
+        )}
+      </header>
 
-        {/* 2 Qatorli Kengaytirilgan Footer */}
-        <footer className="w-full max-w-7xl 2xl:max-w-[1440px] mx-auto pt-4 sm:pt-6 pb-2 border-t border-white/10 text-white/70">
-          {/* Qator 1: Brend, Sitemap va Kontaktlar */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-12 gap-5 sm:gap-6 mb-4 sm:mb-6">
-            {/* Col 1: Brend va Maqsad */}
-            <div className="sm:col-span-2 md:col-span-5 min-w-0">
-              <h3 className="font-black text-lg lg:text-xl text-white tracking-tight mb-1.5">
-                EPCHIL <span className="text-[#0171E3]">ROBOT</span>
-              </h3>
-              <p className="text-xs sm:text-sm text-white/60 leading-relaxed max-w-sm">
-                Ustozlar uchun o'quvchilar bilimini jonli "Like"lar bilan rag'batlantirish, guruhlararo sog'lom raqobat va oylik shaffof davomat platformasi.
+      <main>
+        {/* 1. HERO (white): who it is for, what it does, one action + visual showcase */}
+        <section className="sc hero" id="top" data-bg="w" data-scene="hero">
+          <div className="hero-main">
+            <div className="hero-copy">
+              <p className="lab kick">{t('hero_kick')}</p>
+              <h1>
+                {t('hero_title_p1')}{' '}
+                <span className="acc">{t('hero_title_acc')}</span>{' '}
+                {t('hero_title_p2')}
+              </h1>
+              <p className="sub">
+                {t('hero_sub_s1')} {t('hero_sub_s2')}
               </p>
+              <div className="ctas">
+                <a
+                  className="lnk lg"
+                  href={onNavigateToLogin ? '#login' : 'https://epchilrobot.uz/'}
+                  data-app
+                  data-cta
+                  rel="noopener"
+                >
+                  <span className="r">
+                    <b data-t={t('hero_cta')}>{t('hero_cta')}</b>
+                  </span>
+                </a>
+              </div>
             </div>
 
-            {/* Col 2: Sitemap (Tezkor Bo'limlar) */}
-            <div className="md:col-span-3 min-w-0">
-              <h4 className="text-[11px] sm:text-xs font-bold uppercase tracking-widest text-white mb-2">
-                Bo'limlar
-              </h4>
-              <ul className="space-y-0.5 text-xs text-white/60">
-                <li>
-                  <button
-                    type="button"
-                    onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-                    className="py-1 hover:text-white transition-colors cursor-pointer text-left w-full flex items-center"
-                  >
-                    Bosh sahifa
-                  </button>
-                </li>
-                <li>
-                  <button
-                    type="button"
-                    onClick={() => scrollToSection('pricing-section')}
-                    className="py-1 hover:text-white transition-colors cursor-pointer text-left w-full flex items-center"
-                  >
-                    Narxlar va Tariflar
-                  </button>
-                </li>
-                <li>
-                  <button
-                    type="button"
-                    onClick={() => scrollToSection('platform-screens')}
-                    className="py-1 hover:text-white transition-colors cursor-pointer text-left w-full flex items-center"
-                  >
-                    Skrinshotlar
-                  </button>
-                </li>
-                <li>
-                  <button
-                    type="button"
-                    onClick={() => scrollToSection('platform-features')}
-                    className="py-1 hover:text-white transition-colors cursor-pointer text-left w-full flex items-center"
-                  >
-                    Imkoniyatlar
-                  </button>
-                </li>
-                <li>
-                  <button
-                    type="button"
-                    onClick={() => scrollToSection('testimonials')}
-                    className="py-1 hover:text-white transition-colors cursor-pointer text-left w-full flex items-center"
-                  >
-                    Mijozlar fikri
-                  </button>
-                </li>
-                <li>
-                  <button
-                    type="button"
-                    onClick={() => scrollToSection('faq')}
-                    className="py-1 hover:text-white transition-colors cursor-pointer text-left w-full flex items-center"
-                  >
-                    Savollar va javoblar
-                  </button>
-                </li>
+            {/* Visual SaaS Showcase: Calendar Wireframe + Students Card (TutorBird authentic style) */}
+            <div className="hero-showcase" aria-hidden="true">
+              <div className="hero-dots" />
+              <div className="hero-blob" />
+
+              {/* Hand-drawn Accent 1: Soft curved ribbon (inspired by user screenshot 1) */}
+              <svg className="hero-doodle-curve" width="110" height="110" viewBox="0 0 110 110" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path
+                  d="M18 92 C26 62 38 28 66 24 C90 20 96 46 76 66 C54 86 46 95 66 102"
+                  stroke="#38BDF8"
+                  strokeWidth="16"
+                  strokeLinecap="round"
+                  strokeOpacity="0.22"
+                />
+              </svg>
+
+              {/* Hand-drawn Accent 2: Confetti Sprinkles (inspired by user screenshot 2) */}
+              <svg className="hero-doodle-confetti" width="130" height="145" viewBox="0 0 130 145" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <rect x="22" y="10" width="6.5" height="17" rx="3.25" transform="rotate(-20 22 10)" fill="#0284C7" fillOpacity="0.55" />
+                <rect x="62" y="8" width="7" height="15" rx="3.5" transform="rotate(15 62 8)" fill="#0B3BFF" fillOpacity="0.4" />
+                <rect x="100" y="22" width="6.5" height="18" rx="3.25" transform="rotate(8 100 22)" fill="#0284C7" fillOpacity="0.5" />
+                <rect x="14" y="40" width="6.5" height="16" rx="3.25" transform="rotate(10 14 40)" fill="#D8F10A" />
+                <rect x="46" y="36" width="6.5" height="18" rx="3.25" transform="rotate(-5 46 36)" fill="#0B3BFF" fillOpacity="0.45" />
+                <rect x="82" y="42" width="7" height="17" rx="3.5" transform="rotate(25 82 42)" fill="#0284C7" fillOpacity="0.6" />
+                <rect x="112" y="55" width="6.5" height="16" rx="3.25" transform="rotate(-12 112 55)" fill="#94A3B8" fillOpacity="0.4" />
+                <rect x="30" y="68" width="7" height="20" rx="3.5" transform="rotate(-15 30 68)" fill="#0284C7" fillOpacity="0.55" />
+                <rect x="66" y="65" width="6.5" height="18" rx="3.25" transform="rotate(8 66 65)" fill="#0B3BFF" fillOpacity="0.35" />
+                <rect x="94" y="78" width="6.5" height="18" rx="3.25" transform="rotate(-8 94 78)" fill="#D8F10A" />
+                <rect x="12" y="96" width="6.5" height="17" rx="3.25" transform="rotate(22 12 96)" fill="#0B3BFF" fillOpacity="0.4" />
+                <rect x="50" y="100" width="7" height="19" rx="3.5" transform="rotate(-25 50 100)" fill="#0284C7" fillOpacity="0.55" />
+                <rect x="78" y="108" width="6.5" height="17" rx="3.25" transform="rotate(12 78 108)" fill="#94A3B8" fillOpacity="0.4" />
+                <rect x="108" y="114" width="7" height="17" rx="3.5" transform="rotate(-15 108 114)" fill="#0B3BFF" fillOpacity="0.4" />
+                <rect x="34" y="128" width="6.5" height="16" rx="3.25" transform="rotate(18 34 128)" fill="#0284C7" fillOpacity="0.5" />
+                <rect x="68" y="130" width="7" height="15" rx="3.5" transform="rotate(-8 68 130)" fill="#D8F10A" />
+              </svg>
+
+              {/* Hand-drawn Accent 3: Triple zigzag lines (inspired by user screenshot 3) */}
+              <svg className="hero-doodle-zigzag" width="120" height="96" viewBox="0 0 120 96" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path
+                  d="M10 90 L10 52 C10 40 22 36 32 44 L54 62 C62 68 70 60 74 46 L82 22 C86 10 96 12 102 24 L114 44"
+                  stroke="#F59E0B"
+                  strokeWidth="3.2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+                <path
+                  d="M19 93 L19 58 C19 48 28 45 36 51 L58 69 C66 75 74 68 78 54 L86 30 C90 20 98 22 104 32 L116 52"
+                  stroke="#F59E0B"
+                  strokeWidth="3.2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+                <path
+                  d="M28 96 L28 64 C28 56 34 54 40 58 L62 76 C70 82 78 76 82 62 L90 38 C94 30 100 32 106 40 L118 60"
+                  stroke="#F59E0B"
+                  strokeWidth="3.2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+
+              {/* Main Calendar Card (No dense text, pure wireframe skeleton cards) */}
+              <div className="mock-card mock-calendar">
+                <div className="mock-head">
+                  <div className="mock-title">
+                    <span className="mock-app-icon">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                        <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+                        <line x1="16" y1="2" x2="16" y2="6" />
+                        <line x1="8" y1="2" x2="8" y2="6" />
+                        <line x1="3" y1="10" x2="21" y2="10" />
+                      </svg>
+                    </span>
+                    <b>{t('hero_mock_cal')}</b>
+                  </div>
+                  <svg className="mock-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="m6 9 6 6 6-6" />
+                  </svg>
+                </div>
+
+                <div className="mock-filters">
+                  <span className="mock-pill-active" />
+                  <span className="mock-pill-outline" />
+                  <span className="mock-pill-outline" />
+                  <span className="mock-pill-outline" />
+                </div>
+
+                <div className="mock-cal-grid">
+                  <div className="mock-col">
+                    <div className="mock-event ev-blue">
+                      <span className="mock-line ln-short" />
+                      <span className="mock-line ln-long" />
+                    </div>
+                    <div className="mock-event ev-orange">
+                      <span className="mock-line ln-short" />
+                      <span className="mock-line ln-long" />
+                    </div>
+                    <div className="mock-event ev-purple">
+                      <span className="mock-line ln-short" />
+                      <span className="mock-line ln-long" />
+                    </div>
+                    <div className="mock-event ev-blue">
+                      <span className="mock-line ln-short" />
+                      <span className="mock-line ln-long" />
+                    </div>
+                    <div className="mock-event ev-volt">
+                      <span className="mock-line ln-short" />
+                      <span className="mock-line ln-long" />
+                    </div>
+                  </div>
+
+                  <div className="mock-col">
+                    <div className="mock-event ev-orange">
+                      <span className="mock-line ln-short" />
+                      <span className="mock-line ln-long" />
+                    </div>
+                    <div className="mock-event ev-gray">
+                      <span className="mock-line ln-short" />
+                      <span className="mock-line ln-long" />
+                    </div>
+                    <div className="mock-event ev-volt">
+                      <span className="mock-line ln-short" />
+                      <span className="mock-line ln-long" />
+                    </div>
+                    <div className="mock-event ev-blue">
+                      <span className="mock-line ln-short" />
+                      <span className="mock-line ln-long" />
+                    </div>
+                    <div className="mock-event ev-purple">
+                      <span className="mock-line ln-short" />
+                      <span className="mock-line ln-long" />
+                    </div>
+                  </div>
+
+                  <div className="mock-col">
+                    <div className="mock-event ev-blue">
+                      <span className="mock-line ln-short" />
+                      <span className="mock-line ln-long" />
+                    </div>
+                    <div className="mock-event ev-purple">
+                      <span className="mock-line ln-short" />
+                      <span className="mock-line ln-long" />
+                    </div>
+                    <div className="mock-event ev-orange">
+                      <span className="mock-line ln-short" />
+                      <span className="mock-line ln-long" />
+                    </div>
+                    <div className="mock-event ev-blue">
+                      <span className="mock-line ln-short" />
+                      <span className="mock-line ln-long" />
+                    </div>
+                    <div className="mock-event ev-orange">
+                      <span className="mock-line ln-short" />
+                      <span className="mock-line ln-long" />
+                    </div>
+                  </div>
+
+                  <div className="mock-col">
+                    <div className="mock-event ev-gray">
+                      <span className="mock-line ln-short" />
+                      <span className="mock-line ln-long" />
+                    </div>
+                    <div className="mock-event ev-volt">
+                      <span className="mock-line ln-short" />
+                      <span className="mock-line ln-long" />
+                    </div>
+                    <div className="mock-event ev-blue">
+                      <span className="mock-line ln-short" />
+                      <span className="mock-line ln-long" />
+                    </div>
+                    <div className="mock-event ev-orange">
+                      <span className="mock-line ln-short" />
+                      <span className="mock-line ln-long" />
+                    </div>
+                    <div className="mock-event ev-gray">
+                      <span className="mock-line ln-short" />
+                      <span className="mock-line ln-long" />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Floating Students Card (Abstract wireframe list matching 2-screenshot) */}
+              <div className="mock-card mock-students-card">
+                <div className="mock-st-head">
+                  <b>{t('hero_mock_students')}</b>
+                  <span className="mock-st-badge" />
+                </div>
+
+                <div className="mock-students-list">
+                  <div className="mock-st-row">
+                    <span className="st-avatar av-1">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+                        <circle cx="12" cy="7" r="4.5" />
+                        <path d="M4 20c0-4 3.5-7 8-7s8 3 8 7" />
+                      </svg>
+                    </span>
+                    <div className="st-lines">
+                      <span className="st-ln-top" />
+                      <span className="st-ln-bot" />
+                    </div>
+                    <span className="mock-cb" />
+                  </div>
+
+                  <div className="mock-st-row">
+                    <span className="st-avatar av-2">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+                        <circle cx="12" cy="7" r="4.5" />
+                        <path d="M4 20c0-4 3.5-7 8-7s8 3 8 7" />
+                      </svg>
+                    </span>
+                    <div className="st-lines">
+                      <span className="st-ln-top" />
+                      <span className="st-ln-bot" />
+                    </div>
+                    <span className="mock-cb" />
+                  </div>
+
+                  <div className="mock-st-row">
+                    <span className="st-avatar av-3">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+                        <circle cx="12" cy="7" r="4.5" />
+                        <path d="M4 20c0-4 3.5-7 8-7s8 3 8 7" />
+                      </svg>
+                    </span>
+                    <div className="st-lines">
+                      <span className="st-ln-top" />
+                      <span className="st-ln-bot" />
+                    </div>
+                    <span className="mock-cb" />
+                  </div>
+
+                  <div className="mock-st-row">
+                    <span className="st-avatar av-4">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+                        <circle cx="12" cy="7" r="4.5" />
+                        <path d="M4 20c0-4 3.5-7 8-7s8 3 8 7" />
+                      </svg>
+                    </span>
+                    <div className="st-lines">
+                      <span className="st-ln-top" />
+                      <span className="st-ln-bot" />
+                    </div>
+                    <span className="mock-cb" />
+                  </div>
+
+                  <div className="mock-st-row">
+                    <span className="st-avatar av-5">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+                        <circle cx="12" cy="7" r="4.5" />
+                        <path d="M4 20c0-4 3.5-7 8-7s8 3 8 7" />
+                      </svg>
+                    </span>
+                    <div className="st-lines">
+                      <span className="st-ln-top" />
+                      <span className="st-ln-bot" />
+                    </div>
+                    <span className="mock-cb" />
+                  </div>
+
+                  <div className="mock-st-row">
+                    <span className="st-avatar av-6">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+                        <circle cx="12" cy="7" r="4.5" />
+                        <path d="M4 20c0-4 3.5-7 8-7s8 3 8 7" />
+                      </svg>
+                    </span>
+                    <div className="st-lines">
+                      <span className="st-ln-top" />
+                      <span className="st-ln-bot" />
+                    </div>
+                    <span className="mock-cb" />
+                  </div>
+                </div>
+              </div>
+
+              {/* Floating Gamification Card */}
+              <div className="mock-card mock-gamify-card">
+                <div className="mock-gamify-icon">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#D97706" strokeWidth="2.3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6" />
+                    <path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18" />
+                    <path d="M4 22h16" />
+                    <path d="M10 14.66V17c0 .55-.45 1-1 1H8c-.55 0-1 .45-1 1v1c0 .55.45 1 1 1h8c.55 0 1-.45 1-1v-1c0-.55-.45-1-1-1h-1c-.55 0-1-.45-1-1v-2.34" />
+                    <path d="M18 4H6v7a6 6 0 0 0 12 0V4Z" />
+                  </svg>
+                </div>
+                <div className="mock-gamify-content">
+                  <div className="mock-gamify-row">
+                    <span className="mock-gamify-pill-amber" />
+                    <span className="mock-gamify-pill-blue" />
+                  </div>
+                  <span className="mock-gamify-bar-title" />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="giant" aria-hidden="true">
+            EPCHIL
+          </div>
+        </section>
+
+        {/* 2. FORK: Designed for tutors of all kinds */}
+        <section className="sc fork" id="kim" data-bg="w" data-scene="fork">
+          <div className="fork-dots" aria-hidden="true" />
+          <h2 className="lab">{t('fork_lab')}</h2>
+          <h3 className="fork-title">
+            {t('fork_title_p1')} <span className="fork-hl">{t('fork_title_hl')}</span> {t('fork_title_p2')}
+          </h3>
+          <p className="fork-subtitle">{t('fork_subtitle')}</p>
+
+          <div className="fork-grid">
+            <div className="fork-card">
+              <div className="fork-icon-wrap">
+                <span className="fork-blob blob-blue" />
+                <svg className="fork-svg" width="46" height="46" viewBox="0 0 48 48" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <path d="M7 21L24 7L41 21" />
+                  <path d="M12 18.5V39C12 40.1 12.9 41 14 41H25" />
+                  <path d="M36 41H34" />
+                  <path d="M36 24V18.5" />
+                  <path d="M32 13.5V9H36V16.8" />
+                  <rect x="17" y="24" width="9" height="9" rx="1" />
+                  <line x1="21.5" y1="24" x2="21.5" y2="33" />
+                  <line x1="17" y1="28.5" x2="26" y2="28.5" />
+                  <path d="M28 34C31 32.5 35 32.5 39 34V42C35 40.5 31 40.5 28 42V34Z" />
+                  <path d="M28 34C25 32.5 21 32.5 17 34V42C21 40.5 25 40.5 28 42" />
+                </svg>
+              </div>
+              <b className="fork-name">
+                {t('fork_c1_title')}
+                <span className="fork-sub">{t('fork_c1_sub')}</span>
+              </b>
+            </div>
+
+            <div className="fork-card">
+              <div className="fork-icon-wrap">
+                <span className="fork-blob blob-orange" />
+                <svg className="fork-svg" width="46" height="46" viewBox="0 0 48 48" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <line x1="24" y1="5" x2="24" y2="13" />
+                  <path d="M24 6C27 4.8 29 7 32 6V11C29 12 27 9.8 24 11" fill="currentColor" fillOpacity="0.15" />
+                  <path d="M11 20L24 12L37 20" />
+                  <rect x="14" y="20" width="20" height="21" rx="1" />
+                  <rect x="18" y="24" width="3.5" height="5" rx="0.75" />
+                  <rect x="26.5" y="24" width="3.5" height="5" rx="0.75" />
+                  <path d="M21 41V33H27V41" />
+                  <line x1="9" y1="41" x2="39" y2="41" />
+                </svg>
+              </div>
+              <b className="fork-name">
+                {t('fork_c2_title')}
+                <span className="fork-sub">{t('fork_c2_sub')}</span>
+              </b>
+            </div>
+
+            <div className="fork-card">
+              <div className="fork-icon-wrap">
+                <span className="fork-blob blob-purple" />
+                <svg className="fork-svg" width="46" height="46" viewBox="0 0 48 48" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <rect x="7" y="9" width="34" height="25" rx="3" />
+                  <line x1="24" y1="34" x2="24" y2="40" />
+                  <line x1="16" y1="40" x2="32" y2="40" />
+                  <circle cx="18" cy="18" r="3.5" />
+                  <path d="M12 28C12 25 15 23 18 23C21 23 24 25 24 28" />
+                  <circle cx="33" cy="17" r="2.8" />
+                  <circle cx="31" cy="26" r="2.8" />
+                  <path d="M27 21C27 19.5 28.5 18 30 18" />
+                </svg>
+              </div>
+              <b className="fork-name">
+                {t('fork_c3_title')}
+                <span className="fork-sub">{t('fork_c3_sub')}</span>
+              </b>
+            </div>
+          </div>
+
+          <a
+            className="lnk lg more"
+            href={onNavigateToLogin ? '#login' : 'https://epchilrobot.uz/'}
+            data-app
+            data-cta
+            rel="noopener"
+          >
+            <span className="r">
+              <b data-t={t('hero_cta')}>{t('hero_cta')}</b>
+            </span>
+          </a>
+        </section>
+
+        {/* 3. STATEMENT (white) */}
+        <section className="sc stm" data-bg="w" data-scene="statement">
+          <div className="ghost ol" aria-hidden="true">
+            {t('stm_ghost')}
+          </div>
+          <h2 className="sr">Nega Epchil</h2>
+          <p>
+            {t('stm_s1')} {t('stm_s2')} {t('stm_s3')}
+          </p>
+
+          <div className="stm-compare" aria-label="Eski usul va Epchil taqqoslanishi">
+            <div className="stm-card stm-before">
+              <div className="stm-card-header">
+                <span className="stm-badge stm-badge-old">
+                  {t('stm_before_badge')}
+                </span>
+              </div>
+              <ul className="stm-list">
+                <li>{t('stm_before_b1')}</li>
+                <li>{t('stm_before_b2')}</li>
+                <li>{t('stm_before_b3')}</li>
               </ul>
             </div>
 
-            {/* Col 3: Kontaktlar va Ijtimoiy Tarmoqlar */}
-            <div className="md:col-span-4 min-w-0">
-              <h4 className="text-[11px] sm:text-xs font-bold uppercase tracking-widest text-white mb-2">
-                Aloqa va Tarmoqlar
-              </h4>
-              <div className="space-y-1 text-xs text-white/70">
-                <a
-                  href="tel:+998332220301"
-                  className="flex items-center gap-2 hover:text-white transition-colors no-underline py-0.5"
-                >
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[#0171E3] shrink-0">
-                    <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
-                  </svg>
-                  <span className="truncate">+998 (33) 222-03-01</span>
-                </a>
+            <div className="stm-card stm-after">
+              <div className="stm-card-header">
+                <span className="stm-badge stm-badge-new">
+                  {t('stm_after_badge')}
+                </span>
+              </div>
+              <ul className="stm-list">
+                <li>{t('stm_after_b1')}</li>
+                <li>{t('stm_after_b2')}</li>
+                <li>{t('stm_after_b3')}</li>
+              </ul>
+            </div>
+          </div>
+        </section>
 
-                <a
-                  href="https://t.me/bkzd19"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-2 hover:text-white transition-colors no-underline py-0.5"
-                >
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[#0171E3] shrink-0">
-                    <line x1="22" y1="2" x2="11" y2="13" />
-                    <polygon points="22 2 15 22 11 13 2 9 22 2" />
-                  </svg>
-                  <span className="truncate">Telegram: @bkzd19</span>
-                </a>
+        {/* 4. STEPS (white) */}
+        <section className="sc how" data-bg="w" data-scene="steps">
+          {/* Hand-drawn Growth Zigzag Accent (Image 3 inspired) */}
+          <div className="how-zigzag-wrap" aria-hidden="true">
+            <svg className="how-zigzag-svg" width="180" height="240" viewBox="0 0 180 240" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <defs>
+                <linearGradient id="howZigzagGrad" x1="0%" y1="100%" x2="100%" y2="0%">
+                  <stop offset="0%" stopColor="#F59E0B" />
+                  <stop offset="100%" stopColor="#EA580C" />
+                </linearGradient>
+              </defs>
+              <path
+                d="M20 220 L20 160 C20 142 36 126 50 130 C64 134 70 152 78 154 C86 156 100 96 112 86 C122 78 126 104 134 108 C142 112 154 36 166 28 C172 24 176 34 176 44"
+                stroke="url(#howZigzagGrad)"
+                strokeWidth="3.4"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+              <path
+                d="M29 224 L29 168 C29 152 43 138 56 142 C68 146 74 160 81 162 C88 164 102 106 114 96 C124 88 128 112 135 116 C143 120 154 48 166 40 C172 36 176 44 176 54"
+                stroke="url(#howZigzagGrad)"
+                strokeWidth="3.4"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+              <path
+                d="M38 228 L38 176 C38 162 50 150 62 154 C72 158 78 168 84 170 C90 172 104 116 116 106 C126 98 130 120 136 124 C144 128 154 60 166 52 C172 48 176 54 176 64"
+                stroke="url(#howZigzagGrad)"
+                strokeWidth="3.4"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+          </div>
 
-                <a
-                  href="https://instagram.com/epchilrobot"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-2 hover:text-white transition-colors no-underline py-0.5"
-                >
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[#0171E3] shrink-0">
-                    <rect x="2" y="2" width="20" height="20" rx="5" ry="5" />
-                    <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" />
-                    <line x1="17.5" y1="6.5" x2="17.51" y2="6.5" />
-                  </svg>
-                  <span className="truncate">Instagram: @epchilrobot</span>
-                </a>
+          <h2 className="lab">{t('how_lab')}</h2>
+          <div className="step">
+            <span className="hl" aria-hidden="true" />
+            <p>{t('how_s1')}</p>
+          </div>
+          <div className="step">
+            <span className="hl" aria-hidden="true" />
+            <p>{t('how_s2')}</p>
+          </div>
+          <div className="step">
+            <span className="hl" aria-hidden="true" />
+            <p>{t('how_s3')}</p>
+          </div>
+          <a
+            className="lnk lg more"
+            href={onNavigateToLogin ? '#login' : 'https://epchilrobot.uz/'}
+            data-app
+            data-cta
+            rel="noopener"
+          >
+            <span className="r">
+              <b data-t={t('hero_cta')}>{t('hero_cta')}</b>
+            </span>
+          </a>
+        </section>
 
+        {/* 5. ONLAYN TOʻLOVLAR VA TOʻLOVLAR NAZORATI (light) */}
+        <section className="sc pay-sc" id="tolovlar" data-bg="g" data-scene="payments">
+          {/* Giant Hand-drawn Organic Backdrop Blob (Image inspired) */}
+          <div className="pay-organic-blob-wrap" aria-hidden="true">
+            <svg
+              className="pay-organic-blob-svg"
+              viewBox="0 0 1024 768"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <defs>
+                <linearGradient id="payBlobGrad" x1="100%" y1="0%" x2="0%" y2="100%">
+                  <stop offset="0%" stopColor="#0B3BFF" stopOpacity="0.08" />
+                  <stop offset="45%" stopColor="#0EA5E9" stopOpacity="0.065" />
+                  <stop offset="80%" stopColor="#14B8A6" stopOpacity="0.05" />
+                  <stop offset="100%" stopColor="#14B8A6" stopOpacity="0.015" />
+                </linearGradient>
+              </defs>
+              <path
+                d="M 46 0 C 46 75, 100 140, 230 162 C 360 184, 440 230, 475 325 C 510 420, 488 540, 512 620 C 535 700, 630 710, 770 692 C 890 675, 965 650, 1024 610 L 1024 0 Z"
+                fill="url(#payBlobGrad)"
+                stroke="rgba(11, 59, 255, 0.07)"
+                strokeWidth="1.5"
+              />
+            </svg>
+          </div>
+          <div className="ghost ol" aria-hidden="true">
+            {t('pay_ghost')}
+          </div>
+          <p className="lab">{t('pay_lab')}</p>
+          <h2>{t('pay_title')}</h2>
+          <p className="sub-lead">
+            {t('pay_sub_s1')} {t('pay_sub_s2')}
+          </p>
+          <div className="pay-methods">
+            <span className="pay-tag">Payme</span>
+            <span className="pay-tag">Click</span>
+            <span className="pay-tag">Uzum Bank</span>
+            <span className="pay-tag">{t('pay_tag_cards')}</span>
+            <span className="pay-tag">{t('pay_tag_cash')}</span>
+          </div>
+          <div className="pay-grid">
+            <div className="pay-card">
+              <span className="pay-num">01</span>
+              <b>{t('pay_c1_title')}</b>
+              <p>{t('pay_c1_desc')}</p>
+            </div>
+            <div className="pay-card">
+              <span className="pay-num">02</span>
+              <b>{t('pay_c2_title')}</b>
+              <p>{t('pay_c2_desc')}</p>
+            </div>
+            <div className="pay-card">
+              <span className="pay-num">03</span>
+              <b>{t('pay_c3_title')}</b>
+              <p>{t('pay_c3_desc')}</p>
+            </div>
+          </div>
+          <a
+            className="lnk lg more"
+            href={onNavigateToLogin ? '#login' : 'https://epchilrobot.uz/'}
+            data-app
+            data-cta
+            rel="noopener"
+          >
+            <span className="r">
+              <b data-t={t('hero_cta')}>{t('hero_cta')}</b>
+            </span>
+          </a>
+        </section>
+
+        {/* 6. MODULES (blue, index list) */}
+        <section className="sc idx-sc" id="imkoniyatlar" data-bg="b" data-scene="modules">
+          <h2 className="lab">{t('mod_lab')}</h2>
+          <ul className="idx">
+            <li>
+              <span className="hl" aria-hidden="true" />
+              <div className="row">
+                <span className="n">01</span>
+                <h3>{t('mod_1_t')}</h3>
+                <p>{t('mod_1_d')}</p>
+              </div>
+            </li>
+            <li>
+              <span className="hl" aria-hidden="true" />
+              <div className="row">
+                <span className="n">02</span>
+                <h3>{t('mod_2_t')}</h3>
+                <p>{t('mod_2_d')}</p>
+              </div>
+            </li>
+            <li>
+              <span className="hl" aria-hidden="true" />
+              <div className="row">
+                <span className="n">03</span>
+                <h3>{t('mod_3_t')}</h3>
+                <p>{t('mod_3_d')}</p>
+              </div>
+            </li>
+            <li>
+              <span className="hl" aria-hidden="true" />
+              <div className="row">
+                <span className="n">04</span>
+                <h3>{t('mod_4_t')}</h3>
+                <p>{t('mod_4_d')}</p>
+              </div>
+            </li>
+            <li>
+              <span className="hl" aria-hidden="true" />
+              <div className="row">
+                <span className="n">05</span>
+                <h3>{t('mod_5_t')}</h3>
+                <p>{t('mod_5_d')}</p>
+              </div>
+            </li>
+            <li>
+              <span className="hl" aria-hidden="true" />
+              <div className="row">
+                <span className="n">06</span>
+                <h3>{t('mod_6_t')}</h3>
+                <p>{t('mod_6_d')}</p>
+              </div>
+            </li>
+            <li>
+              <span className="hl" aria-hidden="true" />
+              <div className="row">
+                <span className="n">07</span>
+                <h3>{t('mod_7_t')}</h3>
+                <p>{t('mod_7_d')}</p>
+              </div>
+            </li>
+            <li>
+              <span className="hl" aria-hidden="true" />
+              <div className="row">
+                <span className="n">08</span>
+                <h3>{t('mod_8_t')}</h3>
+                <p>{t('mod_8_d')}</p>
+              </div>
+            </li>
+          </ul>
+        </section>
+
+
+        {/* 8. PRICING: horizontal interactive layout adapted to our design */}
+        <section className="sc price-sc" id="narx" data-bg="w" data-scene="pricing">
+          <div className="price-head">
+            <h2 className="lab">{t('price_lab')}</h2>
+            <p className="tq">{t('price_sub')}</p>
+          </div>
+
+          <div className="price-horizontal-card">
+            {/* Left: Interactive Calculator */}
+            <div className="price-calc-col">
+              <div className="price-plan-badge">{t('price_badge')}</div>
+
+              <div className="price-main-display">
+                <span className="price-currency">$</span>
+                <span className="price-amount">{calculatedTotal}</span>
+                <span className="price-period">{t('price_period')}</span>
+              </div>
+
+              <p className="price-calc-breakdown">
+                {displayCount === 1 ? (
+                  <span>{pricingBreakdown.baseLabel}<b>{pricingBreakdown.baseAmount}</b>{pricingBreakdown.extraText}</span>
+                ) : (
+                  <span>
+                    {pricingBreakdown.baseLabel}<b>{pricingBreakdown.baseAmount}</b>{pricingBreakdown.extraText}<b>{pricingBreakdown.extraAmount}</b>
+                  </span>
+                )}
+              </p>
+
+              <div className="price-stepper-box">
+                <label htmlFor="inputRangePricing" className="price-stepper-label">
+                  {t('price_stepper_label')}{' '}
+                  <small>{t('price_stepper_sub')}</small>
+                </label>
+                <div className="price-stepper-controls">
+                  <button
+                    type="button"
+                    className="price-step-btn minus"
+                    onClick={handleDecrement}
+                    disabled={displayCount <= 1}
+                    aria-label={t('price_stepper_minus')}
+                  >
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                      <line x1="5" y1="12" x2="19" y2="12" />
+                    </svg>
+                  </button>
+                  <input
+                    id="inputRangePricing"
+                    className="price-step-input"
+                    type="text"
+                    inputMode="numeric"
+                    value={tutorCount}
+                    onChange={handleInputChange}
+                    onBlur={handleInputBlur}
+                    aria-label={t('price_stepper_input_aria')}
+                  />
+                  <button
+                    type="button"
+                    className="price-step-btn plus"
+                    onClick={handleIncrement}
+                    aria-label={t('price_stepper_plus')}
+                  >
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                      <line x1="12" y1="5" x2="12" y2="19" />
+                      <line x1="5" y1="12" x2="19" y2="12" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+
+              <div className="price-cta-wrap">
                 <a
-                  href="https://instagram.com/epchil.ai"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-2 hover:text-white transition-colors no-underline py-0.5"
+                  href={onNavigateToLogin ? '#login' : 'https://epchilrobot.uz/'}
+                  className="price-primary-btn"
+                  data-app
+                  data-cta
+                  rel="noopener"
                 >
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[#0171E3] shrink-0">
-                    <rect x="2" y="2" width="20" height="20" rx="5" ry="5" />
-                    <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" />
-                    <line x1="17.5" y1="6.5" x2="17.51" y2="6.5" />
-                  </svg>
-                  <span className="truncate">Instagram AI: @epchil.ai</span>
+                  {t('price_cta')}
                 </a>
+                <p className="price-guarantee-note">
+                  {t('price_guarantee')}
+                </p>
               </div>
             </div>
-          </div>
 
-          {/* Qator 2: Copyright va Versiya */}
-          <div className="pt-3 border-t border-white/10 flex flex-col sm:flex-row items-center justify-between gap-2 text-[11px] sm:text-xs text-white/50 text-center sm:text-left">
-            <div className="flex flex-wrap items-center justify-center sm:justify-start gap-1.5">
-              <span className="font-bold text-white tracking-tight">EPCHIL ROBOT</span>
-              <span>•</span>
-              <span>© {new Date().getFullYear()} Barcha huquqlar himoyalangan.</span>
+            {/* Right: What's included */}
+            <div className="price-features-col">
+              <h3 className="price-features-title">{t('price_feat_title')}</h3>
+              <p className="price-features-sub">{t('price_feat_sub')}</p>
+              <ul className="price-features-list">
+                <li>
+                  <b>{t('price_f1_t')}</b>
+                  <span>{t('price_f1_d')}</span>
+                </li>
+                <li>
+                  <b>{t('price_f2_t')}</b>
+                  <span>{t('price_f2_d')}</span>
+                </li>
+                <li>
+                  <b>{t('price_f3_t')}</b>
+                  <span>{t('price_f3_d')}</span>
+                </li>
+                <li>
+                  <b>{t('price_f4_t')}</b>
+                  <span>{t('price_f4_d')}</span>
+                </li>
+                <li>
+                  <b>{t('price_f5_t')}</b>
+                  <span>{t('price_f5_d')}</span>
+                </li>
+                <li>
+                  <b>{t('price_f6_t')}</b>
+                  <span>{t('price_f6_d')}</span>
+                </li>
+                <li>
+                  <b>{t('price_f7_t')}</b>
+                  <span>{t('price_f7_d')}</span>
+                </li>
+              </ul>
             </div>
-            <div className="flex flex-wrap items-center justify-center sm:justify-end gap-2 font-mono text-[10px] sm:text-[11px] text-white/40">
-              <span>V2.0.0</span>
-            </div>
           </div>
-        </footer>
-      </section>
+        </section>
 
-      {/* Fullscreen Screenshot Lightbox Modal */}
-      {isLightboxOpen && (
-        <div
-          style={{ backgroundColor: 'rgba(8, 10, 15, 0.96)' }}
-          className="fixed inset-0 z-[100] backdrop-blur-3xl flex flex-col justify-between p-3 sm:p-6 animate-fade-in overscroll-none select-none text-white"
-          onClick={() => setIsLightboxOpen(false)}
-          onWheel={(e) => {
-            e.stopPropagation();
-            e.preventDefault();
-          }}
-          onTouchMove={(e) => {
-            e.stopPropagation();
-          }}
-        >
-          {/* Lightbox Top Bar */}
-          <div
-            className="w-full max-w-7xl mx-auto flex items-center justify-between text-white shrink-0 mb-2 py-2"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex items-center gap-3">
-              <span className="font-mono text-xs sm:text-sm font-bold bg-white/20 px-3 py-1 rounded-full text-white">
-                {activeScreenIndex + 1} / {SOHUB_SCREENS.length}
-              </span>
-              <h3 className="text-base sm:text-xl font-bold text-white tracking-tight drop-shadow-md">
-                {SOHUB_SCREENS[activeScreenIndex].title}
-              </h3>
-            </div>
-
-            <button
-              type="button"
-              onClick={() => setIsLightboxOpen(false)}
-              className="px-4 py-2 rounded-full bg-white/20 hover:bg-white/30 text-white font-semibold text-xs sm:text-sm backdrop-blur-md border border-white/30 transition-all cursor-pointer flex items-center gap-2 shadow-xl active:scale-95"
-              aria-label="Yopish"
-            >
-              <span>Yopish (Esc)</span>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <line x1="18" y1="6" x2="6" y2="18" />
-                <line x1="6" y1="6" x2="18" y2="18" />
-              </svg>
-            </button>
-          </div>
-
-          {/* Lightbox Main Image Canvas */}
-          <div
-            className="relative flex-1 w-full max-w-7xl mx-auto flex items-center justify-center overflow-hidden my-auto"
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* Prev Lightbox Button */}
-            <button
-              type="button"
-              onClick={() => setActiveScreenIndex((prev) => (prev > 0 ? prev - 1 : SOHUB_SCREENS.length - 1))}
-              className="absolute left-2 sm:left-5 z-20 w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-black/60 hover:bg-black/85 text-white backdrop-blur-xl border border-white/25 flex items-center justify-center transition-all cursor-pointer active:scale-95 shadow-2xl"
-              aria-label="Oldingi"
-              title="Oldingi"
-            >
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <polyline points="15 18 9 12 15 6" />
-              </svg>
-            </button>
-
-            <img
-              src={SOHUB_SCREENS[activeScreenIndex].src}
-              alt={SOHUB_SCREENS[activeScreenIndex].alt}
-              className="max-w-full max-h-[82vh] object-contain rounded-xl sm:rounded-2xl shadow-[0_25px_70px_rgba(0,0,0,0.8)] select-none"
-            />
-
-            {/* Next Lightbox Button */}
-            <button
-              type="button"
-              onClick={() => setActiveScreenIndex((prev) => (prev < SOHUB_SCREENS.length - 1 ? prev + 1 : 0))}
-              className="absolute right-2 sm:right-5 z-20 w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-black/60 hover:bg-black/85 text-white backdrop-blur-xl border border-white/25 flex items-center justify-center transition-all cursor-pointer active:scale-95 shadow-2xl"
-              aria-label="Keyingi"
-              title="Keyingi"
-            >
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <polyline points="9 18 15 12 9 6" />
-              </svg>
-            </button>
-          </div>
-
-          {/* Lightbox Bottom Indicator */}
-          <div
-            className="w-full max-w-7xl mx-auto flex items-center justify-center gap-1.5 sm:gap-2 pt-2 shrink-0"
-            onClick={(e) => e.stopPropagation()}
-          >
-            {SOHUB_SCREENS.map((s, idx) => (
-              <button
-                key={s.id}
-                type="button"
-                onClick={() => setActiveScreenIndex(idx)}
-                className={`h-2 sm:h-2.5 rounded-full transition-all duration-200 cursor-pointer ${
-                  activeScreenIndex === idx ? 'w-8 bg-[#0171E3]' : 'w-2 sm:w-2.5 bg-white/30 hover:bg-white/60'
-                }`}
-                aria-label={s.name}
+        {/* 9. FAQ (white) */}
+        <section className="sc faqsc" id="savollar" data-bg="w" data-scene="faq">
+          {/* Hand-drawn Squiggly Ribbon Accent (Image 1 inspired) */}
+          <div className="faq-ribbon-wrap" aria-hidden="true">
+            <svg className="faq-ribbon-svg" width="220" height="260" viewBox="0 0 220 260" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <defs>
+                <linearGradient id="faqRibbonGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stopColor="#0B3BFF" stopOpacity="0.18" />
+                  <stop offset="60%" stopColor="#0B3BFF" stopOpacity="0.10" />
+                  <stop offset="100%" stopColor="#0B3BFF" stopOpacity="0.03" />
+                </linearGradient>
+              </defs>
+              <path
+                d="M 32 245 C 32 190, 180 195, 185 135 C 190 75, 55 90, 50 48 C 45 15, 150 25, 190 18"
+                stroke="url(#faqRibbonGrad)"
+                strokeWidth="28"
+                strokeLinecap="round"
+                strokeLinejoin="round"
               />
-            ))}
+            </svg>
           </div>
-        </div>
-      )}
 
+          <h2 className="lab">{t('faq_lab')}</h2>
+          <div className="faq">
+            <details>
+              <summary>
+                <span>{t('faq_q1')}</span>
+                <svg className="faq-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <line x1="12" y1="5" x2="12" y2="19" />
+                  <line x1="5" y1="12" x2="19" y2="12" />
+                </svg>
+              </summary>
+              <div className="faq-ans">
+                <p>{t('faq_a1')}</p>
+              </div>
+            </details>
+            <details>
+              <summary>
+                <span>{t('faq_q2')}</span>
+                <svg className="faq-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <line x1="12" y1="5" x2="12" y2="19" />
+                  <line x1="5" y1="12" x2="19" y2="12" />
+                </svg>
+              </summary>
+              <div className="faq-ans">
+                <p>{t('faq_a2')}</p>
+              </div>
+            </details>
+            <details>
+              <summary>
+                <span>{t('faq_q3')}</span>
+                <svg className="faq-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <line x1="12" y1="5" x2="12" y2="19" />
+                  <line x1="5" y1="12" x2="19" y2="12" />
+                </svg>
+              </summary>
+              <div className="faq-ans">
+                <p>{t('faq_a3')}</p>
+              </div>
+            </details>
+            <details>
+              <summary>
+                <span>{t('faq_q4')}</span>
+                <svg className="faq-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <line x1="12" y1="5" x2="12" y2="19" />
+                  <line x1="5" y1="12" x2="19" y2="12" />
+                </svg>
+              </summary>
+              <div className="faq-ans">
+                <p>{t('faq_a4')}</p>
+              </div>
+            </details>
+            <details>
+              <summary>
+                <span>{t('faq_q5')}</span>
+                <svg className="faq-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <line x1="12" y1="5" x2="12" y2="19" />
+                  <line x1="5" y1="12" x2="19" y2="12" />
+                </svg>
+              </summary>
+              <div className="faq-ans">
+                <p>{t('faq_a5')}</p>
+              </div>
+            </details>
+            <details>
+              <summary>
+                <span>{t('faq_q6')}</span>
+                <svg className="faq-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <line x1="12" y1="5" x2="12" y2="19" />
+                  <line x1="5" y1="12" x2="19" y2="12" />
+                </svg>
+              </summary>
+              <div className="faq-ans">
+                <p>{t('faq_a6')}</p>
+              </div>
+            </details>
+            <details>
+              <summary>
+                <span>{t('faq_q7')}</span>
+                <svg className="faq-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <line x1="12" y1="5" x2="12" y2="19" />
+                  <line x1="5" y1="12" x2="19" y2="12" />
+                </svg>
+              </summary>
+              <div className="faq-ans">
+                <p>{t('faq_a7')}</p>
+              </div>
+            </details>
+          </div>
+          <a
+            className="lnk lg more"
+            href="https://t.me/bkzd19"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            <span className="r">
+              <b data-t={t('faq_support_btn')}>{t('faq_support_btn')}</b>
+            </span>
+          </a>
+        </section>
+
+        {/* 10. FINAL CTA + FOOTER (white) */}
+        <section className="sc cta" id="boglanish" data-bg="w" data-scene="final">
+          {/* Bottom Organic Teal Wave Blob Accent (User inspired) */}
+          <div className="cta-organic-blob-wrap" aria-hidden="true">
+            <svg
+              className="cta-organic-blob-svg"
+              viewBox="0 0 1024 768"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+              preserveAspectRatio="none"
+            >
+              <defs>
+                <linearGradient id="ctaOrganicGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stopColor="#3FC5C6" stopOpacity="0.95" />
+                  <stop offset="60%" stopColor="#2BB8B9" stopOpacity="0.88" />
+                  <stop offset="100%" stopColor="#1E9E9F" stopOpacity="0.80" />
+                </linearGradient>
+              </defs>
+              <path
+                d="M 1024 160 C 960 115, 880 85, 760 72 C 620 58, 530 80, 505 165 C 480 250, 502 360, 470 455 C 435 550, 350 595, 220 620 C 90 645, 40 705, 35 768 L 1024 768 Z"
+                fill="url(#ctaOrganicGrad)"
+              />
+              <path
+                d="M 1024 220 C 970 185, 900 155, 800 145 C 680 135, 600 155, 570 230 C 540 310, 560 410, 530 495 C 495 580, 420 620, 310 650 C 190 680, 140 725, 120 768"
+                stroke="rgba(255, 255, 255, 0.28)"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+                fill="none"
+              />
+            </svg>
+          </div>
+
+          <div className="cta-main">
+            <h2 className="cta-headline">
+              {t('final_cta_h2_p1')}{' '}
+              <span className="cta-hl">
+                {t('final_cta_h2_hl')}
+                <svg className="cta-swoosh-svg" viewBox="0 0 240 16" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                  <path d="M 4 11 C 60 5, 170 4, 236 10" stroke="#0B3BFF" strokeWidth="3.5" strokeLinecap="round" opacity="0.65" />
+                </svg>
+              </span>{' '}
+              {t('final_cta_h2_p2')}
+            </h2>
+            <div className="cta-action-wrap">
+              <div className="cta-btn-box">
+                <a
+                  className="lnk lg more"
+                  href={onNavigateToLogin ? '#login' : 'https://epchilrobot.uz/'}
+                  data-app
+                  data-cta
+                  rel="noopener"
+                >
+                  <span className="r">
+                    <b data-t={t('hero_cta')}>{t('hero_cta')}</b>
+                  </span>
+                </a>
+              </div>
+              <p className="cta-subnote">{t('final_cta_sub')}</p>
+            </div>
+          </div>
+          <footer className="foot" id="aloqa">
+            <div className="foot-inner">
+              <p className="lab">{t('foot_lab')}</p>
+              <nav aria-label={t('foot_lab')}>
+                <a className="lnk" href="https://t.me/bkzd19" target="_blank" rel="noopener noreferrer">
+                  <span className="r">
+                    <b data-t="Telegram">Telegram</b>
+                  </span>
+                </a>
+                <a className="lnk" href="https://instagram.com/epchilrobot" target="_blank" rel="noopener noreferrer">
+                  <span className="r">
+                    <b data-t="Instagram">Instagram</b>
+                  </span>
+                </a>
+                <a className="lnk" href="tel:+998332220301">
+                  <span className="r">
+                    <b data-t="+998 (33) 222-03-01">+998 (33) 222-03-01</b>
+                  </span>
+                </a>
+              </nav>
+              <small className="foot-copy">{t('foot_copy')}</small>
+            </div>
+          </footer>
+        </section>
+      </main>
     </div>
   );
 }
-

@@ -303,7 +303,7 @@ const AdminDashboard = ({
                 if (setActiveTab) setActiveTab('finance');
               }}
             >
-              Kassaga o'tish →
+              Kassaga o'tish
             </button>
           </div>
 
@@ -350,7 +350,7 @@ const AdminDashboard = ({
                 if (setActiveTab) setActiveTab('leads');
               }}
             >
-              Lidlarga o'tish →
+              Lidlarga o'tish
             </button>
           </div>
 
@@ -401,7 +401,7 @@ const AdminDashboard = ({
                 if (setActiveTab) setActiveTab('attendance');
               }}
             >
-              Davomat jurnaliga o'tish →
+              Davomat jurnaliga o'tish
             </button>
           </div>
 

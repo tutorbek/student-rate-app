@@ -118,6 +118,7 @@ const ScheduleView = ({
   const [extraTargetType, setExtraTargetType] = useState('all'); // 'all' | 'custom'
   const [extraSelectedStudentIds, setExtraSelectedStudentIds] = useState([]);
   const [extraStudentSearch, setExtraStudentSearch] = useState('');
+  const [extraLessonToDelete, setExtraLessonToDelete] = useState(null);
 
   // Students belonging to the group currently selected in the Extra Lesson modal
   const modalGroupStudents = useMemo(() => {
@@ -237,11 +238,13 @@ const ScheduleView = ({
 
   // Escape key and background scroll lock handler for all modals and dropdowns
   const isAnyScheduleModalOpen = Boolean(
-    showModal || showExtraLessonModal || selectedGroupForStudents
+    showModal || showExtraLessonModal || selectedGroupForStudents || extraLessonToDelete
   );
 
   useModalDismiss(isAnyScheduleModalOpen, () => {
-    if (isGroupDropdownOpen) {
+    if (extraLessonToDelete) {
+      setExtraLessonToDelete(null);
+    } else if (isGroupDropdownOpen) {
       setIsGroupDropdownOpen(false);
     } else if (isExtraGroupDropdownOpen) {
       setIsExtraGroupDropdownOpen(false);
@@ -253,6 +256,16 @@ const ScheduleView = ({
       setShowModal(false);
     }
   });
+
+  const handleConfirmDeleteExtraLesson = () => {
+    if (!extraLessonToDelete) return;
+    const lessonId = extraLessonToDelete.id;
+    onDeleteExtraLesson?.(lessonId);
+    setExtraLessonToDelete(null);
+    if (editingExtraLesson && editingExtraLesson.id === lessonId) {
+      setShowExtraLessonModal(false);
+    }
+  };
 
   // Close dropdown whenever modal closes
   useEffect(() => {
@@ -629,9 +642,7 @@ const ScheduleView = ({
                                   title="Extra Lessonni o'chirish"
                                   onClick={(e) => {
                                     e.stopPropagation();
-                                    if (window.confirm("Haqiqatan ham ushbu qo'shimcha darsni (Extra Lesson) o'chirmoqchimisiz?")) {
-                                      onDeleteExtraLesson?.(extraLesson.id);
-                                    }
+                                    setExtraLessonToDelete(extraLesson);
                                   }}
                                 >
                                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
@@ -1302,10 +1313,7 @@ const ScheduleView = ({
                   type="button"
                   className="btn-danger-outline scale-active"
                   onClick={() => {
-                    if (window.confirm("Haqiqatan ham ushbu Extra Lessonni o'chirmoqchimisiz?")) {
-                      onDeleteExtraLesson?.(editingExtraLesson.id);
-                      setShowExtraLessonModal(false);
-                    }
+                    setExtraLessonToDelete(editingExtraLesson);
                   }}
                 >
                   O'chirish
@@ -1480,7 +1488,7 @@ const ScheduleView = ({
                     onSelectGroup(gId);
                   }}
                 >
-                  <span>Guruhga o'tish →</span>
+                  <span>Guruhga o'tish</span>
                 </button>
               ) : (
                 <button
@@ -1491,6 +1499,146 @@ const ScheduleView = ({
                   <span>Yopish</span>
                 </button>
               )}
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {/* Extra Lesson Delete Confirmation Modal */}
+      {extraLessonToDelete && createPortal(
+        <div
+          className="modal-overlay extra-delete-modal-overlay"
+          onClick={() => setExtraLessonToDelete(null)}
+          style={{ zIndex: 2200 }}
+        >
+          <div
+            className="modal-content glass modal-confirm extra-delete-confirm-modal"
+            onClick={(e) => e.stopPropagation()}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="delete-extra-lesson-title"
+          >
+            <button
+              type="button"
+              className="modal-close-btn"
+              onClick={() => setExtraLessonToDelete(null)}
+              title="Yopish"
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18" />
+                <line x1="6" y1="6" x2="18" y2="18" />
+              </svg>
+            </button>
+
+            <div className="extra-delete-modal-header">
+              <div className="extra-delete-icon-badge">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="3 6 5 6 21 6" />
+                  <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                  <line x1="10" y1="11" x2="10" y2="17" />
+                  <line x1="14" y1="11" x2="14" y2="17" />
+                </svg>
+              </div>
+              <h3 id="delete-extra-lesson-title" className="modal-title extra-delete-modal-title">
+                Extra darsni o'chirish
+              </h3>
+            </div>
+
+            <p className="modal-warning-text extra-delete-warning-text">
+              Haqiqatan ham ushbu qo'shimcha darsni (Extra Lesson) o'chirmoqchimisiz?
+            </p>
+
+            {/* Preview of extra lesson to be deleted */}
+            {(() => {
+              const grp = groups.find((g) => String(g.id) === String(extraLessonToDelete.groupId));
+              const dayName = getDayNameUzFromDateStr(extraLessonToDelete.date);
+              const dateLabel = formatExtraLessonDateLabel(extraLessonToDelete.date);
+
+              return (
+                <div className="extra-delete-preview-card">
+                  <div className="extra-delete-preview-top">
+                    {grp ? (
+                      <div className="extra-delete-preview-group">
+                        <span
+                          className="extra-delete-group-icon avatar-circle"
+                          style={{
+                            width: 24,
+                            height: 24,
+                            minWidth: 24,
+                            maxWidth: 24,
+                            borderRadius: 6,
+                            overflow: 'hidden',
+                            flexShrink: 0
+                          }}
+                        >
+                          {renderGroupIcon(grp.icon, 14)}
+                        </span>
+                        <span className="extra-delete-group-name" title={grp.name}>
+                          {grp.name}
+                        </span>
+                      </div>
+                    ) : (
+                      <div className="extra-delete-preview-group">
+                        <span className="extra-delete-group-name">Guruh</span>
+                      </div>
+                    )}
+                    <span className="extra-delete-preview-badge">
+                      {dateLabel}{dayName ? ` (${dayName})` : ''}
+                    </span>
+                  </div>
+
+                  <div className="extra-delete-preview-details">
+                    <div className="extra-delete-detail-item">
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <circle cx="12" cy="12" r="10" />
+                        <polyline points="12 6 12 12 16 14" />
+                      </svg>
+                      <span>
+                        {extraLessonToDelete.startTime}
+                        {extraLessonToDelete.endTime ? ` - ${extraLessonToDelete.endTime}` : ''}
+                      </span>
+                    </div>
+
+                    {extraLessonToDelete.room && (
+                      <div className="extra-delete-detail-item">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+                          <polyline points="9 22 9 12 15 12 15 22" />
+                        </svg>
+                        <span>{extraLessonToDelete.room}</span>
+                      </div>
+                    )}
+
+                    {extraLessonToDelete.topic && (
+                      <div className="extra-delete-detail-item extra-delete-topic">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
+                          <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
+                        </svg>
+                        <span className="extra-delete-topic-text">{extraLessonToDelete.topic}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })()}
+
+            <div className="modal-actions extra-delete-actions">
+              <button
+                type="button"
+                className="btn btn-secondary scale-active"
+                onClick={() => setExtraLessonToDelete(null)}
+              >
+                Bekor qilish
+              </button>
+              <button
+                type="button"
+                className="btn btn-danger scale-active"
+                onClick={handleConfirmDeleteExtraLesson}
+              >
+                O'chirish
+              </button>
             </div>
           </div>
         </div>,
@@ -2277,6 +2425,196 @@ const ScheduleView = ({
         .btn-danger-outline:hover {
           background: rgba(239, 68, 68, 0.1);
           border-color: #EF4444;
+        }
+
+        /* Extra Lesson Delete Confirmation Modal */
+        .extra-delete-modal-overlay {
+          z-index: 2200;
+        }
+
+        .extra-delete-confirm-modal {
+          max-width: 440px;
+          border-radius: 20px;
+          padding: 24px 22px 20px;
+          position: relative;
+        }
+
+        .extra-delete-modal-header {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          margin-bottom: 12px;
+          padding-right: 32px;
+        }
+
+        .extra-delete-icon-badge {
+          width: 42px;
+          height: 42px;
+          border-radius: 12px;
+          background: rgba(239, 68, 68, 0.1);
+          color: var(--apple-red, #EF4444);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          flex-shrink: 0;
+          border: 1px solid rgba(239, 68, 68, 0.2);
+        }
+
+        [data-theme="dark"] .extra-delete-icon-badge {
+          background: rgba(239, 68, 68, 0.16);
+          border-color: rgba(239, 68, 68, 0.28);
+          color: #F87171;
+        }
+
+        .extra-delete-modal-title {
+          font-size: 1.15rem;
+          font-weight: 700;
+          color: var(--text-primary);
+          margin: 0;
+          padding: 0;
+          border: none;
+          letter-spacing: -0.01em;
+        }
+
+        .extra-delete-warning-text {
+          font-size: 0.92rem;
+          line-height: 1.5;
+          color: var(--text-secondary);
+          margin: 0 0 16px 0;
+        }
+
+        .extra-delete-preview-card {
+          background: rgba(0, 0, 0, 0.03);
+          border: 1px solid var(--border-color);
+          border-radius: var(--radius-md, 12px);
+          padding: 12px 14px;
+          margin-bottom: 20px;
+          display: flex;
+          flex-direction: column;
+          gap: 8px;
+        }
+
+        [data-theme="dark"] .extra-delete-preview-card {
+          background: rgba(255, 255, 255, 0.04);
+          border-color: rgba(255, 255, 255, 0.08);
+        }
+
+        .extra-delete-preview-top {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 12px;
+        }
+
+        .extra-delete-preview-group {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          font-weight: 600;
+          font-size: 0.88rem;
+          color: var(--text-primary);
+          min-width: 0;
+          flex: 1;
+        }
+
+        .extra-delete-preview-group .extra-delete-group-name {
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+
+        .extra-delete-group-icon {
+          width: 24px !important;
+          height: 24px !important;
+          min-width: 24px !important;
+          max-width: 24px !important;
+          border-radius: 6px !important;
+          overflow: hidden !important;
+          display: inline-flex !important;
+          align-items: center !important;
+          justify-content: center !important;
+          flex-shrink: 0 !important;
+          background: rgba(0, 0, 0, 0.05);
+        }
+
+        .extra-delete-group-icon img {
+          width: 100% !important;
+          height: 100% !important;
+          max-width: 100% !important;
+          max-height: 100% !important;
+          object-fit: cover !important;
+          display: block !important;
+          border-radius: inherit !important;
+        }
+
+        .extra-delete-group-icon svg {
+          width: 14px !important;
+          height: 14px !important;
+          display: block !important;
+        }
+
+        .extra-delete-preview-badge {
+          font-size: 0.76rem;
+          font-weight: 600;
+          padding: 3px 8px;
+          border-radius: 6px;
+          background: rgba(124, 58, 237, 0.1);
+          color: #7C3AED;
+          border: 1px solid rgba(124, 58, 237, 0.2);
+          white-space: nowrap;
+        }
+
+        [data-theme="dark"] .extra-delete-preview-badge {
+          background: rgba(167, 139, 250, 0.15);
+          color: #DDD6FE;
+          border-color: rgba(167, 139, 250, 0.25);
+        }
+
+        .extra-delete-preview-details {
+          display: flex;
+          flex-wrap: wrap;
+          align-items: center;
+          gap: 10px;
+          font-size: 0.8rem;
+          color: var(--text-secondary);
+        }
+
+        .extra-delete-detail-item {
+          display: inline-flex;
+          align-items: center;
+          gap: 5px;
+        }
+
+        .extra-delete-topic {
+          width: 100%;
+          font-style: italic;
+          color: var(--text-primary);
+        }
+
+        .extra-delete-topic-text {
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+
+        .extra-delete-actions {
+          display: flex;
+          gap: 10px;
+          margin-top: 0;
+          padding-top: 14px;
+          border-top: 1px solid var(--border-color);
+        }
+
+        .extra-delete-actions .btn {
+          flex: 1;
+          height: 42px;
+          border-radius: 10px;
+          font-size: 0.92rem;
+          font-weight: 600;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
         }
 
         /* Extra Lesson Target Scope Segmented */

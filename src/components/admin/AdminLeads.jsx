@@ -722,7 +722,7 @@ const AdminLeads = ({
                               onClick={() => setActiveTab('groups')}
                               title="Guruhlar bo'limiga o'tish"
                             >
-                              Guruh →
+                              Guruh
                             </button>
                           )}
                         </div>
@@ -1105,7 +1105,7 @@ const AdminLeads = ({
                             setActiveTab('groups');
                           }}
                         >
-                          Guruhlar bo'limiga o'tish →
+                          Guruhlar bo'limiga o'tish
                         </button>
                       </div>
                     )}

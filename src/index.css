@@ -206,11 +206,6 @@ html, body, #root, * {
     padding-top: calc(54px + env(safe-area-inset-top, 0px));
     padding-left: 0;
   }
-
-  [data-is-tma="true"] .app-container:not(.student-app-root),
-  [data-tg-fullscreen="true"] .app-container:not(.student-app-root) {
-    padding-top: calc(var(--tma-header-height, 84px) + 8px) !important;
-  }
 }
 
 .app-container.student-app-root {
@@ -251,11 +246,6 @@ html, body, #root, * {
   .main-content.student-main-content {
     padding: 0 !important;
     padding-bottom: 0 !important;
-  }
-
-  [data-is-tma="true"] .main-content:not(.student-main-content),
-  [data-tg-fullscreen="true"] .main-content:not(.student-main-content) {
-    padding-bottom: calc(76px + max(env(safe-area-inset-bottom, 0px), var(--tg-safe-bottom, 0px), var(--tg-content-safe-bottom, 0px), var(--tma-bottom-clearance, 48px))) !important;
   }
 }
 
@@ -1504,10 +1494,10 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
   left: 0;
   right: 0;
   z-index: 1000;
-  background: rgba(255, 255, 255, 0.85);
-  backdrop-filter: blur(12px) saturate(160%);
-  -webkit-backdrop-filter: blur(12px) saturate(160%);
-  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+  background: rgba(255, 255, 255, 0.82);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
   width: 100%;
   padding-top: env(safe-area-inset-top, 0px);
   box-sizing: border-box;
@@ -2442,60 +2432,6 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
   position: relative;
 }
 
-/* Telegram Mini App Adaptations for Landing & Login Headers */
-@media (max-width: 900px) {
-  [data-is-tma="true"] .landing-root header,
-  [data-is-tma="true"] .login-root header,
-  [data-tg-fullscreen="true"] .landing-root header,
-  [data-tg-fullscreen="true"] .login-root header {
-    padding-top: var(--tma-status-bar-height, max(env(safe-area-inset-top, 0px), var(--tg-safe-top, 0px), 36px)) !important;
-    min-height: var(--tma-header-height, 84px) !important;
-  }
-
-  [data-is-tma="true"] .landing-root header > div,
-  [data-is-tma="true"] .login-root header > div,
-  [data-tg-fullscreen="true"] .landing-root header > div,
-  [data-tg-fullscreen="true"] .login-root header > div {
-    height: 48px !important;
-    min-height: 48px !important;
-    padding-left: max(88px, calc(var(--tg-safe-left, 0px) + 76px)) !important;
-    padding-right: max(88px, calc(var(--tg-safe-right, 0px) + 76px)) !important;
-    justify-content: center !important;
-  }
-
-  [data-is-tma="true"] .landing-root header .navbar-brand-section,
-  [data-is-tma="true"] .login-root header .navbar-brand-section,
-  [data-tg-fullscreen="true"] .landing-root header .navbar-brand-section,
-  [data-tg-fullscreen="true"] .login-root header .navbar-brand-section {
-    margin: 0 auto !important;
-  }
-
-  [data-is-tma="true"] .landing-root header .shrink-0:not(.navbar-brand-section),
-  [data-is-tma="true"] .login-root header .shrink-0:not(.navbar-brand-section),
-  [data-tg-fullscreen="true"] .landing-root header .shrink-0:not(.navbar-brand-section),
-  [data-tg-fullscreen="true"] .login-root header .shrink-0:not(.navbar-brand-section) {
-    display: none !important;
-  }
-}
-
-/* Landing & Login Page 125% Scale on Desktop */
-@media (min-width: 1024px) {
-  html:has(.landing-root),
-  html:has(.login-root),
-  html.landing-page-active,
-  html.login-page-active {
-    font-size: 118%;
-  }
-}
-
-@media (min-width: 1280px) {
-  html:has(.landing-root),
-  html:has(.login-root),
-  html.landing-page-active,
-  html.login-page-active {
-    font-size: 125%;
-  }
-}
 
 .landing-root ::selection,
 .landing-root *::selection {

@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React from 'react';
 
 const IconSun = ({ size = 15 }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
@@ -179,19 +179,6 @@ const Sidebar = ({ activeTab, setActiveTab, userRole, onLogout, theme, toggleThe
 
   const hasSettings = filteredMenuItems.some((item) => item.id === 'settings');
 
-  const mobileMenuItems = useMemo(() => {
-    const items = [...filteredMenuItems];
-    if (userRole !== 'student' && !items.some((item) => item.id === 'settings')) {
-      items.push({
-        id: 'settings',
-        label: 'Sozlamalar',
-        shortLabel: 'Profil',
-        icon: <IconSettings size={19} />,
-      });
-    }
-    return items;
-  }, [filteredMenuItems, userRole]);
-
   return (
     <>
       {/* Desktop Left Sidebar: Compact, Apple Minimalist with Centered Navigation & Magnification */}
@@ -209,7 +196,7 @@ const Sidebar = ({ activeTab, setActiveTab, userRole, onLogout, theme, toggleThe
               className="sidebar-brand-icon"
             />
             <h1 className="sidebar-logo-text">
-              EPCHIL <span className="logo-badge">ROBOT</span>
+              EPCHIL <span className="logo-badge">COM</span>
             </h1>
           </div>
         </div>
@@ -325,22 +312,8 @@ const Sidebar = ({ activeTab, setActiveTab, userRole, onLogout, theme, toggleThe
             className="sidebar-brand-icon"
           />
           <h1 className="sidebar-logo-text">
-            EPCHIL <span className="logo-badge">ROBOT</span>
+            EPCHIL <span className="logo-badge">COM</span>
           </h1>
-          {toggleTheme && (
-            <button
-              type="button"
-              className="navbar-brand-theme-btn"
-              onClick={(e) => {
-                e.stopPropagation();
-                toggleTheme();
-              }}
-              aria-label="Mavzuni o'zgartirish"
-              title="Mavzuni o'zgartirish"
-            >
-              {theme === 'dark' ? <IconSun size={15} /> : <IconMoon size={15} />}
-            </button>
-          )}
         </div>
 
         <div className="mobile-header-actions">
@@ -383,7 +356,7 @@ const Sidebar = ({ activeTab, setActiveTab, userRole, onLogout, theme, toggleThe
       {/* Fixed Mobile Bottom Navigation Bar (<= 900px) */}
       {userRole !== 'student' && (
         <nav className="mobile-bottom-navbar" aria-label="Mobil navigatsiya">
-          {mobileMenuItems.map((item) => (
+          {filteredMenuItems.map((item) => (
             <button
               key={item.id}
               type="button"
@@ -902,43 +875,6 @@ const Sidebar = ({ activeTab, setActiveTab, userRole, onLogout, theme, toggleThe
           }
           .mobile-bottom-navbar {
             display: flex !important;
-          }
-
-          /* Telegram Mini App Adaptations: avoid overlap with floating capsules */
-          [data-is-tma="true"] .mobile-top-header,
-          [data-tg-fullscreen="true"] .mobile-top-header {
-            height: var(--tma-header-height, 84px) !important;
-            padding-top: var(--tma-status-bar-height, max(env(safe-area-inset-top, 0px), var(--tg-safe-top, 0px), 36px)) !important;
-            padding-bottom: 0 !important;
-            padding-left: max(88px, calc(var(--tg-safe-left, 0px) + 76px)) !important;
-            padding-right: max(88px, calc(var(--tg-safe-right, 0px) + 76px)) !important;
-            justify-content: center !important;
-          }
-
-          [data-is-tma="true"] .mobile-top-header .mobile-brand,
-          [data-tg-fullscreen="true"] .mobile-top-header .mobile-brand {
-            display: flex !important;
-            justify-content: center !important;
-            align-items: center !important;
-            height: 48px !important;
-            width: auto !important;
-            gap: 8px !important;
-          }
-
-          [data-is-tma="true"] .navbar-brand-theme-btn,
-          [data-tg-fullscreen="true"] .navbar-brand-theme-btn {
-            display: inline-flex !important;
-          }
-
-          [data-is-tma="true"] .mobile-top-header .mobile-header-actions,
-          [data-tg-fullscreen="true"] .mobile-top-header .mobile-header-actions {
-            display: none !important;
-          }
-
-          [data-is-tma="true"] .mobile-bottom-navbar,
-          [data-tg-fullscreen="true"] .mobile-bottom-navbar {
-            padding-bottom: max(env(safe-area-inset-bottom, 0px), var(--tg-safe-bottom, 0px), var(--tg-content-safe-bottom, 0px), var(--tma-bottom-clearance, 48px)) !important;
-            height: calc(56px + max(env(safe-area-inset-bottom, 0px), var(--tg-safe-bottom, 0px), var(--tg-content-safe-bottom, 0px), var(--tma-bottom-clearance, 48px))) !important;
           }
         }
 

@@ -1,11 +1,13 @@
 <!doctype html>
-<html lang="uz" class="min-h-full">
+<html lang="en" class="min-h-full">
   <head>
     <meta charset="UTF-8" />
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script>
       (function() {
         try {
+          var savedLang = localStorage.getItem('rsa_landing_lang') || 'en';
+          document.documentElement.lang = savedLang;
           var isAuth = localStorage.getItem('rsa_authenticated') === 'true';
           var saved = localStorage.getItem('rsa_theme');
           var isDark = isAuth && saved === 'dark';
@@ -13,36 +15,6 @@
           document.documentElement.setAttribute('data-theme', theme);
           document.documentElement.style.backgroundColor = isDark ? '#202124' : '#F5F5F7';
           document.documentElement.style.colorScheme = theme;
-
-          var metaThemeColor = document.getElementById('meta-theme-color');
-          if (metaThemeColor) {
-            metaThemeColor.setAttribute('content', isDark ? '#202124' : '#F5F5F7');
-          }
-
-          // Early Telegram Mini App detection to prevent layout jumps/flash
-          try {
-            var tg = window.Telegram && window.Telegram.WebApp;
-            var hasInitData = tg && typeof tg.initData === 'string' && tg.initData.trim().length > 0;
-            var hasProxy = Boolean(
-              window.TelegramWebviewProxy ||
-              (window.webkit && window.webkit.messageHandlers && (window.webkit.messageHandlers.telegramWebviewProxy || window.webkit.messageHandlers.telegram))
-            );
-            var platform = (tg && tg.platform) ? tg.platform.toLowerCase() : '';
-            var isKnownPlatform = platform.length > 0 && platform !== 'unknown';
-            var isTMA = Boolean(hasInitData || hasProxy || isKnownPlatform);
-
-            if (isTMA) {
-              document.documentElement.setAttribute('data-is-tma', 'true');
-              document.documentElement.style.setProperty('--tma-status-bar-height', '36px');
-              document.documentElement.style.setProperty('--tma-header-height', '84px');
-              document.documentElement.style.setProperty('--student-header-total-height', '84px');
-              document.documentElement.style.setProperty('--tma-bottom-clearance', '54px');
-              if (tg && tg.ready) tg.ready();
-              if (tg && tg.expand) tg.expand();
-            } else {
-              document.documentElement.setAttribute('data-is-tma', 'false');
-            }
-          } catch (eTma) {}
 
           function syncFavicons(currentTheme) {
             var dark = currentTheme === 'dark';
@@ -139,6 +111,9 @@
         body {
           zoom: 0.9;
         }
+        html.landing-page-active body {
+          zoom: 1 !important;
+        }
       }
       html[data-theme="dark"],
       html[data-theme="dark"] body {
@@ -162,24 +137,25 @@
 
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-    <meta name="theme-color" content="#F5F5F7" id="meta-theme-color" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     
     <!-- SEO Meta Teglar -->
-    <title>Epchil Robot - Bilimni Like bilan taqdirlash va faol ta'lim platformasi</title>
-    <meta name="description" content="Epchil Robot platformasi orqali darslarda faol qatnashing, haftalik va oylik reytinglarda peshqadam bo'ling hamda bilimingizni qimmatli Like-lar bilan taqdirlang."/>
-    <meta name="keywords" content="Epchil Robot, Epchil, Robot, login, tizimga kirish, faol ta'lim, reyting tizimi, guruh raqobati, maktab platformasi, ta'lim, tutorbek"/>
+    <title>EPCHIL COM - Bilimni Like bilan taqdirlash va faol ta'lim platformasi</title>
+    <meta name="description" content="EPCHIL COM platformasi orqali darslarda faol qatnashing, haftalik va oylik reytinglarda peshqadam bo'ling hamda bilimingizni qimmatli Like-lar bilan taqdirlang."/>
+    <meta name="keywords" content="EPCHIL COM, Epchil, login, tizimga kirish, faol ta'lim, reyting tizimi, guruh raqobati, maktab platformasi, ta'lim, tutorbek"/>
     <meta name="author" content="TUTORBEK"/>
     <meta name="robots" content="index, follow"/>
     
     <!-- Open Graph / Facebook SEO -->
     <meta property="og:type" content="website"/>
-    <meta property="og:title" content="Epchil Robot - Faol ta'lim va reyting platformasi."/>
+    <meta property="og:title" content="EPCHIL COM - Faol ta'lim va reyting platformasi."/>
     <meta property="og:description" content="Bilim olishingizni Like bilan taqdirlang! Haftalik va oylik musobaqalarda g'olib bo'ling."/>
-    <meta property="og:site_name" content="Epchil Robot"/>
+    <meta property="og:site_name" content="EPCHIL COM"/>
 
     <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&display=swap" rel="stylesheet"/>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@800;900&family=Manrope:wght@400;600&family=Outfit:wght@400;500;600;700;800;900&display=swap" rel="stylesheet"/>
 
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com?plugins=forms"></script>

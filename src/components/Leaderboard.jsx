@@ -1155,19 +1155,21 @@ const Leaderboard = ({
         }
 
         .category-filter-item {
-          flex: 0 0 auto;
-          min-width: unset;
-          max-width: none;
+          flex: 0 0 240px;
+          min-width: 240px;
+          max-width: 240px;
         }
 
         .category-toggle {
-          display: inline-flex;
+          display: flex;
           align-items: center;
+          width: 100%;
           background: #F5F5F7;
           border-radius: var(--radius-md);
           padding: 3px;
           border: 1px solid rgba(0, 0, 0, 0.04);
           gap: 2px;
+          box-sizing: border-box;
         }
 
         [data-theme="dark"] .category-toggle {
@@ -1176,10 +1178,12 @@ const Leaderboard = ({
         }
 
         .category-btn {
+          flex: 1 1 0px;
+          min-width: 0;
           display: inline-flex;
           align-items: center;
           justify-content: center;
-          padding: 7px 14px;
+          padding: 7px 8px;
           border: none;
           background: transparent;
           font-family: var(--font-family);
@@ -1192,6 +1196,7 @@ const Leaderboard = ({
           touch-action: manipulation;
           box-sizing: border-box;
           white-space: nowrap;
+          text-align: center;
         }
 
         .category-btn:hover {
@@ -1202,7 +1207,7 @@ const Leaderboard = ({
           background: #FFFFFF;
           color: var(--text-primary);
           box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
-          font-weight: 700;
+          font-weight: 600;
         }
 
         [data-theme="dark"] .category-btn.active {
@@ -2168,6 +2173,25 @@ const Leaderboard = ({
           }
 
           .student-scope-btn {
+            flex: 1 1 0px;
+            justify-content: center;
+            padding: 8px 6px;
+            white-space: nowrap;
+          }
+
+          .category-filter-item {
+            width: 100%;
+            max-width: 100%;
+            min-width: 0;
+            flex: none;
+          }
+
+          .category-toggle {
+            width: 100%;
+            display: flex;
+          }
+
+          .category-btn {
             flex: 1 1 0px;
             justify-content: center;
             padding: 8px 6px;

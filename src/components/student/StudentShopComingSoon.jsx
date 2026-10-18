@@ -410,7 +410,6 @@ export default function StudentShopComingSoon({
                 }}
               >
                 <span>Sotib olish</span>
-                <span>→</span>
               </button>
             ) : (
               <span className="goal-pct-pill">

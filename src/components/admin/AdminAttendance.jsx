@@ -173,7 +173,7 @@ const AdminAttendance = ({
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.setAttribute('download', `Epchil_Robot_Admin_Davomad_${selectedYear}_${selectedMonth + 1}.csv`);
+    link.setAttribute('download', `EPCHIL_COM_Admin_Davomad_${selectedYear}_${selectedMonth + 1}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -196,7 +196,7 @@ const AdminAttendance = ({
       {/* Printable Header */}
       <div className="print-header-banner admin-print-header">
         <h1 className="print-school-title">
-          Epchil Robot — Markaziy Davomad Jurnali
+          EPCHIL COM — Markaziy Davomad Jurnali
         </h1>
         <p className="print-meta-info">
           Davr: <strong>{UZBEK_MONTHS[selectedMonth]} {selectedYear}-yil</strong> • Ustoz: <strong>{activeTeacherFilter === 'all' ? 'Barcha Ustozlar' : TEACHER_LABELS[activeTeacherFilter]}</strong> • Jami darslar: <strong>{attendanceSessions.length} ta</strong> • Chop etildi: {new Date().toLocaleDateString('uz-UZ')}

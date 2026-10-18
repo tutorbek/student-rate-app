@@ -179,9 +179,9 @@ export const getTelegramLeadMessage = (lead) => {
   const subject = lead?.subject || "o'quv kursi";
   if (lead?.trialDate) {
     const formattedDate = formatDateTime(lead.trialDate);
-    return `Assalomu alaykum! ${name}ning ${subject} kursi bo'yicha arizangiz yuzasidan "Epchil Robot" o'quv markazidan bog'lanmoqdamiz. Sizni ${formattedDate} dagi sinov darsimizga taklif qilamiz! Sizni kutib qolamiz.`;
+    return `Assalomu alaykum! ${name}ning ${subject} kursi bo'yicha arizangiz yuzasidan "EPCHIL COM" o'quv markazidan bog'lanmoqdamiz. Sizni ${formattedDate} dagi sinov darsimizga taklif qilamiz! Sizni kutib qolamiz.`;
   }
-  return `Assalomu alaykum! ${name}ning ${subject} kursi bo'yicha arizangiz yuzasidan "Epchil Robot" o'quv markazidan bog'lanmoqdamiz. Sizni sinov darsimizga taklif qilamiz! Qaysi kun va vaqt sizga qulay bo'ladi?`;
+  return `Assalomu alaykum! ${name}ning ${subject} kursi bo'yicha arizangiz yuzasidan "EPCHIL COM" o'quv markazidan bog'lanmoqdamiz. Sizni sinov darsimizga taklif qilamiz! Qaysi kun va vaqt sizga qulay bo'ladi?`;
 };
 
 // Generates Telegram share URL
