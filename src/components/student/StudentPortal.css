@@ -351,13 +351,18 @@ html {
 }
 
 .navbar-brand-btn .logo-badge {
-  background: #1D1D1F;
+  background: #18191B;
   color: #FFFFFF;
-  padding: 2px 8px;
+  padding: 3.5px 6px 2.5px 6px;
   border-radius: 9999px;
-  font-size: 0.72rem;
-  font-weight: 700;
-  letter-spacing: 0.02em;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
 }
 
 [data-theme="dark"] .navbar-brand-btn .navbar-logo-icon {
@@ -7558,8 +7563,9 @@ input[type="text"].picker-search-input {
   }
 
   .navbar-brand-btn .logo-badge {
-    font-size: 0.65rem;
-    padding: 1.5px 5px;
+    font-size: 0.62rem;
+    padding: 3px 5px 2px 5px;
+    line-height: 1;
   }
 
   .navbar-profile-avatar-btn {

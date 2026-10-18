@@ -402,14 +402,15 @@ html.lenis.lenis-stopped {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  background: #1D1D1F;
+  background: #18191B;
   color: #FFFFFF;
   border-radius: 9999px;
-  padding: 2px 8px;
-  font-size: 0.72rem;
-  font-weight: 700;
-  letter-spacing: .02em;
-  line-height: 1.2;
+  padding: 3.5px 6px 2.5px 6px;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: .03em;
+  line-height: 1;
+  box-sizing: border-box;
 }
 
 /* Navigation section buttons (Apple Minimalist style) */
@@ -778,8 +779,9 @@ html[data-theme="dark"] .landing-root .nav-lang-item.active,
     height: 24px;
   }
   .landing-root .logo-badge {
-    padding: 1px 6px;
-    font-size: 0.65rem;
+    padding: 3px 5px 2px 5px;
+    font-size: 0.62rem;
+    line-height: 1;
   }
   .landing-root .nav-btn {
     width: 126px;

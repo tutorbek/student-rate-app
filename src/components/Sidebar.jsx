@@ -448,13 +448,18 @@ const Sidebar = ({ activeTab, setActiveTab, userRole, onLogout, theme, toggleThe
         }
 
         .logo-badge {
-          background: #1D1D1F;
+          background: #18191B;
           color: #FFFFFF;
-          padding: 1.5px 7px;
+          padding: 3.5px 6px 2.5px 6px;
           border-radius: var(--radius-full);
           font-size: 0.68rem;
-          font-weight: 700;
-          letter-spacing: 0.02em;
+          font-weight: 800;
+          letter-spacing: 0.03em;
+          line-height: 1;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          box-sizing: border-box;
         }
 
         .admin-nav-role-badge {
