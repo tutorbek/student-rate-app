@@ -1045,6 +1045,198 @@ html[data-theme="dark"] .landing-root .nav-lang-item.active,
     bottom: -12px;
     left: -10px;
   }
+
+  /* Hero Showcase Mobile Overlapping Cards Layout */
+  .landing-root .hero-showcase {
+    width: 100%;
+    max-width: min(100%, 390px);
+    margin: 1.25rem auto 1.6rem;
+    min-height: auto;
+    padding-bottom: 26px;
+    position: relative;
+    display: block;
+  }
+
+  /* Base Calendar Card */
+  .landing-root .mock-calendar {
+    position: relative;
+    width: 100%;
+    max-width: 100%;
+    padding: 0.85rem 0.95rem;
+    gap: 0.6rem;
+    border-radius: 1.15rem;
+    box-shadow: 0 14px 35px -10px rgba(10, 10, 10, 0.08), 0 2px 8px rgba(10, 10, 10, 0.03);
+  }
+
+  .landing-root .mock-head {
+    padding-bottom: 0.45rem;
+  }
+
+  .landing-root .mock-title b {
+    font-size: 0.85rem;
+  }
+
+  .landing-root .mock-filters {
+    gap: 0.3rem;
+    padding-bottom: 0.15rem;
+  }
+
+  .landing-root .mock-pill-active {
+    width: 44px;
+    height: 12px;
+  }
+
+  .landing-root .mock-pill-outline {
+    width: 32px;
+    height: 12px;
+  }
+
+  .landing-root .mock-cal-grid {
+    gap: 0.35rem;
+  }
+
+  .landing-root .mock-event {
+    padding: 4px 5px;
+    gap: 3px;
+    border-left-width: 2.5px;
+  }
+
+  .landing-root .ln-short {
+    height: 3.5px;
+  }
+
+  .landing-root .ln-long {
+    height: 4.5px;
+  }
+
+  /* Overlapping Students Card (Front-Left) */
+  .landing-root .mock-students-card {
+    position: absolute !important;
+    left: -4px;
+    bottom: 8px;
+    width: clamp(140px, 42vw, 168px);
+    margin-top: 0;
+    z-index: 3;
+    border-radius: 1rem;
+    box-shadow: 0 16px 40px -10px rgba(11, 59, 255, 0.22), 0 3px 10px rgba(0, 0, 0, 0.06);
+  }
+
+  .landing-root .mock-st-head {
+    padding: 0.45rem 0.65rem;
+  }
+
+  .landing-root .mock-st-head b {
+    font-size: 0.74rem;
+  }
+
+  .landing-root .mock-st-badge {
+    width: 11px;
+    height: 11px;
+  }
+
+  .landing-root .mock-students-list {
+    padding: 0.45rem 0.55rem;
+    gap: 0.3rem;
+  }
+
+  .landing-root .mock-st-row {
+    gap: 0.4rem;
+    padding: 0.1rem 0;
+  }
+
+  .landing-root .st-avatar {
+    width: 17px;
+    height: 17px;
+  }
+
+  .landing-root .st-avatar svg {
+    width: 9px;
+    height: 9px;
+  }
+
+  .landing-root .st-ln-top {
+    height: 4px;
+    width: 32px;
+  }
+
+  .landing-root .st-ln-bot {
+    height: 3.5px;
+    width: 18px;
+  }
+
+  .landing-root .mock-cb {
+    width: 11px;
+    height: 11px;
+    border-radius: 3px;
+  }
+
+  /* Overlapping Gamification Card (Front-Right) */
+  .landing-root .mock-gamify-card {
+    display: flex !important;
+    position: absolute !important;
+    right: -4px;
+    bottom: -16px;
+    width: clamp(155px, 46vw, 205px);
+    max-width: 205px;
+    margin-top: 0;
+    z-index: 4;
+    padding: 0.5rem 0.65rem;
+    gap: 0.5rem;
+    border-radius: 1rem;
+    box-shadow: 0 16px 36px -10px rgba(245, 158, 11, 0.26), 0 3px 10px rgba(0, 0, 0, 0.05);
+  }
+
+  .landing-root .mock-gamify-icon {
+    width: 30px;
+    height: 30px;
+    border-radius: 8px;
+  }
+
+  .landing-root .mock-gamify-icon svg {
+    width: 15px;
+    height: 15px;
+  }
+
+  .landing-root .mock-gamify-content {
+    gap: 0.25rem;
+  }
+
+  .landing-root .mock-gamify-row {
+    gap: 0.3rem;
+  }
+
+  .landing-root .mock-gamify-pill-amber {
+    width: 34px;
+    height: 5px;
+  }
+
+  .landing-root .mock-gamify-pill-blue {
+    width: 24px;
+    height: 5px;
+  }
+
+  .landing-root .mock-gamify-bar-title {
+    width: 68px;
+    height: 5px;
+  }
+}
+
+@media (max-width: 380px) {
+  .landing-root .mock-students-card .mock-st-row:nth-child(n+5) {
+    display: none;
+  }
+
+  .landing-root .mock-students-card {
+    width: 135px;
+    left: -2px;
+    bottom: 12px;
+  }
+
+  .landing-root .mock-gamify-card {
+    width: 152px;
+    right: -2px;
+    bottom: -14px;
+  }
 }
 
 /* Mockup Cards */
@@ -1205,23 +1397,23 @@ html[data-theme="dark"] .landing-root .nav-lang-item.active,
 
 /* 2. Floating Students Card (Overlapping wireframe list) */
 .landing-root .mock-students-card {
-  width: 100%;
-  max-width: 200px;
-  margin-top: 1rem;
+  position: absolute;
+  left: -20px;
+  bottom: -22px;
+  width: 185px;
+  margin-top: 0;
   z-index: 3;
   overflow: hidden;
   border-radius: 1.15rem;
   box-shadow: 0 25px 60px -15px rgba(11, 59, 255, 0.16), 0 4px 14px rgba(0, 0, 0, 0.04);
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s ease;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
 }
 
-@media (min-width: 640px) {
-  .landing-root .mock-students-card {
-    position: absolute;
-    left: -20px;
-    bottom: -22px;
-    width: 185px;
-    margin-top: 0;
-  }
+.landing-root .mock-students-card:active {
+  transform: translateY(-3px) scale(1.02);
+  z-index: 6;
 }
 
 .landing-root .mock-st-head {
@@ -1317,6 +1509,12 @@ html[data-theme="dark"] .landing-root .nav-lang-item.active,
 
 /* 3. Floating Gamification Card */
 .landing-root .mock-gamify-card {
+  position: absolute;
+  right: -16px;
+  bottom: -18px;
+  margin-top: 0;
+  width: 100%;
+  max-width: 245px;
   display: flex;
   align-items: center;
   gap: 0.75rem;
@@ -1325,26 +1523,15 @@ html[data-theme="dark"] .landing-root .nav-lang-item.active,
   border: 1px solid rgba(0, 0, 0, 0.08);
   border-radius: 1.15rem;
   box-shadow: 0 20px 48px -12px rgba(245, 158, 11, 0.22), 0 2px 8px rgba(0, 0, 0, 0.04);
-  z-index: 3;
-  margin-top: 0.85rem;
-  width: 100%;
-  max-width: 250px;
+  z-index: 4;
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s ease;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
 }
 
-@media (min-width: 640px) {
-  .landing-root .mock-gamify-card {
-    position: absolute;
-    right: -16px;
-    bottom: -18px;
-    margin-top: 0;
-    max-width: 245px;
-  }
-}
-
-@media (max-width: 639px) {
-  .landing-root .mock-gamify-card {
-    display: none;
-  }
+.landing-root .mock-gamify-card:active {
+  transform: translateY(-3px) scale(1.02);
+  z-index: 6;
 }
 
 .landing-root .mock-gamify-icon {
