@@ -268,7 +268,9 @@ export default function LandingPage({
 
       // Wrap all GSAP animations in gsap.context for flawless scoping and zero-leak cleanup
       gsapCtx = gsap.context(() => {
-        // Universal helper for clean, simple, uniform text fade-up animation across all sections
+        const isDesktop = window.matchMedia('(min-width: 800px)').matches;
+
+        // Universal helper for clean, simple, uniform text fade-up animation across all sections (Mobile & Desktop)
         const animTxt = (targets, trigger, opts = {}) => {
           const { start, stagger, once = true, ...tweenVars } = opts;
           const elements = typeof targets === 'string' ? $(targets) : targets;
@@ -294,41 +296,42 @@ export default function LandingPage({
           );
         };
 
-        // 1. HERO (Smooth coordinated entrance on page load)
+        // 1. HERO (Smooth text entrance on page load)
         const heroTl = gsap
           .timeline({ delay: 0.1 })
           .fromTo(
             ['.hero .kick', '.hero h1', '.hero .sub', '.hero .ctas'],
             { opacity: 0, y: 22 },
             { opacity: 1, y: 0, duration: 0.85, ease: 'power3.out', stagger: 0.1 }
-          )
-          .fromTo(
-            ['.hero-blob', '.hero-doodle-confetti', '.hero-doodle-zigzag', '.hero-doodle-curve'],
-            { opacity: 0, scale: 0.92 },
-            { opacity: 1, scale: 1, duration: 1.1, ease: 'power2.out', stagger: 0.08 },
-            '<.1'
-          )
-          .fromTo(
-            '.mock-calendar',
-            { opacity: 0, y: 28 },
-            { opacity: 1, y: 0, duration: 0.9, ease: 'power3.out' },
-            '<.15'
-          )
-          .fromTo(
-            '.mock-students-card',
-            { opacity: 0, y: 24, scale: 0.96 },
-            { opacity: 1, y: 0, scale: 1, duration: 0.85, ease: 'power3.out' },
-            '<.2'
           );
 
-        // Giant EPCHIL watermark entrance and parallax scroll: desktop view only (completely static on mobile)
-        if (window.matchMedia('(min-width: 800px)').matches) {
-          heroTl.fromTo(
-            '.hero .giant',
-            { opacity: 0 },
-            { opacity: 0.04, duration: 1.2, ease: 'power3.out' },
-            '<.1'
-          );
+        // Desktop-only graphic & parallax animations in Hero
+        if (isDesktop) {
+          heroTl
+            .fromTo(
+              ['.hero-blob', '.hero-doodle-confetti', '.hero-doodle-zigzag', '.hero-doodle-curve'],
+              { opacity: 0, scale: 0.92 },
+              { opacity: 1, scale: 1, duration: 1.1, ease: 'power2.out', stagger: 0.08 },
+              '<.1'
+            )
+            .fromTo(
+              '.mock-calendar',
+              { opacity: 0, y: 28 },
+              { opacity: 1, y: 0, duration: 0.9, ease: 'power3.out' },
+              '<.15'
+            )
+            .fromTo(
+              '.mock-students-card',
+              { opacity: 0, y: 24, scale: 0.96 },
+              { opacity: 1, y: 0, scale: 1, duration: 0.85, ease: 'power3.out' },
+              '<.2'
+            )
+            .fromTo(
+              '.hero .giant',
+              { opacity: 0 },
+              { opacity: 0.04, duration: 1.2, ease: 'power3.out' },
+              '<.1'
+            );
 
           gsap.to('.giant', {
             xPercent: -8,
@@ -342,124 +345,150 @@ export default function LandingPage({
           });
         }
 
-        // 2. FORK: audience cards (Designed for tutors of all kinds)
+        // 2. FORK: audience cards (Designed for tutors of all kinds) - Text entrance from below
         animTxt('.fork .lab', '.fork');
         animTxt(['.fork-title', '.fork-subtitle'], '.fork', { stagger: 0.1 });
         animTxt('.fork-card', '.fork-grid', { stagger: 0.12, start: 'top 78%' });
         animTxt('.fork .more', '.fork', { start: 'top 85%' });
 
-        // 3. STATEMENT
+        // 3. STATEMENT - Text entrance from below
         animTxt('.stm p', '.stm');
         animTxt('.stm-card', '.stm-compare', { stagger: 0.12, start: 'top 82%' });
-        gsap.fromTo(
-          '.stm .ghost',
-          { yPercent: -15 },
-          {
-            yPercent: 20,
-            ease: 'none',
-            scrollTrigger: { trigger: '.stm', scrub: 0.5 },
-          }
-        );
+
+        if (isDesktop) {
+          // Continuous scroll parallax scrub: desktop only
+          gsap.fromTo(
+            '.stm .ghost',
+            { yPercent: -15 },
+            {
+              yPercent: 20,
+              ease: 'none',
+              scrollTrigger: { trigger: '.stm', scrub: 0.5 },
+            }
+          );
+        }
 
         // 4. STEPS: how it works
         animTxt('.how .lab', '.how');
-        $('.step').forEach((s) => {
-          gsap
-            .timeline({ scrollTrigger: { trigger: s, start: 'top 82%', once: true } })
-            .fromTo($('.hl', s), { scaleX: 0 }, { scaleX: 1, duration: 1, ease: 'power3.inOut' })
-            .fromTo($('p', s), { opacity: 0, y: 22 }, { opacity: 1, y: 0, duration: 0.8, ease: 'power3.out' }, '<.15');
-        });
-        gsap.fromTo(
-          '.how-zigzag-wrap',
-          { opacity: 0, y: 35, scale: 0.92 },
-          {
-            opacity: 0.88,
-            y: 0,
-            scale: 1,
-            duration: 1.1,
-            ease: 'power3.out',
-            scrollTrigger: { trigger: '.how', start: 'top 75%', once: true },
-          }
-        );
+        if (isDesktop) {
+          $('.step').forEach((s) => {
+            gsap
+              .timeline({ scrollTrigger: { trigger: s, start: 'top 82%', once: true } })
+              .fromTo($('.hl', s), { scaleX: 0 }, { scaleX: 1, duration: 1, ease: 'power3.inOut' })
+              .fromTo($('p', s), { opacity: 0, y: 22 }, { opacity: 1, y: 0, duration: 0.8, ease: 'power3.out' }, '<.15');
+          });
+          gsap.fromTo(
+            '.how-zigzag-wrap',
+            { opacity: 0, y: 35, scale: 0.92 },
+            {
+              opacity: 0.88,
+              y: 0,
+              scale: 1,
+              duration: 1.1,
+              ease: 'power3.out',
+              scrollTrigger: { trigger: '.how', start: 'top 75%', once: true },
+            }
+          );
+        } else {
+          // Mobile: ONLY text entrance from below (no line scaling, no graphic animation)
+          animTxt('.step p', '.how', { stagger: 0.12, start: 'top 85%' });
+        }
         animTxt('.how .more', '.how', { start: 'top 70%' });
 
-        // 5. PAYMENTS: online payments & financial control
+        // 5. PAYMENTS: online payments & financial control - Text entrance from below
         animTxt('.pay-sc .lab', '.pay-sc');
         animTxt(['.pay-sc h2', '.pay-sc .sub-lead', '.pay-sc .pay-methods'], '.pay-sc', {
           stagger: 0.09,
           start: 'top 80%',
         });
         animTxt('.pay-card', '.pay-grid', { stagger: 0.1, start: 'top 82%' });
-        gsap.fromTo(
-          '.pay-sc .ghost',
-          { yPercent: -15 },
-          {
-            yPercent: 20,
-            ease: 'none',
-            scrollTrigger: { trigger: '.pay-sc', scrub: 0.5 },
-          }
-        );
-        gsap.fromTo(
-          '.pay-organic-blob-wrap',
-          { opacity: 0, x: 60, scale: 0.95 },
-          {
-            opacity: 0.85,
-            x: 0,
-            scale: 1,
-            duration: 1.4,
-            ease: 'power3.out',
-            scrollTrigger: { trigger: '.pay-sc', start: 'top 80%', once: true },
-          }
-        );
+
+        if (isDesktop) {
+          // Continuous scroll parallax scrub & graphic blob: desktop only
+          gsap.fromTo(
+            '.pay-sc .ghost',
+            { yPercent: -15 },
+            {
+              yPercent: 20,
+              ease: 'none',
+              scrollTrigger: { trigger: '.pay-sc', scrub: 0.5 },
+            }
+          );
+          gsap.fromTo(
+            '.pay-organic-blob-wrap',
+            { opacity: 0, x: 60, scale: 0.95 },
+            {
+              opacity: 0.85,
+              x: 0,
+              scale: 1,
+              duration: 1.4,
+              ease: 'power3.out',
+              scrollTrigger: { trigger: '.pay-sc', start: 'top 80%', once: true },
+            }
+          );
+        }
         animTxt('.pay-sc .more', '.pay-sc', { start: 'top 70%' });
 
         // 6. MODULES: 8 modules
         animTxt('#imkoniyatlar .lab', '#imkoniyatlar');
-        $('#imkoniyatlar li').forEach((li) => {
-          gsap
-            .timeline({ scrollTrigger: { trigger: li, start: 'top 88%', once: true } })
-            .fromTo($('.hl', li), { scaleX: 0 }, { scaleX: 1, duration: 1, ease: 'power3.inOut' })
-            .fromTo($('.row', li), { opacity: 0, y: 22 }, { opacity: 1, y: 0, duration: 0.8, ease: 'power3.out' }, '<.15');
-        });
+        if (isDesktop) {
+          $('#imkoniyatlar li').forEach((li) => {
+            gsap
+              .timeline({ scrollTrigger: { trigger: li, start: 'top 88%', once: true } })
+              .fromTo($('.hl', li), { scaleX: 0 }, { scaleX: 1, duration: 1, ease: 'power3.inOut' })
+              .fromTo($('.row', li), { opacity: 0, y: 22 }, { opacity: 1, y: 0, duration: 0.8, ease: 'power3.out' }, '<.15');
+          });
+        } else {
+          // Mobile: ONLY text/content entrance from below (no line scaling)
+          animTxt('#imkoniyatlar li .row', '#imkoniyatlar', { stagger: 0.08, start: 'top 90%' });
+        }
 
-        // 8. PRICING: horizontal card
+        // 8. PRICING: horizontal card - Text entrance from below
         animTxt(['#narx .lab', '#narx .tq'], '#narx', { stagger: 0.09 });
         animTxt('.price-horizontal-card', '#narx', { start: 'top 85%' });
 
-        // 9. FAQ: frequently asked questions
+        // 9. FAQ: frequently asked questions - Text entrance from below
         animTxt('.faqsc .lab', '.faqsc');
         animTxt('.faq details', '.faq', { stagger: 0.08, start: 'top 85%' });
-        gsap.fromTo(
-          '.faq-ribbon-wrap',
-          { opacity: 0, rotate: -10, scale: 0.9 },
-          {
-            opacity: 0.9,
-            rotate: 0,
-            scale: 1,
-            duration: 1.3,
-            ease: 'power3.out',
-            scrollTrigger: { trigger: '.faqsc', start: 'top 80%', once: true },
-          }
-        );
+
+        if (isDesktop) {
+          // Graphic ribbon animation: desktop only
+          gsap.fromTo(
+            '.faq-ribbon-wrap',
+            { opacity: 0, rotate: -10, scale: 0.9 },
+            {
+              opacity: 0.9,
+              rotate: 0,
+              scale: 1,
+              duration: 1.3,
+              ease: 'power3.out',
+              scrollTrigger: { trigger: '.faqsc', start: 'top 80%', once: true },
+            }
+          );
+        }
         animTxt('.faqsc .more', '.faqsc', { start: 'top 70%' });
 
-        // 10. FINAL CTA & FOOTER
+        // 10. FINAL CTA & FOOTER - Text entrance from below
         animTxt(['.cta-headline', '.cta .more', '.cta-subnote', '.foot'], '.cta', {
           stagger: 0.08,
           start: 'top 80%',
         });
-        gsap.fromTo(
-          '.cta-organic-blob-wrap',
-          { opacity: 0, x: 60, scale: 0.94 },
-          {
-            opacity: 1,
-            x: 0,
-            scale: 1,
-            duration: 1.2,
-            ease: 'power3.out',
-            scrollTrigger: { trigger: '.cta', start: 'top 82%', once: true },
-          }
-        );
+
+        if (isDesktop) {
+          // Graphic organic blob animation: desktop only
+          gsap.fromTo(
+            '.cta-organic-blob-wrap',
+            { opacity: 0, x: 60, scale: 0.94 },
+            {
+              opacity: 1,
+              x: 0,
+              scale: 1,
+              duration: 1.2,
+              ease: 'power3.out',
+              scrollTrigger: { trigger: '.cta', start: 'top 82%', once: true },
+            }
+          );
+        }
       }, rootEl);
 
       // Refresh ScrollTrigger once DOM settled and fonts ready (only when at page top to avoid scroll snap)

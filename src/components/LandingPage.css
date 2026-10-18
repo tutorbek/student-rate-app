@@ -1410,11 +1410,27 @@ html[data-theme="dark"] .landing-root .nav-lang-item.active,
 }
 
 @media (max-width: 799px) {
-  .landing-root .giant {
+  /* Complete removal of all non-text scroll/movement animations on mobile */
+  .landing-root .giant,
+  .landing-root .ghost,
+  .landing-root .how-zigzag-wrap,
+  .landing-root .pay-organic-blob-wrap,
+  .landing-root .faq-ribbon-wrap,
+  .landing-root .cta-organic-blob-wrap,
+  .landing-root .hero-blob,
+  .landing-root .hero-doodle-confetti,
+  .landing-root .hero-doodle-zigzag,
+  .landing-root .hero-doodle-curve {
     animation: none !important;
     transform: none !important;
-    will-change: auto !important;
     transition: none !important;
+    will-change: auto !important;
+  }
+
+  .landing-root .hl {
+    transform: scaleX(1) !important;
+    transition: none !important;
+    animation: none !important;
   }
 }
 
@@ -2589,35 +2605,15 @@ html[data-theme="dark"] .landing-root .cta-organic-blob-wrap {
   margin-top: 0.2rem;
 }
 
-/* phone / tablet path: CSS-only reveals, no libraries */
-.lite .rv {
-  opacity: 0;
-  transform: translate3d(0, 28px, 0);
-  transition: opacity .8s var(--out), transform .8s var(--out);
-}
-
-.lite .rv.in {
-  opacity: 1;
-  transform: none;
-}
-
+/* phone / tablet path: static reveals, no non-text motion */
 .lite .hl {
-  transform: scaleX(0);
-  transition: transform 1s var(--ease);
-}
-
-.lite .hl.in {
-  transform: scaleX(1);
+  transform: scaleX(1) !important;
+  transition: none !important;
 }
 
 .lite .sw {
-  opacity: .15;
-  transition: opacity .7s ease-out;
-  transition-delay: calc(var(--i, 0) * 60ms);
-}
-
-.lite .stm p.in .sw {
-  opacity: 1;
+  opacity: 1 !important;
+  transition: none !important;
 }
 
 .lite .giant {
