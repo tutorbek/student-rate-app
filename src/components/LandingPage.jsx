@@ -1130,9 +1130,30 @@ export default function LandingPage({
                 </span>
               </div>
               <ul className="stm-list">
-                <li>{t('stm_before_b1')}</li>
-                <li>{t('stm_before_b2')}</li>
-                <li>{t('stm_before_b3')}</li>
+                <li className="stm-item">
+                  <span className="stm-item-icon stm-icon-before" aria-hidden="true">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                      <line x1="5" y1="12" x2="19" y2="12" />
+                    </svg>
+                  </span>
+                  <span className="stm-item-text">{t('stm_before_b1')}</span>
+                </li>
+                <li className="stm-item">
+                  <span className="stm-item-icon stm-icon-before" aria-hidden="true">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                      <line x1="5" y1="12" x2="19" y2="12" />
+                    </svg>
+                  </span>
+                  <span className="stm-item-text">{t('stm_before_b2')}</span>
+                </li>
+                <li className="stm-item">
+                  <span className="stm-item-icon stm-icon-before" aria-hidden="true">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                      <line x1="5" y1="12" x2="19" y2="12" />
+                    </svg>
+                  </span>
+                  <span className="stm-item-text">{t('stm_before_b3')}</span>
+                </li>
               </ul>
             </div>
 
@@ -1143,9 +1164,30 @@ export default function LandingPage({
                 </span>
               </div>
               <ul className="stm-list">
-                <li>{t('stm_after_b1')}</li>
-                <li>{t('stm_after_b2')}</li>
-                <li>{t('stm_after_b3')}</li>
+                <li className="stm-item">
+                  <span className="stm-item-icon stm-icon-after" aria-hidden="true">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="20 6 9 17 4 12" />
+                    </svg>
+                  </span>
+                  <span className="stm-item-text">{t('stm_after_b1')}</span>
+                </li>
+                <li className="stm-item">
+                  <span className="stm-item-icon stm-icon-after" aria-hidden="true">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="20 6 9 17 4 12" />
+                    </svg>
+                  </span>
+                  <span className="stm-item-text">{t('stm_after_b2')}</span>
+                </li>
+                <li className="stm-item">
+                  <span className="stm-item-icon stm-icon-after" aria-hidden="true">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="20 6 9 17 4 12" />
+                    </svg>
+                  </span>
+                  <span className="stm-item-text">{t('stm_after_b3')}</span>
+                </li>
               </ul>
             </div>
           </div>
@@ -1445,33 +1487,82 @@ export default function LandingPage({
               <h3 className="price-features-title">{t('price_feat_title')}</h3>
               <p className="price-features-sub">{t('price_feat_sub')}</p>
               <ul className="price-features-list">
-                <li>
-                  <b>{t('price_f1_t')}</b>
-                  <span>{t('price_f1_d')}</span>
+                <li className="price-feature-item">
+                  <span className="price-feature-icon" aria-hidden="true">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="20 6 9 17 4 12" />
+                    </svg>
+                  </span>
+                  <div className="price-feature-text">
+                    <b className="price-feature-title">{t('price_f1_t')}</b>{' '}
+                    <span className="price-feature-desc">{t('price_f1_d')}</span>
+                  </div>
                 </li>
-                <li>
-                  <b>{t('price_f2_t')}</b>
-                  <span>{t('price_f2_d')}</span>
+                <li className="price-feature-item">
+                  <span className="price-feature-icon" aria-hidden="true">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="20 6 9 17 4 12" />
+                    </svg>
+                  </span>
+                  <div className="price-feature-text">
+                    <b className="price-feature-title">{t('price_f2_t')}</b>{' '}
+                    <span className="price-feature-desc">{t('price_f2_d')}</span>
+                  </div>
                 </li>
-                <li>
-                  <b>{t('price_f3_t')}</b>
-                  <span>{t('price_f3_d')}</span>
+                <li className="price-feature-item">
+                  <span className="price-feature-icon" aria-hidden="true">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="20 6 9 17 4 12" />
+                    </svg>
+                  </span>
+                  <div className="price-feature-text">
+                    <b className="price-feature-title">{t('price_f3_t')}</b>{' '}
+                    <span className="price-feature-desc">{t('price_f3_d')}</span>
+                  </div>
                 </li>
-                <li>
-                  <b>{t('price_f4_t')}</b>
-                  <span>{t('price_f4_d')}</span>
+                <li className="price-feature-item">
+                  <span className="price-feature-icon" aria-hidden="true">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="20 6 9 17 4 12" />
+                    </svg>
+                  </span>
+                  <div className="price-feature-text">
+                    <b className="price-feature-title">{t('price_f4_t')}</b>{' '}
+                    <span className="price-feature-desc">{t('price_f4_d')}</span>
+                  </div>
                 </li>
-                <li>
-                  <b>{t('price_f5_t')}</b>
-                  <span>{t('price_f5_d')}</span>
+                <li className="price-feature-item">
+                  <span className="price-feature-icon" aria-hidden="true">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="20 6 9 17 4 12" />
+                    </svg>
+                  </span>
+                  <div className="price-feature-text">
+                    <b className="price-feature-title">{t('price_f5_t')}</b>{' '}
+                    <span className="price-feature-desc">{t('price_f5_d')}</span>
+                  </div>
                 </li>
-                <li>
-                  <b>{t('price_f6_t')}</b>
-                  <span>{t('price_f6_d')}</span>
+                <li className="price-feature-item">
+                  <span className="price-feature-icon" aria-hidden="true">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="20 6 9 17 4 12" />
+                    </svg>
+                  </span>
+                  <div className="price-feature-text">
+                    <b className="price-feature-title">{t('price_f6_t')}</b>{' '}
+                    <span className="price-feature-desc">{t('price_f6_d')}</span>
+                  </div>
                 </li>
-                <li>
-                  <b>{t('price_f7_t')}</b>
-                  <span>{t('price_f7_d')}</span>
+                <li className="price-feature-item">
+                  <span className="price-feature-icon" aria-hidden="true">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="20 6 9 17 4 12" />
+                    </svg>
+                  </span>
+                  <div className="price-feature-text">
+                    <b className="price-feature-title">{t('price_f7_t')}</b>{' '}
+                    <span className="price-feature-desc">{t('price_f7_d')}</span>
+                  </div>
                 </li>
               </ul>
             </div>

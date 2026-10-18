@@ -1170,6 +1170,131 @@
         transition: none !important;
         animation: none !important;
       }
+
+      /* Statement Comparison Section mobile layout */
+      .stm {
+        text-align: left !important;
+        align-items: stretch !important;
+        padding: 3.5rem var(--px);
+      }
+
+      .stm p {
+        text-align: left !important;
+        font-size: clamp(1.2rem, 4.8vw, 1.55rem);
+        line-height: 1.35;
+        margin-bottom: 0.5rem;
+      }
+
+      .stm-compare {
+        gap: 12px;
+        margin-top: 1.25rem;
+        grid-template-columns: 1fr;
+      }
+
+      .stm-card {
+        padding: 1.15rem 1.15rem;
+        gap: 1rem;
+        border-radius: 16px;
+        text-align: left;
+      }
+
+      .stm-item {
+        font-size: 0.88rem;
+        line-height: 1.4;
+      }
+
+      .stm-item-text {
+        font-size: 0.88rem;
+        line-height: 1.4;
+      }
+
+      /* Price Section mobile layout */
+      .price-sc {
+        padding: 3rem var(--px);
+        text-align: center;
+      }
+
+      .price-head {
+        text-align: center;
+        margin-bottom: 0.5rem;
+      }
+
+      .price-horizontal-card {
+        border-radius: 18px;
+        grid-template-columns: 1fr;
+        box-shadow: 0 10px 30px -8px rgba(15, 23, 42, 0.08);
+      }
+
+      .price-calc-col {
+        padding: 1.25rem 1.15rem;
+        gap: 1rem;
+        text-align: left;
+        border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+      }
+
+      .price-main-display {
+        justify-content: flex-start;
+      }
+
+      .price-amount {
+        font-size: 2.75rem;
+      }
+
+      .price-calc-breakdown {
+        text-align: left;
+        font-size: 0.82rem;
+        background: rgba(0, 0, 0, 0.03);
+        padding: 8px 12px;
+        border-radius: 10px;
+        border: 1px solid rgba(0, 0, 0, 0.05);
+      }
+
+      .price-stepper-box {
+        padding: 10px 12px;
+        border-radius: 12px;
+      }
+
+      .price-stepper-label {
+        font-size: 0.9rem;
+        text-align: left;
+      }
+
+      .price-stepper-label small {
+        text-align: left;
+      }
+
+      .price-primary-btn {
+        width: 100%;
+        padding: 12px 20px;
+        font-size: 0.95rem;
+      }
+
+      .price-features-col {
+        padding: 1.25rem 1.15rem;
+        text-align: left;
+        gap: 0.85rem;
+      }
+
+      .price-features-title {
+        font-size: 1.15rem;
+        text-align: left;
+      }
+
+      .price-features-sub {
+        font-size: 0.82rem;
+        text-align: left;
+      }
+
+      .price-features-list {
+        gap: 0.65rem;
+        text-align: left;
+      }
+
+      .price-feature-item {
+        font-size: 0.82rem;
+        line-height: 1.38;
+        text-align: left;
+      }
     }
 
     /* fork / audience (Designed for tutors of all kinds) */
@@ -1396,36 +1521,55 @@
     .stm-list {
       display: flex;
       flex-direction: column;
-      gap: 0.85rem;
+      gap: 0.75rem;
       list-style: none;
       padding: 0;
       margin: 0;
+      text-align: left;
     }
 
-    .stm-list li {
-      display: block;
-      position: relative;
-      padding-left: 1.2rem;
+    .stm-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      text-align: left;
       line-height: 1.45;
     }
 
-    .stm-list li::before {
-      content: "—";
-      position: absolute;
-      left: 0;
-      top: 0;
-      color: #94A3B8;
-      font-weight: 500;
+    .stm-item-icon {
+      width: 18px;
+      height: 18px;
+      border-radius: 9999px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      margin-top: 2px;
     }
 
-    .stm-before .stm-list li {
+    .stm-icon-before {
+      background: rgba(148, 163, 184, 0.15);
       color: #64748B;
-      font: 500 0.95rem/1.45 var(--t);
     }
 
-    .stm-after .stm-list li {
-      color: var(--k);
-      font: 600 0.98rem/1.45 var(--t);
+    .stm-icon-after {
+      background: rgba(1, 113, 227, 0.12);
+      color: #0171E3;
+    }
+
+    .stm-item-text {
+      flex: 1;
+      text-align: left;
+    }
+
+    .stm-before .stm-item-text {
+      color: #64748B;
+      font: 500 0.92rem/1.45 var(--t);
+    }
+
+    .stm-after .stm-item-text {
+      color: #0F172A;
+      font: 600 0.95rem/1.45 var(--t);
     }
 
 
@@ -1937,9 +2081,10 @@
       padding: clamp(1.25rem, 2.5vw, 1.75rem);
       display: flex;
       flex-direction: column;
-      justify-content: center;
+      justify-content: flex-start;
       gap: 0.85rem;
-      box-sizing: border-box
+      box-sizing: border-box;
+      text-align: left;
     }
 
     .price-features-title {
@@ -1948,49 +2093,66 @@
       font-weight: 800;
       color: #0F172A;
       letter-spacing: -.02em;
-      margin: 0
+      margin: 0;
+      text-align: left;
     }
 
     .price-features-sub {
       font-family: var(--t);
       font-size: .84rem;
       color: #64748B;
-      margin: -.45rem 0 0 0
+      margin: 0;
+      text-align: left;
     }
 
     .price-features-list {
       list-style: none;
       padding: 0;
-      margin: 0;
+      margin: 0.25rem 0 0 0;
       display: flex;
       flex-direction: column;
-      gap: 0.55rem
+      gap: 0.65rem;
+      text-align: left;
     }
 
-    .price-features-list li {
-      display: block;
+    .price-feature-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
       font-family: var(--t);
       font-size: .84rem;
-      line-height: 1.36;
+      line-height: 1.4;
+      text-align: left;
+    }
+
+    .price-feature-icon {
+      width: 18px;
+      height: 18px;
+      border-radius: 9999px;
+      background: rgba(1, 113, 227, 0.1);
+      color: #0171E3;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+
+    .price-feature-text {
+      flex: 1;
+      text-align: left;
       color: #475569;
-      position: relative;
-      padding-left: 14px
     }
 
-    .price-features-list li::before {
-      content: "—";
-      position: absolute;
-      left: 0;
-      top: 0;
-      color: #94A3B8;
-      font-weight: 600
-    }
-
-    .price-features-list li b {
+    .price-feature-title {
       color: #0F172A;
       font-weight: 700;
-      margin-right: 4px
     }
+
+    .price-feature-desc {
+      color: #475569;
+    }
+
 
     .tq {
       font: 800 clamp(1.4rem, 5vw, 2.2rem)/1.2 var(--d);
@@ -3017,9 +3179,30 @@
             </span>
           </div>
           <ul class="stm-list">
-            <li>Qogʻoz jurnallar va darsga qiziqishi sust oʻquvchilar</li>
-            <li>Chalkash jadvallar va guruhlarda xabarlarni qidirish</li>
-            <li>Qoʻlda toʻlov eslatish va noaniq qarzdorliklar</li>
+            <li class="stm-item">
+              <span class="stm-item-icon stm-icon-before" aria-hidden="true">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+                  <line x1="5" y1="12" x2="19" y2="12" />
+                </svg>
+              </span>
+              <span class="stm-item-text">Qogʻoz jurnallar va darsga qiziqishi sust oʻquvchilar</span>
+            </li>
+            <li class="stm-item">
+              <span class="stm-item-icon stm-icon-before" aria-hidden="true">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+                  <line x1="5" y1="12" x2="19" y2="12" />
+                </svg>
+              </span>
+              <span class="stm-item-text">Chalkash jadvallar va guruhlarda xabarlarni qidirish</span>
+            </li>
+            <li class="stm-item">
+              <span class="stm-item-icon stm-icon-before" aria-hidden="true">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+                  <line x1="5" y1="12" x2="19" y2="12" />
+                </svg>
+              </span>
+              <span class="stm-item-text">Qoʻlda toʻlov eslatish va noaniq qarzdorliklar</span>
+            </li>
           </ul>
         </div>
 
@@ -3030,9 +3213,30 @@
             </span>
           </div>
           <ul class="stm-list">
-            <li>Zamonaviy Gamifikatsiya: reyting, tangalar va sovgʻalar doʻkoni</li>
-            <li>Moslashuvchan dars jadvali va 1-klikda davomat</li>
-            <li>Click / Payme toʻlovlari va avtomatik kvitansiyalar</li>
+            <li class="stm-item">
+              <span class="stm-item-icon stm-icon-after" aria-hidden="true">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="20 6 9 17 4 12" />
+                </svg>
+              </span>
+              <span class="stm-item-text">Zamonaviy Gamifikatsiya: reyting, tangalar va sovgʻalar doʻkoni</span>
+            </li>
+            <li class="stm-item">
+              <span class="stm-item-icon stm-icon-after" aria-hidden="true">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="20 6 9 17 4 12" />
+                </svg>
+              </span>
+              <span class="stm-item-text">Moslashuvchan dars jadvali va 1-klikda davomat</span>
+            </li>
+            <li class="stm-item">
+              <span class="stm-item-icon stm-icon-after" aria-hidden="true">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="20 6 9 17 4 12" />
+                </svg>
+              </span>
+              <span class="stm-item-text">Click / Payme toʻlovlari va avtomatik kvitansiyalar</span>
+            </li>
           </ul>
         </div>
       </div>
@@ -3249,33 +3453,82 @@
           <h3 class="price-features-title">Tarifga nima kiradi?</h3>
           <p class="price-features-sub">Hech qanday cheklovlarsiz barcha imkoniyatlar:</p>
           <ul class="price-features-list">
-            <li>
-              <b>Barcha 8 ta modul:</b>
-              <span>oʻquvchilar, jadval, davomat, toʻlovlar, portal, reyting, statistika va kassa</span>
+            <li class="price-feature-item">
+              <span class="price-feature-icon" aria-hidden="true">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="20 6 9 17 4 12" />
+                </svg>
+              </span>
+              <div class="price-feature-text">
+                <b class="price-feature-title">Barcha 8 ta modul:</b>
+                <span class="price-feature-desc">oʻquvchilar, jadval, davomat, toʻlovlar, portal, reyting, statistika va kassa</span>
+              </div>
             </li>
-            <li>
-              <b>Onlayn toʻlovlar & avtomatik cheklar:</b>
-              <span>Payme, Click va Uzum orqali masofaviy toʻlov</span>
+            <li class="price-feature-item">
+              <span class="price-feature-icon" aria-hidden="true">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="20 6 9 17 4 12" />
+                </svg>
+              </span>
+              <div class="price-feature-text">
+                <b class="price-feature-title">Onlayn toʻlovlar & avtomatik cheklar:</b>
+                <span class="price-feature-desc">Payme, Click va Uzum orqali masofaviy toʻlov</span>
+              </div>
             </li>
-            <li>
-              <b>Cheksiz oʻquvchilar va guruhlar:</b>
-              <span>cheklovlarsiz istalgancha oʻquvchi va guruh qoʻshish</span>
+            <li class="price-feature-item">
+              <span class="price-feature-icon" aria-hidden="true">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="20 6 9 17 4 12" />
+                </svg>
+              </span>
+              <div class="price-feature-text">
+                <b class="price-feature-title">Cheksiz oʻquvchilar va guruhlar:</b>
+                <span class="price-feature-desc">cheklovlarsiz istalgancha oʻquvchi va guruh qoʻshish</span>
+              </div>
             </li>
-            <li>
-              <b>SMS xabarnomalar bepul:</b>
-              <span>toʻlov va dars eslatmalari avtomatik yuboriladi</span>
+            <li class="price-feature-item">
+              <span class="price-feature-icon" aria-hidden="true">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="20 6 9 17 4 12" />
+                </svg>
+              </span>
+              <div class="price-feature-text">
+                <b class="price-feature-title">SMS xabarnomalar bepul:</b>
+                <span class="price-feature-desc">toʻlov va dars eslatmalari avtomatik yuboriladi</span>
+              </div>
             </li>
-            <li>
-              <b>Cheksiz fayl saqlash:</b>
-              <span>dars materiallari, vazifalar va test fayllari uchun</span>
+            <li class="price-feature-item">
+              <span class="price-feature-icon" aria-hidden="true">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="20 6 9 17 4 12" />
+                </svg>
+              </span>
+              <div class="price-feature-text">
+                <b class="price-feature-title">Cheksiz fayl saqlash:</b>
+                <span class="price-feature-desc">dars materiallari, vazifalar va test fayllari uchun</span>
+              </div>
             </li>
-            <li>
-              <b>Excel (.csv) va PDF hisobotlar:</b>
-              <span>kassa balansi, tushumlar va davomat tarixi</span>
+            <li class="price-feature-item">
+              <span class="price-feature-icon" aria-hidden="true">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="20 6 9 17 4 12" />
+                </svg>
+              </span>
+              <div class="price-feature-text">
+                <b class="price-feature-title">Excel (.csv) va PDF hisobotlar:</b>
+                <span class="price-feature-desc">kassa balansi, tushumlar va davomat tarixi</span>
+              </div>
             </li>
-            <li>
-              <b>Sozlash va koʻchirishda yordam:</b>
-              <span>bazani koʻchirish va ustozlarni oʻrgatish</span>
+            <li class="price-feature-item">
+              <span class="price-feature-icon" aria-hidden="true">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="20 6 9 17 4 12" />
+                </svg>
+              </span>
+              <div class="price-feature-text">
+                <b class="price-feature-title">Sozlash va koʻchirishda yordam:</b>
+                <span class="price-feature-desc">bazani koʻchirish va ustozlarni oʻrgatish</span>
+              </div>
             </li>
           </ul>
         </div>
