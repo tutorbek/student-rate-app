@@ -1,4 +1,13 @@
 import React from 'react';
+import { renderAvatar } from '../utils/studentAvatars';
+
+const triggerHaptic = (style = 'light') => {
+  if (typeof window !== 'undefined' && window.Telegram?.WebApp?.HapticFeedback) {
+    try {
+      window.Telegram.WebApp.HapticFeedback.impactOccurred(style);
+    } catch (_) {}
+  }
+};
 
 const IconSun = ({ size = 15 }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
@@ -75,6 +84,35 @@ const Sidebar = ({ activeTab, setActiveTab, userRole, onLogout, theme, toggleThe
     return (
       <div className="user-card-avatar-initials">
         {getInitials(displayName)}
+      </div>
+    );
+  };
+
+  const renderHeaderAvatar = () => {
+    const avatar = teacherProfile?.avatar;
+    if (avatar) {
+      if (typeof avatar === 'string' && (avatar.startsWith('http') || avatar.startsWith('data:') || avatar.startsWith('/') || avatar.includes('.'))) {
+        return (
+          <div className="navbar-avatar-circle">
+            <img
+              src={avatar}
+              alt={displayName}
+              loading="lazy"
+              decoding="async"
+              style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }}
+            />
+          </div>
+        );
+      }
+      return (
+        <div className="navbar-avatar-circle">
+          {renderAvatar(avatar, 28)}
+        </div>
+      );
+    }
+    return (
+      <div className="navbar-avatar-circle unpinned">
+        <IconUser size={18} />
       </div>
     );
   };
@@ -176,8 +214,6 @@ const Sidebar = ({ activeTab, setActiveTab, userRole, onLogout, theme, toggleThe
     }
     return item.id !== 'dashboard' && item.id !== 'finance' && item.id !== 'leads';
   });
-
-  const hasSettings = filteredMenuItems.some((item) => item.id === 'settings');
 
   return (
     <>
@@ -320,25 +356,33 @@ const Sidebar = ({ activeTab, setActiveTab, userRole, onLogout, theme, toggleThe
           {toggleTheme && (
             <button
               type="button"
-              className="sidebar-theme-btn scale-active"
-              onClick={toggleTheme}
+              className="navbar-icon-btn scale-active"
+              onClick={() => {
+                triggerHaptic('light');
+                toggleTheme();
+              }}
               aria-label="Mavzuni o'zgartirish"
               title="Mavzuni o'zgartirish"
             >
-              {theme === 'dark' ? <IconSun size={15} /> : <IconMoon size={15} />}
+              {theme === 'dark' ? <IconSun size={18} /> : <IconMoon size={18} />}
             </button>
           )}
-          {hasSettings && (
+
+          {userRole !== 'admin' && (
             <button
               type="button"
-              className={`sidebar-theme-btn scale-active ${activeTab === 'settings' ? 'active' : ''}`}
-              onClick={() => setActiveTab('settings')}
-              aria-label="Profil"
-              title="Profil"
+              className={`navbar-profile-avatar-btn scale-active ${activeTab === 'settings' ? 'active' : ''}`}
+              onClick={() => {
+                triggerHaptic('light');
+                setActiveTab('settings');
+              }}
+              title={displayName ? `${displayName} - Profil` : "Profil"}
+              aria-label={displayName ? `${displayName} profili` : "Profil"}
             >
-              <IconUser size={16} />
+              {renderHeaderAvatar()}
             </button>
           )}
+
           {userRole === 'admin' && onLogout && (
             <button
               type="button"
@@ -790,6 +834,113 @@ const Sidebar = ({ activeTab, setActiveTab, userRole, onLogout, theme, toggleThe
           gap: 8px;
         }
 
+        .navbar-icon-btn {
+          width: 38px;
+          height: 38px;
+          min-width: 38px;
+          max-width: 38px;
+          min-height: 38px;
+          max-height: 38px;
+          border-radius: 50%;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          background: var(--bg-card, #FFFFFF);
+          border: 1px solid var(--border-color, rgba(0, 0, 0, 0.08));
+          color: var(--text-secondary, #6E6E73);
+          cursor: pointer;
+          padding: 0;
+          margin: 0;
+          box-sizing: border-box;
+          transition: transform 0.12s ease, border-color 0.15s ease;
+          box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+        }
+
+        .navbar-icon-btn:hover,
+        .navbar-icon-btn:active {
+          color: var(--text-primary, #1D1D1F);
+          border-color: rgba(0, 0, 0, 0.16);
+        }
+
+        .navbar-profile-avatar-btn {
+          width: 38px;
+          height: 38px;
+          min-width: 38px;
+          max-width: 38px;
+          min-height: 38px;
+          max-height: 38px;
+          border-radius: 50%;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          background: var(--bg-card, #FFFFFF);
+          border: 1px solid var(--border-color, rgba(0, 0, 0, 0.08));
+          padding: 0;
+          margin: 0;
+          cursor: pointer;
+          box-sizing: border-box;
+          overflow: hidden;
+          transition: transform 0.12s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+          box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+        }
+
+        .navbar-profile-avatar-btn:hover {
+          border-color: rgba(0, 0, 0, 0.16);
+        }
+
+        .navbar-profile-avatar-btn.active {
+          border-color: var(--apple-blue, #0171E3);
+          box-shadow: 0 0 0 2px rgba(1, 113, 227, 0.25);
+        }
+
+        .navbar-profile-avatar-btn .navbar-avatar-circle {
+          width: 100%;
+          height: 100%;
+          border-radius: 50%;
+          border: none;
+          background: transparent;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          overflow: hidden;
+        }
+
+        .navbar-profile-avatar-btn .navbar-avatar-circle.unpinned {
+          color: var(--apple-blue, #0171E3);
+          background: rgba(0, 113, 227, 0.1);
+        }
+
+        .navbar-profile-avatar-btn .navbar-avatar-circle img {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+          border-radius: 50%;
+        }
+
+        @media (max-width: 480px) {
+          .navbar-icon-btn,
+          .navbar-profile-avatar-btn {
+            width: 34px;
+            height: 34px;
+            min-width: 34px;
+            max-width: 34px;
+            min-height: 34px;
+            max-height: 34px;
+          }
+        }
+
+        @media (max-width: 390px) {
+          .navbar-icon-btn,
+          .navbar-profile-avatar-btn {
+            width: 32px;
+            height: 32px;
+            min-width: 32px;
+            max-width: 32px;
+            min-height: 32px;
+            max-height: 32px;
+          }
+        }
+
         /* Mobile Bottom Navigation Bar */
         .mobile-bottom-navbar {
           display: none;
@@ -906,15 +1057,32 @@ const Sidebar = ({ activeTab, setActiveTab, userRole, onLogout, theme, toggleThe
           color: #000000;
         }
 
-        [data-theme="dark"] .sidebar-theme-btn {
+        [data-theme="dark"] .sidebar-theme-btn,
+        [data-theme="dark"] .navbar-icon-btn {
           background: #25262A;
           border-color: rgba(255, 255, 255, 0.1);
           color: #FDD663;
         }
 
-        [data-theme="dark"] .sidebar-theme-btn:hover {
+        [data-theme="dark"] .sidebar-theme-btn:hover,
+        [data-theme="dark"] .navbar-icon-btn:hover {
           background: #303135;
           color: #FFE082;
+        }
+
+        [data-theme="dark"] .navbar-profile-avatar-btn {
+          background: #25262A;
+          border-color: rgba(255, 255, 255, 0.1);
+        }
+
+        [data-theme="dark"] .navbar-profile-avatar-btn.active {
+          border-color: #8AB4F8;
+          box-shadow: 0 0 0 2px rgba(138, 180, 248, 0.3);
+        }
+
+        [data-theme="dark"] .navbar-profile-avatar-btn .navbar-avatar-circle.unpinned {
+          color: #8AB4F8;
+          background: rgba(138, 180, 248, 0.15);
         }
 
         [data-theme="dark"] .sidebar-nav-btn {
