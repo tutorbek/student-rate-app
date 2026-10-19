@@ -3,7 +3,6 @@ import { createPortal } from 'react-dom';
 import { exportDatabase, DEFAULT_QUICK_TAGS, normalizeQuickTags, getGroupCategory } from '../utils/db';
 import { renderAvatar } from '../utils/studentAvatars';
 import { renderGroupIcon } from '../utils/groupIcons';
-import { AVATAR_GALLERY_IMAGES } from '../utils/avatarGallery';
 import ProjectLikeIcon from './common/ProjectLikeIcon';
 import { useModalDismiss } from '../hooks/useModalDismiss';
 
@@ -270,9 +269,9 @@ const Settings = ({
 
   const isUserDirtyRef = React.useRef(false);
   const autoSaveTimerRef = React.useRef(null);
+  const avatarFileInputRef = React.useRef(null);
 
   const [newAchievementText, setNewAchievementText] = useState('');
-  const [showGalleryModal, setShowGalleryModal] = useState(false);
   const [showAddCertModal, setShowAddCertModal] = useState(false);
   const [certTitleInput, setCertTitleInput] = useState('');
   const [certYearInput, setCertYearInput] = useState('');
@@ -396,14 +395,6 @@ const Settings = ({
     setNewAchievementText('');
   };
 
-  const handleAddSuggestedAchievement = (text) => {
-    if (profileAchievements.includes(text)) {
-      showToast("Ushbu yutuq allaqachon mavjud", "info");
-      return;
-    }
-    isUserDirtyRef.current = true;
-    setProfileAchievements([...profileAchievements, text]);
-  };
 
   const handleRemoveAchievement = (index) => {
     isUserDirtyRef.current = true;
@@ -785,8 +776,7 @@ const Settings = ({
     deleteConfirmModal ||
     rollbackConfirmModal ||
     editingTagIndex !== null ||
-    showAddCertModal ||
-    showGalleryModal
+    showAddCertModal
   );
 
   useModalDismiss(isAnySettingsModalOpen, () => {
@@ -795,8 +785,6 @@ const Settings = ({
     } else if (selectedCalcGroupId) {
       setSelectedCalcGroupId(null);
       setCalcGroupStudentSearch('');
-    } else if (showGalleryModal) {
-      setShowGalleryModal(false);
     } else if (showAddCertModal) {
       setShowAddCertModal(false);
     } else if (editingTagIndex !== null) {
@@ -1002,10 +990,9 @@ const Settings = ({
           </button>
           <button
             type="button"
-            className={`tab-btn-brutalist tab-btn-calc-featured ${activeTab === 'calculator' ? 'active' : ''}`}
+            className={`tab-btn-brutalist ${activeTab === 'calculator' ? 'active' : ''}`}
             onClick={() => setActiveTab('calculator')}
           >
-            <span className="tab-calc-icon"><IconCalculator size={15} /></span>
             <span className="tab-btn-text">Kalkulyator</span>
           </button>
           <button
@@ -1026,13 +1013,32 @@ const Settings = ({
             <div className="hero-identity-main">
               {/* Avatar with Camera Overlay */}
               <div className="hero-avatar-wrapper">
-                <div className="hero-avatar-disc" onClick={() => setShowGalleryModal(true)} title="Suratni tanlash">
-                  {profileAvatar ? renderAvatar(profileAvatar, 82) : <IconUser size={34} />}
+                <input
+                  ref={avatarFileInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handleAvatarFileUpload}
+                  style={{ display: 'none' }}
+                />
+                <div
+                  className="hero-avatar-disc"
+                  onClick={() => avatarFileInputRef.current?.click()}
+                  title="Suratni tanlash"
+                  role="button"
+                  tabIndex={0}
+                >
+                  {profileAvatar ? (
+                    renderAvatar(profileAvatar, 82)
+                  ) : (
+                    <span className="hero-avatar-initial">
+                      {(profileFullName?.trim()?.charAt(0) || 'U').toUpperCase()}
+                    </span>
+                  )}
                 </div>
                 <button
                   type="button"
                   className="hero-avatar-camera-btn scale-active"
-                  onClick={() => setShowGalleryModal(true)}
+                  onClick={() => avatarFileInputRef.current?.click()}
                   title="Suratni o'zgartirish"
                   aria-label="Suratni o'zgartirish"
                 >
@@ -1045,35 +1051,20 @@ const Settings = ({
                 <h3 className="hero-teacher-name">{profileFullName || "Ustoz Ismi"}</h3>
                 <p className="hero-teacher-title">{profileTitle || "Katta o'qituvchi va murabbiy"}</p>
 
-                {/* Quick avatar buttons row */}
-                <div className="hero-avatar-actions-quick">
-                  <label className="hero-quick-btn scale-active">
-                    <IconCamera size={13} />
-                    <span>Rasm yuklash</span>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={handleAvatarFileUpload}
-                      style={{ display: 'none' }}
-                    />
-                  </label>
-                  <button
-                    type="button"
-                    className="hero-quick-btn scale-active"
-                    onClick={() => setShowGalleryModal(true)}
-                  >
-                    <span>Galereya</span>
-                  </button>
-                  {profileAvatar && (
+                {profileAvatar && (
+                  <div className="hero-avatar-actions-quick">
                     <button
                       type="button"
-                      className="hero-quick-remove-btn"
-                      onClick={() => setProfileAvatar('')}
+                      className="hero-quick-remove-btn scale-active"
+                      onClick={() => {
+                        isUserDirtyRef.current = true;
+                        setProfileAvatar('');
+                      }}
                     >
                       Suratni olib tashlash
                     </button>
-                  )}
-                </div>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -1092,10 +1083,7 @@ const Settings = ({
                     <span>Saqlanmoqda...</span>
                   </>
                 ) : (
-                  <>
-                    <IconCheck size={15} />
-                    <span>Saqlash</span>
-                  </>
+                  <span>Saqlash</span>
                 )}
               </button>
 
@@ -1105,283 +1093,229 @@ const Settings = ({
                 onClick={onLogout}
                 title="Tizimdan chiqish"
               >
-                <IconLogOut size={15} />
                 <span>Chiqish</span>
               </button>
             </div>
           </section>
           <div className="profile-workspace-layout">
-            {/* Left Column: Form & Portfolio Editor */}
+            {/* Unified Form & Portfolio Editor Card */}
             <div className="profile-editor-column">
-              {/* Section 1: Asosiy Ma'lumotlar */}
-              <section className="glass-card modern-profile-card">
-                <div className="card-header-clean">
-                  <div className="card-header-icon-wrap user-icon-wrap">
-                    <IconUser size={18} />
-                  </div>
-                  <div>
+              <section className="glass-card modern-profile-card profile-unified-card">
+                {/* Section 1: Asosiy Ma'lumotlar */}
+                <div className="profile-section-block">
+                  <div className="card-header-clean">
                     <h3 className="card-title">Asosiy ma'lumotlar</h3>
                   </div>
-                </div>
 
-                <div className="profile-fields-grid">
-                  <div className="profile-field-item">
-                    <label className="input-field-label">
-                      <IconUser size={12} />
-                      <span>Ism va Familiya *</span>
-                    </label>
-                    <input
-                      type="text"
-                      className="modern-text-input"
-                      placeholder="Masalan: Bekzod Raxmonov"
-                      value={profileFullName}
-                      onChange={(e) => {
-                        setProfileFullName(e.target.value);
-                        isUserDirtyRef.current = true;
-                      }}
-                    />
-                  </div>
+                  <div className="profile-fields-grid">
+                    <div className="profile-field-item">
+                      <label className="input-field-label">
+                        <span>Ism va Familiya *</span>
+                      </label>
+                      <input
+                        type="text"
+                        className="modern-text-input"
+                        placeholder="Masalan: Bekzod Raxmonov"
+                        value={profileFullName}
+                        onChange={(e) => {
+                          setProfileFullName(e.target.value);
+                          isUserDirtyRef.current = true;
+                        }}
+                      />
+                    </div>
 
-                  <div className="profile-field-item">
-                    <label className="input-field-label">
-                      <IconBriefcase size={12} />
-                      <span>Mutaxassislik / Unvon</span>
-                    </label>
-                    <input
-                      type="text"
-                      className="modern-text-input"
-                      placeholder="Masalan: Katta Matematika va Mantiq ustozi"
-                      value={profileTitle}
-                      onChange={(e) => {
-                        setProfileTitle(e.target.value);
-                        isUserDirtyRef.current = true;
-                      }}
-                    />
-                  </div>
+                    <div className="profile-field-item">
+                      <label className="input-field-label">
+                        <span>Mutaxassislik / Unvon</span>
+                      </label>
+                      <input
+                        type="text"
+                        className="modern-text-input"
+                        placeholder="Masalan: Katta Matematika va Mantiq ustozi"
+                        value={profileTitle}
+                        onChange={(e) => {
+                          setProfileTitle(e.target.value);
+                          isUserDirtyRef.current = true;
+                        }}
+                      />
+                    </div>
 
-                  <div className="profile-field-item full-width">
-                    <label className="input-field-label">
-                      <IconGraduation size={12} />
-                      <span>O'qigan joyi (Universitet / Ta'lim)</span>
-                    </label>
-                    <input
-                      type="text"
-                      className="modern-text-input"
-                      placeholder="Masalan: O'zbekiston Milliy Universiteti, Magistratura"
-                      value={profileEducation}
-                      onChange={(e) => {
-                        setProfileEducation(e.target.value);
-                        isUserDirtyRef.current = true;
-                      }}
-                    />
-                  </div>
+                    <div className="profile-field-item full-width">
+                      <label className="input-field-label">
+                        <span>O'qigan joyi (Universitet / Ta'lim)</span>
+                      </label>
+                      <input
+                        type="text"
+                        className="modern-text-input"
+                        placeholder="Masalan: O'zbekiston Milliy Universiteti, Magistratura"
+                        value={profileEducation}
+                        onChange={(e) => {
+                          setProfileEducation(e.target.value);
+                          isUserDirtyRef.current = true;
+                        }}
+                      />
+                    </div>
 
-                  <div className="profile-field-item full-width">
-                    <label className="input-field-label">
-                      <IconQuote size={12} />
-                      <span>Motivatsion shior / Fikringiz</span>
-                    </label>
-                    <textarea
-                      className="modern-textarea-input"
-                      rows={2}
-                      placeholder="O'quvchilaringizga ilhom beruvchi shior yoki fikringiz..."
-                      value={profileMotto}
-                      onChange={(e) => {
-                        setProfileMotto(e.target.value);
-                        isUserDirtyRef.current = true;
-                      }}
-                    />
+                    <div className="profile-field-item full-width">
+                      <label className="input-field-label">
+                        <span>Motivatsion shior / Fikringiz</span>
+                      </label>
+                      <textarea
+                        className="modern-textarea-input"
+                        rows={2}
+                        placeholder="O'quvchilaringizga ilhom beruvchi shior yoki fikringiz..."
+                        value={profileMotto}
+                        onChange={(e) => {
+                          setProfileMotto(e.target.value);
+                          isUserDirtyRef.current = true;
+                        }}
+                      />
+                    </div>
                   </div>
                 </div>
-              </section>
 
-              {/* Section 2: Ijtimoiy Tarmoqlar va Aloqa */}
-              <section className="glass-card modern-profile-card">
-                <div className="card-header-clean">
-                  <div className="card-header-icon-wrap social-icon-wrap">
-                    <IconSend size={17} />
-                  </div>
-                  <div>
+                <div className="profile-section-divider" />
+
+                {/* Section 2: Ijtimoiy Tarmoqlar va Aloqa */}
+                <div className="profile-section-block">
+                  <div className="card-header-clean">
                     <h3 className="card-title">Ijtimoiy tarmoqlar va Aloqa</h3>
                   </div>
-                </div>
 
-                <div className="social-inputs-grid">
-                  <div className="social-input-item">
-                    <label className="input-field-label">
-                      <IconSend size={12} />
-                      <span>Telegram (username yoki kanal)</span>
-                    </label>
-                    <div className="social-input-wrap">
-                      <span className="social-input-prefix tg-prefix">@</span>
-                      <input
-                        type="text"
-                        className="social-clean-input"
-                        placeholder="username yoki t.me/havola"
-                        value={profileTelegram}
-                        onChange={(e) => {
-                          setProfileTelegram(e.target.value);
-                          isUserDirtyRef.current = true;
-                        }}
-                      />
+                  <div className="social-inputs-grid">
+                    <div className="social-input-item">
+                      <label className="input-field-label">
+                        <span>Telegram (username yoki kanal)</span>
+                      </label>
+                      <div className="social-input-wrap">
+                        <span className="social-input-prefix tg-prefix">@</span>
+                        <input
+                          type="text"
+                          className="social-clean-input"
+                          placeholder="username yoki t.me/havola"
+                          value={profileTelegram}
+                          onChange={(e) => {
+                            setProfileTelegram(e.target.value);
+                            isUserDirtyRef.current = true;
+                          }}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="social-input-item">
+                      <label className="input-field-label">
+                        <span>Instagram (username)</span>
+                      </label>
+                      <div className="social-input-wrap">
+                        <span className="social-input-prefix ig-prefix">@</span>
+                        <input
+                          type="text"
+                          className="social-clean-input"
+                          placeholder="username"
+                          value={profileInstagram}
+                          onChange={(e) => {
+                            setProfileInstagram(e.target.value);
+                            isUserDirtyRef.current = true;
+                          }}
+                        />
+                      </div>
                     </div>
                   </div>
-
-                  <div className="social-input-item">
-                    <label className="input-field-label">
-                      <IconInstagram size={12} />
-                      <span>Instagram (username)</span>
-                    </label>
-                    <div className="social-input-wrap">
-                      <span className="social-input-prefix ig-prefix">@</span>
-                      <input
-                        type="text"
-                        className="social-clean-input"
-                        placeholder="username"
-                        value={profileInstagram}
-                        onChange={(e) => {
-                          setProfileInstagram(e.target.value);
-                          isUserDirtyRef.current = true;
-                        }}
-                      />
-                    </div>
-                  </div>
                 </div>
-              </section>
 
-              {/* Section 3: Yutuqlar va Tajriba */}
-              <section className="glass-card modern-profile-card">
-                <div className="card-header-clean">
-                  <div className="card-header-icon-wrap sparkles-icon-wrap">
-                    <IconSparkles size={17} />
-                  </div>
-                  <div>
+                <div className="profile-section-divider" />
+
+                {/* Section 3: Yutuqlar va Tajriba */}
+                <div className="profile-section-block">
+                  <div className="card-header-clean">
                     <h3 className="card-title">Yutuqlar va Tajriba</h3>
                   </div>
-                </div>
 
-                {/* Existing achievements list */}
-                <div className="achievements-editor-chips-wrap">
-                  {profileAchievements.map((ach, idx) => (
-                    <span key={idx} className="achievement-edit-pill">
-                      <span>{ach}</span>
-                      <button
-                        type="button"
-                        className="achievement-remove-x"
-                        onClick={() => handleRemoveAchievement(idx)}
-                        aria-label="O'chirish"
-                        title="O'chirish"
-                      >
-                        ✕
-                      </button>
-                    </span>
-                  ))}
-                </div>
-
-                {/* Add new achievement row */}
-                <form onSubmit={handleAddAchievement} className="add-achievement-row">
-                  <input
-                    type="text"
-                    className="modern-text-input flex-1"
-                    placeholder="Yangi yutuq (masalan: 6+ yil tajriba)"
-                    value={newAchievementText}
-                    onChange={(e) => setNewAchievementText(e.target.value)}
-                  />
-                  <button
-                    type="submit"
-                    className="add-achievement-submit-btn scale-active"
-                    disabled={!newAchievementText.trim()}
-                  >
-                    <IconPlus size={14} />
-                    <span>Qo'shish</span>
-                  </button>
-                </form>
-
-                {/* Fast-pick recommendations */}
-                <div className="achievement-suggestions-block">
-                  <span className="suggestions-label">Tezkor tavsiyalar (bosib qo'shing):</span>
-                  <div className="suggestions-chips-row">
-                    {[
-                      "5+ yil tajriba",
-                      "500+ bitiruvchilar",
-                      "IELTS 8.5",
-                      "Xalqaro olimpiada murabbiyi",
-                      "Magistr darajasi",
-                      "Top universitetlar talabasi",
-                      "Sertifikatlangan mutaxassis"
-                    ].map((sug, i) => (
-                      <button
-                        key={i}
-                        type="button"
-                        className="suggestion-chip-btn scale-active"
-                        onClick={() => handleAddSuggestedAchievement(sug)}
-                      >
-                        <IconPlus size={11} />
-                        <span>{sug}</span>
-                      </button>
+                  {/* Existing achievements list */}
+                  <div className="achievements-editor-chips-wrap">
+                    {profileAchievements.map((ach, idx) => (
+                      <span key={idx} className="achievement-edit-pill">
+                        <span>{ach}</span>
+                        <button
+                          type="button"
+                          className="achievement-remove-x"
+                          onClick={() => handleRemoveAchievement(idx)}
+                          aria-label="O'chirish"
+                          title="O'chirish"
+                        >
+                          ✕
+                        </button>
+                      </span>
                     ))}
                   </div>
-                </div>
-              </section>
 
-              {/* Section 4: Sertifikatlar va Diplomlar */}
-              <section className="glass-card modern-profile-card">
-                <div className="card-header-flex">
-                  <div className="card-header-clean" style={{ margin: 0 }}>
-                    <div className="card-header-icon-wrap cert-icon-wrap">
-                      <IconAward size={18} />
-                    </div>
-                    <div>
+                  {/* Add new achievement row */}
+                  <form onSubmit={handleAddAchievement} className="add-achievement-row">
+                    <input
+                      type="text"
+                      className="modern-text-input flex-1"
+                      placeholder="Yangi yutuq (masalan: 6+ yil tajriba)"
+                      value={newAchievementText}
+                      onChange={(e) => setNewAchievementText(e.target.value)}
+                    />
+                    <button
+                      type="submit"
+                      className="add-achievement-submit-btn scale-active"
+                      disabled={!newAchievementText.trim()}
+                    >
+                      <span>Qo'shish</span>
+                    </button>
+                  </form>
+                </div>
+
+                <div className="profile-section-divider" />
+
+                {/* Section 4: Sertifikatlar va Diplomlar */}
+                <div className="profile-section-block">
+                  <div className="card-header-flex">
+                    <div className="card-header-clean" style={{ margin: 0 }}>
                       <h3 className="card-title">Sertifikat va Diplomlar</h3>
                     </div>
+                    <button
+                      type="button"
+                      className="add-cert-trigger-btn scale-active"
+                      onClick={() => setShowAddCertModal(true)}
+                    >
+                      <span>+ Sertifikat qo'shish</span>
+                    </button>
                   </div>
-                  <button
-                    type="button"
-                    className="add-cert-trigger-btn scale-active"
-                    onClick={() => setShowAddCertModal(true)}
-                  >
-                    <IconPlus size={13} />
-                    <span>Sertifikat qo'shish</span>
-                  </button>
-                </div>
 
-                <div className="certificates-edit-grid">
-                  {profileCertificates.map((cert, index) => (
-                    <div key={cert.id || index} className="cert-edit-item-card">
-                      <div className="cert-edit-thumbnail">
-                        {cert.image ? (
-                          <img src={cert.image} alt={cert.title || 'Sertifikat'} />
-                        ) : (
-                          <span className="cert-placeholder-icon">
-                            <IconAward size={22} />
-                          </span>
-                        )}
+                  <div className="certificates-edit-grid">
+                    {profileCertificates.map((cert, index) => (
+                      <div key={cert.id || index} className="cert-edit-item-card">
+                        <div className="cert-edit-thumbnail">
+                          {cert.image ? (
+                            <img src={cert.image} alt={cert.title || 'Sertifikat'} />
+                          ) : (
+                            <span className="cert-placeholder-tag">
+                              Sertifikat
+                            </span>
+                          )}
+                        </div>
+                        <div className="cert-edit-details">
+                          <h5 className="cert-edit-title">{cert.title || "Nomsiz sertifikat"}</h5>
+                          {cert.year && <span className="cert-edit-year">{cert.year}</span>}
+                        </div>
+                        <button
+                          type="button"
+                          className="cert-edit-delete-btn"
+                          onClick={() => handleRemoveCertificate(index)}
+                          title="O'chirish"
+                        >
+                          ✕
+                        </button>
                       </div>
-                      <div className="cert-edit-details">
-                        <h5 className="cert-edit-title">{cert.title || "Nomsiz sertifikat"}</h5>
-                        {cert.year && <span className="cert-edit-year">{cert.year}</span>}
-                      </div>
-                      <button
-                        type="button"
-                        className="cert-edit-delete-btn"
-                        onClick={() => handleRemoveCertificate(index)}
-                        title="O'chirish"
-                      >
-                        ✕
-                      </button>
-                    </div>
-                  ))}
+                    ))}
 
-                  <button
-                    type="button"
-                    className="cert-add-dashed-card scale-active"
-                    onClick={() => setShowAddCertModal(true)}
-                  >
-                    <div className="cert-add-icon-circle">
-                      <IconPlus size={18} />
-                    </div>
-                    <span className="cert-add-text">Yangi sertifikat qo'shish</span>
-                  </button>
+                    {profileCertificates.length === 0 && (
+                      <p className="cert-empty-hint">Hozircha sertifikatlar qo'shilmagan</p>
+                    )}
+                  </div>
                 </div>
               </section>
             </div>
@@ -2526,42 +2460,6 @@ const Settings = ({
         document.body
       )}
 
-      {/* MODAL 6: Avatar Galereyasi */}
-      {showGalleryModal && typeof document !== 'undefined' && createPortal(
-        <div className="sheet-backdrop animate-backdropFadeIn" onClick={() => setShowGalleryModal(false)}>
-          <div className="sheet-container avatar-gallery-dialog animate-slideUp" onClick={(e) => e.stopPropagation()}>
-            <div className="cert-modal-header">
-              <h3 className="cert-modal-title">Galereyadan surat tanlang</h3>
-              <button
-                type="button"
-                className="sheet-close-x-btn"
-                onClick={() => setShowGalleryModal(false)}
-                aria-label="Yopish"
-              >
-                ✕
-              </button>
-            </div>
-
-            <div className="settings-gallery-grid">
-              {AVATAR_GALLERY_IMAGES.map((img) => (
-                <button
-                  key={img.id}
-                  type="button"
-                  className={`settings-gallery-item ${profileAvatar === img.path ? 'is-selected' : ''}`}
-                  onClick={() => {
-                    setProfileAvatar(img.path);
-                    setShowGalleryModal(false);
-                  }}
-                  title={img.label}
-                >
-                  <img src={img.path} alt={img.label} loading="lazy" />
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>,
-        document.body
-      )}
 
       {/* MODAL 7: Kalkulyator Guruh O'quvchilari Ro'yxati */}
       {selectedCalcGroup && typeof document !== 'undefined' && createPortal(
@@ -2907,35 +2805,6 @@ const Settings = ({
           font-weight: 600;
         }
 
-        /* Featured Calculator Tab */
-        .tab-btn-brutalist.tab-btn-calc-featured {
-          background: rgba(0, 113, 227, 0.09);
-          color: var(--apple-blue);
-          border-color: rgba(0, 113, 227, 0.18);
-          font-weight: 600;
-        }
-
-        .tab-btn-brutalist.tab-btn-calc-featured:hover {
-          background: rgba(0, 113, 227, 0.16);
-          border-color: rgba(0, 113, 227, 0.28);
-          color: var(--apple-blue);
-          font-weight: 600;
-        }
-
-        .tab-btn-brutalist.tab-btn-calc-featured.active {
-          background: var(--apple-blue);
-          color: #FFFFFF;
-          border-color: var(--apple-blue);
-          box-shadow: 0 2px 8px rgba(0, 113, 227, 0.35);
-          font-weight: 600;
-        }
-
-        .tab-calc-icon {
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-          line-height: 1;
-        }
 
         .tab-btn-text {
           display: inline;
@@ -3123,35 +2992,56 @@ const Settings = ({
           flex-wrap: wrap;
         }
 
-        .hero-quick-btn {
+        .hero-quick-remove-btn {
           display: inline-flex;
           align-items: center;
-          gap: 5px;
-          padding: 4px 10px;
-          font-size: 0.76rem;
-          font-weight: 600;
-          border-radius: var(--radius-sm, 7px);
-          background: #F5F5F7;
-          border: 1px solid rgba(0, 0, 0, 0.08);
-          color: var(--text-primary);
-          cursor: pointer;
-          transition: all 0.15s ease;
-        }
-
-        .hero-quick-btn:hover {
-          background: #E8EAED;
-          border-color: rgba(0, 0, 0, 0.15);
-        }
-
-        .hero-quick-remove-btn {
-          background: none;
-          border: none;
-          color: var(--apple-red, #EF4444);
+          justify-content: center;
+          padding: 5px 12px;
+          border-radius: var(--radius-full, 9999px);
+          background: rgba(239, 68, 68, 0.08);
+          border: 1px solid rgba(239, 68, 68, 0.22);
+          color: #DC2626;
           font-size: 0.74rem;
           font-weight: 600;
+          letter-spacing: -0.01em;
           cursor: pointer;
-          padding: 2px 4px;
-          text-decoration: underline;
+          text-decoration: none;
+          transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .hero-quick-remove-btn:hover {
+          background: rgba(239, 68, 68, 0.15);
+          border-color: rgba(239, 68, 68, 0.38);
+          color: #B91C1C;
+          transform: translateY(-1px);
+        }
+
+        .hero-quick-remove-btn:active {
+          transform: scale(0.96);
+        }
+
+        .hero-avatar-initial {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          width: 100%;
+          height: 100%;
+          font-size: 2rem;
+          font-weight: 700;
+          color: var(--text-primary, #1D1D1F);
+          background: #E5E5EA;
+          user-select: none;
+        }
+
+        .cert-placeholder-tag {
+          font-size: 0.72rem;
+          font-weight: 700;
+          text-transform: uppercase;
+          letter-spacing: 0.04em;
+          color: var(--text-secondary, #86868B);
+          background: rgba(0, 0, 0, 0.04);
+          padding: 6px 10px;
+          border-radius: 6px;
         }
 
         .hero-actions-cluster {
@@ -3897,6 +3787,23 @@ const Settings = ({
           transition: border-color 0.2s ease, box-shadow 0.2s ease;
         }
 
+        .profile-unified-card {
+          display: flex;
+          flex-direction: column;
+          gap: 22px;
+        }
+
+        .profile-section-block {
+          display: flex;
+          flex-direction: column;
+        }
+
+        .profile-section-divider {
+          height: 1px;
+          background: rgba(0, 0, 0, 0.06);
+          width: 100%;
+        }
+
         .modern-profile-card:hover {
           border-color: rgba(0, 0, 0, 0.1);
         }
@@ -4204,6 +4111,15 @@ const Settings = ({
           display: grid;
           grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
           gap: 12px;
+        }
+
+        .cert-empty-hint {
+          grid-column: 1 / -1;
+          font-size: 0.84rem;
+          color: var(--text-secondary, #86868B);
+          font-style: italic;
+          padding: 8px 2px;
+          margin: 0;
         }
 
         .cert-edit-item-card {
@@ -6332,27 +6248,6 @@ const Settings = ({
           font-weight: 600;
         }
 
-        [data-theme="dark"] .tab-btn-brutalist.tab-btn-calc-featured {
-          background: rgba(138, 180, 248, 0.14);
-          color: #8AB4F8;
-          border-color: rgba(138, 180, 248, 0.28);
-          font-weight: 600;
-        }
-
-        [data-theme="dark"] .tab-btn-brutalist.tab-btn-calc-featured:hover {
-          background: rgba(138, 180, 248, 0.22);
-          color: #8AB4F8;
-          border-color: rgba(138, 180, 248, 0.4);
-          font-weight: 600;
-        }
-
-        [data-theme="dark"] .tab-btn-brutalist.tab-btn-calc-featured.active {
-          background: #8AB4F8;
-          color: #202124;
-          border-color: #8AB4F8;
-          box-shadow: 0 2px 8px rgba(138, 180, 248, 0.35);
-          font-weight: 600;
-        }
 
         [data-theme="dark"] .modern-hero-identity-card {
           background: #292A2D;
@@ -6386,15 +6281,26 @@ const Settings = ({
           color: #9AA0A6;
         }
 
-        [data-theme="dark"] .hero-quick-btn {
-          background: #202124;
-          border-color: #363739;
-          color: #E8EAED;
+        [data-theme="dark"] .hero-avatar-initial {
+          background: #2C2C2E;
+          color: #FFFFFF;
         }
 
-        [data-theme="dark"] .hero-quick-btn:hover {
-          background: #303134;
-          border-color: #5F6368;
+        [data-theme="dark"] .hero-quick-remove-btn {
+          color: #F87171;
+          background: rgba(239, 68, 68, 0.16);
+          border-color: rgba(239, 68, 68, 0.35);
+        }
+
+        [data-theme="dark"] .hero-quick-remove-btn:hover {
+          color: #FCA5A5;
+          background: rgba(239, 68, 68, 0.25);
+          border-color: rgba(239, 68, 68, 0.48);
+        }
+
+        [data-theme="dark"] .cert-placeholder-tag {
+          background: rgba(255, 255, 255, 0.08);
+          color: #A1A1A6;
         }
 
         [data-theme="dark"] .hero-danger-logout-btn {
@@ -6595,6 +6501,10 @@ const Settings = ({
         [data-theme="dark"] .modern-profile-card {
           background: #292A2D;
           border-color: #363739;
+        }
+
+        [data-theme="dark"] .profile-section-divider {
+          background: rgba(255, 255, 255, 0.08);
         }
 
         [data-theme="dark"] .card-header-icon-wrap.user-icon-wrap {
