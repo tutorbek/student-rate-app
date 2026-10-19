@@ -6,7 +6,6 @@ import { renderGroupIcon } from '../utils/groupIcons';
 import { AVATAR_GALLERY_IMAGES } from '../utils/avatarGallery';
 import ProjectLikeIcon from './common/ProjectLikeIcon';
 import { useModalDismiss } from '../hooks/useModalDismiss';
-import TeacherProfile from './TeacherProfile';
 
 // Minimalist SVG Icons
 const IconTag = ({ size = 15, strokeWidth = 2.2 }) => (
@@ -257,6 +256,231 @@ const Settings = ({
 }) => {
   // Tabs: 'profile', 'tags', 'trash', 'backup', 'danger'
   const [activeTab, setActiveTab] = useState('profile');
+
+  // Teacher Profile State
+  const [profileFullName, setProfileFullName] = useState(teacherProfile?.fullName || '');
+  const [profileTitle, setProfileTitle] = useState(teacherProfile?.title || '');
+  const [profileAvatar, setProfileAvatar] = useState(teacherProfile?.avatar || '');
+  const [profileEducation, setProfileEducation] = useState(teacherProfile?.education || '');
+  const [profileMotto, setProfileMotto] = useState(teacherProfile?.motto || '');
+  const [profileAchievements, setProfileAchievements] = useState(teacherProfile?.achievements || []);
+  const [profileCertificates, setProfileCertificates] = useState(teacherProfile?.certificates || []);
+  const [profileTelegram, setProfileTelegram] = useState(teacherProfile?.social?.telegram || '');
+  const [profileInstagram, setProfileInstagram] = useState(teacherProfile?.social?.instagram || '');
+
+  const isUserDirtyRef = React.useRef(false);
+  const autoSaveTimerRef = React.useRef(null);
+
+  const [newAchievementText, setNewAchievementText] = useState('');
+  const [showGalleryModal, setShowGalleryModal] = useState(false);
+  const [showAddCertModal, setShowAddCertModal] = useState(false);
+  const [certTitleInput, setCertTitleInput] = useState('');
+  const [certYearInput, setCertYearInput] = useState('');
+  const [certImageInput, setCertImageInput] = useState('');
+  const [isSavingProfile, setIsSavingProfile] = useState(false);
+
+  // Sync from props only if user has not actively edited the local form
+  useEffect(() => {
+    if (teacherProfile && !isUserDirtyRef.current) {
+      setProfileFullName(teacherProfile.fullName || '');
+      setProfileTitle(teacherProfile.title || '');
+      setProfileAvatar(teacherProfile.avatar || '');
+      setProfileEducation(teacherProfile.education || '');
+      setProfileMotto(teacherProfile.motto || '');
+      setProfileAchievements(teacherProfile.achievements || []);
+      setProfileCertificates(teacherProfile.certificates || []);
+      setProfileTelegram(teacherProfile.social?.telegram || '');
+      setProfileInstagram(teacherProfile.social?.instagram || '');
+    }
+  }, [teacherProfile]);
+
+  // Debounced auto-save to cloud & instant localStorage backup
+  useEffect(() => {
+    if (!isUserDirtyRef.current) return;
+
+    const updated = {
+      fullName: profileFullName.trim(),
+      title: profileTitle.trim(),
+      avatar: profileAvatar,
+      education: profileEducation.trim(),
+      motto: profileMotto.trim(),
+      achievements: profileAchievements.filter(Boolean),
+      certificates: profileCertificates.filter(Boolean),
+      social: {
+        telegram: profileTelegram.trim(),
+        instagram: profileInstagram.trim()
+      }
+    };
+
+    // Immediate 0ms local storage backup
+    try {
+      const tId = localStorage.getItem('rsa_teacher_id');
+      if (tId) {
+        localStorage.setItem(`rsa_teacher_profile_${tId}`, JSON.stringify(updated));
+      }
+    } catch {}
+
+    if (autoSaveTimerRef.current) {
+      clearTimeout(autoSaveTimerRef.current);
+    }
+
+    autoSaveTimerRef.current = setTimeout(() => {
+      if (onSaveTeacherProfile) {
+        onSaveTeacherProfile(updated);
+      }
+    }, 800);
+
+    return () => {
+      if (autoSaveTimerRef.current) {
+        clearTimeout(autoSaveTimerRef.current);
+      }
+    };
+  }, [
+    profileFullName,
+    profileTitle,
+    profileAvatar,
+    profileEducation,
+    profileMotto,
+    profileAchievements,
+    profileCertificates,
+    profileTelegram,
+    profileInstagram,
+    onSaveTeacherProfile
+  ]);
+
+  const handleAvatarFileUpload = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 2 * 1024 * 1024) {
+      showToast("Rasm hajmi 2MB dan oshmasligi kerak", "error");
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const dataUrl = event.target?.result;
+      if (typeof dataUrl === 'string') {
+        setProfileAvatar(dataUrl);
+        isUserDirtyRef.current = true;
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleCertFileUpload = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 3 * 1024 * 1024) {
+      showToast("Sertifikat rasmi 3MB dan oshmasligi kerak", "error");
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const dataUrl = event.target?.result;
+      if (typeof dataUrl === 'string') {
+        setCertImageInput(dataUrl);
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleAddAchievement = (e) => {
+    if (e && e.preventDefault) e.preventDefault();
+    const clean = newAchievementText.trim();
+    if (!clean) return;
+    if (profileAchievements.includes(clean)) {
+      showToast("Ushbu yutuq allaqachon qo'shilgan", "info");
+      return;
+    }
+    isUserDirtyRef.current = true;
+    setProfileAchievements([...profileAchievements, clean]);
+    setNewAchievementText('');
+  };
+
+  const handleAddSuggestedAchievement = (text) => {
+    if (profileAchievements.includes(text)) {
+      showToast("Ushbu yutuq allaqachon mavjud", "info");
+      return;
+    }
+    isUserDirtyRef.current = true;
+    setProfileAchievements([...profileAchievements, text]);
+  };
+
+  const handleRemoveAchievement = (index) => {
+    isUserDirtyRef.current = true;
+    setProfileAchievements(profileAchievements.filter((_, i) => i !== index));
+  };
+
+  const handleAddCertificateSubmit = () => {
+    if (!certTitleInput.trim() && !certImageInput) {
+      showToast("Sertifikat nomi yoki rasmini kiriting", "warning");
+      return;
+    }
+    const newCert = {
+      id: `cert_${Date.now()}`,
+      title: certTitleInput.trim(),
+      year: certYearInput.trim(),
+      image: certImageInput
+    };
+    isUserDirtyRef.current = true;
+    setProfileCertificates([...profileCertificates, newCert]);
+    setCertTitleInput('');
+    setCertYearInput('');
+    setCertImageInput('');
+    setShowAddCertModal(false);
+  };
+
+  const handleRemoveCertificate = (index) => {
+    isUserDirtyRef.current = true;
+    setProfileCertificates(profileCertificates.filter((_, i) => i !== index));
+  };
+
+  const handleSaveProfile = async () => {
+    if (!profileFullName.trim()) {
+      showToast("Iltimos, ism-familiyangizni kiriting!", "warning");
+      return;
+    }
+    if (autoSaveTimerRef.current) {
+      clearTimeout(autoSaveTimerRef.current);
+    }
+    setIsSavingProfile(true);
+    const updated = {
+      fullName: profileFullName.trim(),
+      title: profileTitle.trim(),
+      avatar: profileAvatar,
+      education: profileEducation.trim(),
+      motto: profileMotto.trim(),
+      achievements: profileAchievements.filter(Boolean),
+      certificates: profileCertificates.filter(Boolean),
+      social: {
+        telegram: profileTelegram.trim(),
+        instagram: profileInstagram.trim()
+      }
+    };
+    try {
+      const tId = localStorage.getItem('rsa_teacher_id');
+      if (tId) {
+        localStorage.setItem(`rsa_teacher_profile_${tId}`, JSON.stringify(updated));
+      }
+    } catch {}
+    if (onSaveTeacherProfile) {
+      await onSaveTeacherProfile(updated);
+    }
+    setIsSavingProfile(false);
+  };
+
+  // Keyboard shortcut: Ctrl+S / Cmd+S to quickly save profile
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if ((e.ctrlKey || e.metaKey) && (e.key === 's' || e.key === 'S')) {
+        e.preventDefault();
+        if (activeTab === 'profile' && !isSavingProfile) {
+          handleSaveProfile();
+        }
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [activeTab, isSavingProfile, handleSaveProfile]);
 
   // Quick Tags State
   const [newTagText, setNewTagText] = useState('');
@@ -553,14 +777,16 @@ const Settings = ({
 
   const totalTrashCount = deletedGroups.length + deletedStudents.length;
 
-  // Escape key and background scroll lock handler for all modals
+  // Escape key and background scroll lock handler for all modals (including cert, gallery, calc group and cal picker)
   const isAnySettingsModalOpen = Boolean(
     calPickerTarget ||
     selectedCalcGroupId ||
     showResetConfirm ||
     deleteConfirmModal ||
     rollbackConfirmModal ||
-    editingTagIndex !== null
+    editingTagIndex !== null ||
+    showAddCertModal ||
+    showGalleryModal
   );
 
   useModalDismiss(isAnySettingsModalOpen, () => {
@@ -569,6 +795,10 @@ const Settings = ({
     } else if (selectedCalcGroupId) {
       setSelectedCalcGroupId(null);
       setCalcGroupStudentSearch('');
+    } else if (showGalleryModal) {
+      setShowGalleryModal(false);
+    } else if (showAddCertModal) {
+      setShowAddCertModal(false);
     } else if (editingTagIndex !== null) {
       handleCloseEditModal();
     } else if (rollbackConfirmModal) {
@@ -788,16 +1018,375 @@ const Settings = ({
         </div>
       </div>
 
-      {/* Tab 0: Ustoz Shaxsiy Portfoliosi va Profili (Compact Instagram Format, Zero Icons) */}
+      {/* Tab 0: Ustoz Shaxsiy Portfoliosi va Profili */}
       {activeTab === 'profile' && (
-        <TeacherProfile
-          teacherProfile={teacherProfile}
-          onSaveTeacherProfile={onSaveTeacherProfile}
-          onLogout={onLogout}
-          groups={groups}
-          students={students}
-          showToast={showToast}
-        />
+        <div className="settings-tab-content fade-in">
+          {/* Unified Hero Identity Banner */}
+          <section className="glass-card modern-hero-identity-card">
+            <div className="hero-identity-main">
+              {/* Avatar with Camera Overlay */}
+              <div className="hero-avatar-wrapper">
+                <div className="hero-avatar-disc" onClick={() => setShowGalleryModal(true)} title="Suratni tanlash">
+                  {profileAvatar ? renderAvatar(profileAvatar, 82) : <IconUser size={34} />}
+                </div>
+                <button
+                  type="button"
+                  className="hero-avatar-camera-btn scale-active"
+                  onClick={() => setShowGalleryModal(true)}
+                  title="Suratni o'zgartirish"
+                  aria-label="Suratni o'zgartirish"
+                >
+                  <IconCamera size={14} />
+                </button>
+              </div>
+
+              {/* Profile Name & Title */}
+              <div className="hero-identity-details">
+                <h3 className="hero-teacher-name">{profileFullName || "Ustoz Ismi"}</h3>
+                <p className="hero-teacher-title">{profileTitle || "Katta o'qituvchi va murabbiy"}</p>
+
+                {/* Quick avatar buttons row */}
+                <div className="hero-avatar-actions-quick">
+                  <label className="hero-quick-btn scale-active">
+                    <IconCamera size={13} />
+                    <span>Rasm yuklash</span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleAvatarFileUpload}
+                      style={{ display: 'none' }}
+                    />
+                  </label>
+                  <button
+                    type="button"
+                    className="hero-quick-btn scale-active"
+                    onClick={() => setShowGalleryModal(true)}
+                  >
+                    <span>Galereya</span>
+                  </button>
+                  {profileAvatar && (
+                    <button
+                      type="button"
+                      className="hero-quick-remove-btn"
+                      onClick={() => setProfileAvatar('')}
+                    >
+                      Suratni olib tashlash
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Hero Right Actions: Save and Logout */}
+            <div className="hero-actions-cluster">
+              <button
+                type="button"
+                className="hero-primary-save-btn scale-active"
+                onClick={handleSaveProfile}
+                disabled={isSavingProfile}
+                title="O'zgarishlarni saqlash (Ctrl+S / Cmd+S)"
+              >
+                {isSavingProfile ? (
+                  <>
+                    <span className="btn-spinner" />
+                    <span>Saqlanmoqda...</span>
+                  </>
+                ) : (
+                  <>
+                    <IconCheck size={15} />
+                    <span>Saqlash</span>
+                  </>
+                )}
+              </button>
+
+              <button
+                type="button"
+                className="hero-danger-logout-btn scale-active"
+                onClick={onLogout}
+                title="Tizimdan chiqish"
+              >
+                <IconLogOut size={15} />
+                <span>Chiqish</span>
+              </button>
+            </div>
+          </section>
+          <div className="profile-workspace-layout">
+            {/* Left Column: Form & Portfolio Editor */}
+            <div className="profile-editor-column">
+              {/* Section 1: Asosiy Ma'lumotlar */}
+              <section className="glass-card modern-profile-card">
+                <div className="card-header-clean">
+                  <div className="card-header-icon-wrap user-icon-wrap">
+                    <IconUser size={18} />
+                  </div>
+                  <div>
+                    <h3 className="card-title">Asosiy ma'lumotlar</h3>
+                  </div>
+                </div>
+
+                <div className="profile-fields-grid">
+                  <div className="profile-field-item">
+                    <label className="input-field-label">
+                      <IconUser size={12} />
+                      <span>Ism va Familiya *</span>
+                    </label>
+                    <input
+                      type="text"
+                      className="modern-text-input"
+                      placeholder="Masalan: Bekzod Raxmonov"
+                      value={profileFullName}
+                      onChange={(e) => {
+                        setProfileFullName(e.target.value);
+                        isUserDirtyRef.current = true;
+                      }}
+                    />
+                  </div>
+
+                  <div className="profile-field-item">
+                    <label className="input-field-label">
+                      <IconBriefcase size={12} />
+                      <span>Mutaxassislik / Unvon</span>
+                    </label>
+                    <input
+                      type="text"
+                      className="modern-text-input"
+                      placeholder="Masalan: Katta Matematika va Mantiq ustozi"
+                      value={profileTitle}
+                      onChange={(e) => {
+                        setProfileTitle(e.target.value);
+                        isUserDirtyRef.current = true;
+                      }}
+                    />
+                  </div>
+
+                  <div className="profile-field-item full-width">
+                    <label className="input-field-label">
+                      <IconGraduation size={12} />
+                      <span>O'qigan joyi (Universitet / Ta'lim)</span>
+                    </label>
+                    <input
+                      type="text"
+                      className="modern-text-input"
+                      placeholder="Masalan: O'zbekiston Milliy Universiteti, Magistratura"
+                      value={profileEducation}
+                      onChange={(e) => {
+                        setProfileEducation(e.target.value);
+                        isUserDirtyRef.current = true;
+                      }}
+                    />
+                  </div>
+
+                  <div className="profile-field-item full-width">
+                    <label className="input-field-label">
+                      <IconQuote size={12} />
+                      <span>Motivatsion shior / Fikringiz</span>
+                    </label>
+                    <textarea
+                      className="modern-textarea-input"
+                      rows={2}
+                      placeholder="O'quvchilaringizga ilhom beruvchi shior yoki fikringiz..."
+                      value={profileMotto}
+                      onChange={(e) => {
+                        setProfileMotto(e.target.value);
+                        isUserDirtyRef.current = true;
+                      }}
+                    />
+                  </div>
+                </div>
+              </section>
+
+              {/* Section 2: Ijtimoiy Tarmoqlar va Aloqa */}
+              <section className="glass-card modern-profile-card">
+                <div className="card-header-clean">
+                  <div className="card-header-icon-wrap social-icon-wrap">
+                    <IconSend size={17} />
+                  </div>
+                  <div>
+                    <h3 className="card-title">Ijtimoiy tarmoqlar va Aloqa</h3>
+                  </div>
+                </div>
+
+                <div className="social-inputs-grid">
+                  <div className="social-input-item">
+                    <label className="input-field-label">
+                      <IconSend size={12} />
+                      <span>Telegram (username yoki kanal)</span>
+                    </label>
+                    <div className="social-input-wrap">
+                      <span className="social-input-prefix tg-prefix">@</span>
+                      <input
+                        type="text"
+                        className="social-clean-input"
+                        placeholder="username yoki t.me/havola"
+                        value={profileTelegram}
+                        onChange={(e) => {
+                          setProfileTelegram(e.target.value);
+                          isUserDirtyRef.current = true;
+                        }}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="social-input-item">
+                    <label className="input-field-label">
+                      <IconInstagram size={12} />
+                      <span>Instagram (username)</span>
+                    </label>
+                    <div className="social-input-wrap">
+                      <span className="social-input-prefix ig-prefix">@</span>
+                      <input
+                        type="text"
+                        className="social-clean-input"
+                        placeholder="username"
+                        value={profileInstagram}
+                        onChange={(e) => {
+                          setProfileInstagram(e.target.value);
+                          isUserDirtyRef.current = true;
+                        }}
+                      />
+                    </div>
+                  </div>
+                </div>
+              </section>
+
+              {/* Section 3: Yutuqlar va Tajriba */}
+              <section className="glass-card modern-profile-card">
+                <div className="card-header-clean">
+                  <div className="card-header-icon-wrap sparkles-icon-wrap">
+                    <IconSparkles size={17} />
+                  </div>
+                  <div>
+                    <h3 className="card-title">Yutuqlar va Tajriba</h3>
+                  </div>
+                </div>
+
+                {/* Existing achievements list */}
+                <div className="achievements-editor-chips-wrap">
+                  {profileAchievements.map((ach, idx) => (
+                    <span key={idx} className="achievement-edit-pill">
+                      <span>{ach}</span>
+                      <button
+                        type="button"
+                        className="achievement-remove-x"
+                        onClick={() => handleRemoveAchievement(idx)}
+                        aria-label="O'chirish"
+                        title="O'chirish"
+                      >
+                        ✕
+                      </button>
+                    </span>
+                  ))}
+                </div>
+
+                {/* Add new achievement row */}
+                <form onSubmit={handleAddAchievement} className="add-achievement-row">
+                  <input
+                    type="text"
+                    className="modern-text-input flex-1"
+                    placeholder="Yangi yutuq (masalan: 6+ yil tajriba)"
+                    value={newAchievementText}
+                    onChange={(e) => setNewAchievementText(e.target.value)}
+                  />
+                  <button
+                    type="submit"
+                    className="add-achievement-submit-btn scale-active"
+                    disabled={!newAchievementText.trim()}
+                  >
+                    <IconPlus size={14} />
+                    <span>Qo'shish</span>
+                  </button>
+                </form>
+
+                {/* Fast-pick recommendations */}
+                <div className="achievement-suggestions-block">
+                  <span className="suggestions-label">Tezkor tavsiyalar (bosib qo'shing):</span>
+                  <div className="suggestions-chips-row">
+                    {[
+                      "5+ yil tajriba",
+                      "500+ bitiruvchilar",
+                      "IELTS 8.5",
+                      "Xalqaro olimpiada murabbiyi",
+                      "Magistr darajasi",
+                      "Top universitetlar talabasi",
+                      "Sertifikatlangan mutaxassis"
+                    ].map((sug, i) => (
+                      <button
+                        key={i}
+                        type="button"
+                        className="suggestion-chip-btn scale-active"
+                        onClick={() => handleAddSuggestedAchievement(sug)}
+                      >
+                        <IconPlus size={11} />
+                        <span>{sug}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </section>
+
+              {/* Section 4: Sertifikatlar va Diplomlar */}
+              <section className="glass-card modern-profile-card">
+                <div className="card-header-flex">
+                  <div className="card-header-clean" style={{ margin: 0 }}>
+                    <div className="card-header-icon-wrap cert-icon-wrap">
+                      <IconAward size={18} />
+                    </div>
+                    <div>
+                      <h3 className="card-title">Sertifikat va Diplomlar</h3>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    className="add-cert-trigger-btn scale-active"
+                    onClick={() => setShowAddCertModal(true)}
+                  >
+                    <IconPlus size={13} />
+                    <span>Sertifikat qo'shish</span>
+                  </button>
+                </div>
+
+                <div className="certificates-edit-grid">
+                  {profileCertificates.map((cert, index) => (
+                    <div key={cert.id || index} className="cert-edit-item-card">
+                      <div className="cert-edit-thumbnail">
+                        {cert.image ? (
+                          <img src={cert.image} alt={cert.title || 'Sertifikat'} />
+                        ) : (
+                          <span className="cert-placeholder-icon">
+                            <IconAward size={22} />
+                          </span>
+                        )}
+                      </div>
+                      <div className="cert-edit-details">
+                        <h5 className="cert-edit-title">{cert.title || "Nomsiz sertifikat"}</h5>
+                        {cert.year && <span className="cert-edit-year">{cert.year}</span>}
+                      </div>
+                      <button
+                        type="button"
+                        className="cert-edit-delete-btn"
+                        onClick={() => handleRemoveCertificate(index)}
+                        title="O'chirish"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  ))}
+
+                  <button
+                    type="button"
+                    className="cert-add-dashed-card scale-active"
+                    onClick={() => setShowAddCertModal(true)}
+                  >
+                    <div className="cert-add-icon-circle">
+                      <IconPlus size={18} />
+                    </div>
+                    <span className="cert-add-text">Yangi sertifikat qo'shish</span>
+                  </button>
+                </div>
+              </section>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Tab: O'qituvchi Daromadi Kalkulyatori */}
@@ -1848,7 +2437,131 @@ const Settings = ({
         document.body
       )}
 
+      {/* MODAL 5: Yangi sertifikat qo'shish */}
+      {showAddCertModal && typeof document !== 'undefined' && createPortal(
+        <div className="sheet-backdrop animate-backdropFadeIn" onClick={() => setShowAddCertModal(false)}>
+          <div className="sheet-container cert-add-dialog animate-slideUp" onClick={(e) => e.stopPropagation()}>
+            <div className="cert-modal-header">
+              <h3 className="cert-modal-title">Yangi sertifikat qo'shish</h3>
+              <button
+                type="button"
+                className="sheet-close-x-btn"
+                onClick={() => setShowAddCertModal(false)}
+                aria-label="Yopish"
+              >
+                ✕
+              </button>
+            </div>
 
+            <div className="cert-modal-body">
+              {/* Image Preview & Upload */}
+              <div className="cert-upload-area">
+                {certImageInput ? (
+                  <div className="cert-upload-preview">
+                    <img src={certImageInput} alt="Preview" />
+                    <button
+                      type="button"
+                      className="cert-upload-change-btn"
+                      onClick={() => setCertImageInput('')}
+                    >
+                      Boshqa rasm tanlash
+                    </button>
+                  </div>
+                ) : (
+                  <label className="cert-dropzone-label">
+                    <span className="dropzone-text">Sertifikat rasmini yuklang</span>
+                    <span className="dropzone-sub">PNG, JPG, WEBP (maks. 3MB)</span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleCertFileUpload}
+                      style={{ display: 'none' }}
+                    />
+                  </label>
+                )}
+              </div>
+
+              <div className="cert-form-field">
+                <label className="input-field-label">Sertifikat yoki diplom nomi *</label>
+                <input
+                  type="text"
+                  className="modern-text-input"
+                  placeholder="Masalan: IELTS 8.5 yoki Yil O'qituvchisi"
+                  value={certTitleInput}
+                  onChange={(e) => setCertTitleInput(e.target.value)}
+                />
+              </div>
+
+              <div className="cert-form-field">
+                <label className="input-field-label">Yil / Berilgan tashkilot (ixtiyoriy)</label>
+                <input
+                  type="text"
+                  className="modern-text-input"
+                  placeholder="Masalan: 2024, British Council"
+                  value={certYearInput}
+                  onChange={(e) => setCertYearInput(e.target.value)}
+                />
+              </div>
+            </div>
+
+            <div className="cert-modal-actions">
+              <button
+                type="button"
+                className="dialog-btn cancel"
+                onClick={() => setShowAddCertModal(false)}
+              >
+                Bekor qilish
+              </button>
+              <button
+                type="button"
+                className="dialog-btn confirm"
+                onClick={handleAddCertificateSubmit}
+                disabled={!certTitleInput.trim() && !certImageInput}
+              >
+                Qo'shish
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {/* MODAL 6: Avatar Galereyasi */}
+      {showGalleryModal && typeof document !== 'undefined' && createPortal(
+        <div className="sheet-backdrop animate-backdropFadeIn" onClick={() => setShowGalleryModal(false)}>
+          <div className="sheet-container avatar-gallery-dialog animate-slideUp" onClick={(e) => e.stopPropagation()}>
+            <div className="cert-modal-header">
+              <h3 className="cert-modal-title">Galereyadan surat tanlang</h3>
+              <button
+                type="button"
+                className="sheet-close-x-btn"
+                onClick={() => setShowGalleryModal(false)}
+                aria-label="Yopish"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="settings-gallery-grid">
+              {AVATAR_GALLERY_IMAGES.map((img) => (
+                <button
+                  key={img.id}
+                  type="button"
+                  className={`settings-gallery-item ${profileAvatar === img.path ? 'is-selected' : ''}`}
+                  onClick={() => {
+                    setProfileAvatar(img.path);
+                    setShowGalleryModal(false);
+                  }}
+                  title={img.label}
+                >
+                  <img src={img.path} alt={img.label} loading="lazy" />
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
 
       {/* MODAL 7: Kalkulyator Guruh O'quvchilari Ro'yxati */}
       {selectedCalcGroup && typeof document !== 'undefined' && createPortal(
