@@ -170,7 +170,8 @@ export const setStudentPinInSupabase = async (teacherId, studentId, pin, student
       const matchName = studentName && (s.name || '').trim().toLowerCase() === studentName.trim().toLowerCase();
       if (matchId || matchName) {
         hasMatch = true;
-        const copy = { ...s, pin: cleanPin };
+        const copy = { ...s, pin: cleanPin, pinUpdatedAt: new Date().toISOString() };
+        delete copy.pinResetAt;
         if (deviceId) {
           copy.deviceId = String(deviceId);
         } else {
@@ -223,8 +224,9 @@ export const resetStudentPinInSupabase = async (teacherId, studentId, studentNam
       const matchName = studentName && (s.name || '').trim().toLowerCase() === studentName.trim().toLowerCase();
       if (matchId || matchName) {
         hasMatch = true;
-        const copy = { ...s };
+        const copy = { ...s, pinResetAt: new Date().toISOString() };
         delete copy.pin;
+        delete copy.pinUpdatedAt;
         delete copy.deviceId;
         return copy;
       }

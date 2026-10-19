@@ -88,6 +88,7 @@ export default function StudentAccountView({
   const [showConfirmPin, setShowConfirmPin] = useState(false);
   const [pinError, setPinError] = useState('');
   const [showForgotPinNotice, setShowForgotPinNotice] = useState(false);
+  const [isSubmittingPin, setIsSubmittingPin] = useState(false);
   const pinInputRef = useRef(null);
 
   // Mobile sheet drag dismiss state
@@ -112,6 +113,7 @@ export default function StudentAccountView({
     setShowConfirmPin(false);
     setPinError('');
     setShowForgotPinNotice(false);
+    setIsSubmittingPin(false);
     setSheetDragY(0);
   };
 
@@ -241,8 +243,10 @@ export default function StudentAccountView({
   };
 
   // Submit new PIN setup
-  const handleSavePinSetup = (e) => {
+  const handleSavePinSetup = async (e) => {
     if (e) e.preventDefault();
+    if (isSubmittingPin) return;
+
     const cleanPin = (pinInput || '').trim();
     const cleanConfirm = (confirmPinInput || '').trim();
 
@@ -263,35 +267,55 @@ export default function StudentAccountView({
     const freshTarget = (groupStudents || []).find((s) => String(s.id) === String(targetStudent.id)) || targetStudent;
     const targetStr = String(freshTarget.id);
     const gId = String(currentGroup.id);
+    const teacherId = currentGroup.teacherId || null;
 
-    if (onSetStudentPin) {
-      onSetStudentPin(freshTarget.id, cleanPin, freshTarget.name, currentDeviceId);
-    }
+    setIsSubmittingPin(true);
+    setPinError('');
 
     try {
-      localStorage.setItem(`rsa_pinned_student_${gId}`, targetStr);
-      localStorage.setItem(`rsa_pinned_student_pin_${gId}`, cleanPin);
-      localStorage.setItem(`rsa_device_claimed_${gId}`, targetStr);
-      if (freshTarget.name) {
-        localStorage.setItem('rsa_pinned_student_name', freshTarget.name.trim());
+      if (onSetStudentPin) {
+        const success = await onSetStudentPin(freshTarget.id, cleanPin, freshTarget.name, currentDeviceId, teacherId);
+        if (success === false) {
+          setPinError("Serverga ulanishda xatolik yuz berdi. Internetni tekshirib, qayta urinib ko'ring.");
+          triggerHaptic('heavy');
+          setIsSubmittingPin(false);
+          return;
+        }
       }
-      localStorage.setItem('rsa_pinned_student_id', targetStr);
-    } catch {}
 
-    if (onSelectProfile) {
-      onSelectProfile(freshTarget.id, cleanPin);
-    }
+      try {
+        localStorage.setItem(`rsa_pinned_student_${gId}`, targetStr);
+        localStorage.setItem(`rsa_pinned_student_pin_${gId}`, cleanPin);
+        localStorage.setItem(`rsa_device_claimed_${gId}`, targetStr);
+        if (freshTarget.name) {
+          localStorage.setItem('rsa_pinned_student_name', freshTarget.name.trim());
+        }
+        localStorage.setItem('rsa_pinned_student_id', targetStr);
+      } catch {}
 
-    closeModals();
-    triggerHaptic('medium');
-    if (showToast) {
-      showToast(`Xush kelibsiz, ${freshTarget.name}! Profilingiz PIN bilan himoyalandi.`, 'success');
+      if (onSelectProfile) {
+        onSelectProfile(freshTarget.id, cleanPin);
+      }
+
+      closeModals();
+      triggerHaptic('medium');
+      if (showToast) {
+        showToast(`Xush kelibsiz, ${freshTarget.name}! Profilingiz PIN bilan himoyalandi.`, 'success');
+      }
+    } catch (err) {
+      console.error('[PIN Setup] Failed:', err);
+      setPinError("Kutilmagan xatolik yuz berdi. Qayta urinib ko'ring.");
+      triggerHaptic('heavy');
+    } finally {
+      setIsSubmittingPin(false);
     }
   };
 
   // Submit PIN change for existing pinned profile
-  const handleSavePinChange = (e) => {
+  const handleSavePinChange = async (e) => {
     if (e) e.preventDefault();
+    if (isSubmittingPin) return;
+
     const cleanOld = (oldPinInput || '').trim();
     const cleanNew = (pinInput || '').trim();
     const cleanConfirm = (confirmPinInput || '').trim();
@@ -325,29 +349,48 @@ export default function StudentAccountView({
       return;
     }
 
-    if (onSetStudentPin) {
-      onSetStudentPin(freshTarget.id, cleanNew, freshTarget.name);
-    }
-
     const targetStr = String(freshTarget.id);
     const gId = String(currentGroup.id);
+    const teacherId = currentGroup.teacherId || null;
+
+    setIsSubmittingPin(true);
+    setPinError('');
+
     try {
-      localStorage.setItem(`rsa_pinned_student_${gId}`, targetStr);
-      localStorage.setItem(`rsa_pinned_student_pin_${gId}`, cleanNew);
-      if (freshTarget.name) {
-        localStorage.setItem('rsa_pinned_student_name', freshTarget.name.trim());
+      if (onSetStudentPin) {
+        const success = await onSetStudentPin(freshTarget.id, cleanNew, freshTarget.name, null, teacherId);
+        if (success === false) {
+          setPinError("Serverga ulanishda xatolik yuz berdi. Internetni tekshirib, qayta urinib ko'ring.");
+          triggerHaptic('heavy');
+          setIsSubmittingPin(false);
+          return;
+        }
       }
-      localStorage.setItem('rsa_pinned_student_id', targetStr);
-    } catch {}
 
-    if (onSelectProfile) {
-      onSelectProfile(freshTarget.id, cleanNew);
-    }
+      try {
+        localStorage.setItem(`rsa_pinned_student_${gId}`, targetStr);
+        localStorage.setItem(`rsa_pinned_student_pin_${gId}`, cleanNew);
+        if (freshTarget.name) {
+          localStorage.setItem('rsa_pinned_student_name', freshTarget.name.trim());
+        }
+        localStorage.setItem('rsa_pinned_student_id', targetStr);
+      } catch {}
 
-    closeModals();
-    triggerHaptic('medium');
-    if (showToast) {
-      showToast("PIN-kodingiz muvaffaqiyatli o'zgartirildi!", 'success');
+      if (onSelectProfile) {
+        onSelectProfile(freshTarget.id, cleanNew);
+      }
+
+      closeModals();
+      triggerHaptic('medium');
+      if (showToast) {
+        showToast("PIN-kodingiz muvaffaqiyatli o'zgartirildi!", 'success');
+      }
+    } catch (err) {
+      console.error('[PIN Change] Failed:', err);
+      setPinError("Kutilmagan xatolik yuz berdi. Qayta urinib ko'ring.");
+      triggerHaptic('heavy');
+    } finally {
+      setIsSubmittingPin(false);
     }
   };
 
@@ -375,6 +418,8 @@ export default function StudentAccountView({
 
     const targetStr = String(freshTarget.id);
     const gId = String(currentGroup.id);
+    const teacherId = currentGroup.teacherId || null;
+
     try {
       localStorage.setItem(`rsa_pinned_student_${gId}`, targetStr);
       localStorage.setItem(`rsa_pinned_student_pin_${gId}`, cleanPin);
@@ -386,7 +431,7 @@ export default function StudentAccountView({
     } catch {}
 
     if (!freshTarget.deviceId && currentDeviceId && onSetStudentPin) {
-      onSetStudentPin(freshTarget.id, cleanPin, freshTarget.name, currentDeviceId);
+      onSetStudentPin(freshTarget.id, cleanPin, freshTarget.name, currentDeviceId, teacherId);
     }
 
     if (onSelectProfile) {
@@ -1232,9 +1277,9 @@ export default function StudentAccountView({
                   <button
                     type="submit"
                     className="pin-primary-btn"
-                    disabled={pinInput.length !== 4 || confirmPinInput.length !== 4}
+                    disabled={isSubmittingPin || pinInput.length !== 4 || confirmPinInput.length !== 4}
                   >
-                    PIN-kodni saqlash va faollashtirish
+                    {isSubmittingPin ? "Saqlanmoqda..." : "PIN-kodni saqlash va faollashtirish"}
                   </button>
                 </form>
               )}
@@ -1351,9 +1396,9 @@ export default function StudentAccountView({
                   <button
                     type="submit"
                     className="pin-primary-btn"
-                    disabled={oldPinInput.length !== 4 || pinInput.length !== 4 || confirmPinInput.length !== 4}
+                    disabled={isSubmittingPin || oldPinInput.length !== 4 || pinInput.length !== 4 || confirmPinInput.length !== 4}
                   >
-                    PIN-kodni yangilash
+                    {isSubmittingPin ? "Saqlanmoqda..." : "PIN-kodni yangilash"}
                   </button>
                 </form>
               )}

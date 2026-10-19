@@ -18,32 +18,7 @@ html.landing-page-active {
   background: var(--w);
   -webkit-text-size-adjust: 100%;
   -webkit-tap-highlight-color: transparent;
-}
-
-
-@media (prefers-reduced-motion:no-preference) {
-  html.landing-page-active.lite {
-    scroll-behavior: smooth;
-  }
-}
-
-html.landing-page-active.lenis,
-html.landing-page-active.lenis body,
-html.lenis,
-html.lenis body {
-  height: auto;
-}
-
-html.landing-page-active.lenis.lenis-smooth,
-html.landing-page-active .lenis.lenis-smooth,
-html.lenis.lenis-smooth,
-html.lenis.lenis-smooth body {
-  scroll-behavior: auto !important;
-}
-
-html.landing-page-active.lenis.lenis-stopped,
-html.lenis.lenis-stopped {
-  overflow: hidden;
+  scroll-behavior: smooth;
 }
 
 .landing-root {
@@ -148,35 +123,18 @@ html.lenis.lenis-stopped {
   user-select: none;
 }
 
-/* split text (desktop path only) */
-.landing-root .w,
-.landing-pre-portal .w {
-  display: inline-block;
-  overflow: hidden;
-  vertical-align: top;
-  padding: .06em 0 .14em;
-  margin: -.06em 0 -.14em;
-}
-
-.landing-root .c,
-.landing-pre-portal .c {
-  display: inline-block;
-}
-
-.landing-root .sw {
-  display: inline;
-}
-
-/* text link: rolling label + underline */
-.landing-root .lnk,
-.landing-pre-portal .lnk {
+/* text link: clean Apple Minimalist underline */
+.landing-root .lnk {
   position: relative;
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   padding-bottom: .14em;
+  font-weight: inherit;
+  color: inherit;
 }
 
-.landing-root .lnk::before,
-.landing-pre-portal .lnk::before {
+.landing-root .lnk::before {
   content: "";
   position: absolute;
   left: 0;
@@ -186,66 +144,11 @@ html.lenis.lenis-stopped {
   background: currentColor;
   transform: scaleX(0);
   transform-origin: left;
-  transition: transform .6s var(--ease);
 }
 
-.landing-root .lnk::after,
-.landing-pre-portal .lnk::after {
-  content: "";
-  position: absolute;
-  top: -.9rem;
-  right: -.4rem;
-  bottom: -.9rem;
-  left: -.4rem;
-}
-
-.landing-root .lnk:focus-visible::before,
-.landing-root .lnk:active::before,
-.landing-pre-portal .lnk:focus-visible::before,
-.landing-pre-portal .lnk:active::before {
+.landing-root .lnk:hover::before,
+.landing-root .lnk:focus-visible::before {
   transform: scaleX(1);
-}
-
-.landing-root .r,
-.landing-pre-portal .r {
-  display: block;
-  overflow: hidden;
-}
-
-.landing-root .r b,
-.landing-pre-portal .r b {
-  display: block;
-  position: relative;
-  font-weight: inherit;
-  line-height: 1.15;
-  transition: transform .6s var(--ease);
-}
-
-.landing-root .r b::after,
-.landing-pre-portal .r b::after {
-  content: attr(data-t);
-  position: absolute;
-  left: 0;
-  top: 100%;
-}
-
-.landing-root .lnk:focus-visible .r b,
-.landing-root .lnk:active .r b,
-.landing-pre-portal .lnk:focus-visible .r b,
-.landing-pre-portal .lnk:active .r b {
-  transform: translateY(-100%);
-}
-
-@media (hover:hover) and (pointer:fine) {
-  .landing-root .lnk:hover::before,
-  .landing-pre-portal .lnk:hover::before {
-    transform: scaleX(1);
-  }
-
-  .landing-root .lnk:hover .r b,
-  .landing-pre-portal .lnk:hover .r b {
-    transform: translateY(-100%);
-  }
 }
 
 .landing-root .lg {
@@ -254,62 +157,49 @@ html.lenis.lenis-stopped {
 }
 
 /* Boshlash buttons (data-cta): permanent distinct underline on white backgrounds */
-.landing-root .lnk[data-cta],
-.landing-pre-portal .lnk[data-cta] {
+.landing-root .lnk[data-cta] {
   padding-bottom: 0.18em;
 }
 
-.landing-root .lnk[data-cta]::before,
-.landing-pre-portal .lnk[data-cta]::before {
+.landing-root .lnk[data-cta]::before {
   transform: scaleX(1);
   height: max(2.5px, 0.08em);
   background: currentColor;
   opacity: 0.95;
-  transition: opacity 0.2s var(--ease), color 0.2s var(--ease), background-color 0.2s var(--ease);
 }
 
 @media (hover: hover) and (pointer: fine) {
-  .landing-root .lnk[data-cta]:hover::before,
-  .landing-pre-portal .lnk[data-cta]:hover::before {
+  .landing-root .lnk[data-cta]:hover::before {
     transform: scaleX(1);
     background: #0171E3;
     opacity: 1;
   }
 
-  .landing-root .lnk[data-cta]:hover,
-  .landing-pre-portal .lnk[data-cta]:hover {
+  .landing-root .lnk[data-cta]:hover {
     color: #0171E3;
   }
 }
 
 /* Links in blue sections (FAQ & Modules) - strictly preserve pure white contrast on hover */
-.landing-root [data-bg="b"] .lnk,
-.landing-pre-portal [data-bg="b"] .lnk {
+.landing-root [data-bg="b"] .lnk {
   color: #FFFFFF;
 }
 
-.landing-root [data-bg="b"] .lnk::before,
-.landing-pre-portal [data-bg="b"] .lnk::before {
+.landing-root [data-bg="b"] .lnk::before {
   background: #FFFFFF;
 }
 
 @media (hover: hover) and (pointer: fine) {
   .landing-root [data-bg="b"] .lnk:hover,
   .landing-root [data-bg="b"] .lnk.lg:hover,
-  .landing-root [data-bg="b"] .more:hover,
-  .landing-pre-portal [data-bg="b"] .lnk:hover,
-  .landing-pre-portal [data-bg="b"] .lnk.lg:hover,
-  .landing-pre-portal [data-bg="b"] .more:hover {
+  .landing-root [data-bg="b"] .more:hover {
     color: #FFFFFF !important;
     opacity: 0.92;
   }
 
   .landing-root [data-bg="b"] .lnk:hover::before,
   .landing-root [data-bg="b"] .lnk.lg:hover::before,
-  .landing-root [data-bg="b"] .more:hover::before,
-  .landing-pre-portal [data-bg="b"] .lnk:hover::before,
-  .landing-pre-portal [data-bg="b"] .lnk.lg:hover::before,
-  .landing-pre-portal [data-bg="b"] .more:hover::before {
+  .landing-root [data-bg="b"] .more:hover::before {
     background: #FFFFFF !important;
     opacity: 1;
   }
@@ -580,18 +470,6 @@ html[data-theme="dark"] .landing-root .nav-link-btn.active:focus {
   display: flex;
   flex-direction: column;
   gap: 2px;
-  animation: navLangFadeIn 0.15s cubic-bezier(0, 0, 0.2, 1);
-}
-
-@keyframes navLangFadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(-3px) scale(0.97);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
 }
 
 .landing-root .nav-lang-item {
@@ -1343,7 +1221,6 @@ html[data-theme="dark"] .landing-root .nav-lang-item.active,
   border-radius: 6px;
   border-left-width: 3px;
   border-left-style: solid;
-  transition: transform 0.2s ease;
 }
 
 .landing-root .mock-line {
@@ -1408,14 +1285,8 @@ html[data-theme="dark"] .landing-root .nav-lang-item.active,
   overflow: hidden;
   border-radius: 1.15rem;
   box-shadow: 0 25px 60px -15px rgba(11, 59, 255, 0.16), 0 4px 14px rgba(0, 0, 0, 0.04);
-  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s ease;
   user-select: none;
   -webkit-tap-highlight-color: transparent;
-}
-
-.landing-root .mock-students-card:active {
-  transform: translateY(-3px) scale(1.02);
-  z-index: 6;
 }
 
 .landing-root .mock-st-head {
@@ -1526,14 +1397,8 @@ html[data-theme="dark"] .landing-root .nav-lang-item.active,
   border-radius: 1.15rem;
   box-shadow: 0 20px 48px -12px rgba(245, 158, 11, 0.22), 0 2px 8px rgba(0, 0, 0, 0.04);
   z-index: 4;
-  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s ease;
   user-select: none;
   -webkit-tap-highlight-color: transparent;
-}
-
-.landing-root .mock-gamify-card:active {
-  transform: translateY(-3px) scale(1.02);
-  z-index: 6;
 }
 
 .landing-root .mock-gamify-icon {
@@ -1842,7 +1707,6 @@ html[data-theme="dark"] .landing-root .nav-lang-item.active,
   width: 72px;
   height: 72px;
   border-radius: 42% 58% 65% 35% / 45% 42% 58% 55%;
-  transition: transform 0.4s ease;
 }
 
 .landing-root .blob-blue {
@@ -1907,7 +1771,6 @@ html[data-theme="dark"] .landing-root .nav-lang-item.active,
   opacity: 0.04;
   pointer-events: none;
   user-select: none;
-  will-change: transform;
 }
 
 /* statement comparison (Before vs After) */
@@ -2664,35 +2527,14 @@ html[data-theme="dark"] .landing-root .nav-lang-item.active,
   width: 1.25rem;
   height: 1.25rem;
   display: block;
-  transition: transform 0.3s var(--out);
 }
 
 .landing-root .faq details[open] .faq-icon {
   transform: rotate(45deg);
 }
 
-/* Modern native details-content animation */
-.landing-root .faq details::details-content {
-  transition: height 0.35s var(--out), content-visibility 0.35s allow-discrete;
-  height: 0;
-  overflow: clip;
-}
-
-.landing-root .faq details[open]::details-content {
-  height: auto;
-}
-
-/* Downward animated answer panel fallback */
 .landing-root .faq-ans {
-  display: grid;
-  grid-template-rows: 0fr;
-  transition: grid-template-rows 0.35s var(--out), opacity 0.3s ease;
-  opacity: 0;
-}
-
-.landing-root .faq details[open] .faq-ans {
-  grid-template-rows: 1fr;
-  opacity: 1;
+  display: block;
 }
 
 .landing-root .faq-ans > p,
@@ -3082,33 +2924,7 @@ html[data-theme="dark"] .landing-root .price-primary-btn:hover {
   margin-top: 0.2rem;
 }
 
-/* phone / tablet path: static reveals, no non-text motion */
-.lite .hl {
-  transform: scaleX(1) !important;
-  transition: none !important;
-}
 
-.lite .sw {
-  opacity: 1 !important;
-  transition: none !important;
-}
-
-.lite .giant {
-  animation: none !important;
-}
-
-@keyframes rise {
-  from {
-    opacity: 0;
-    transform: translate3d(0, 24px, 0);
-  }
-}
-
-/* desktop-only will-change on big moving layers */
-.fx .giant,
-.fx .ghost {
-  will-change: transform;
-}
 
 /* desktop layout (one breakpoint) */
 @media (min-width:800px) {
@@ -3314,25 +3130,7 @@ html[data-theme="dark"] .landing-root .price-primary-btn:hover {
 }
 
 @media (prefers-reduced-motion:reduce) {
-
-  .lite .rv,
-  .lite .hl,
-  .lite .sw {
-    opacity: 1 !important;
-    transform: none !important;
-    transition: none !important;
-  }
-
-  .lite .hl {
-    transform: scaleX(1) !important;
-  }
-
-  .lite .giant {
-    animation: none !important;
-  }
-
-  .landing-root .lnk::before,
-  .landing-root .r b {
+  .landing-root .lnk::before {
     transition: none;
   }
 }

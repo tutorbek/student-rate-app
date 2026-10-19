@@ -378,7 +378,11 @@ function App() {
           localStorage.removeItem('rsa_pinned_student_id');
           try {
             Object.keys(localStorage).forEach((k) => {
-              if (k.startsWith('rsa_pinned_student_') && k !== `rsa_pinned_student_${groupMatch.groupId}`) {
+              if (
+                k.startsWith('rsa_pinned_student_') &&
+                k !== `rsa_pinned_student_${groupMatch.groupId}` &&
+                k !== `rsa_pinned_student_pin_${groupMatch.groupId}`
+              ) {
                 localStorage.removeItem(k);
               }
             });
@@ -675,6 +679,22 @@ function App() {
           try {
             localStorage.setItem(`rsa_teacher_profile_${teacherId}`, JSON.stringify(loadedTeacherProfile));
           } catch {}
+        }
+
+        if (teacherId) {
+          setAllTeachersData((prev) => ({
+            ...prev,
+            [teacherId]: {
+              groups: loadedGroups,
+              students: loadedStudents,
+              transactions: loadedTransactions,
+              payments: loadedPayments,
+              quickTags: loadedQuickTags,
+              attendance: syncedAttendance,
+              teacherProfile: loadedTeacherProfile,
+              extraLessons: loadedExtraLessons
+            }
+          }));
         }
 
         // Update the ref so we don't accidentally re-save on mount
@@ -1260,10 +1280,11 @@ function App() {
     }
   }, [teacherId, studentGroups]);
 
-  const handleSetStudentPin = useCallback(async (studentId, pin, studentName = null, deviceId = null) => {
-    if (!studentId || !pin) return;
+  const handleSetStudentPin = useCallback(async (studentId, pin, studentName = null, deviceId = null, targetTeacherId = null) => {
+    if (!studentId || !pin) return false;
     const cleanPin = String(pin).trim();
     const cleanDeviceId = deviceId ? String(deviceId).trim() : null;
+    const nowIso = new Date().toISOString();
 
     // 1. Optimistic state update
     setStudents((prev) =>
@@ -1271,7 +1292,8 @@ function App() {
         const matchId = String(s.id) === String(studentId);
         const matchName = studentName && (s.name || '').trim().toLowerCase() === studentName.trim().toLowerCase();
         if (matchId || matchName) {
-          const copy = { ...s, pin: cleanPin };
+          const copy = { ...s, pin: cleanPin, pinUpdatedAt: nowIso };
+          delete copy.pinResetAt;
           if (cleanDeviceId) {
             copy.deviceId = cleanDeviceId;
           } else {
@@ -1296,7 +1318,8 @@ function App() {
               const matchId = String(s.id) === String(studentId);
               const matchName = studentName && (s.name || '').trim().toLowerCase() === studentName.trim().toLowerCase();
               if (matchId || matchName) {
-                const sc = { ...s, pin: cleanPin };
+                const sc = { ...s, pin: cleanPin, pinUpdatedAt: nowIso };
+                delete sc.pinResetAt;
                 if (cleanDeviceId) {
                   sc.deviceId = cleanDeviceId;
                 } else {
@@ -1312,28 +1335,60 @@ function App() {
       return copy;
     });
 
-    // 3. Supabase sync
-    try {
-      const teachersToUpdate = new Set();
-      if (teacherId) teachersToUpdate.add(teacherId);
-      if (Array.isArray(studentGroups)) {
-        studentGroups.forEach((sg) => {
-          if (sg.teacherId) teachersToUpdate.add(sg.teacherId);
-        });
-      }
+    // 3. Instant local backup update to protect against reload / offline race conditions
+    const allTIds = new Set();
+    if (targetTeacherId) allTIds.add(targetTeacherId);
+    if (teacherId) allTIds.add(teacherId);
+    if (Array.isArray(studentGroups)) {
+      studentGroups.forEach((sg) => {
+        if (sg.teacherId) allTIds.add(sg.teacherId);
+      });
+    }
 
-      await Promise.all(
-        Array.from(teachersToUpdate).map((tId) =>
+    try {
+      allTIds.forEach((tId) => {
+        const backupStr = localStorage.getItem(`rsa_local_backup_${tId}`);
+        if (backupStr) {
+          const backupObj = JSON.parse(backupStr);
+          if (Array.isArray(backupObj.students)) {
+            backupObj.students = backupObj.students.map((s) => {
+              const matchId = String(s.id) === String(studentId);
+              const matchName = studentName && (s.name || '').trim().toLowerCase() === studentName.trim().toLowerCase();
+              if (matchId || matchName) {
+                const sc = { ...s, pin: cleanPin, pinUpdatedAt: nowIso };
+                delete sc.pinResetAt;
+                if (cleanDeviceId) {
+                  sc.deviceId = cleanDeviceId;
+                } else {
+                  delete sc.deviceId;
+                }
+                return sc;
+              }
+              return s;
+            });
+            localStorage.setItem(`rsa_local_backup_${tId}`, JSON.stringify(backupObj));
+          }
+        }
+      });
+    } catch (_) {}
+
+    // 4. Supabase sync
+    try {
+      const results = await Promise.all(
+        Array.from(allTIds).map((tId) =>
           setStudentPinInSupabase(tId, studentId, cleanPin, studentName, cleanDeviceId)
         )
       );
+      return results.some(Boolean);
     } catch (err) {
       console.warn('[Set Student PIN] Background sync error:', err);
+      return false;
     }
   }, [teacherId, studentGroups]);
 
-  const handleResetStudentPin = useCallback(async (studentId, studentName = null) => {
-    if (!studentId) return;
+  const handleResetStudentPin = useCallback(async (studentId, studentName = null, targetTeacherId = null) => {
+    if (!studentId) return false;
+    const nowIso = new Date().toISOString();
 
     // 1. Optimistic state update
     setStudents((prev) =>
@@ -1341,8 +1396,9 @@ function App() {
         const matchId = String(s.id) === String(studentId);
         const matchName = studentName && (s.name || '').trim().toLowerCase() === studentName.trim().toLowerCase();
         if (matchId || matchName) {
-          const copy = { ...s };
+          const copy = { ...s, pinResetAt: nowIso };
           delete copy.pin;
+          delete copy.pinUpdatedAt;
           delete copy.deviceId;
           return copy;
         }
@@ -1363,8 +1419,9 @@ function App() {
               const matchId = String(s.id) === String(studentId);
               const matchName = studentName && (s.name || '').trim().toLowerCase() === studentName.trim().toLowerCase();
               if (matchId || matchName) {
-                const copy = { ...s };
+                const copy = { ...s, pinResetAt: nowIso };
                 delete copy.pin;
+                delete copy.pinUpdatedAt;
                 delete copy.deviceId;
                 return copy;
               }
@@ -1376,25 +1433,53 @@ function App() {
       return copy;
     });
 
-    // 3. Supabase sync
-    try {
-      const teachersToUpdate = new Set();
-      if (teacherId) teachersToUpdate.add(teacherId);
-      if (Array.isArray(studentGroups)) {
-        studentGroups.forEach((sg) => {
-          if (sg.teacherId) teachersToUpdate.add(sg.teacherId);
-        });
-      }
+    // 3. Instant local backup update
+    const allTIds = new Set();
+    if (targetTeacherId) allTIds.add(targetTeacherId);
+    if (teacherId) allTIds.add(teacherId);
+    if (Array.isArray(studentGroups)) {
+      studentGroups.forEach((sg) => {
+        if (sg.teacherId) allTIds.add(sg.teacherId);
+      });
+    }
 
+    try {
+      allTIds.forEach((tId) => {
+        const backupStr = localStorage.getItem(`rsa_local_backup_${tId}`);
+        if (backupStr) {
+          const backupObj = JSON.parse(backupStr);
+          if (Array.isArray(backupObj.students)) {
+            backupObj.students = backupObj.students.map((s) => {
+              const matchId = String(s.id) === String(studentId);
+              const matchName = studentName && (s.name || '').trim().toLowerCase() === studentName.trim().toLowerCase();
+              if (matchId || matchName) {
+                const sc = { ...s, pinResetAt: nowIso };
+                delete sc.pin;
+                delete sc.pinUpdatedAt;
+                delete sc.deviceId;
+                return sc;
+              }
+              return s;
+            });
+            localStorage.setItem(`rsa_local_backup_${tId}`, JSON.stringify(backupObj));
+          }
+        }
+      });
+    } catch (_) {}
+
+    // 4. Supabase sync
+    try {
       await Promise.all(
-        Array.from(teachersToUpdate).map((tId) =>
+        Array.from(allTIds).map((tId) =>
           resetStudentPinInSupabase(tId, studentId, studentName)
         )
       );
       showToast("O'quvchining PIN-kodi muvaffaqiyatli bekor qilindi!", "success");
+      return true;
     } catch (err) {
       console.warn('[PIN Reset] Background sync error:', err);
       showToast("PIN-kodni bekor qilishda xatolik yuz berdi", "error");
+      return false;
     }
   }, [teacherId, studentGroups, showToast]);
 

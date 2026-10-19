@@ -692,6 +692,7 @@ const Settings = ({
   const teacherShare = Math.round(grossTotal * ((Number(calcTeacherPercent) || 0) / 100));
   const centerShare = Math.max(0, grossTotal - teacherShare);
   const perStudentTeacherShare = Math.round((Number(calcPricePerStudent) || 0) * ((Number(calcTeacherPercent) || 0) / 100));
+  const perStudentCenterShare = Math.max(0, (Number(calcPricePerStudent) || 0) - perStudentTeacherShare);
   const dailyTeacherShare = Math.round(teacherShare / 30);
 
   // Avans va qoldiq maosh hisob-kitoblari
@@ -776,8 +777,9 @@ const Settings = ({
 
   const totalTrashCount = deletedGroups.length + deletedStudents.length;
 
-  // Escape key and background scroll lock handler for all modals (including cert, gallery and calc group)
+  // Escape key and background scroll lock handler for all modals (including cert, gallery, calc group and cal picker)
   const isAnySettingsModalOpen = Boolean(
+    calPickerTarget ||
     selectedCalcGroupId ||
     showResetConfirm ||
     deleteConfirmModal ||
@@ -788,7 +790,9 @@ const Settings = ({
   );
 
   useModalDismiss(isAnySettingsModalOpen, () => {
-    if (selectedCalcGroupId) {
+    if (calPickerTarget) {
+      setCalPickerTarget(null);
+    } else if (selectedCalcGroupId) {
       setSelectedCalcGroupId(null);
       setCalcGroupStudentSearch('');
     } else if (showGalleryModal) {
@@ -983,7 +987,9 @@ const Settings = ({
       {/* Top Page Header with Tabs */}
       <div className="page-header settings-page-header">
         <div>
-          <h2 className="page-title">Profil</h2>
+          <h2 className="page-title">
+            {activeTab === 'calculator' ? "Daromad kalkulyatori" : activeTab === 'tags' ? "Izohlar" : "Profil"}
+          </h2>
         </div>
 
         <div className="tab-control-brutalist">
@@ -1009,113 +1015,101 @@ const Settings = ({
           >
             <span className="tab-btn-text">Izohlar</span>
           </button>
-          {/* Tizim & Zaxira tab tugmasi - Hozircha UI'da yashirilgan */}
-          {/* <button
-            type="button"
-            className={`tab-btn-brutalist ${activeTab === 'system' ? 'active' : ''}`}
-            onClick={() => setActiveTab('system')}
-          >
-            <span className="tab-btn-text">Tizim & Zaxira</span>
-            {totalTrashCount > 0 && <span className="tab-count-badge badge-red">{totalTrashCount}</span>}
-          </button> */}
         </div>
       </div>
-
-      {/* Unified Hero Identity Banner */}
-      <section className="glass-card modern-hero-identity-card">
-        <div className="hero-identity-main">
-          {/* Avatar with Camera Overlay */}
-          <div className="hero-avatar-wrapper">
-            <div className="hero-avatar-disc" onClick={() => setShowGalleryModal(true)} title="Suratni tanlash">
-              {profileAvatar ? renderAvatar(profileAvatar, 82) : <IconUser size={34} />}
-            </div>
-            <button
-              type="button"
-              className="hero-avatar-camera-btn scale-active"
-              onClick={() => setShowGalleryModal(true)}
-              title="Suratni o'zgartirish"
-              aria-label="Suratni o'zgartirish"
-            >
-              <IconCamera size={14} />
-            </button>
-          </div>
-
-          {/* Profile Name & Title */}
-          <div className="hero-identity-details">
-            <h3 className="hero-teacher-name">{profileFullName || "Ustoz Ismi"}</h3>
-            <p className="hero-teacher-title">{profileTitle || "Katta o'qituvchi va murabbiy"}</p>
-
-            {/* Quick avatar buttons row */}
-            <div className="hero-avatar-actions-quick">
-              <label className="hero-quick-btn scale-active">
-                <IconCamera size={13} />
-                <span>Rasm yuklash</span>
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={handleAvatarFileUpload}
-                  style={{ display: 'none' }}
-                />
-              </label>
-              <button
-                type="button"
-                className="hero-quick-btn scale-active"
-                onClick={() => setShowGalleryModal(true)}
-              >
-                <span>Galereya</span>
-              </button>
-              {profileAvatar && (
-                <button
-                  type="button"
-                  className="hero-quick-remove-btn"
-                  onClick={() => setProfileAvatar('')}
-                >
-                  Suratni olib tashlash
-                </button>
-              )}
-            </div>
-          </div>
-        </div>
-
-        {/* Hero Right Actions: Single Save button for profile */}
-        <div className="hero-actions-cluster">
-          {activeTab === 'profile' && (
-            <button
-              type="button"
-              className="hero-primary-save-btn scale-active"
-              onClick={handleSaveProfile}
-              disabled={isSavingProfile}
-              title="O'zgarishlarni saqlash (Ctrl+S / Cmd+S)"
-            >
-              {isSavingProfile ? (
-                <>
-                  <span className="btn-spinner" />
-                  <span>Saqlanmoqda...</span>
-                </>
-              ) : (
-                <>
-                  <IconCheck size={15} />
-                  <span>Saqlash</span>
-                </>
-              )}
-            </button>
-          )}
-
-          <button
-            type="button"
-            className="hero-danger-logout-btn scale-active"
-            onClick={onLogout}
-            title="Tizimdan chiqish"
-          >
-            <IconLogOut size={15} />
-            <span>Chiqish</span>
-          </button>
-        </div>
-      </section>
 
       {/* Tab 0: Ustoz Shaxsiy Portfoliosi va Profili */}
       {activeTab === 'profile' && (
         <div className="settings-tab-content fade-in">
+          {/* Unified Hero Identity Banner */}
+          <section className="glass-card modern-hero-identity-card">
+            <div className="hero-identity-main">
+              {/* Avatar with Camera Overlay */}
+              <div className="hero-avatar-wrapper">
+                <div className="hero-avatar-disc" onClick={() => setShowGalleryModal(true)} title="Suratni tanlash">
+                  {profileAvatar ? renderAvatar(profileAvatar, 82) : <IconUser size={34} />}
+                </div>
+                <button
+                  type="button"
+                  className="hero-avatar-camera-btn scale-active"
+                  onClick={() => setShowGalleryModal(true)}
+                  title="Suratni o'zgartirish"
+                  aria-label="Suratni o'zgartirish"
+                >
+                  <IconCamera size={14} />
+                </button>
+              </div>
+
+              {/* Profile Name & Title */}
+              <div className="hero-identity-details">
+                <h3 className="hero-teacher-name">{profileFullName || "Ustoz Ismi"}</h3>
+                <p className="hero-teacher-title">{profileTitle || "Katta o'qituvchi va murabbiy"}</p>
+
+                {/* Quick avatar buttons row */}
+                <div className="hero-avatar-actions-quick">
+                  <label className="hero-quick-btn scale-active">
+                    <IconCamera size={13} />
+                    <span>Rasm yuklash</span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleAvatarFileUpload}
+                      style={{ display: 'none' }}
+                    />
+                  </label>
+                  <button
+                    type="button"
+                    className="hero-quick-btn scale-active"
+                    onClick={() => setShowGalleryModal(true)}
+                  >
+                    <span>Galereya</span>
+                  </button>
+                  {profileAvatar && (
+                    <button
+                      type="button"
+                      className="hero-quick-remove-btn"
+                      onClick={() => setProfileAvatar('')}
+                    >
+                      Suratni olib tashlash
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Hero Right Actions: Save and Logout */}
+            <div className="hero-actions-cluster">
+              <button
+                type="button"
+                className="hero-primary-save-btn scale-active"
+                onClick={handleSaveProfile}
+                disabled={isSavingProfile}
+                title="O'zgarishlarni saqlash (Ctrl+S / Cmd+S)"
+              >
+                {isSavingProfile ? (
+                  <>
+                    <span className="btn-spinner" />
+                    <span>Saqlanmoqda...</span>
+                  </>
+                ) : (
+                  <>
+                    <IconCheck size={15} />
+                    <span>Saqlash</span>
+                  </>
+                )}
+              </button>
+
+              <button
+                type="button"
+                className="hero-danger-logout-btn scale-active"
+                onClick={onLogout}
+                title="Tizimdan chiqish"
+              >
+                <IconLogOut size={15} />
+                <span>Chiqish</span>
+              </button>
+            </div>
+          </section>
           <div className="profile-workspace-layout">
             {/* Left Column: Form & Portfolio Editor */}
             <div className="profile-editor-column">
@@ -1358,7 +1352,9 @@ const Settings = ({
                         {cert.image ? (
                           <img src={cert.image} alt={cert.title || 'Sertifikat'} />
                         ) : (
-                          <span className="cert-placeholder-emoji">📜</span>
+                          <span className="cert-placeholder-icon">
+                            <IconAward size={22} />
+                          </span>
                         )}
                       </div>
                       <div className="cert-edit-details">
@@ -1682,111 +1678,6 @@ const Settings = ({
                       </button>
                     </div>
 
-                    {/* Kichik Kalendar Popover */}
-                    {calPickerTarget && (
-                      <>
-                        <div
-                          className="calc-calendar-overlay"
-                          onClick={() => setCalPickerTarget(null)}
-                        />
-                        <div className={`calc-mini-calendar-popover ${calPickerTarget}`}>
-                          {/* Kalendar Header */}
-                          <div className="cal-mini-header">
-                            <button
-                              type="button"
-                              className="cal-mini-nav-btn"
-                              onClick={handlePrevCalMonth}
-                              title="Oldingi oy"
-                            >
-                              <IconChevronLeft size={13} />
-                            </button>
-                            <div className="cal-mini-title-wrap">
-                              <span className="cal-mini-month">
-                                {UZBEK_CAL_MONTHS[calPickerMonth]} {calPickerYear}
-                              </span>
-                              <span className={`cal-mini-tag ${calPickerTarget}`}>
-                                {calPickerTarget === 'advance' ? 'Avans sanasi' : 'Oylik sanasi'}
-                              </span>
-                            </div>
-                            <button
-                              type="button"
-                              className="cal-mini-nav-btn"
-                              onClick={handleNextCalMonth}
-                              title="Keyingi oy"
-                            >
-                              <IconChevronRight size={13} />
-                            </button>
-                          </div>
-
-                          {/* Hafta kunlari */}
-                          <div className="cal-mini-weekdays">
-                            {UZBEK_CAL_WEEKDAYS.map((wd, i) => (
-                              <span key={wd} className={`cal-mini-wd ${i === 6 ? 'sunday' : ''}`}>
-                                {wd}
-                              </span>
-                            ))}
-                          </div>
-
-                          {/* Kunlar katakchalari */}
-                          <div className="cal-mini-grid">
-                            {miniCalendarGrid.map((cell, idx) => {
-                              const activeDay = calPickerTarget === 'advance' ? calcAdvanceDay : calcSalaryDay;
-                              const isSelected = cell.day === activeDay && cell.isCurrentMonth;
-                              const isSunday = (idx % 7) === 6;
-                              return (
-                                <button
-                                  key={idx}
-                                  type="button"
-                                  className={`cal-mini-cell ${!cell.isCurrentMonth ? 'other-month' : ''} ${isSunday ? 'sunday' : ''} ${isSelected ? `selected ${calPickerTarget}` : ''}`}
-                                  onClick={() => {
-                                    if (calPickerTarget === 'advance') {
-                                      setCalcAdvanceDay(cell.day);
-                                    } else {
-                                      setCalcSalaryDay(cell.day);
-                                    }
-                                    setCalPickerTarget(null);
-                                  }}
-                                  title={`Har oyning ${cell.day}-kuni`}
-                                >
-                                  {cell.day}
-                                </button>
-                              );
-                            })}
-                          </div>
-
-                          {/* Pastki qism: Tezkor sanalar va Yopish */}
-                          <div className="cal-mini-footer">
-                            <div className="cal-mini-presets">
-                              <span className="cal-mini-presets-lbl">Tezkor:</span>
-                              {(calPickerTarget === 'advance' ? [5, 10, 15, 20, 25] : [1, 3, 5, 10]).map((d) => (
-                                <button
-                                  key={d}
-                                  type="button"
-                                  className={`cal-mini-preset-chip ${((calPickerTarget === 'advance' ? calcAdvanceDay : calcSalaryDay) === d) ? 'active' : ''}`}
-                                  onClick={() => {
-                                    if (calPickerTarget === 'advance') {
-                                      setCalcAdvanceDay(d);
-                                    } else {
-                                      setCalcSalaryDay(d);
-                                    }
-                                    setCalPickerTarget(null);
-                                  }}
-                                >
-                                  {d}
-                                </button>
-                              ))}
-                            </div>
-                            <button
-                              type="button"
-                              className="cal-mini-close-btn"
-                              onClick={() => setCalPickerTarget(null)}
-                            >
-                              Yopish
-                            </button>
-                          </div>
-                        </div>
-                      </>
-                    )}
                   </div>
                 </div>
               </div>
@@ -1885,7 +1776,7 @@ const Settings = ({
                   <div className="calc-stat-clean">
                     <span className="calc-stat-lbl">Markaz ulushi ({100 - calcTeacherPercent}%)</span>
                     <span className="calc-stat-num">{formatMoneyUz(centerShare)}</span>
-                    <span className="calc-stat-sub">{formatMoneyUz(grossTotal - teacherShare)}</span>
+                    <span className="calc-stat-sub">1 o'quvchidan: {formatMoneyUz(perStudentCenterShare)}</span>
                   </div>
                 </div>
               </div>
@@ -2450,8 +2341,13 @@ const Settings = ({
             <p style={{ fontSize: '0.88rem', color: 'var(--text-secondary)', lineHeight: 1.5, marginBottom: '16px' }}>
               Haqiqatan ham tizimni <strong>{rollbackConfirmModal.snapshot.timestamp ? new Date(rollbackConfirmModal.snapshot.timestamp).toLocaleString() : 'avvalgi'}</strong> holatiga qaytarmoqchimisiz?
             </p>
-            <div className="modal-note-box" style={{ padding: '10px 14px', background: '#F5F5F7', borderRadius: 'var(--radius-sm)', fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '20px' }}>
-              💡 Joriy holat xavfsizlik uchun avtomatik JSON zaxira sifatida yuklab beriladi.
+            <div className="modal-note-box" style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 14px', background: '#F5F5F7', borderRadius: 'var(--radius-sm)', fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '20px' }}>
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, color: 'var(--apple-blue)' }}>
+                <circle cx="12" cy="12" r="10" />
+                <line x1="12" y1="16" x2="12" y2="12" />
+                <line x1="12" y1="8" x2="12.01" y2="8" />
+              </svg>
+              <span>Joriy holat xavfsizlik uchun avtomatik JSON zaxira sifatida yuklab beriladi.</span>
             </div>
             <div className="modal-actions" style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
               <button type="button" className="btn btn-secondary scale-active" onClick={() => setRollbackConfirmModal(null)}>
@@ -2794,7 +2690,14 @@ const Settings = ({
                 </div>
               ) : (
                 <div className="calc-students-empty">
-                  <div className="empty-icon-wrap">👥</div>
+                  <div className="empty-icon-wrap">
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                      <circle cx="9" cy="7" r="4" />
+                      <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+                      <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+                    </svg>
+                  </div>
                   <p className="empty-title">Bu guruhda o'quvchilar yo'q</p>
                   <p className="empty-sub">Guruh sahifasiga kirib o'quvchi qo'shishingiz mumkin.</p>
                 </div>
@@ -2813,6 +2716,120 @@ const Settings = ({
                   setSelectedCalcGroupId(null);
                   setCalcGroupStudentSearch('');
                 }}
+              >
+                Yopish
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {/* MODAL 8: Kalkulyator Mini Kalendar (Avans & Oylik Sanasi) */}
+      {calPickerTarget && typeof document !== 'undefined' && createPortal(
+        <div
+          className="calc-calendar-overlay"
+          onClick={() => setCalPickerTarget(null)}
+        >
+          <div
+            className={`calc-mini-calendar-popover ${calPickerTarget}`}
+            onClick={(e) => e.stopPropagation()}
+            role="dialog"
+            aria-modal="true"
+            aria-label={calPickerTarget === 'advance' ? "Avans to'lovi sanasi" : "Oylik maosh sanasi"}
+          >
+            {/* Kalendar Header */}
+            <div className="cal-mini-header">
+              <button
+                type="button"
+                className="cal-mini-nav-btn scale-active"
+                onClick={handlePrevCalMonth}
+                title="Oldingi oy"
+                aria-label="Oldingi oy"
+              >
+                <IconChevronLeft size={14} />
+              </button>
+              <div className="cal-mini-title-wrap">
+                <span className="cal-mini-month">
+                  {UZBEK_CAL_MONTHS[calPickerMonth]} {calPickerYear}
+                </span>
+                <span className={`cal-mini-tag ${calPickerTarget}`}>
+                  {calPickerTarget === 'advance' ? "Avans sanasi" : "Oylik sanasi"}
+                </span>
+              </div>
+              <button
+                type="button"
+                className="cal-mini-nav-btn scale-active"
+                onClick={handleNextCalMonth}
+                title="Keyingi oy"
+                aria-label="Keyingi oy"
+              >
+                <IconChevronRight size={14} />
+              </button>
+            </div>
+
+            {/* Hafta kunlari */}
+            <div className="cal-mini-weekdays">
+              {UZBEK_CAL_WEEKDAYS.map((wd, i) => (
+                <span key={wd} className={`cal-mini-wd ${i === 6 ? 'sunday' : ''}`}>
+                  {wd}
+                </span>
+              ))}
+            </div>
+
+            {/* Kunlar katakchalari */}
+            <div className="cal-mini-grid">
+              {miniCalendarGrid.map((cell, idx) => {
+                const activeDay = calPickerTarget === 'advance' ? calcAdvanceDay : calcSalaryDay;
+                const isSelected = cell.day === activeDay && cell.isCurrentMonth;
+                const isSunday = (idx % 7) === 6;
+                return (
+                  <button
+                    key={idx}
+                    type="button"
+                    className={`cal-mini-cell scale-active ${!cell.isCurrentMonth ? 'other-month' : ''} ${isSunday ? 'sunday' : ''} ${isSelected ? `selected ${calPickerTarget}` : ''}`}
+                    onClick={() => {
+                      if (calPickerTarget === 'advance') {
+                        setCalcAdvanceDay(cell.day);
+                      } else {
+                        setCalcSalaryDay(cell.day);
+                      }
+                      setCalPickerTarget(null);
+                    }}
+                    title={`Har oyning ${cell.day}-kuni`}
+                  >
+                    {cell.day}
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Pastki qism: Tezkor sanalar va Yopish */}
+            <div className="cal-mini-footer">
+              <div className="cal-mini-presets">
+                <span className="cal-mini-presets-lbl">Tezkor:</span>
+                {(calPickerTarget === 'advance' ? [5, 10, 15, 20, 25] : [1, 3, 5, 10]).map((d) => (
+                  <button
+                    key={d}
+                    type="button"
+                    className={`cal-mini-preset-chip scale-active ${((calPickerTarget === 'advance' ? calcAdvanceDay : calcSalaryDay) === d) ? 'active' : ''}`}
+                    onClick={() => {
+                      if (calPickerTarget === 'advance') {
+                        setCalcAdvanceDay(d);
+                      } else {
+                        setCalcSalaryDay(d);
+                      }
+                      setCalPickerTarget(null);
+                    }}
+                  >
+                    {d}
+                  </button>
+                ))}
+              </div>
+              <button
+                type="button"
+                className="cal-mini-close-btn scale-active"
+                onClick={() => setCalPickerTarget(null)}
               >
                 Yopish
               </button>
@@ -4855,50 +4872,52 @@ const Settings = ({
           transform: rotate(180deg);
         }
 
-        /* Click outside overlay */
+        /* Modal Calendar Overlay */
         .calc-calendar-overlay {
           position: fixed;
           inset: 0;
-          z-index: 90;
-          background: transparent;
+          z-index: 2500;
+          background: rgba(0, 0, 0, 0.45);
+          backdrop-filter: blur(10px);
+          -webkit-backdrop-filter: blur(10px);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: 16px;
+          box-sizing: border-box;
+          animation: calOverlayFade 0.18s ease-out forwards;
         }
 
-        /* Mini Calendar Popover */
+        @keyframes calOverlayFade {
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
+
+        /* Mini Calendar Popover Modal */
         .calc-mini-calendar-popover {
-          position: absolute;
-          top: calc(100% + 6px);
-          z-index: 95;
-          width: 280px;
+          position: relative;
+          width: 100%;
+          max-width: 310px;
           background: #FFFFFF;
-          border: 1px solid rgba(0, 0, 0, 0.1);
-          border-radius: 14px;
-          box-shadow: 0 16px 36px rgba(0, 0, 0, 0.16), 0 4px 12px rgba(0, 0, 0, 0.06);
-          padding: 12px 14px 10px;
+          border: 1px solid rgba(0, 0, 0, 0.08);
+          border-radius: 18px;
+          box-shadow: 0 24px 60px rgba(0, 0, 0, 0.22), 0 4px 16px rgba(0, 0, 0, 0.06);
+          padding: 16px 16px 14px;
           display: flex;
           flex-direction: column;
-          gap: 9px;
-          animation: calPopIn 0.16s cubic-bezier(0.16, 1, 0.3, 1);
+          gap: 12px;
+          animation: calScaleIn 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
           box-sizing: border-box;
         }
 
-        .calc-mini-calendar-popover.advance {
-          left: 0;
-          right: auto;
-        }
-
-        .calc-mini-calendar-popover.salary {
-          right: 0;
-          left: auto;
-        }
-
-        @keyframes calPopIn {
+        @keyframes calScaleIn {
           from {
             opacity: 0;
-            transform: translateY(-6px) scale(0.97);
+            transform: scale(0.94) translateY(6px);
           }
           to {
             opacity: 1;
-            transform: translateY(0) scale(1);
+            transform: scale(1) translateY(0);
           }
         }
 
@@ -5886,59 +5905,300 @@ const Settings = ({
           }
 
           .calc-split-container {
-            grid-template-columns: 1fr;
+            display: flex;
+            flex-direction: column;
             gap: 14px;
+          }
+
+          .calc-results-col {
+            display: contents;
+          }
+
+          .calc-hero-clean {
+            order: 1;
+            padding: 16px 18px;
+            border-radius: 14px;
+          }
+
+          .calc-hero-val {
+            font-size: clamp(1.55rem, 6.5vw, 1.85rem);
+            line-height: 1.15;
+          }
+
+          .calc-controls-col {
+            order: 2;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+          }
+
+          .calc-input-block {
+            padding: 12px 14px;
+            gap: 8px;
+          }
+
+          .calc-stepper-row {
+            height: 44px;
+          }
+
+          .calc-step-btn {
+            width: 46px;
+            font-size: 1.3rem;
+          }
+
+          .calc-price-input-wrap {
+            height: 44px;
+          }
+
+          .calc-range-slider {
+            height: 8px;
+          }
+
+          .calc-range-slider::-webkit-slider-thumb {
+            width: 22px;
+            height: 22px;
+          }
+
+          .calc-slider-ticks {
+            height: 22px;
+            margin-top: 6px;
+          }
+
+          .calc-tick-mark {
+            font-size: 0.72rem;
+            padding: 4px 6px;
+          }
+
+          .calc-chips-scroll {
+            gap: 6px;
+            padding: 2px 0 4px;
+          }
+
+          .calc-chip-clean {
+            padding: 5px 12px;
+            font-size: 0.76rem;
+            min-height: 30px;
           }
 
           .calc-dates-row {
             grid-template-columns: 1fr;
             gap: 8px;
+            margin-top: 10px;
+            padding-top: 10px;
           }
 
-          .calc-mini-calendar-popover {
-            width: calc(100vw - 48px);
-            max-width: 300px;
-            left: 50% !important;
-            right: auto !important;
-            transform: translateX(-50%);
+          .calc-date-trigger-btn {
+            height: 44px;
+            padding: 0 12px;
+            font-size: 0.82rem;
           }
 
           .calc-payouts-grid {
+            order: 3;
             grid-template-columns: 1fr;
             gap: 8px;
           }
 
+          .calc-payout-card {
+            padding: 12px 14px;
+          }
+
+          .calc-payout-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+          }
+
+          .calc-payout-amount {
+            font-size: 1.25rem;
+          }
+
+          .calc-payout-bar-wrap {
+            order: 4;
+            padding: 12px;
+            gap: 8px;
+          }
+
           .calc-payout-bar-labels {
+            display: flex;
             flex-direction: column;
-            align-items: flex-start;
+            align-items: stretch;
             gap: 4px;
+            font-size: 0.72rem;
           }
 
           .calc-stats-dual {
+            order: 5;
             grid-template-columns: 1fr 1fr;
             gap: 8px;
           }
 
-          .calc-hero-val {
-            font-size: 1.6rem;
+          .calc-stat-clean {
+            padding: 10px 12px;
+            min-width: 0;
           }
 
-          .calc-hero-clean {
-            padding: 16px;
+          .calc-stat-lbl {
+            font-size: 0.68rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
           }
 
-          .calc-input-block {
-            padding: 12px;
+          .calc-stat-num {
+            font-size: clamp(0.92rem, 3.6vw, 1.05rem);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+          }
+
+          .calc-stat-sub {
+            font-size: 0.68rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+          }
+
+          .calc-groups-clean-card {
+            margin-top: 14px;
+          }
+
+          .calc-groups-head {
+            margin-bottom: 10px;
+          }
+
+          .calc-group-row {
+            padding: 10px 12px;
+            gap: 8px;
+          }
+
+          .calc-group-row-left {
+            gap: 10px;
+            min-width: 0;
+          }
+
+          .calc-group-row-icon {
+            width: 34px;
+            height: 34px;
+          }
+
+          .calc-group-row-name-wrap {
+            gap: 4px;
+          }
+
+          .calc-group-row-name {
+            font-size: 0.86rem;
+          }
+
+          .calc-group-row-count {
+            font-size: 0.7rem;
+          }
+
+          .calc-group-row-right {
+            gap: 8px;
+          }
+
+          .calc-group-row-gross {
+            font-size: 0.68rem;
+          }
+
+          .calc-group-row-share {
+            font-size: 0.85rem;
           }
 
           .calc-groups-total-bar {
             flex-direction: column;
-            align-items: flex-start;
-            gap: 8px;
+            align-items: stretch;
+            gap: 10px;
+            padding: 12px;
+          }
+
+          .calc-groups-total-main {
+            display: flex;
+            align-items: baseline;
+            justify-content: space-between;
+            width: 100%;
           }
 
           .calc-groups-payout-breakdown {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 6px;
             width: 100%;
+          }
+
+          .calc-payout-chip {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            padding: 6px 8px;
+            border-radius: 8px;
+            font-size: 0.72rem;
+            gap: 2px;
+            width: 100%;
+            box-sizing: border-box;
+          }
+
+          .calc-student-list-modal {
+            max-width: 100%;
+            width: 100%;
+            padding: 18px 16px 16px;
+            border-radius: 18px;
+            max-height: calc(100dvh - 32px);
+            gap: 12px;
+          }
+
+          .calc-student-modal-header {
+            gap: 10px;
+            padding-bottom: 12px;
+          }
+
+          .calc-student-modal-group-icon {
+            width: 38px;
+            height: 38px;
+            border-radius: 10px;
+          }
+
+          .calc-student-modal-group-name {
+            font-size: 1.05rem;
+          }
+
+          .calc-student-modal-stats-banner {
+            grid-template-columns: 1fr 1fr;
+            gap: 6px;
+            padding: 8px 10px;
+          }
+
+          .calc-student-stat-item .stat-label {
+            font-size: 0.64rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+          }
+
+          .calc-student-stat-item .stat-value {
+            font-size: 0.84rem;
+          }
+
+          .calc-student-card {
+            padding: 8px 10px;
+            gap: 8px;
+          }
+
+          .calc-student-idx {
+            font-size: 0.75rem;
+            min-width: 16px;
+          }
+
+          .calc-student-name {
+            font-size: 0.82rem;
+          }
+
+          .calc-student-share-pill {
+            font-size: 0.74rem;
+            padding: 2px 6px;
           }
 
           .modern-hero-identity-card {
@@ -6585,6 +6845,10 @@ const Settings = ({
 
         [data-theme="dark"] .calc-date-trigger-val {
           color: #E8EAED;
+        }
+
+        [data-theme="dark"] .calc-calendar-overlay {
+          background: rgba(0, 0, 0, 0.65);
         }
 
         [data-theme="dark"] .calc-mini-calendar-popover {

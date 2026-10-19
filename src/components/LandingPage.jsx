@@ -1,11 +1,6 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
-import gsap from 'gsap';
-import { ScrollTrigger } from 'gsap/ScrollTrigger';
-import Lenis from 'lenis';
 import { getLandingText, getPricingBreakdown } from './landingTranslations';
 import './LandingPage.css';
-
-gsap.registerPlugin(ScrollTrigger);
 
 export default function LandingPage({
   onNavigateToLogin,
@@ -14,13 +9,12 @@ export default function LandingPage({
 }) {
   const containerRef = useRef(null);
   const langDropdownRef = useRef(null);
-  const lenisRef = useRef(null);
   const [tutorCount, setTutorCount] = useState(1);
   const [localLang, setLocalLang] = useState(() => {
     try {
       const saved = localStorage.getItem('rsa_landing_lang');
       if (saved === 'ru' || saved === 'en' || saved === 'uz') return saved;
-    } catch (e) {}
+    } catch {}
     return 'en';
   });
   const [isLangMenuOpen, setIsLangMenuOpen] = useState(false);
@@ -29,48 +23,39 @@ export default function LandingPage({
   const activeLang = propLang || localLang;
   const t = (key) => getLandingText(key, activeLang);
 
+  // High-performance IntersectionObserver for sticky navigation active states (zero layout thrashing)
   useEffect(() => {
     const sectionIds = ['imkoniyatlar', 'narx', 'savollar', 'aloqa'];
-    const handleScroll = () => {
-      const navEl = document.querySelector('.nav');
-      const navH = navEl ? Math.round(navEl.offsetHeight || navEl.getBoundingClientRect().height) : 60;
+    const elements = sectionIds
+      .map((id) => document.getElementById(id))
+      .filter(Boolean);
 
-      const scrollY = window.pageYOffset || window.scrollY || document.documentElement.scrollTop || 0;
-      const isAtBottom = window.innerHeight + scrollY >= document.documentElement.scrollHeight - 50;
-      if (isAtBottom) {
-        setActiveNav('aloqa');
-        return;
-      }
+    if (!elements.length) return;
 
-      let current = '';
-      for (const id of sectionIds) {
-        const el = document.getElementById(id);
-        if (el) {
-          const rect = el.getBoundingClientRect();
-          if (rect.top <= navH + 4 && rect.bottom > navH + 4) {
-            current = id;
-            break;
-          }
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const visibleEntries = entries.filter((entry) => entry.isIntersecting);
+        if (visibleEntries.length > 0) {
+          visibleEntries.sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top);
+          setActiveNav(visibleEntries[0].target.id);
         }
+      },
+      {
+        rootMargin: '-15% 0px -65% 0px',
+        threshold: 0,
       }
-      setActiveNav(current);
-    };
+    );
 
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    handleScroll();
-    return () => window.removeEventListener('scroll', handleScroll);
+    elements.forEach((el) => observer.observe(el));
+    return () => observer.disconnect();
   }, []);
 
-  // Smooth scroll directly so section top lands flush (0px gap) against sticky navbar bottom wall
+  // Smooth scroll directly so section top lands flush against sticky navbar bottom
   const scrollToTarget = useCallback((hash) => {
     if (!hash || hash.length <= 1) return;
 
     if (hash === '#top') {
-      if (lenisRef.current) {
-        lenisRef.current.scrollTo(0, { duration: 1.1 });
-      } else {
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-      }
+      window.scrollTo({ top: 0, behavior: 'smooth' });
       return;
     }
 
@@ -78,22 +63,14 @@ export default function LandingPage({
     if (!target) return;
 
     const navEl = document.querySelector('.nav');
-    // Exact height of the sticky navbar so section top lands flush against navbar bottom wall
-    const navH = navEl ? Math.round(navEl.offsetHeight || navEl.getBoundingClientRect().height) : 0;
+    const navH = navEl ? Math.round(navEl.getBoundingClientRect().height) : 60;
     const pageY = window.pageYOffset || window.scrollY || document.documentElement.scrollTop || 0;
-    const targetDocTop = target.getBoundingClientRect().top + pageY;
-    const destY = Math.max(0, Math.round(targetDocTop - navH));
+    const destY = Math.max(0, Math.round(target.getBoundingClientRect().top + pageY - navH));
 
-    if (lenisRef.current) {
-      lenisRef.current.scrollTo(destY, {
-        duration: 1.1,
-      });
-    } else {
-      window.scrollTo({
-        top: destY,
-        behavior: 'smooth',
-      });
-    }
+    window.scrollTo({
+      top: destY,
+      behavior: 'smooth',
+    });
   }, []);
 
   const handleNavClick = (e, hash) => {
@@ -109,7 +86,7 @@ export default function LandingPage({
       try {
         localStorage.setItem('rsa_landing_lang', selectedLang);
         document.documentElement.lang = selectedLang;
-      } catch (e) {}
+      } catch {}
     }
     setIsLangMenuOpen(false);
   };
@@ -117,7 +94,7 @@ export default function LandingPage({
   useEffect(() => {
     try {
       document.documentElement.lang = activeLang;
-    } catch (e) {}
+    } catch {}
   }, [activeLang]);
 
   useEffect(() => {
@@ -170,26 +147,12 @@ export default function LandingPage({
 
   useEffect(() => {
     const H = document.documentElement;
-    let lenisInstance = null;
-    let activeIO = null;
-    const addedListeners = [];
-
-    const addEvt = (target, type, fn, opts) => {
-      target.addEventListener(type, fn, opts);
-      addedListeners.push({ target, type, fn, opts });
-    };
-
     H.classList.add('landing-page-active');
-    H.classList.add('js');
-    H.classList.add('ready');
 
-    const RM = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     window.dataLayer = window.dataLayer || [];
 
     const rootEl = containerRef.current;
     if (!rootEl) return;
-
-    const $ = (selector, parent = rootEl) => [...parent.querySelectorAll(selector)];
 
     // Navigation and Action links
     const handleCtaClick = (e) => {
@@ -231,324 +194,11 @@ export default function LandingPage({
       }
     };
 
-    addEvt(rootEl, 'click', handleCtaClick);
-
-    let gsapCtx = null;
-    let tickerFn = null;
-
-    if (!RM) {
-      ScrollTrigger.config({ ignoreMobileResize: true, limitCallbacks: true });
-
-      const isDesk = window.matchMedia('(min-width:800px) and (hover:hover) and (pointer:fine)').matches;
-
-      if (isDesk) {
-        lenisInstance = new Lenis({ lerp: 0.1, wheelMultiplier: 1.0, syncTouch: true });
-        lenisRef.current = lenisInstance;
-        lenisInstance.on('scroll', ScrollTrigger.update);
-        tickerFn = (time) => {
-          if (lenisInstance) {
-            lenisInstance.raf(time * 1000);
-          }
-        };
-        gsap.ticker.add(tickerFn);
-        gsap.ticker.lagSmoothing(0);
-      }
-
-      // Anchor smooth scrolling using unified scrollToTarget
-      $('a[href^="#"]').forEach((a) => {
-        const onAnchorClick = (e) => {
-          if (e.defaultPrevented) return;
-          const hash = a.getAttribute('href');
-          if (!hash || hash.length <= 1) return;
-          e.preventDefault();
-          scrollToTarget(hash);
-        };
-        addEvt(a, 'click', onAnchorClick);
-      });
-
-      // Wrap all GSAP animations in gsap.context for flawless scoping and zero-leak cleanup
-      gsapCtx = gsap.context(() => {
-        const isDesktop = window.matchMedia('(min-width: 800px)').matches;
-
-        // Universal helper for clean, simple, uniform text fade-up animation across all sections (Mobile & Desktop)
-        const animTxt = (targets, trigger, opts = {}) => {
-          const { start, stagger, once = true, ...tweenVars } = opts;
-          const elements = typeof targets === 'string' ? $(targets) : targets;
-          if (!elements || (Array.isArray(elements) && !elements.length)) return null;
-          return gsap.fromTo(
-            elements,
-            { opacity: 0, y: 22 },
-            {
-              opacity: 1,
-              y: 0,
-              duration: 0.8,
-              ease: 'power3.out',
-              stagger: stagger !== undefined ? stagger : 0.08,
-              scrollTrigger: trigger
-                ? {
-                    trigger: typeof trigger === 'string' ? $(trigger)[0] || trigger : trigger,
-                    start: start || 'top 82%',
-                    once,
-                  }
-                : undefined,
-              ...tweenVars,
-            }
-          );
-        };
-
-        // 1. HERO (Smooth text entrance on page load)
-        const heroTl = gsap
-          .timeline({ delay: 0.1 })
-          .fromTo(
-            ['.hero .kick', '.hero h1', '.hero .sub', '.hero .ctas'],
-            { opacity: 0, y: 22 },
-            { opacity: 1, y: 0, duration: 0.85, ease: 'power3.out', stagger: 0.1 }
-          );
-
-        // Desktop-only graphic & parallax animations in Hero
-        if (isDesktop) {
-          heroTl
-            .fromTo(
-              ['.hero-blob', '.hero-doodle-confetti', '.hero-doodle-zigzag', '.hero-doodle-curve'],
-              { opacity: 0, scale: 0.92 },
-              { opacity: 1, scale: 1, duration: 1.1, ease: 'power2.out', stagger: 0.08 },
-              '<.1'
-            )
-            .fromTo(
-              '.mock-calendar',
-              { opacity: 0, y: 28 },
-              { opacity: 1, y: 0, duration: 0.9, ease: 'power3.out' },
-              '<.15'
-            )
-            .fromTo(
-              '.mock-students-card',
-              { opacity: 0, y: 24, scale: 0.96 },
-              { opacity: 1, y: 0, scale: 1, duration: 0.85, ease: 'power3.out' },
-              '<.2'
-            )
-            .fromTo(
-              '.hero .giant',
-              { opacity: 0 },
-              { opacity: 0.04, duration: 1.2, ease: 'power3.out' },
-              '<.1'
-            );
-
-          gsap.to('.giant', {
-            xPercent: -8,
-            ease: 'none',
-            scrollTrigger: {
-              trigger: '.hero',
-              start: 'top top',
-              end: 'bottom top',
-              scrub: 0.5,
-            },
-          });
-        }
-
-        // 2. FORK: audience cards (Designed for tutors of all kinds) - Text entrance from below
-        animTxt('.fork .lab', '.fork');
-        animTxt(['.fork-title', '.fork-subtitle'], '.fork', { stagger: 0.1 });
-        animTxt('.fork-card', '.fork-grid', { stagger: 0.12, start: 'top 78%' });
-        animTxt('.fork .more', '.fork', { start: 'top 85%' });
-
-        // 3. STATEMENT - Text entrance from below
-        animTxt('.stm p', '.stm');
-        animTxt('.stm-card', '.stm-compare', { stagger: 0.12, start: 'top 82%' });
-
-        if (isDesktop) {
-          // Continuous scroll parallax scrub: desktop only
-          gsap.fromTo(
-            '.stm .ghost',
-            { yPercent: -15 },
-            {
-              yPercent: 20,
-              ease: 'none',
-              scrollTrigger: { trigger: '.stm', scrub: 0.5 },
-            }
-          );
-        }
-
-        // 4. STEPS: how it works
-        animTxt('.how .lab', '.how');
-        if (isDesktop) {
-          $('.step').forEach((s) => {
-            gsap
-              .timeline({ scrollTrigger: { trigger: s, start: 'top 82%', once: true } })
-              .fromTo($('.hl', s), { scaleX: 0 }, { scaleX: 1, duration: 1, ease: 'power3.inOut' })
-              .fromTo($('p', s), { opacity: 0, y: 22 }, { opacity: 1, y: 0, duration: 0.8, ease: 'power3.out' }, '<.15');
-          });
-          gsap.fromTo(
-            '.how-zigzag-wrap',
-            { opacity: 0, y: 35, scale: 0.92 },
-            {
-              opacity: 0.88,
-              y: 0,
-              scale: 1,
-              duration: 1.1,
-              ease: 'power3.out',
-              scrollTrigger: { trigger: '.how', start: 'top 75%', once: true },
-            }
-          );
-        } else {
-          // Mobile: ONLY text entrance from below (no line scaling, no graphic animation)
-          animTxt('.step p', '.how', { stagger: 0.12, start: 'top 85%' });
-        }
-        animTxt('.how .more', '.how', { start: 'top 70%' });
-
-        // 5. PAYMENTS: online payments & financial control - Text entrance from below
-        animTxt('.pay-sc .lab', '.pay-sc');
-        animTxt(['.pay-sc h2', '.pay-sc .sub-lead', '.pay-sc .pay-methods'], '.pay-sc', {
-          stagger: 0.09,
-          start: 'top 80%',
-        });
-        animTxt('.pay-card', '.pay-grid', { stagger: 0.1, start: 'top 82%' });
-
-        if (isDesktop) {
-          // Continuous scroll parallax scrub & graphic blob: desktop only
-          gsap.fromTo(
-            '.pay-sc .ghost',
-            { yPercent: -15 },
-            {
-              yPercent: 20,
-              ease: 'none',
-              scrollTrigger: { trigger: '.pay-sc', scrub: 0.5 },
-            }
-          );
-          gsap.fromTo(
-            '.pay-organic-blob-wrap',
-            { opacity: 0, x: 60, scale: 0.95 },
-            {
-              opacity: 0.85,
-              x: 0,
-              scale: 1,
-              duration: 1.4,
-              ease: 'power3.out',
-              scrollTrigger: { trigger: '.pay-sc', start: 'top 80%', once: true },
-            }
-          );
-        }
-        animTxt('.pay-sc .more', '.pay-sc', { start: 'top 70%' });
-
-        // 6. MODULES: 8 modules
-        animTxt('#imkoniyatlar .lab', '#imkoniyatlar');
-        if (isDesktop) {
-          $('#imkoniyatlar li').forEach((li) => {
-            gsap
-              .timeline({ scrollTrigger: { trigger: li, start: 'top 88%', once: true } })
-              .fromTo($('.hl', li), { scaleX: 0 }, { scaleX: 1, duration: 1, ease: 'power3.inOut' })
-              .fromTo($('.row', li), { opacity: 0, y: 22 }, { opacity: 1, y: 0, duration: 0.8, ease: 'power3.out' }, '<.15');
-          });
-        } else {
-          // Mobile: ONLY text/content entrance from below (no line scaling)
-          animTxt('#imkoniyatlar li .row', '#imkoniyatlar', { stagger: 0.08, start: 'top 90%' });
-        }
-
-        // 8. PRICING: horizontal card - Text entrance from below
-        animTxt(['#narx .lab', '#narx .tq'], '#narx', { stagger: 0.09 });
-        animTxt('.price-horizontal-card', '#narx', { start: 'top 85%' });
-
-        // 9. FAQ: frequently asked questions - Text entrance from below
-        animTxt('.faqsc .lab', '.faqsc');
-        animTxt('.faq details', '.faq', { stagger: 0.08, start: 'top 85%' });
-
-        if (isDesktop) {
-          // Graphic ribbon animation: desktop only
-          gsap.fromTo(
-            '.faq-ribbon-wrap',
-            { opacity: 0, rotate: -10, scale: 0.9 },
-            {
-              opacity: 0.9,
-              rotate: 0,
-              scale: 1,
-              duration: 1.3,
-              ease: 'power3.out',
-              scrollTrigger: { trigger: '.faqsc', start: 'top 80%', once: true },
-            }
-          );
-        }
-        animTxt('.faqsc .more', '.faqsc', { start: 'top 70%' });
-
-        // 10. FINAL CTA & FOOTER - Text entrance from below
-        animTxt(['.cta-headline', '.cta .more', '.cta-subnote', '.foot'], '.cta', {
-          stagger: 0.08,
-          start: 'top 80%',
-        });
-
-        if (isDesktop) {
-          // Graphic organic blob animation: desktop only
-          gsap.fromTo(
-            '.cta-organic-blob-wrap',
-            { opacity: 0, x: 60, scale: 0.94 },
-            {
-              opacity: 1,
-              x: 0,
-              scale: 1,
-              duration: 1.2,
-              ease: 'power3.out',
-              scrollTrigger: { trigger: '.cta', start: 'top 82%', once: true },
-            }
-          );
-        }
-      }, rootEl);
-
-      // Refresh ScrollTrigger once DOM settled and fonts ready (only when at page top to avoid scroll snap)
-      ScrollTrigger.refresh();
-      if (document.fonts && document.fonts.ready) {
-        document.fonts.ready.then(() => {
-          if (window.scrollY === 0) {
-            ScrollTrigger.refresh();
-          }
-        });
-      }
-      addEvt(window, 'load', () => {
-        if (window.scrollY === 0) {
-          ScrollTrigger.refresh();
-        }
-      });
-    }
+    rootEl.addEventListener('click', handleCtaClick);
 
     return () => {
-      addedListeners.forEach(({ target, type, fn, opts }) => {
-        try {
-          target.removeEventListener(type, fn, opts);
-        } catch {}
-      });
-
-      if (activeIO) {
-        activeIO.disconnect();
-        activeIO = null;
-      }
-
-      if (gsapCtx) {
-        try {
-          gsapCtx.revert();
-        } catch {}
-        gsapCtx = null;
-      }
-
-      if (tickerFn) {
-        try {
-          gsap.ticker.remove(tickerFn);
-        } catch {}
-      }
-
-      try {
-        gsap.ticker.lagSmoothing(500, 33);
-      } catch {}
-
-      if (lenisInstance) {
-        try {
-          lenisInstance.destroy();
-        } catch {}
-        lenisInstance = null;
-      }
-      lenisRef.current = null;
-
-      try {
-        ScrollTrigger.getAll().forEach((t) => t.kill());
-      } catch {}
-
-      H.classList.remove('landing-page-active', 'fx', 'lite', 'ready', 'lenis');
+      rootEl.removeEventListener('click', handleCtaClick);
+      H.classList.remove('landing-page-active');
     };
   }, [onNavigateToLogin]);
 
@@ -716,9 +366,7 @@ export default function LandingPage({
                   data-cta
                   rel="noopener"
                 >
-                  <span className="r">
-                    <b data-t={t('hero_cta')}>{t('hero_cta')}</b>
-                  </span>
+                  <span>{t('hero_cta')}</span>
                 </a>
               </div>
             </div>
@@ -1106,9 +754,7 @@ export default function LandingPage({
             data-cta
             rel="noopener"
           >
-            <span className="r">
-              <b data-t={t('hero_cta')}>{t('hero_cta')}</b>
-            </span>
+            <span>{t('hero_cta')}</span>
           </a>
         </section>
 
@@ -1248,9 +894,7 @@ export default function LandingPage({
             data-cta
             rel="noopener"
           >
-            <span className="r">
-              <b data-t={t('hero_cta')}>{t('hero_cta')}</b>
-            </span>
+            <span>{t('hero_cta')}</span>
           </a>
         </section>
 
@@ -1319,9 +963,7 @@ export default function LandingPage({
             data-cta
             rel="noopener"
           >
-            <span className="r">
-              <b data-t={t('hero_cta')}>{t('hero_cta')}</b>
-            </span>
+            <span>{t('hero_cta')}</span>
           </a>
         </section>
 
@@ -1684,9 +1326,7 @@ export default function LandingPage({
             target="_blank"
             rel="noopener noreferrer"
           >
-            <span className="r">
-              <b data-t={t('faq_support_btn')}>{t('faq_support_btn')}</b>
-            </span>
+            <span>{t('faq_support_btn')}</span>
           </a>
         </section>
 
@@ -1742,9 +1382,7 @@ export default function LandingPage({
                   data-cta
                   rel="noopener"
                 >
-                  <span className="r">
-                    <b data-t={t('hero_cta')}>{t('hero_cta')}</b>
-                  </span>
+                  <span>{t('hero_cta')}</span>
                 </a>
               </div>
               <p className="cta-subnote">{t('final_cta_sub')}</p>
@@ -1755,19 +1393,13 @@ export default function LandingPage({
               <p className="lab">{t('foot_lab')}</p>
               <nav aria-label={t('foot_lab')}>
                 <a className="lnk" href="https://t.me/bkzd19" target="_blank" rel="noopener noreferrer">
-                  <span className="r">
-                    <b data-t="Telegram">Telegram</b>
-                  </span>
+                  <span>Telegram</span>
                 </a>
                 <a className="lnk" href="https://instagram.com/epchilrobot" target="_blank" rel="noopener noreferrer">
-                  <span className="r">
-                    <b data-t="Instagram">Instagram</b>
-                  </span>
+                  <span>Instagram</span>
                 </a>
                 <a className="lnk" href="tel:+998332220301">
-                  <span className="r">
-                    <b data-t="+998 (33) 222-03-01">+998 (33) 222-03-01</b>
-                  </span>
+                  <span>+998 (33) 222-03-01</span>
                 </a>
               </nav>
               <small className="foot-copy">{t('foot_copy')}</small>

@@ -205,10 +205,10 @@ export default function StudentPortal({
 
     let candidateId = override;
 
-    // 2. localStorage for this group
+    // 2. localStorage for this group or global pinned id
     if (candidateId === undefined) {
       try {
-        candidateId = localStorage.getItem(`rsa_pinned_student_${gId}`) || null;
+        candidateId = localStorage.getItem(`rsa_pinned_student_${gId}`) || localStorage.getItem('rsa_pinned_student_id') || null;
       } catch {
         candidateId = null;
       }
@@ -260,14 +260,14 @@ export default function StudentPortal({
     return future.length > 0 ? future[0] : null;
   }, [currentGroup?.id, extraLessons, pinnedStudent?.id]);
 
-  // Safe Remote Kickout listener: if teacher reset the student's PIN remotely in DB
+  // Safe Remote Kickout listener: ONLY kick out if teacher ACTIVELY reset the student's PIN remotely in DB
   useEffect(() => {
     if (!currentGroup?.id || groupStudents.length === 0) return;
     const gId = String(currentGroup.id);
     let storedId = null;
     let storedPin = null;
     try {
-      storedId = localStorage.getItem(`rsa_pinned_student_${gId}`) || null;
+      storedId = localStorage.getItem(`rsa_pinned_student_${gId}`) || localStorage.getItem('rsa_pinned_student_id') || null;
       storedPin = localStorage.getItem(`rsa_pinned_student_pin_${gId}`) || null;
     } catch {}
     if (!storedId || !storedPin) return;
@@ -275,8 +275,12 @@ export default function StudentPortal({
     const found = groupStudents.find((s) => String(s.id) === String(storedId));
     if (!found) return;
 
-    // If student had a stored PIN and teacher actively cleared PIN in database (pin is now null):
-    if (!found.pin) {
+    // Check if teacher actively reset PIN remotely (found.pinResetAt exists and is after pinUpdatedAt):
+    const isActivelyResetByTeacher = Boolean(
+      !found.pin && found.pinResetAt && (!found.pinUpdatedAt || new Date(found.pinResetAt) >= new Date(found.pinUpdatedAt))
+    );
+
+    if (isActivelyResetByTeacher) {
       try {
         localStorage.removeItem(`rsa_pinned_student_${gId}`);
         localStorage.removeItem(`rsa_pinned_student_pin_${gId}`);
@@ -287,8 +291,11 @@ export default function StudentPortal({
       if (showToast) {
         showToast("Ushbu profil PIN-kodi ustoz tomonidan bekor qilindi.", 'info');
       }
+    } else if (!found.pin && storedPin && onSetStudentPin) {
+      // Self-healing: client has valid storedPin for this student, but DB was temporarily missing it -> sync back to DB!
+      onSetStudentPin(found.id, storedPin, found.name, null, currentGroup.teacherId);
     }
-  }, [currentGroup?.id, groupStudents, showToast]);
+  }, [currentGroup?.id, currentGroup?.teacherId, groupStudents, onSetStudentPin, showToast]);
 
   const pinnedStudentId = useMemo(() => {
     return pinnedStudent ? String(pinnedStudent.id) : null;
