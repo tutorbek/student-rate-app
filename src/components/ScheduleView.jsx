@@ -689,11 +689,6 @@ const ScheduleView = ({
       <div className="extra-lessons-section">
         <div className="extra-lessons-header">
           <div className="extra-lessons-title-wrap">
-            <div className="extra-lessons-title-icon">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
-              </svg>
-            </div>
             <div className="extra-lessons-title-content">
               <div className="extra-lessons-title-row">
                 <h3 className="extra-lessons-title">
@@ -738,10 +733,6 @@ const ScheduleView = ({
                 handleOpenCreateExtraLesson();
               }}
             >
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <line x1="12" y1="5" x2="12" y2="19" />
-                <line x1="5" y1="12" x2="19" y2="12" />
-              </svg>
               <span>+ Extra Dars</span>
             </button>
           </div>
@@ -825,14 +816,6 @@ const ScheduleView = ({
           </div>
         ) : (
           <div className="extra-lessons-empty-strip">
-            <div className="extra-empty-icon-wrap">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
-                <line x1="16" y1="2" x2="16" y2="6" />
-                <line x1="8" y1="2" x2="8" y2="6" />
-                <line x1="3" y1="10" x2="21" y2="10" />
-              </svg>
-            </div>
             <div className="extra-empty-text-wrap">
               <p className="extra-empty-title">
                 {showPastExtraLessons
@@ -845,27 +828,13 @@ const ScheduleView = ({
                   : "Hafta kunlariga ta'sir qilmagan holda yangi qo'shimcha dars belgilashingiz mumkin."}
               </p>
             </div>
-            {showPastExtraLessons ? (
+            {showPastExtraLessons && (
               <button
                 type="button"
                 className="btn btn-secondary extra-empty-action-btn"
                 onClick={() => setShowPastExtraLessons(false)}
               >
                 Kelgusi darslarga qaytish
-              </button>
-            ) : (
-              <button
-                type="button"
-                className="btn btn-primary extra-empty-action-btn scale-active"
-                onClick={() => {
-                  if (groups.length === 0) {
-                    showToast("Extra dars qo'shish uchun dastlab guruh yarating!", "error");
-                    return;
-                  }
-                  handleOpenCreateExtraLesson();
-                }}
-              >
-                <span>+ Extra Dars qo'shish</span>
               </button>
             )}
           </div>
@@ -3421,24 +3390,6 @@ const ScheduleView = ({
         .extra-lessons-title-wrap {
           display: flex;
           align-items: center;
-          gap: 12px;
-        }
-
-        .extra-lessons-title-icon {
-          width: 36px;
-          height: 36px;
-          border-radius: 10px;
-          background: rgba(0, 113, 227, 0.08);
-          color: var(--apple-blue, #0171E3);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          flex-shrink: 0;
-        }
-
-        [data-theme="dark"] .extra-lessons-title-icon {
-          background: rgba(138, 180, 248, 0.12);
-          color: #8AB4F8;
         }
 
         .extra-lessons-title-content {
@@ -3821,23 +3772,6 @@ const ScheduleView = ({
         [data-theme="dark"] .extra-lessons-empty-strip {
           border-color: rgba(255, 255, 255, 0.1);
           background: rgba(255, 255, 255, 0.02);
-        }
-
-        .extra-empty-icon-wrap {
-          width: 40px;
-          height: 40px;
-          border-radius: 10px;
-          background: rgba(0, 0, 0, 0.03);
-          color: var(--text-tertiary);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          flex-shrink: 0;
-        }
-
-        [data-theme="dark"] .extra-empty-icon-wrap {
-          background: rgba(255, 255, 255, 0.05);
-          color: #9CA3AF;
         }
 
         .extra-empty-text-wrap {
