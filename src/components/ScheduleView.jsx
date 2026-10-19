@@ -551,19 +551,6 @@ const ScheduleView = ({
             <div>
               <h2 className="page-title">Dars Jadvalim</h2>
             </div>
-            <button
-              type="button"
-              className="btn btn-primary scale-active"
-              onClick={() => {
-                if (groups.length === 0) {
-                  showToast("Extra dars qo'shish uchun dastlab guruh yarating!", "error");
-                  return;
-                }
-                handleOpenCreateExtraLesson();
-              }}
-            >
-              <span>+ Extra Dars</span>
-            </button>
           </div>
 
           {/* Mobile Day Switcher Tabs (Visible on screens < 768px) */}
@@ -690,14 +677,9 @@ const ScheduleView = ({
         <div className="extra-lessons-header">
           <div className="extra-lessons-title-wrap">
             <div className="extra-lessons-title-content">
-              <div className="extra-lessons-title-row">
-                <h3 className="extra-lessons-title">
-                  {showPastExtraLessons ? "O'tgan Extra Darslar" : "Rejalashtirilgan Extra Darslar"}
-                </h3>
-                <span className="extra-lessons-count-pill">
-                  {displayedExtraLessons.length} ta dars
-                </span>
-              </div>
+              <h3 className="extra-lessons-title">
+                {showPastExtraLessons ? "O'tgan Extra Darslar" : "Rejalashtirilgan Extra Darslar"}
+              </h3>
               <p className="extra-lessons-subtitle">
                 {showPastExtraLessons
                   ? "Avval o'tkazilgan qo'shimcha darslar arxivi"
@@ -1075,14 +1057,10 @@ const ScheduleView = ({
               </svg>
             </button>
 
-            <div className="modal-header-fixed extra-modal-header" style={{ marginBottom: '14px' }}>
-              <span className="extra-modal-badge">Mustaqil Dars</span>
+            <div className="modal-header-fixed extra-modal-header" style={{ marginBottom: '16px' }}>
               <h3 className="modal-title">
-                {editingExtraLesson ? "Extra Lessonni Tahrirlash" : "Yangi Extra Lesson Qo'shish"}
+                {editingExtraLesson ? "Extra Darsni Tahrirlash" : "Yangi Extra Dars Qo'shish"}
               </h3>
-              <p className="modal-sub-info" style={{ margin: 0 }}>
-                Doimiy dars jadvalidan mustaqil ravishda alohida sana va vaqt uchun qo'shimcha dars belgilash.
-              </p>
             </div>
 
             <div className="modal-body-scrollable">
@@ -1314,31 +1292,6 @@ const ScheduleView = ({
               </div>
             </div>
 
-            {/* Room */}
-            <div className="form-group">
-              <label className="form-label">Xona (Ixtiyoriy)</label>
-              <input
-                type="text"
-                className="form-input"
-                placeholder="Masalan: 204-xona, Lab 1..."
-                value={extraRoom}
-                onChange={(e) => setExtraRoom(e.target.value)}
-                maxLength={40}
-              />
-            </div>
-
-            {/* Topic / Note */}
-            <div className="form-group">
-              <label className="form-label">Dars Mavzusi / Izoh (Ixtiyoriy)</label>
-              <input
-                type="text"
-                className="form-input"
-                placeholder="Masalan: Oraliq nazoratga tayyorgarlik, qo'shimcha amaliyot..."
-                value={extraTopic}
-                onChange={(e) => setExtraTopic(e.target.value)}
-                maxLength={120}
-              />
-              </div>
             </div>
 
             {/* Action Buttons */}
@@ -1365,7 +1318,6 @@ const ScheduleView = ({
                 <button
                   type="button"
                   className="btn btn-primary scale-active"
-                  style={{ background: 'linear-gradient(135deg, #7C3AED 0%, #4F46E5 100%)', border: 'none' }}
                   onClick={handleSaveExtraLesson}
                 >
                   <span>{editingExtraLesson ? "O'zgarishlarni Saqlash" : "Darsni Qo'shish"}</span>
@@ -2385,15 +2337,15 @@ const ScheduleView = ({
 
         /* Extra Lesson Card Styling */
         .schedule-lesson-card.extra-lesson-card {
-          background: linear-gradient(135deg, rgba(124, 58, 237, 0.07) 0%, rgba(245, 158, 11, 0.05) 100%), #FFFFFF !important;
-          border: 1.5px solid rgba(124, 58, 237, 0.4) !important;
-          box-shadow: 0 2px 10px rgba(124, 58, 237, 0.08);
+          background: #FFFFFF !important;
+          border: 1.5px solid rgba(1, 113, 227, 0.35) !important;
+          box-shadow: 0 2px 10px rgba(1, 113, 227, 0.08);
           position: relative;
         }
 
         [data-theme="dark"] .schedule-lesson-card.extra-lesson-card {
-          background: linear-gradient(135deg, rgba(124, 58, 237, 0.16) 0%, rgba(245, 158, 11, 0.08) 100%), #292A2D !important;
-          border: 1.5px solid rgba(167, 139, 250, 0.45) !important;
+          background: #292A2D !important;
+          border: 1.5px solid rgba(138, 180, 248, 0.35) !important;
           box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
         }
 
@@ -2420,9 +2372,9 @@ const ScheduleView = ({
         }
 
         [data-theme="dark"] .schedule-lesson-card.extra-lesson-card .extra-lesson-badge {
-          background: rgba(167, 139, 250, 0.18) !important;
-          color: #C4B5FD !important;
-          border-color: rgba(167, 139, 250, 0.35) !important;
+          background: rgba(138, 180, 248, 0.15) !important;
+          color: #8AB4F8 !important;
+          border-color: rgba(138, 180, 248, 0.3) !important;
         }
 
         [data-theme="dark"] .schedule-lesson-card.extra-lesson-card .extra-lesson-date-pill {
@@ -2437,14 +2389,14 @@ const ScheduleView = ({
         }
 
         [data-theme="dark"] .schedule-lesson-card.extra-lesson-card .extra-lesson-target-badge {
-          background: rgba(167, 139, 250, 0.12) !important;
-          color: #C4B5FD !important;
-          border-color: rgba(167, 139, 250, 0.25) !important;
+          background: rgba(138, 180, 248, 0.12) !important;
+          color: #8AB4F8 !important;
+          border-color: rgba(138, 180, 248, 0.25) !important;
         }
 
         .schedule-lesson-card.extra-lesson-card:hover {
-          border-color: rgba(124, 58, 237, 0.8) !important;
-          box-shadow: 0 4px 16px rgba(124, 58, 237, 0.22);
+          border-color: var(--apple-blue, #0171E3) !important;
+          box-shadow: 0 4px 16px rgba(1, 113, 227, 0.2);
         }
 
         .extra-lesson-top-row {
@@ -2467,9 +2419,9 @@ const ScheduleView = ({
           font-weight: 700;
           letter-spacing: 0.02em;
           text-transform: uppercase;
-          background: rgba(124, 58, 237, 0.12);
-          color: #7C3AED;
-          border: 1px solid rgba(124, 58, 237, 0.25);
+          background: rgba(1, 113, 227, 0.08);
+          color: var(--apple-blue, #0171E3);
+          border: 1px solid rgba(1, 113, 227, 0.2);
           white-space: nowrap;
           min-width: 0;
           overflow: hidden;
@@ -2479,9 +2431,9 @@ const ScheduleView = ({
         }
 
         [data-theme="dark"] .extra-lesson-badge {
-          background: rgba(167, 139, 250, 0.18);
-          color: #C4B5FD;
-          border-color: rgba(167, 139, 250, 0.35);
+          background: rgba(138, 180, 248, 0.15);
+          color: #8AB4F8;
+          border-color: rgba(138, 180, 248, 0.3);
         }
 
         .extra-badge-separator {
@@ -2616,24 +2568,6 @@ const ScheduleView = ({
           margin-bottom: 16px;
         }
 
-        .extra-modal-badge {
-          display: inline-flex;
-          align-items: center;
-          align-self: flex-start;
-          gap: 4px;
-          padding: 3px 8px;
-          border-radius: 999px;
-          font-size: 0.7rem;
-          font-weight: 800;
-          text-transform: uppercase;
-          background: rgba(124, 58, 237, 0.12);
-          color: #7C3AED;
-        }
-
-        [data-theme="dark"] .extra-modal-badge {
-          background: rgba(167, 139, 250, 0.18);
-          color: #C4B5FD;
-        }
 
         .modal-date-input {
           font-family: inherit;
@@ -2812,16 +2746,16 @@ const ScheduleView = ({
           font-weight: 600;
           padding: 3px 8px;
           border-radius: 6px;
-          background: rgba(124, 58, 237, 0.1);
-          color: #7C3AED;
-          border: 1px solid rgba(124, 58, 237, 0.2);
+          background: rgba(1, 113, 227, 0.08);
+          color: var(--apple-blue, #0171E3);
+          border: 1px solid rgba(1, 113, 227, 0.2);
           white-space: nowrap;
         }
 
         [data-theme="dark"] .extra-delete-preview-badge {
-          background: rgba(167, 139, 250, 0.15);
-          color: #DDD6FE;
-          border-color: rgba(167, 139, 250, 0.25);
+          background: rgba(138, 180, 248, 0.15);
+          color: #8AB4F8;
+          border-color: rgba(138, 180, 248, 0.3);
         }
 
         .extra-delete-preview-details {
@@ -3117,15 +3051,15 @@ const ScheduleView = ({
         }
 
         .extra-lesson-target-badge.individual {
-          background: rgba(124, 58, 237, 0.08);
-          border: 1px solid rgba(124, 58, 237, 0.2);
-          color: #6D28D9;
+          background: rgba(1, 113, 227, 0.08);
+          border: 1px solid rgba(1, 113, 227, 0.2);
+          color: var(--apple-blue, #0171E3);
         }
 
         [data-theme="dark"] .extra-lesson-target-badge.individual {
-          background: rgba(167, 139, 250, 0.12);
-          border-color: rgba(167, 139, 250, 0.25);
-          color: #C4B5FD;
+          background: rgba(138, 180, 248, 0.12);
+          border-color: rgba(138, 180, 248, 0.25);
+          color: #8AB4F8;
         }
 
         .extra-target-avatar-stack {
@@ -3398,32 +3332,12 @@ const ScheduleView = ({
           gap: 2px;
         }
 
-        .extra-lessons-title-row {
-          display: flex;
-          align-items: center;
-          gap: 8px;
-        }
-
         .extra-lessons-title {
           font-size: 1.05rem;
           font-weight: 700;
           color: var(--text-primary);
           margin: 0;
           letter-spacing: -0.01em;
-        }
-
-        .extra-lessons-count-pill {
-          font-size: 0.72rem;
-          font-weight: 700;
-          padding: 2px 8px;
-          border-radius: var(--radius-full);
-          background: rgba(0, 0, 0, 0.05);
-          color: var(--text-secondary);
-        }
-
-        [data-theme="dark"] .extra-lessons-count-pill {
-          background: rgba(255, 255, 255, 0.08);
-          color: #D1D5DB;
         }
 
         .extra-lessons-subtitle {
@@ -3704,15 +3618,15 @@ const ScheduleView = ({
           font-weight: 600;
           padding: 1px 6px;
           border-radius: 4px;
-          background: rgba(124, 58, 237, 0.1);
-          color: #7C3AED;
+          background: rgba(1, 113, 227, 0.08);
+          color: var(--apple-blue, #0171E3);
           white-space: nowrap;
           flex-shrink: 0;
         }
 
         [data-theme="dark"] .extra-slim-target-pill {
-          background: rgba(167, 139, 250, 0.15);
-          color: #C4B5FD;
+          background: rgba(138, 180, 248, 0.15);
+          color: #8AB4F8;
         }
 
         .extra-slim-topic {
@@ -3994,13 +3908,13 @@ const ScheduleView = ({
         }
 
         .extra-detail-audience-pill.custom {
-          background: rgba(124, 58, 237, 0.1);
-          color: #7C3AED;
+          background: rgba(1, 113, 227, 0.08);
+          color: var(--apple-blue, #0171E3);
         }
 
         [data-theme="dark"] .extra-detail-audience-pill.custom {
-          background: rgba(167, 139, 250, 0.18);
-          color: #C4B5FD;
+          background: rgba(138, 180, 248, 0.15);
+          color: #8AB4F8;
         }
 
         .extra-detail-topic-box {
