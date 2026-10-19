@@ -116,7 +116,7 @@ export default function StudentAvatarPickerView({
   const handleLockedRobotClick = () => {
     triggerHaptic('medium');
     if (showToast) {
-      showToast("Ushbu to'plam darsdagi maxsus yutuqlar uchun tez kunda ochiladi! 🚀", "info");
+      showToast("Ushbu to'plam darsdagi maxsus yutuqlar uchun tez kunda ochiladi!", "info");
     }
   };
 

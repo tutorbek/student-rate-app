@@ -526,14 +526,8 @@ function App() {
   const studentGroupsRef = useRef(studentGroups);
   studentGroupsRef.current = studentGroups;
 
-  // Toast notifications state
-  const [toast, setToast] = useState(null);
-
-  // Show dynamic toast
-  const showToast = (message, type = 'info') => {
-    const id = Date.now();
-    setToast({ id, message, type });
-  };
+  // Toast notifications disabled - safe no-op to maintain prop compatibility
+  const showToast = useCallback(() => {}, []);
 
   // Load database from Supabase when authenticated and teacherId is ready
   useEffect(() => {
@@ -1059,14 +1053,6 @@ function App() {
     return () => clearTimeout(timer);
   }, [groups, students, transactions, quickTags, attendance, teacherProfile, extraLessons, payments, isLoaded, isAuthenticated, teacherId, userRole]);
 
-  // Clear toast after timeout
-  useEffect(() => {
-    if (!toast) return;
-    const timer = setTimeout(() => {
-      setToast(null);
-    }, 3000);
-    return () => clearTimeout(timer);
-  }, [toast]);
 
   const handleSaveTeacherProfile = useCallback(async (updatedProfile) => {
     setTeacherProfile(updatedProfile);
@@ -2607,19 +2593,6 @@ function App() {
           />
         )}
 
-        {toast && createPortal(
-          <div className="toast-portal-container" aria-live="polite">
-            <div
-              className="toast"
-              onClick={() => setToast(null)}
-              role="status"
-              title="Yopish"
-            >
-              <span className="toast-message">{toast.message}</span>
-            </div>
-          </div>,
-          document.body
-        )}
       </div>
     );
   }
@@ -2628,7 +2601,11 @@ function App() {
   if (connectionError) {
     return (
       <div className="full-screen-loader" style={{ flexDirection: 'column', gap: '20px', padding: '24px' }}>
-        <div style={{ fontSize: '3rem' }}>⚠️</div>
+        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#ff3b30" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <circle cx="12" cy="12" r="10" />
+          <line x1="12" y1="8" x2="12" y2="12" />
+          <line x1="12" y1="16" x2="12.01" y2="16" />
+        </svg>
         <h3 style={{ margin: 0, color: '#ff3b30', textAlign: 'center', fontFamily: 'var(--font-family)', fontWeight: '800' }}>Internetga ulanishda xatolik!</h3>
         <p style={{ margin: 0, opacity: 0.8, maxWidth: '320px', textAlign: 'center', fontSize: '0.9rem', fontFamily: 'var(--font-family)', lineHeight: '1.4' }}>
           Ma'lumotlarni yuklab bo'lmadi. Internet aloqasini tekshiring va qayta urinib ko'ring.
@@ -2683,20 +2660,6 @@ function App() {
         </div>
       </main>
 
-      {/* Toast Notification Popups */}
-      {toast && createPortal(
-        <div className="toast-portal-container" aria-live="polite">
-          <div
-            className="toast"
-            onClick={() => setToast(null)}
-            role="status"
-            title="Yopish"
-          >
-            <span className="toast-message">{toast.message}</span>
-          </div>
-        </div>,
-        document.body
-      )}
 
       {/* Logout Confirmation Warning Modal */}
       {showLogoutConfirmModal && createPortal(
