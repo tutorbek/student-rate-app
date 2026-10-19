@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { exportDatabase, DEFAULT_QUICK_TAGS, normalizeQuickTags, getGroupCategory } from '../utils/db';
 import { renderAvatar } from '../utils/studentAvatars';
 import { renderGroupIcon } from '../utils/groupIcons';
+import { AVATAR_GALLERY_IMAGES } from '../utils/avatarGallery';
 import ProjectLikeIcon from './common/ProjectLikeIcon';
 import { useModalDismiss } from '../hooks/useModalDismiss';
 
@@ -272,6 +273,7 @@ const Settings = ({
   const avatarFileInputRef = React.useRef(null);
 
   const [newAchievementText, setNewAchievementText] = useState('');
+  const [showAvatarModal, setShowAvatarModal] = useState(false);
   const [showAddCertModal, setShowAddCertModal] = useState(false);
   const [certTitleInput, setCertTitleInput] = useState('');
   const [certYearInput, setCertYearInput] = useState('');
@@ -360,9 +362,12 @@ const Settings = ({
       if (typeof dataUrl === 'string') {
         setProfileAvatar(dataUrl);
         isUserDirtyRef.current = true;
+        setShowAvatarModal(false);
+        showToast("Surat yuklandi!", "success");
       }
     };
     reader.readAsDataURL(file);
+    e.target.value = '';
   };
 
   const handleCertFileUpload = (e) => {
@@ -776,7 +781,8 @@ const Settings = ({
     deleteConfirmModal ||
     rollbackConfirmModal ||
     editingTagIndex !== null ||
-    showAddCertModal
+    showAddCertModal ||
+    showAvatarModal
   );
 
   useModalDismiss(isAnySettingsModalOpen, () => {
@@ -785,6 +791,8 @@ const Settings = ({
     } else if (selectedCalcGroupId) {
       setSelectedCalcGroupId(null);
       setCalcGroupStudentSearch('');
+    } else if (showAvatarModal) {
+      setShowAvatarModal(false);
     } else if (showAddCertModal) {
       setShowAddCertModal(false);
     } else if (editingTagIndex !== null) {
@@ -1022,8 +1030,8 @@ const Settings = ({
                 />
                 <div
                   className="hero-avatar-disc"
-                  onClick={() => avatarFileInputRef.current?.click()}
-                  title="Suratni tanlash"
+                  onClick={() => setShowAvatarModal(true)}
+                  title="Avatarni tanlash yoki o'zgartirish"
                   role="button"
                   tabIndex={0}
                 >
@@ -1038,9 +1046,9 @@ const Settings = ({
                 <button
                   type="button"
                   className="hero-avatar-camera-btn scale-active"
-                  onClick={() => avatarFileInputRef.current?.click()}
-                  title="Suratni o'zgartirish"
-                  aria-label="Suratni o'zgartirish"
+                  onClick={() => setShowAvatarModal(true)}
+                  title="Avatarni tanlash yoki o'zgartirish"
+                  aria-label="Avatarni tanlash yoki o'zgartirish"
                 >
                   <IconCamera size={14} />
                 </button>
@@ -2460,6 +2468,76 @@ const Settings = ({
         document.body
       )}
 
+      {/* MODAL 6: Avatar Galereyasi va Tanlash */}
+      {showAvatarModal && typeof document !== 'undefined' && createPortal(
+        <div className="sheet-backdrop animate-backdropFadeIn" onClick={() => setShowAvatarModal(false)}>
+          <div className="sheet-container avatar-gallery-dialog animate-slideUp" onClick={(e) => e.stopPropagation()}>
+            <div className="cert-modal-header">
+              <h3 className="cert-modal-title">Avatarni tanlang</h3>
+              <button
+                type="button"
+                className="sheet-close-x-btn"
+                onClick={() => setShowAvatarModal(false)}
+                aria-label="Yopish"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Quick Upload from Device Button inside modal */}
+            <div className="avatar-modal-actions-top">
+              <button
+                type="button"
+                className="avatar-upload-device-btn scale-active"
+                onClick={() => {
+                  avatarFileInputRef.current?.click();
+                }}
+              >
+                <span>Qurilmadan rasm yuklash</span>
+              </button>
+
+              {profileAvatar && (
+                <button
+                  type="button"
+                  className="avatar-remove-modal-btn scale-active"
+                  onClick={() => {
+                    isUserDirtyRef.current = true;
+                    setProfileAvatar('');
+                    setShowAvatarModal(false);
+                    showToast("Surat olib tashlandi", "info");
+                  }}
+                >
+                  <span>Suratni olib tashlash</span>
+                </button>
+              )}
+            </div>
+
+            <div className="avatar-gallery-section-label">
+              <span>Tayyor avatarlar galereyasi:</span>
+            </div>
+
+            <div className="settings-gallery-grid">
+              {AVATAR_GALLERY_IMAGES.map((img) => (
+                <button
+                  key={img.id}
+                  type="button"
+                  className={`settings-gallery-item ${profileAvatar === img.path ? 'is-selected' : ''}`}
+                  onClick={() => {
+                    isUserDirtyRef.current = true;
+                    setProfileAvatar(img.path);
+                    setShowAvatarModal(false);
+                    showToast("Avatar tanlandi!", "success");
+                  }}
+                  title={img.label}
+                >
+                  <img src={img.path} alt={img.label} loading="lazy" />
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
 
       {/* MODAL 7: Kalkulyator Guruh O'quvchilari Ro'yxati */}
       {selectedCalcGroup && typeof document !== 'undefined' && createPortal(
@@ -4376,6 +4454,60 @@ const Settings = ({
           display: flex;
           flex-direction: column;
           gap: 16px;
+        }
+
+        .avatar-modal-actions-top {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          flex-wrap: wrap;
+        }
+
+        .avatar-upload-device-btn {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          padding: 7px 15px;
+          border-radius: var(--radius-full, 9999px);
+          background: #F5F5F7;
+          border: 1px solid rgba(0, 0, 0, 0.08);
+          color: var(--text-primary);
+          font-size: 0.8rem;
+          font-weight: 600;
+          cursor: pointer;
+          transition: all 0.15s ease;
+        }
+
+        .avatar-upload-device-btn:hover {
+          background: #E8EAED;
+          border-color: rgba(0, 0, 0, 0.15);
+        }
+
+        .avatar-remove-modal-btn {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          padding: 7px 14px;
+          border-radius: var(--radius-full, 9999px);
+          background: rgba(239, 68, 68, 0.08);
+          border: 1px solid rgba(239, 68, 68, 0.2);
+          color: #DC2626;
+          font-size: 0.8rem;
+          font-weight: 600;
+          cursor: pointer;
+          transition: all 0.15s ease;
+        }
+
+        .avatar-remove-modal-btn:hover {
+          background: rgba(239, 68, 68, 0.15);
+          color: #B91C1C;
+        }
+
+        .avatar-gallery-section-label {
+          font-size: 0.78rem;
+          font-weight: 600;
+          color: var(--text-secondary);
+          margin-top: 2px;
         }
 
         .settings-gallery-grid {
@@ -6626,6 +6758,26 @@ const Settings = ({
         [data-theme="dark"] .avatar-gallery-dialog {
           background: #292A2D;
           color: #E8EAED;
+        }
+
+        [data-theme="dark"] .avatar-upload-device-btn {
+          background: #202124;
+          border-color: #363739;
+          color: #E8EAED;
+        }
+
+        [data-theme="dark"] .avatar-upload-device-btn:hover {
+          background: #303134;
+        }
+
+        [data-theme="dark"] .avatar-remove-modal-btn {
+          background: rgba(239, 68, 68, 0.16);
+          border-color: rgba(239, 68, 68, 0.32);
+          color: #F87171;
+        }
+
+        [data-theme="dark"] .settings-gallery-item {
+          background: #202124;
         }
 
         [data-theme="dark"] .cert-dropzone-label {
