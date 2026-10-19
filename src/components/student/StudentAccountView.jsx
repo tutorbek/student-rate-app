@@ -521,7 +521,7 @@ export default function StudentAccountView({
         <div className="user-card-avatar-box">
           {pinnedStudent ? (
             <div className="user-card-avatar-inner">
-              {renderAvatar(pinnedStudent.emoji, 58)}
+              {renderAvatar(pinnedStudent.emoji, 58, { priority: 'high', eager: true })}
             </div>
           ) : (
             <div className="user-card-avatar-inner placeholder">

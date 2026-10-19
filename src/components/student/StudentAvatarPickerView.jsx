@@ -1,6 +1,7 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { renderAvatar, STUDENT_AVATARS } from '../../utils/studentAvatars';
 import { AVATAR_GALLERY_IMAGES } from '../../utils/avatarGallery';
+import { preloadAvatars, markAvatarLoaded, isAvatarLoaded } from '../../utils/avatarCache';
 
 const triggerHaptic = (style = 'light') => {
   try {
@@ -26,6 +27,13 @@ export default function StudentAvatarPickerView({
   const [avatarTab, setAvatarTab] = useState('gallery'); // 'gallery' | 'avatars'
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+
+  // Preload initial batch of gallery avatars immediately
+  useEffect(() => {
+    const initialBatch = AVATAR_GALLERY_IMAGES.slice(0, 16).map((img) => img.path);
+    preloadAvatars(initialBatch);
+  }, []);
+
 
   // Derive series / collection name for selected avatar
   const seriesName = useMemo(() => {
@@ -141,7 +149,7 @@ export default function StudentAvatarPickerView({
       <section className="picker-hero-card" aria-label="Joriy tanlangan avatar">
         <div className="picker-hero-avatar-wrap">
           <div className="picker-hero-avatar-squircle">
-            {renderAvatar(selectedAvatar, 92)}
+            {renderAvatar(selectedAvatar, 92, { priority: 'high', eager: true })}
           </div>
           <div className="picker-hero-check-badge" aria-hidden="true">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.4" strokeLinecap="round" strokeLinejoin="round">
@@ -248,12 +256,14 @@ export default function StudentAvatarPickerView({
         <div className="picker-grid-container">
           {avatarTab === 'gallery' ? (
             <div className="picker-gallery-grid-4col">
-              {filteredGallery.map((img) => {
+              {filteredGallery.map((img, idx) => {
                 const isSelected =
                   selectedAvatar === img.path ||
                   selectedAvatar === img.cdnPath ||
                   selectedAvatar === img.id ||
                   selectedAvatar === img.name;
+                const isCached = isAvatarLoaded(img.path);
+                const shouldBeEager = idx < 12 || isCached;
 
                 return (
                   <button
@@ -268,9 +278,10 @@ export default function StudentAvatarPickerView({
                       <img
                         src={img.path}
                         alt={img.label || 'avatar'}
-                        loading="lazy"
-                        decoding="async"
+                        loading={shouldBeEager ? 'eager' : 'lazy'}
+                        decoding={isCached ? 'sync' : 'async'}
                         className="picker-thumb-img"
+                        onLoad={() => markAvatarLoaded(img.path)}
                         onError={(e) => {
                           if (img.cdnPath && e.currentTarget.src !== img.cdnPath) {
                             e.currentTarget.src = img.cdnPath;

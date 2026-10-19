@@ -4,6 +4,7 @@ import { getStudentScore, normalizeQuickTags, getGroupCategory } from '../utils/
 import { renderGroupIcon } from '../utils/groupIcons';
 import { STUDENT_AVATARS, renderStudentAvatar as renderAvatar } from '../utils/studentAvatars';
 import { AVATAR_GALLERY_IMAGES, isGalleryImage, compressUploadedImage } from '../utils/avatarGallery';
+import { markAvatarLoaded, preloadAvatars } from '../utils/avatarCache';
 import ProjectLikeIcon from './common/ProjectLikeIcon';
 import { useModalDismiss } from '../hooks/useModalDismiss';
 
@@ -231,6 +232,13 @@ const GroupDetail = ({ group, allGroups = [], students, transactions, quickTags,
         totalScore: getStudentScore(transactions, s.id, 'all'),
       }));
   }, [students, group.id, transactions]);
+
+  // Preload group student avatars for instant zero-lag rendering
+  useEffect(() => {
+    if (Array.isArray(groupStudents) && groupStudents.length > 0) {
+      preloadAvatars(groupStudents.map((s) => s.emoji));
+    }
+  }, [groupStudents]);
 
   // Filter students by search query
   const filteredStudents = useMemo(() => {
@@ -702,7 +710,7 @@ const GroupDetail = ({ group, allGroups = [], students, transactions, quickTags,
 
                   {avatarTab === 'gallery' && (
                     <div className="avatar-gallery-picker-grid">
-                      {AVATAR_GALLERY_IMAGES.map((img) => {
+                      {AVATAR_GALLERY_IMAGES.map((img, idx) => {
                         const isSelected = selectedEmoji === img.path || selectedEmoji === img.cdnPath || (selectedEmoji && selectedEmoji.includes(img.name));
                         return (
                           <button
@@ -714,9 +722,10 @@ const GroupDetail = ({ group, allGroups = [], students, transactions, quickTags,
                             <img
                               src={img.path}
                               alt={img.label}
-                              loading="lazy"
+                              loading={idx < 12 ? 'eager' : 'lazy'}
                               decoding="async"
                               className="gallery-thumb-img"
+                              onLoad={() => markAvatarLoaded(img.path)}
                               onError={(e) => {
                                 if (img.cdnPath && e.currentTarget.src !== img.cdnPath) {
                                   e.currentTarget.src = img.cdnPath;
@@ -1175,7 +1184,7 @@ const GroupDetail = ({ group, allGroups = [], students, transactions, quickTags,
 
                   {editAvatarTab === 'gallery' && (
                     <div className="avatar-gallery-picker-grid">
-                      {AVATAR_GALLERY_IMAGES.map((img) => {
+                      {AVATAR_GALLERY_IMAGES.map((img, idx) => {
                         const isSelected = editStudentEmoji === img.path || editStudentEmoji === img.cdnPath || (editStudentEmoji && editStudentEmoji.includes(img.name));
                         return (
                           <button
@@ -1187,9 +1196,10 @@ const GroupDetail = ({ group, allGroups = [], students, transactions, quickTags,
                             <img
                               src={img.path}
                               alt={img.label}
-                              loading="lazy"
+                              loading={idx < 12 ? 'eager' : 'lazy'}
                               decoding="async"
                               className="gallery-thumb-img"
+                              onLoad={() => markAvatarLoaded(img.path)}
                               onError={(e) => {
                                 if (img.cdnPath && e.currentTarget.src !== img.cdnPath) {
                                   e.currentTarget.src = img.cdnPath;

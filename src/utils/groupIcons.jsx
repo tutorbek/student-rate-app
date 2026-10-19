@@ -1,5 +1,6 @@
 import React from 'react';
 import { normalizeIconUrl, AVATAR_GALLERY_IMAGES } from './avatarGallery';
+import { isAvatarLoaded, markAvatarLoaded } from './avatarCache';
 
 // Clean, high-contrast Neo-Brutalist SVG icons for Groups
 export const GROUP_SVG_ICONS = [
@@ -259,6 +260,51 @@ export const getGroupColorOption = (colorValue) => {
   return GROUP_COLOR_OPTIONS[0];
 };
 
+const OptimizedGroupIconImage = ({ src, size, cdnFallback }) => {
+  const [currentSrc, setCurrentSrc] = React.useState(src);
+  const [hasError, setHasError] = React.useState(false);
+  const isCached = isAvatarLoaded(currentSrc);
+  const [loaded, setLoaded] = React.useState(isCached);
+
+  React.useEffect(() => {
+    setCurrentSrc(src);
+    setHasError(false);
+    if (isAvatarLoaded(src)) setLoaded(true);
+  }, [src]);
+
+  if (hasError && !cdnFallback) {
+    return GROUP_SVG_ICONS[0].svg(size);
+  }
+
+  return (
+    <img
+      src={currentSrc}
+      alt="group-icon"
+      loading={isCached ? 'eager' : 'lazy'}
+      decoding={isCached ? 'sync' : 'async'}
+      onLoad={() => {
+        markAvatarLoaded(currentSrc);
+        setLoaded(true);
+      }}
+      onError={() => {
+        if (cdnFallback && currentSrc !== cdnFallback) {
+          setCurrentSrc(cdnFallback);
+        } else {
+          setHasError(true);
+        }
+      }}
+      style={{
+        width: '100%',
+        height: '100%',
+        objectFit: 'cover',
+        display: 'block',
+        opacity: loaded ? 1 : 0.85,
+        transition: isCached ? 'none' : 'opacity 0.12s ease',
+      }}
+    />
+  );
+};
+
 export const renderGroupIcon = (iconKey, size = 20) => {
   const normalizedKey = normalizeIconUrl(iconKey);
 
@@ -273,17 +319,10 @@ export const renderGroupIcon = (iconKey, size = 20) => {
     const cdnFallback = galleryMatch?.cdnPath;
 
     return (
-      <img
+      <OptimizedGroupIconImage
         src={normalizedKey}
-        alt="group-icon"
-        loading="lazy"
-        decoding="async"
-        onError={(e) => {
-          if (cdnFallback && e.currentTarget.src !== cdnFallback) {
-            e.currentTarget.src = cdnFallback;
-          }
-        }}
-        style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+        size={size}
+        cdnFallback={cdnFallback}
       />
     );
   }

@@ -7,6 +7,7 @@ import StudentRatingView from './StudentRatingView';
 import StudentShopComingSoon from './StudentShopComingSoon';
 import StudentAccountView from './StudentAccountView';
 import { renderAvatar } from '../../utils/studentAvatars';
+import { preloadAvatars, idlePreloadGalleryAvatars } from '../../utils/avatarCache';
 import { scrollToWithOffset } from '../../utils/scrollOffset';
 import { isStudentTargetedByExtraLesson } from '../../utils/scheduleUtils';
 import { ProjectLikeIcon, ZapIcon, CalendarIcon, MapPinIcon } from './StudentIcons';
@@ -240,6 +241,21 @@ export default function StudentPortal({
 
     return null;
   }, [currentGroup?.id, groupStudents, pinnedOverrides]);
+
+  // High-performance avatar preloading into memory cache
+  useEffect(() => {
+    const avatars = [];
+    if (pinnedStudent?.emoji) avatars.push(pinnedStudent.emoji);
+    if (Array.isArray(groupStudents)) {
+      groupStudents.forEach((st) => {
+        if (st.emoji) avatars.push(st.emoji);
+      });
+    }
+    if (avatars.length > 0) {
+      preloadAvatars(avatars);
+    }
+    idlePreloadGalleryAvatars();
+  }, [groupStudents, pinnedStudent]);
 
   // Upcoming Extra Lesson for currentGroup
   const upcomingGroupExtraLesson = useMemo(() => {
@@ -519,7 +535,7 @@ export default function StudentPortal({
               >
                 {pinnedStudent ? (
                   <div className="navbar-avatar-circle">
-                    {renderAvatar(pinnedStudent.emoji, 30)}
+                    {renderAvatar(pinnedStudent.emoji, 30, { priority: 'high', eager: true })}
                   </div>
                 ) : (
                   <div className="navbar-avatar-circle unpinned">
@@ -554,7 +570,7 @@ export default function StudentPortal({
                     aria-label="Profil sozlamalari"
                   >
                     <div className="welcome-avatar-circle">
-                      {renderAvatar(pinnedStudent.emoji, 48)}
+                      {renderAvatar(pinnedStudent.emoji, 48, { priority: 'high', eager: true })}
                     </div>
                   </button>
                   <div className="welcome-title-col">
@@ -867,7 +883,7 @@ export default function StudentPortal({
               <div className="dock-tab-icon">
                 {pinnedStudent ? (
                   <div style={{ width: 22, height: 22, borderRadius: '50%', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    {renderAvatar(pinnedStudent.emoji, 22)}
+                    {renderAvatar(pinnedStudent.emoji, 22, { eager: true })}
                   </div>
                 ) : (
                   <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={activeTab === 'profile' ? "2.6" : "2"} strokeLinecap="round" strokeLinejoin="round">

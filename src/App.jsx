@@ -57,6 +57,7 @@ import {
   syncTransferredStudentsAttendance
 } from './utils/db';
 import { normalizeIconUrl } from './utils/avatarGallery';
+import { preloadAvatars } from './utils/avatarCache';
 
 function App() {
   const [activeTab, setActiveTab] = useState(() => {
@@ -502,6 +503,13 @@ function App() {
   const [isSyncing, setIsSyncing] = useState(false);
   const [connectionError, setConnectionError] = useState(false);
   const [reloadTrigger, setReloadTrigger] = useState(0);
+
+  // Preload student avatars into memory cache
+  useEffect(() => {
+    if (Array.isArray(students) && students.length > 0) {
+      preloadAvatars(students.map((s) => s.emoji));
+    }
+  }, [students]);
 
   const lastSavedDataRef = useRef(null);
   const lastLoadedReloadTrigger = useRef(0);

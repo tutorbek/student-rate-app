@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { generateUniqueGroupPassword, getGroupCategory } from '../utils/db';
 import { GROUP_SVG_ICONS, GROUP_COLOR_OPTIONS, getGroupColorOption, renderGroupIcon } from '../utils/groupIcons';
 import { AVATAR_GALLERY_IMAGES, isGalleryImage, compressUploadedImage } from '../utils/avatarGallery';
+import { markAvatarLoaded } from '../utils/avatarCache';
 import { isGroupLessonActive } from '../utils/scheduleUtils';
 import ScheduleView from './ScheduleView';
 import Time24Input from './Time24Input';
@@ -728,7 +729,7 @@ const GroupsList = ({
 
                 {groupIconTab === 'gallery' && (
                   <div className="avatar-gallery-picker-grid">
-                    {AVATAR_GALLERY_IMAGES.map((img) => {
+                    {AVATAR_GALLERY_IMAGES.map((img, idx) => {
                       const isSelected = newGroupIcon === img.path || newGroupIcon === img.cdnPath || (newGroupIcon && newGroupIcon.includes(img.name));
                       return (
                         <button
@@ -740,9 +741,10 @@ const GroupsList = ({
                           <img
                             src={img.path}
                             alt={img.label}
-                            loading="lazy"
+                            loading={idx < 12 ? 'eager' : 'lazy'}
                             decoding="async"
                             className="gallery-thumb-img"
+                            onLoad={() => markAvatarLoaded(img.path)}
                             onError={(e) => {
                               if (img.cdnPath && e.currentTarget.src !== img.cdnPath) {
                                 e.currentTarget.src = img.cdnPath;
@@ -1093,7 +1095,7 @@ const GroupsList = ({
 
                 {editGroupIconTab === 'gallery' && (
                   <div className="avatar-gallery-picker-grid">
-                    {AVATAR_GALLERY_IMAGES.map((img) => {
+                    {AVATAR_GALLERY_IMAGES.map((img, idx) => {
                       const isSelected = editGroupIcon === img.path || editGroupIcon === img.cdnPath || (editGroupIcon && editGroupIcon.includes(img.name));
                       return (
                         <button
@@ -1105,9 +1107,10 @@ const GroupsList = ({
                           <img
                             src={img.path}
                             alt={img.label}
-                            loading="lazy"
+                            loading={idx < 12 ? 'eager' : 'lazy'}
                             decoding="async"
                             className="gallery-thumb-img"
+                            onLoad={() => markAvatarLoaded(img.path)}
                             onError={(e) => {
                               if (img.cdnPath && e.currentTarget.src !== img.cdnPath) {
                                 e.currentTarget.src = img.cdnPath;

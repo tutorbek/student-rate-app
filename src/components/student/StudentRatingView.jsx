@@ -564,7 +564,7 @@ export default function StudentRatingView({
         <div className="podium-pillar pillar-2">
           <div className="podium-avatar-wrapper ring-silver">
             {podiumTop3.second ? (
-              renderAvatar(podiumTop3.second.emoji, 52)
+              renderAvatar(podiumTop3.second.emoji, 52, { priority: 'high', eager: true })
             ) : (
               <div className="podium-empty-avatar">—</div>
             )}
@@ -589,7 +589,7 @@ export default function StudentRatingView({
           </div>
           <div className="podium-avatar-wrapper ring-gold">
             {podiumTop3.first ? (
-              renderAvatar(podiumTop3.first.emoji, 66)
+              renderAvatar(podiumTop3.first.emoji, 66, { priority: 'high', eager: true })
             ) : (
               <div className="podium-empty-avatar">—</div>
             )}
@@ -611,7 +611,7 @@ export default function StudentRatingView({
         <div className="podium-pillar pillar-3">
           <div className="podium-avatar-wrapper ring-bronze">
             {podiumTop3.third ? (
-              renderAvatar(podiumTop3.third.emoji, 52)
+              renderAvatar(podiumTop3.third.emoji, 52, { priority: 'high', eager: true })
             ) : (
               <div className="podium-empty-avatar">—</div>
             )}
@@ -636,7 +636,7 @@ export default function StudentRatingView({
           <div className="blue-hero-top-row">
             <div className="blue-hero-user-info">
               <div className="blue-hero-avatar">
-                {renderAvatar(activePinnedStudent?.emoji || pinnedStudent?.emoji, 44)}
+                {renderAvatar(activePinnedStudent?.emoji || pinnedStudent?.emoji, 44, { priority: 'high', eager: true })}
               </div>
               <div className="blue-hero-titles">
                 <h3 className="blue-hero-name">{pinnedStudentRankInfo.name}</h3>

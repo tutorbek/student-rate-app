@@ -1,5 +1,6 @@
 import React from 'react';
 import { normalizeIconUrl, AVATAR_GALLERY_IMAGES } from './avatarGallery';
+import { isAvatarLoaded, markAvatarLoaded } from './avatarCache';
 
 // Ultra-vibrant, high-detail, expressive SVG avatars for students
 export const STUDENT_AVATARS = [
@@ -883,7 +884,62 @@ const EMOJI_TO_AVATAR_MAP = {
   '🦩': 'flamingo',
 };
 
-export const renderStudentAvatar = (avatarKey, size = 24) => {
+const OptimizedAvatarImage = ({ src, size, cdnFallback, options = {} }) => {
+  const [currentSrc, setCurrentSrc] = React.useState(src);
+  const [hasError, setHasError] = React.useState(false);
+  const isCached = isAvatarLoaded(currentSrc);
+  const [loaded, setLoaded] = React.useState(isCached);
+
+  React.useEffect(() => {
+    setCurrentSrc(src);
+    setHasError(false);
+    if (isAvatarLoaded(src)) {
+      setLoaded(true);
+    }
+  }, [src]);
+
+  // Eager loading for in-viewport or pre-cached avatars prevents lazy-load delay when switching tabs
+  const shouldBeEager = options.eager ?? (isCached || size >= 36);
+  // Elevate priority for critical above-the-fold / hero avatars
+  const fetchPriority = options.priority ?? (size >= 48 ? 'high' : undefined);
+
+  if (hasError && !cdnFallback) {
+    return STUDENT_AVATARS[0].svg(size);
+  }
+
+  return (
+    <img
+      src={currentSrc}
+      alt="avatar"
+      loading={shouldBeEager ? 'eager' : 'lazy'}
+      fetchPriority={fetchPriority}
+      decoding={isCached ? 'sync' : 'async'}
+      onLoad={() => {
+        markAvatarLoaded(currentSrc);
+        setLoaded(true);
+      }}
+      onError={() => {
+        if (cdnFallback && currentSrc !== cdnFallback) {
+          setCurrentSrc(cdnFallback);
+        } else {
+          setHasError(true);
+        }
+      }}
+      style={{
+        width: '100%',
+        height: '100%',
+        objectFit: 'cover',
+        display: 'block',
+        borderRadius: 'inherit',
+        backgroundColor: 'rgba(0, 0, 0, 0.04)',
+        opacity: loaded ? 1 : 0.85,
+        transition: isCached ? 'none' : 'opacity 0.12s ease',
+      }}
+    />
+  );
+};
+
+export const renderStudentAvatar = (avatarKey, size = 24, options = {}) => {
   const normalizedKey = normalizeIconUrl(avatarKey);
 
   if (!normalizedKey) {
@@ -896,17 +952,11 @@ export const renderStudentAvatar = (avatarKey, size = 24) => {
     const cdnFallback = galleryMatch?.cdnPath;
 
     return (
-      <img
+      <OptimizedAvatarImage
         src={normalizedKey}
-        alt="avatar"
-        loading="lazy"
-        decoding="async"
-        onError={(e) => {
-          if (cdnFallback && e.currentTarget.src !== cdnFallback) {
-            e.currentTarget.src = cdnFallback;
-          }
-        }}
-        style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block', borderRadius: 'inherit' }}
+        size={size}
+        cdnFallback={cdnFallback}
+        options={options}
       />
     );
   }
