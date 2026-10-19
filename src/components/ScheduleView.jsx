@@ -119,6 +119,8 @@ const ScheduleView = ({
   const [extraSelectedStudentIds, setExtraSelectedStudentIds] = useState([]);
   const [extraStudentSearch, setExtraStudentSearch] = useState('');
   const [extraLessonToDelete, setExtraLessonToDelete] = useState(null);
+  const [selectedExtraLessonForDetail, setSelectedExtraLessonForDetail] = useState(null);
+  const [showPastExtraLessons, setShowPastExtraLessons] = useState(false);
 
   // Students belonging to the group currently selected in the Extra Lesson modal
   const modalGroupStudents = useMemo(() => {
@@ -466,11 +468,48 @@ const ScheduleView = ({
     return groups.find((g) => String(g.id) === String(extraGroupId)) || null;
   }, [groups, extraGroupId]);
 
-  // Lessons mapped by weekday (Combines regular group schedule + Extra Lessons)
+  // Current date string in YYYY-MM-DD
+  const todayStr = useMemo(() => {
+    const today = new Date();
+    return `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+  }, []);
+
+  // Split and sort extra lessons into upcoming vs past
+  const { upcomingExtraLessons, pastExtraLessons } = useMemo(() => {
+    const upcoming = [];
+    const past = [];
+    (extraLessons || []).forEach((el) => {
+      if (!el || !el.date) return;
+      if (el.date >= todayStr) {
+        upcoming.push(el);
+      } else {
+        past.push(el);
+      }
+    });
+
+    // Upcoming: sorted ascending (closest date & time first)
+    upcoming.sort((a, b) => {
+      const dateDiff = (a.date || '').localeCompare(b.date || '');
+      if (dateDiff !== 0) return dateDiff;
+      return (a.startTime || '00:00').localeCompare(b.startTime || '00:00');
+    });
+
+    // Past: sorted descending (most recent past date first)
+    past.sort((a, b) => {
+      const dateDiff = (b.date || '').localeCompare(a.date || '');
+      if (dateDiff !== 0) return dateDiff;
+      return (b.startTime || '00:00').localeCompare(a.startTime || '00:00');
+    });
+
+    return { upcomingExtraLessons: upcoming, pastExtraLessons: past };
+  }, [extraLessons, todayStr]);
+
+  const displayedExtraLessons = showPastExtraLessons ? pastExtraLessons : upcomingExtraLessons;
+
+  // Lessons mapped by weekday (Strictly regular group timetable - Extra Lessons kept separate)
   const scheduleByDay = useMemo(() => {
     const map = {};
     activeWeekdays.forEach((day) => {
-      // 1. Regular weekly classes
       const regularClasses = groups
         .filter((g) => {
           const days = g.schedule?.days?.length ? g.schedule.days : guessScheduleFromName(g.name).days;
@@ -485,29 +524,12 @@ const ScheduleView = ({
           group: g,
         }));
 
-      // 2. Standalone Extra Lessons matching this weekday
-      const extraClasses = (extraLessons || [])
-        .filter((el) => el && el.date && getDayKeyFromDateStr(el.date) === day.key)
-        .map((el) => {
-          const matchedGroup = groups.find((g) => String(g.id) === String(el.groupId));
-          return {
-            type: 'extra',
-            key: `extra_${el.id}`,
-            startTime: el.startTime || '00:00',
-            endTime: el.endTime || '',
-            room: el.room || '',
-            extraLesson: el,
-            group: matchedGroup || { id: el.groupId, name: 'Guruh', color: '#8B5CF6' },
-          };
-        });
-
-      // Combine and sort chronologically by startTime
-      map[day.key] = [...regularClasses, ...extraClasses].sort((a, b) =>
+      map[day.key] = regularClasses.sort((a, b) =>
         (a.startTime || '00:00').localeCompare(b.startTime || '00:00')
       );
     });
     return map;
-  }, [groups, activeWeekdays, extraLessons]);
+  }, [groups, activeWeekdays]);
 
   // Helper to get group styling
   const getGroupStyle = (colorValue) => {
@@ -600,135 +622,6 @@ const ScheduleView = ({
                 <div className="day-col-content">
                   {dayClasses.length > 0 ? (
                     dayClasses.map((item) => {
-                      if (item.type === 'extra') {
-                        const extraLesson = item.extraLesson;
-                        const group = item.group;
-
-                        return (
-                          <div
-                            key={item.key}
-                            className="schedule-lesson-card extra-lesson-card scale-active"
-                            onClick={() => setSelectedGroupForStudents(group)}
-                          >
-                            {/* Unified Top Row: Clean Extra + Date badge on left, Edit & Delete on right */}
-                            <div className="extra-lesson-top-row">
-                              <span className="extra-lesson-badge" title={`Qo'shimcha dars sanasi: ${extraLesson.date}`}>
-                                <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor" stroke="none">
-                                  <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
-                                </svg>
-                                <span>Extra</span>
-                                <span className="extra-badge-separator">•</span>
-                                <span className="extra-badge-date">{formatExtraLessonDateLabel(extraLesson.date)}</span>
-                              </span>
-
-                              <div className="extra-actions-group">
-                                <button
-                                  type="button"
-                                  className="extra-action-icon-btn edit-btn"
-                                  title="Extra Lessonni tahrirlash"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleOpenEditExtraLesson(extraLesson);
-                                  }}
-                                >
-                                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-                                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-                                  </svg>
-                                </button>
-                                <button
-                                  type="button"
-                                  className="extra-action-icon-btn delete-btn"
-                                  title="Extra Lessonni o'chirish"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    setExtraLessonToDelete(extraLesson);
-                                  }}
-                                >
-                                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                                    <polyline points="3 6 5 6 21 6" />
-                                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-                                  </svg>
-                                </button>
-                              </div>
-                            </div>
-
-                            {/* Lesson Time & Room Header (Dedicated full-width row) */}
-                            <div className="lesson-time-header">
-                              <span className="lesson-time-range">
-                                {item.startTime}
-                                {item.endTime ? ` - ${item.endTime}` : ''}
-                              </span>
-                              {item.room && (
-                                <span className="lesson-room-pill">{item.room}</span>
-                              )}
-                            </div>
-
-                            {/* Group Name & Icon */}
-                            <div className="lesson-group-main">
-                              <div className="lesson-group-icon avatar-circle">
-                                {renderGroupIcon(group.icon, 16)}
-                              </div>
-                              <span className="lesson-group-title">{group.name}</span>
-                            </div>
-
-                            {/* Targeted Students Display on Card (Custom individual students) */}
-                            {extraLesson.targetType === 'custom' && Array.isArray(extraLesson.studentIds) && extraLesson.studentIds.length > 0 && (() => {
-                              const targetedList = students.filter(
-                                (s) => extraLesson.studentIds.some((id) => String(id) === String(s.id)) && !s.deleted
-                              );
-                              const fullNamesTitle = targetedList.map((s) => s.name).join(', ');
-                              return (
-                                <div className="extra-lesson-target-badge individual" title={`Tanlangan talabalar: ${fullNamesTitle}`}>
-                                  <div className="extra-target-avatar-stack">
-                                    {targetedList.slice(0, 3).map((st) => (
-                                      <div key={st.id} className="extra-target-mini-avatar" title={st.name}>
-                                        {st.avatar ? (
-                                          <img src={st.avatar} alt={st.name} />
-                                        ) : (
-                                          <span>{(st.name || '?')[0].toUpperCase()}</span>
-                                        )}
-                                      </div>
-                                    ))}
-                                  </div>
-                                  <span className="extra-target-label">
-                                    {targetedList.length === 1
-                                      ? targetedList[0].name
-                                      : `${targetedList.length} ta o'quvchi`}
-                                  </span>
-                                </div>
-                              );
-                            })()}
-
-                            {/* Lesson Topic (If set) */}
-                            {extraLesson.topic && (
-                              <div className="extra-lesson-topic-box" title={extraLesson.topic}>
-                                <span className="extra-topic-icon">
-                                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                                    <circle cx="12" cy="12" r="10" />
-                                    <circle cx="12" cy="12" r="6" />
-                                    <circle cx="12" cy="2" />
-                                  </svg>
-                                </span>
-                                <span className="extra-topic-text">{extraLesson.topic}</span>
-                              </div>
-                            )}
-
-                            {/* Footer: Category & Student count */}
-                            <div className="lesson-card-footer">
-                              <span className={`group-category-pill group-category-${getGroupCategory(group)}`}>
-                                {getGroupCategory(group) === 'kids' ? 'Kids' : 'Teens'}
-                              </span>
-                              <span className="lesson-students-count">
-                                {extraLesson.targetType === 'custom'
-                                  ? `${extraLesson.studentIds?.length || 0} ta tanlangan`
-                                  : `${getStudentCount(group.id)} ta o'quvchi`}
-                              </span>
-                            </div>
-                          </div>
-                        );
-                      }
-
                       const group = item.group;
                       const cardStyles = getGroupStyle(group.color);
 
@@ -776,27 +669,13 @@ const ScheduleView = ({
                             <span className={`group-category-pill group-category-${getGroupCategory(group)}`}>
                               {getGroupCategory(group) === 'kids' ? 'Kids' : 'Teens'}
                             </span>
-                            <span className="lesson-students-count">
-                              {getStudentCount(group.id)} ta o'quvchi
-                            </span>
                           </div>
                         </div>
                       );
                     })
                   ) : (
-                    <div
-                      className="day-empty-slot"
-                      onClick={() => {
-                        if (groups.length > 0) {
-                          handleOpenCreateExtraLesson(day.key);
-                        } else {
-                          showToast("Dastlab guruh yarating!", "error");
-                        }
-                      }}
-                      title="Ushbu kunga Extra Dars biriktirish uchun bosing"
-                    >
+                    <div className="day-empty-slot">
                       <span className="empty-slot-text">Dars yo'q</span>
-                      <span className="empty-slot-plus">+ Extra Dars</span>
                     </div>
                   )}
                 </div>
@@ -804,6 +683,193 @@ const ScheduleView = ({
             );
           })}
         </div>
+      </div>
+
+      {/* Dedicated Extra Lessons Horizontal Line Section */}
+      <div className="extra-lessons-section">
+        <div className="extra-lessons-header">
+          <div className="extra-lessons-title-wrap">
+            <div className="extra-lessons-title-icon">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+              </svg>
+            </div>
+            <div className="extra-lessons-title-content">
+              <div className="extra-lessons-title-row">
+                <h3 className="extra-lessons-title">
+                  {showPastExtraLessons ? "O'tgan Extra Darslar" : "Rejalashtirilgan Extra Darslar"}
+                </h3>
+                <span className="extra-lessons-count-pill">
+                  {displayedExtraLessons.length} ta dars
+                </span>
+              </div>
+              <p className="extra-lessons-subtitle">
+                {showPastExtraLessons
+                  ? "Avval o'tkazilgan qo'shimcha darslar arxivi"
+                  : "Hafta kunlariga aralashmagan holda aniq sanali qo'shimcha darslar ro'yxati"}
+              </p>
+            </div>
+          </div>
+
+          <div className="extra-lessons-header-actions">
+            {pastExtraLessons.length > 0 && (
+              <button
+                type="button"
+                className={`extra-toggle-past-btn ${showPastExtraLessons ? 'active' : ''}`}
+                onClick={() => setShowPastExtraLessons((prev) => !prev)}
+                title={showPastExtraLessons ? "Kelgusi darslar ro'yxatiga o'tish" : "O'tib ketgan darslarni ko'rish"}
+              >
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="12" cy="12" r="10" />
+                  <polyline points="12 6 12 12 16 14" />
+                </svg>
+                <span>{showPastExtraLessons ? "Kelgusi darslar" : `O'tgan darslar (${pastExtraLessons.length})`}</span>
+              </button>
+            )}
+
+            <button
+              type="button"
+              className="btn btn-primary extra-section-add-btn scale-active"
+              onClick={() => {
+                if (groups.length === 0) {
+                  showToast("Extra dars qo'shish uchun dastlab guruh yarating!", "error");
+                  return;
+                }
+                handleOpenCreateExtraLesson();
+              }}
+            >
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="12" y1="5" x2="12" y2="19" />
+                <line x1="5" y1="12" x2="19" y2="12" />
+              </svg>
+              <span>+ Extra Dars</span>
+            </button>
+          </div>
+        </div>
+
+        {displayedExtraLessons.length > 0 ? (
+          <div className="extra-lessons-scroll-container">
+            <div className="extra-lessons-scroll-track">
+              {displayedExtraLessons.map((extraLesson) => {
+                const group = groups.find((g) => String(g.id) === String(extraLesson.groupId)) || {
+                  id: extraLesson.groupId,
+                  name: 'Guruh',
+                  color: '#8B5CF6',
+                };
+                const isToday = extraLesson.date === todayStr;
+                const dateLabel = formatExtraLessonDateLabel(extraLesson.date);
+                const dayName = getDayNameUzFromDateStr(extraLesson.date);
+                const targetedStudentsCount = extraLesson.targetType === 'custom' && Array.isArray(extraLesson.studentIds)
+                  ? extraLesson.studentIds.length
+                  : null;
+
+                return (
+                  <div
+                    key={extraLesson.id}
+                    className={`extra-lesson-slim-pill ${isToday ? 'is-today' : ''} ${showPastExtraLessons ? 'is-past' : ''} scale-active`}
+                    onClick={() => setSelectedExtraLessonForDetail(extraLesson)}
+                    role="button"
+                    tabIndex={0}
+                    title="Batafsil ma'lumot va boshqarish uchun bosing"
+                  >
+                    <div className="extra-slim-date-badge">
+                      <span className="extra-slim-date-main">{dateLabel}</span>
+                      <span className="extra-slim-date-sub">{dayName}</span>
+                    </div>
+
+                    <div className="extra-slim-divider" />
+
+                    <div className="extra-slim-body">
+                      <div className="extra-slim-time-row">
+                        <span className="extra-slim-time">
+                          {extraLesson.startTime}
+                          {extraLesson.endTime ? ` - ${extraLesson.endTime}` : ''}
+                        </span>
+                        {extraLesson.room && (
+                          <span className="extra-slim-room">{extraLesson.room}</span>
+                        )}
+                      </div>
+
+                      <div className="extra-slim-group-row">
+                        <div className="extra-slim-group-icon">
+                          {renderGroupIcon(group.icon, 14)}
+                        </div>
+                        <span className="extra-slim-group-name" title={group.name}>{group.name}</span>
+                        <span className={`group-category-pill group-category-${getGroupCategory(group)}`}>
+                          {getGroupCategory(group) === 'kids' ? 'Kids' : 'Teens'}
+                        </span>
+                        {targetedStudentsCount !== null && (
+                          <span className="extra-slim-target-pill" title={`${targetedStudentsCount} ta tanlangan o'quvchi`}>
+                            {targetedStudentsCount} o'quvchi
+                          </span>
+                        )}
+                      </div>
+
+                      {extraLesson.topic && (
+                        <div className="extra-slim-topic" title={extraLesson.topic}>
+                          <span className="extra-slim-topic-dot">•</span>
+                          <span className="extra-slim-topic-text">{extraLesson.topic}</span>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="extra-slim-arrow">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                        <polyline points="9 18 15 12 9 6" />
+                      </svg>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        ) : (
+          <div className="extra-lessons-empty-strip">
+            <div className="extra-empty-icon-wrap">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+                <line x1="16" y1="2" x2="16" y2="6" />
+                <line x1="8" y1="2" x2="8" y2="6" />
+                <line x1="3" y1="10" x2="21" y2="10" />
+              </svg>
+            </div>
+            <div className="extra-empty-text-wrap">
+              <p className="extra-empty-title">
+                {showPastExtraLessons
+                  ? "O'tgan extra darslar mavjud emas"
+                  : "Rejalashtirilgan extra darslar yo'q"}
+              </p>
+              <p className="extra-empty-desc">
+                {showPastExtraLessons
+                  ? "Arxivda oldin o'tkazilgan qo'shimcha darslar topilmadi."
+                  : "Hafta kunlariga ta'sir qilmagan holda yangi qo'shimcha dars belgilashingiz mumkin."}
+              </p>
+            </div>
+            {showPastExtraLessons ? (
+              <button
+                type="button"
+                className="btn btn-secondary extra-empty-action-btn"
+                onClick={() => setShowPastExtraLessons(false)}
+              >
+                Kelgusi darslarga qaytish
+              </button>
+            ) : (
+              <button
+                type="button"
+                className="btn btn-primary extra-empty-action-btn scale-active"
+                onClick={() => {
+                  if (groups.length === 0) {
+                    showToast("Extra dars qo'shish uchun dastlab guruh yarating!", "error");
+                    return;
+                  }
+                  handleOpenCreateExtraLesson();
+                }}
+              >
+                <span>+ Extra Dars qo'shish</span>
+              </button>
+            )}
+          </div>
+        )}
       </div>
     </div>
   )}
@@ -1639,6 +1705,225 @@ const ScheduleView = ({
               >
                 O'chirish
               </button>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {/* Extra Lesson Detail Modal */}
+      {selectedExtraLessonForDetail && createPortal(
+        <div className="modal-overlay" onClick={() => setSelectedExtraLessonForDetail(null)}>
+          <div className="modal-content glass extra-lesson-detail-modal-box" onClick={(e) => e.stopPropagation()}>
+            <button
+              type="button"
+              className="modal-close-btn"
+              onClick={() => setSelectedExtraLessonForDetail(null)}
+              title="Yopish"
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18" />
+                <line x1="6" y1="6" x2="18" y2="18" />
+              </svg>
+            </button>
+
+            <div className="modal-header-fixed">
+              <div className="extra-detail-header-badge-row">
+                <span className="extra-lesson-badge">
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor" stroke="none">
+                    <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+                  </svg>
+                  <span>Extra Lesson</span>
+                </span>
+                {selectedExtraLessonForDetail.date === todayStr && (
+                  <span className="extra-detail-today-pill">Bugun</span>
+                )}
+              </div>
+              <h3 className="modal-title extra-detail-title">Extra Dars Tafsilotlari</h3>
+            </div>
+
+            <div className="modal-body-scrollable extra-detail-body">
+              {(() => {
+                const el = selectedExtraLessonForDetail;
+                const grp = groups.find((g) => String(g.id) === String(el.groupId)) || {
+                  id: el.groupId,
+                  name: 'Guruh',
+                  color: '#8B5CF6',
+                };
+                const groupStudents = students.filter((s) => String(s.groupId) === String(el.groupId) && !s.deleted);
+                const isCustomTarget = el.targetType === 'custom' && Array.isArray(el.studentIds) && el.studentIds.length > 0;
+                const targetedStudents = isCustomTarget
+                  ? students.filter((s) => el.studentIds.some((id) => String(id) === String(s.id)) && !s.deleted)
+                  : groupStudents;
+
+                return (
+                  <>
+                    {/* Group & Info Card */}
+                    <div className="extra-detail-card">
+                      <div className="extra-detail-group-header">
+                        <div className="extra-detail-group-icon avatar-circle">
+                          {renderGroupIcon(grp.icon, 20)}
+                        </div>
+                        <div className="extra-detail-group-info">
+                          <div className="extra-detail-group-name">{grp.name}</div>
+                          <div className="extra-detail-group-sub">
+                            <span className={`group-category-pill group-category-${getGroupCategory(grp)}`}>
+                              {getGroupCategory(grp) === 'kids' ? 'Kids' : 'Teens'}
+                            </span>
+                            <span className="extra-detail-student-count">{groupStudents.length} ta guruh o'quvchisi</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="extra-detail-meta-grid">
+                        <div className="extra-detail-meta-item">
+                          <div className="extra-detail-meta-icon">
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                              <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+                              <line x1="16" y1="2" x2="16" y2="6" />
+                              <line x1="8" y1="2" x2="8" y2="6" />
+                              <line x1="3" y1="10" x2="21" y2="10" />
+                            </svg>
+                          </div>
+                          <div className="extra-detail-meta-content">
+                            <span className="extra-detail-meta-label">Dars Sanasi</span>
+                            <span className="extra-detail-meta-value">
+                              {formatExtraLessonDateLabel(el.date)} ({getDayNameUzFromDateStr(el.date) || el.date})
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className="extra-detail-meta-item">
+                          <div className="extra-detail-meta-icon">
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                              <circle cx="12" cy="12" r="10" />
+                              <polyline points="12 6 12 12 16 14" />
+                            </svg>
+                          </div>
+                          <div className="extra-detail-meta-content">
+                            <span className="extra-detail-meta-label">Dars Vaqti</span>
+                            <span className="extra-detail-meta-value">
+                              {el.startTime}{el.endTime ? ` - ${el.endTime}` : ''}
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className="extra-detail-meta-item">
+                          <div className="extra-detail-meta-icon">
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                              <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+                              <polyline points="9 22 9 12 15 12 15 22" />
+                            </svg>
+                          </div>
+                          <div className="extra-detail-meta-content">
+                            <span className="extra-detail-meta-label">Xona</span>
+                            <span className="extra-detail-meta-value">
+                              {el.room || "Ko'rsatilmagan"}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Topic Section */}
+                    {el.topic && (
+                      <div className="extra-detail-section">
+                        <span className="extra-detail-section-title">Dars Mavzusi</span>
+                        <div className="extra-detail-topic-box">
+                          <div className="extra-detail-topic-icon">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                              <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+                            </svg>
+                          </div>
+                          <p className="extra-detail-topic-text">{el.topic}</p>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Targeted Students Section */}
+                    <div className="extra-detail-section">
+                      <div className="extra-detail-section-header">
+                        <span className="extra-detail-section-title">
+                          {isCustomTarget
+                            ? `Tanlangan O'quvchilar (${targetedStudents.length} ta)`
+                            : `Guruh O'quvchilari (${targetedStudents.length} ta)`}
+                        </span>
+                        <span className={`extra-detail-audience-pill ${isCustomTarget ? 'custom' : 'all'}`}>
+                          {isCustomTarget ? "Maxsus tanlanganlar" : "Barcha o'quvchilar"}
+                        </span>
+                      </div>
+
+                      {targetedStudents.length > 0 ? (
+                        <div className="extra-detail-students-list">
+                          {targetedStudents.map((st) => (
+                            <div key={st.id} className="extra-detail-student-item">
+                              <div className="extra-detail-student-avatar">
+                                {st.avatar ? (
+                                  <img src={st.avatar} alt={st.name} />
+                                ) : (
+                                  <span>{(st.name || '?')[0].toUpperCase()}</span>
+                                )}
+                              </div>
+                              <span className="extra-detail-student-name" title={st.name}>
+                                {st.name}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="extra-detail-no-students">Ushbu guruhda o'quvchilar mavjud emas</div>
+                      )}
+                    </div>
+                  </>
+                );
+              })()}
+            </div>
+
+            {/* Modal Actions */}
+            <div className="modal-footer extra-detail-footer">
+              <div className="extra-detail-actions-left">
+                <button
+                  type="button"
+                  className="btn btn-secondary extra-detail-delete-btn"
+                  onClick={() => {
+                    const itemToDelete = selectedExtraLessonForDetail;
+                    setSelectedExtraLessonForDetail(null);
+                    setExtraLessonToDelete(itemToDelete);
+                  }}
+                  title="Extra darsni o'chirish"
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="3 6 5 6 21 6" />
+                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                  </svg>
+                  <span>O'chirish</span>
+                </button>
+              </div>
+
+              <div className="extra-detail-actions-right">
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  onClick={() => setSelectedExtraLessonForDetail(null)}
+                >
+                  Yopish
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-primary"
+                  onClick={() => {
+                    const itemToEdit = selectedExtraLessonForDetail;
+                    setSelectedExtraLessonForDetail(null);
+                    handleOpenEditExtraLesson(itemToEdit);
+                  }}
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                  </svg>
+                  <span>Tahrirlash</span>
+                </button>
+              </div>
             </div>
           </div>
         </div>,
@@ -3085,45 +3370,833 @@ const ScheduleView = ({
         .day-empty-slot {
           flex: 1;
           min-height: 80px;
-          border: 1px dashed rgba(0, 0, 0, 0.1);
+          border: 1px dashed rgba(0, 0, 0, 0.08);
           border-radius: var(--radius-md);
           display: flex;
           flex-direction: column;
           align-items: center;
           justify-content: center;
-          gap: 4px;
-          cursor: pointer;
           color: var(--text-tertiary);
-          transition: all var(--transition-fast);
           padding: 12px 6px;
           text-align: center;
+          user-select: none;
         }
 
         [data-theme="dark"] .day-empty-slot {
-          border-color: rgba(255, 255, 255, 0.1);
-        }
-
-        .day-empty-slot:hover {
-          border-color: var(--apple-blue);
-          color: var(--apple-blue);
-          background: rgba(0, 113, 227, 0.02);
+          border-color: rgba(255, 255, 255, 0.08);
         }
 
         .empty-slot-text {
           font-size: 0.74rem;
           font-weight: 500;
+          color: var(--text-tertiary);
         }
 
-        .empty-slot-plus {
-          font-size: 0.7rem;
+        /* Dedicated Horizontal Extra Lessons Section & Slim Pill Cards */
+        .extra-lessons-section {
+          margin-top: 10px;
+          background: #FFFFFF;
+          border: 1px solid var(--border-color);
+          border-radius: var(--radius-xl, 16px);
+          padding: 18px 20px 20px;
+          display: flex;
+          flex-direction: column;
+          gap: 16px;
+          transition: all 0.2s ease;
+        }
+
+        [data-theme="dark"] .extra-lessons-section {
+          background: #1B1C1F;
+          border-color: #313338;
+        }
+
+        .extra-lessons-header {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          flex-wrap: wrap;
+          gap: 12px;
+        }
+
+        .extra-lessons-title-wrap {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+        }
+
+        .extra-lessons-title-icon {
+          width: 36px;
+          height: 36px;
+          border-radius: 10px;
+          background: rgba(0, 113, 227, 0.08);
+          color: var(--apple-blue, #0171E3);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          flex-shrink: 0;
+        }
+
+        [data-theme="dark"] .extra-lessons-title-icon {
+          background: rgba(138, 180, 248, 0.12);
+          color: #8AB4F8;
+        }
+
+        .extra-lessons-title-content {
+          display: flex;
+          flex-direction: column;
+          gap: 2px;
+        }
+
+        .extra-lessons-title-row {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+        }
+
+        .extra-lessons-title {
+          font-size: 1.05rem;
           font-weight: 700;
-          color: var(--apple-blue);
-          opacity: 0;
-          transition: opacity var(--transition-fast);
+          color: var(--text-primary);
+          margin: 0;
+          letter-spacing: -0.01em;
         }
 
-        .day-empty-slot:hover .empty-slot-plus {
+        .extra-lessons-count-pill {
+          font-size: 0.72rem;
+          font-weight: 700;
+          padding: 2px 8px;
+          border-radius: var(--radius-full);
+          background: rgba(0, 0, 0, 0.05);
+          color: var(--text-secondary);
+        }
+
+        [data-theme="dark"] .extra-lessons-count-pill {
+          background: rgba(255, 255, 255, 0.08);
+          color: #D1D5DB;
+        }
+
+        .extra-lessons-subtitle {
+          font-size: 0.78rem;
+          color: var(--text-tertiary);
+          margin: 0;
+        }
+
+        .extra-lessons-header-actions {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+        }
+
+        .extra-toggle-past-btn {
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          padding: 7px 12px;
+          border-radius: var(--radius-md, 8px);
+          border: 1px solid var(--border-color);
+          background: transparent;
+          color: var(--text-secondary);
+          font-size: 0.78rem;
+          font-weight: 600;
+          cursor: pointer;
+          transition: all 0.15s ease;
+        }
+
+        .extra-toggle-past-btn:hover {
+          background: rgba(0, 0, 0, 0.03);
+          color: var(--text-primary);
+          border-color: rgba(0, 0, 0, 0.15);
+        }
+
+        .extra-toggle-past-btn.active {
+          background: rgba(0, 113, 227, 0.08);
+          border-color: rgba(0, 113, 227, 0.25);
+          color: var(--apple-blue, #0171E3);
+        }
+
+        [data-theme="dark"] .extra-toggle-past-btn:hover {
+          background: rgba(255, 255, 255, 0.05);
+          border-color: rgba(255, 255, 255, 0.2);
+          color: #F3F4F6;
+        }
+
+        [data-theme="dark"] .extra-toggle-past-btn.active {
+          background: rgba(138, 180, 248, 0.12);
+          border-color: rgba(138, 180, 248, 0.3);
+          color: #8AB4F8;
+        }
+
+        .extra-section-add-btn {
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          padding: 7px 14px;
+          font-size: 0.8rem;
+          font-weight: 600;
+          border-radius: var(--radius-md, 8px);
+        }
+
+        /* Horizontal Scrollable Track */
+        .extra-lessons-scroll-container {
+          width: 100%;
+          overflow-x: auto;
+          overflow-y: hidden;
+          padding-bottom: 6px;
+          -webkit-overflow-scrolling: touch;
+          scrollbar-width: thin;
+        }
+
+        .extra-lessons-scroll-container::-webkit-scrollbar {
+          height: 6px;
+        }
+
+        .extra-lessons-scroll-container::-webkit-scrollbar-track {
+          background: rgba(0, 0, 0, 0.03);
+          border-radius: 4px;
+        }
+
+        .extra-lessons-scroll-container::-webkit-scrollbar-thumb {
+          background: rgba(0, 0, 0, 0.15);
+          border-radius: 4px;
+        }
+
+        [data-theme="dark"] .extra-lessons-scroll-container::-webkit-scrollbar-track {
+          background: rgba(255, 255, 255, 0.03);
+        }
+
+        [data-theme="dark"] .extra-lessons-scroll-container::-webkit-scrollbar-thumb {
+          background: rgba(255, 255, 255, 0.15);
+        }
+
+        .extra-lessons-scroll-track {
+          display: flex;
+          align-items: stretch;
+          gap: 12px;
+          width: max-content;
+          min-width: 100%;
+          padding: 2px 2px;
+        }
+
+        /* Slim Pill Card */
+        .extra-lesson-slim-pill {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          background: var(--bg-primary, #FFFFFF);
+          border: 1px solid var(--border-color);
+          border-radius: var(--radius-lg, 12px);
+          padding: 9px 14px;
+          min-width: 290px;
+          max-width: 360px;
+          flex-shrink: 0;
+          cursor: pointer;
+          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+          transition: transform 0.18s cubic-bezier(0.16, 1, 0.3, 1),
+                      box-shadow 0.18s cubic-bezier(0.16, 1, 0.3, 1),
+                      border-color 0.18s ease;
+          user-select: none;
+        }
+
+        [data-theme="dark"] .extra-lesson-slim-pill {
+          background: #242529;
+          border-color: #383A3F;
+          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+        }
+
+        .extra-lesson-slim-pill:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08);
+          border-color: var(--apple-blue, #0171E3);
+        }
+
+        [data-theme="dark"] .extra-lesson-slim-pill:hover {
+          box-shadow: 0 6px 16px rgba(0, 0, 0, 0.35);
+          border-color: #8AB4F8;
+        }
+
+        .extra-lesson-slim-pill.is-today {
+          border-color: rgba(1, 113, 227, 0.45);
+          box-shadow: 0 0 0 1px rgba(1, 113, 227, 0.2), 0 2px 6px rgba(1, 113, 227, 0.08);
+        }
+
+        [data-theme="dark"] .extra-lesson-slim-pill.is-today {
+          border-color: rgba(138, 180, 248, 0.45);
+          box-shadow: 0 0 0 1px rgba(138, 180, 248, 0.2), 0 2px 6px rgba(138, 180, 248, 0.08);
+        }
+
+        .extra-lesson-slim-pill.is-past {
+          opacity: 0.75;
+          filter: grayscale(0.2);
+        }
+
+        .extra-slim-date-badge {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          min-width: 58px;
+          padding: 5px 8px;
+          border-radius: 8px;
+          background: rgba(0, 113, 227, 0.08);
+          color: var(--apple-blue, #0171E3);
+          flex-shrink: 0;
+          text-align: center;
+        }
+
+        [data-theme="dark"] .extra-slim-date-badge {
+          background: rgba(138, 180, 248, 0.12);
+          color: #8AB4F8;
+        }
+
+        .extra-lesson-slim-pill.is-today .extra-slim-date-badge {
+          background: #0171E3;
+          color: #FFFFFF;
+        }
+
+        [data-theme="dark"] .extra-lesson-slim-pill.is-today .extra-slim-date-badge {
+          background: #8AB4F8;
+          color: #0F1117;
+        }
+
+        .extra-slim-date-main {
+          font-size: 0.78rem;
+          font-weight: 800;
+          line-height: 1.1;
+          white-space: nowrap;
+        }
+
+        .extra-slim-date-sub {
+          font-size: 0.65rem;
+          font-weight: 600;
+          opacity: 0.85;
+          white-space: nowrap;
+          margin-top: 1px;
+        }
+
+        .extra-slim-divider {
+          width: 1px;
+          height: 34px;
+          background: var(--border-color);
+          flex-shrink: 0;
+        }
+
+        .extra-slim-body {
+          flex: 1;
+          min-width: 0;
+          display: flex;
+          flex-direction: column;
+          gap: 4px;
+        }
+
+        .extra-slim-time-row {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+        }
+
+        .extra-slim-time {
+          font-size: 0.78rem;
+          font-weight: 700;
+          color: var(--text-primary);
+          white-space: nowrap;
+        }
+
+        .extra-slim-room {
+          font-size: 0.67rem;
+          font-weight: 600;
+          padding: 1px 6px;
+          border-radius: 4px;
+          background: rgba(0, 0, 0, 0.05);
+          color: var(--text-secondary);
+          white-space: nowrap;
+        }
+
+        [data-theme="dark"] .extra-slim-room {
+          background: rgba(255, 255, 255, 0.08);
+          color: #D1D5DB;
+        }
+
+        .extra-slim-group-row {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          overflow: hidden;
+        }
+
+        .extra-slim-group-icon {
+          width: 18px;
+          height: 18px;
+          border-radius: 4px;
+          overflow: hidden;
+          flex-shrink: 0;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          background: rgba(0, 0, 0, 0.04);
+        }
+
+        [data-theme="dark"] .extra-slim-group-icon {
+          background: rgba(255, 255, 255, 0.08);
+        }
+
+        .extra-slim-group-name {
+          font-size: 0.78rem;
+          font-weight: 600;
+          color: var(--text-primary);
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+
+        .extra-slim-target-pill {
+          font-size: 0.66rem;
+          font-weight: 600;
+          padding: 1px 6px;
+          border-radius: 4px;
+          background: rgba(124, 58, 237, 0.1);
+          color: #7C3AED;
+          white-space: nowrap;
+          flex-shrink: 0;
+        }
+
+        [data-theme="dark"] .extra-slim-target-pill {
+          background: rgba(167, 139, 250, 0.15);
+          color: #C4B5FD;
+        }
+
+        .extra-slim-topic {
+          font-size: 0.7rem;
+          color: var(--text-tertiary);
+          display: flex;
+          align-items: center;
+          gap: 4px;
+          overflow: hidden;
+          white-space: nowrap;
+        }
+
+        .extra-slim-topic-dot {
+          opacity: 0.6;
+          font-size: 0.75rem;
+        }
+
+        .extra-slim-topic-text {
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+        }
+
+        .extra-slim-arrow {
+          color: var(--text-tertiary);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          flex-shrink: 0;
+          transition: transform 0.15s ease, color 0.15s ease;
+          opacity: 0.6;
+        }
+
+        .extra-lesson-slim-pill:hover .extra-slim-arrow {
+          transform: translateX(3px);
+          color: var(--apple-blue, #0171E3);
           opacity: 1;
+        }
+
+        [data-theme="dark"] .extra-lesson-slim-pill:hover .extra-slim-arrow {
+          color: #8AB4F8;
+        }
+
+        /* Empty state strip */
+        .extra-lessons-empty-strip {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 16px;
+          padding: 16px 20px;
+          border-radius: 12px;
+          border: 1px dashed rgba(0, 0, 0, 0.12);
+          background: rgba(0, 0, 0, 0.015);
+          flex-wrap: wrap;
+        }
+
+        [data-theme="dark"] .extra-lessons-empty-strip {
+          border-color: rgba(255, 255, 255, 0.1);
+          background: rgba(255, 255, 255, 0.02);
+        }
+
+        .extra-empty-icon-wrap {
+          width: 40px;
+          height: 40px;
+          border-radius: 10px;
+          background: rgba(0, 0, 0, 0.03);
+          color: var(--text-tertiary);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          flex-shrink: 0;
+        }
+
+        [data-theme="dark"] .extra-empty-icon-wrap {
+          background: rgba(255, 255, 255, 0.05);
+          color: #9CA3AF;
+        }
+
+        .extra-empty-text-wrap {
+          flex: 1;
+          min-width: 220px;
+          display: flex;
+          flex-direction: column;
+          gap: 2px;
+        }
+
+        .extra-empty-title {
+          font-size: 0.88rem;
+          font-weight: 700;
+          color: var(--text-primary);
+          margin: 0;
+        }
+
+        .extra-empty-desc {
+          font-size: 0.78rem;
+          color: var(--text-tertiary);
+          margin: 0;
+        }
+
+        .extra-empty-action-btn {
+          font-size: 0.8rem;
+          font-weight: 600;
+          padding: 8px 16px;
+          border-radius: 8px;
+          white-space: nowrap;
+        }
+
+        /* Detail Modal Styles */
+        .extra-lesson-detail-modal-box {
+          max-width: 500px;
+          width: 100%;
+          border-radius: var(--radius-xl, 16px);
+        }
+
+        .extra-detail-header-badge-row {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          margin-bottom: 6px;
+        }
+
+        .extra-detail-today-pill {
+          font-size: 0.72rem;
+          font-weight: 700;
+          padding: 2px 8px;
+          border-radius: var(--radius-full);
+          background: #0171E3;
+          color: #FFFFFF;
+        }
+
+        [data-theme="dark"] .extra-detail-today-pill {
+          background: #8AB4F8;
+          color: #0F1117;
+        }
+
+        .extra-detail-title {
+          font-size: 1.25rem;
+          font-weight: 700;
+          color: var(--text-primary);
+          margin: 0;
+        }
+
+        .extra-detail-body {
+          display: flex;
+          flex-direction: column;
+          gap: 16px;
+          padding: 18px 24px 20px;
+        }
+
+        .extra-detail-card {
+          background: rgba(0, 0, 0, 0.025);
+          border: 1px solid var(--border-color);
+          border-radius: 12px;
+          padding: 14px 16px;
+          display: flex;
+          flex-direction: column;
+          gap: 14px;
+        }
+
+        [data-theme="dark"] .extra-detail-card {
+          background: rgba(255, 255, 255, 0.03);
+          border-color: #383A3F;
+        }
+
+        .extra-detail-group-header {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+        }
+
+        .extra-detail-group-icon {
+          width: 38px;
+          height: 38px;
+          border-radius: 8px;
+          overflow: hidden;
+          flex-shrink: 0;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          background: #FFFFFF;
+          border: 1px solid rgba(0, 0, 0, 0.06);
+        }
+
+        [data-theme="dark"] .extra-detail-group-icon {
+          background: #202124;
+          border-color: #363739;
+        }
+
+        .extra-detail-group-info {
+          display: flex;
+          flex-direction: column;
+          gap: 3px;
+        }
+
+        .extra-detail-group-name {
+          font-size: 1rem;
+          font-weight: 700;
+          color: var(--text-primary);
+        }
+
+        .extra-detail-group-sub {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+        }
+
+        .extra-detail-student-count {
+          font-size: 0.76rem;
+          color: var(--text-secondary);
+        }
+
+        .extra-detail-meta-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+          gap: 10px;
+          padding-top: 10px;
+          border-top: 1px solid rgba(0, 0, 0, 0.05);
+        }
+
+        [data-theme="dark"] .extra-detail-meta-grid {
+          border-top-color: rgba(255, 255, 255, 0.07);
+        }
+
+        .extra-detail-meta-item {
+          display: flex;
+          align-items: flex-start;
+          gap: 8px;
+        }
+
+        .extra-detail-meta-icon {
+          color: var(--apple-blue, #0171E3);
+          margin-top: 2px;
+          flex-shrink: 0;
+        }
+
+        [data-theme="dark"] .extra-detail-meta-icon {
+          color: #8AB4F8;
+        }
+
+        .extra-detail-meta-content {
+          display: flex;
+          flex-direction: column;
+          gap: 1px;
+        }
+
+        .extra-detail-meta-label {
+          font-size: 0.68rem;
+          font-weight: 600;
+          color: var(--text-tertiary);
+          text-transform: uppercase;
+          letter-spacing: 0.03em;
+        }
+
+        .extra-detail-meta-value {
+          font-size: 0.82rem;
+          font-weight: 700;
+          color: var(--text-primary);
+        }
+
+        .extra-detail-section {
+          display: flex;
+          flex-direction: column;
+          gap: 8px;
+        }
+
+        .extra-detail-section-header {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 8px;
+        }
+
+        .extra-detail-section-title {
+          font-size: 0.8rem;
+          font-weight: 700;
+          color: var(--text-secondary);
+          text-transform: uppercase;
+          letter-spacing: 0.03em;
+        }
+
+        .extra-detail-audience-pill {
+          font-size: 0.72rem;
+          font-weight: 600;
+          padding: 2px 8px;
+          border-radius: var(--radius-full);
+        }
+
+        .extra-detail-audience-pill.all {
+          background: rgba(52, 199, 89, 0.1);
+          color: #2E7D32;
+        }
+
+        [data-theme="dark"] .extra-detail-audience-pill.all {
+          background: rgba(52, 199, 89, 0.18);
+          color: #4ADE80;
+        }
+
+        .extra-detail-audience-pill.custom {
+          background: rgba(124, 58, 237, 0.1);
+          color: #7C3AED;
+        }
+
+        [data-theme="dark"] .extra-detail-audience-pill.custom {
+          background: rgba(167, 139, 250, 0.18);
+          color: #C4B5FD;
+        }
+
+        .extra-detail-topic-box {
+          display: flex;
+          align-items: flex-start;
+          gap: 10px;
+          padding: 10px 14px;
+          border-radius: 10px;
+          background: rgba(0, 0, 0, 0.03);
+          border: 1px solid var(--border-color);
+        }
+
+        [data-theme="dark"] .extra-detail-topic-box {
+          background: rgba(255, 255, 255, 0.03);
+          border-color: #383A3F;
+        }
+
+        .extra-detail-topic-icon {
+          color: #F59E0B;
+          margin-top: 2px;
+          flex-shrink: 0;
+        }
+
+        .extra-detail-topic-text {
+          font-size: 0.85rem;
+          font-weight: 500;
+          color: var(--text-primary);
+          line-height: 1.4;
+          margin: 0;
+        }
+
+        .extra-detail-students-list {
+          display: grid;
+          grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+          gap: 6px;
+          max-height: 180px;
+          overflow-y: auto;
+          padding-right: 4px;
+        }
+
+        .extra-detail-student-item {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          padding: 6px 10px;
+          border-radius: 8px;
+          background: rgba(0, 0, 0, 0.02);
+          border: 1px solid rgba(0, 0, 0, 0.04);
+        }
+
+        [data-theme="dark"] .extra-detail-student-item {
+          background: rgba(255, 255, 255, 0.03);
+          border-color: rgba(255, 255, 255, 0.06);
+        }
+
+        .extra-detail-student-avatar {
+          width: 22px;
+          height: 22px;
+          border-radius: 50%;
+          overflow: hidden;
+          background: #E5E7EB;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 0.65rem;
+          font-weight: 700;
+          color: #374151;
+          flex-shrink: 0;
+        }
+
+        .extra-detail-student-avatar img {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+        }
+
+        .extra-detail-student-name {
+          font-size: 0.8rem;
+          font-weight: 600;
+          color: var(--text-primary);
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+
+        .extra-detail-no-students {
+          font-size: 0.82rem;
+          color: var(--text-tertiary);
+          font-style: italic;
+          padding: 8px 0;
+        }
+
+        .extra-detail-footer {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          padding: 16px 24px;
+          border-top: 1px solid var(--border-color);
+          gap: 12px;
+        }
+
+        .extra-detail-actions-left {
+          display: flex;
+          align-items: center;
+        }
+
+        .extra-detail-actions-right {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+        }
+
+        .extra-detail-delete-btn {
+          color: #EF4444 !important;
+          border-color: rgba(239, 68, 68, 0.25) !important;
+          background: rgba(239, 68, 68, 0.04) !important;
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+        }
+
+        .extra-detail-delete-btn:hover {
+          background: rgba(239, 68, 68, 0.1) !important;
+          border-color: #EF4444 !important;
+        }
+
+        [data-theme="dark"] .extra-detail-delete-btn {
+          color: #F87171 !important;
+          border-color: rgba(248, 113, 113, 0.25) !important;
+          background: rgba(248, 113, 113, 0.08) !important;
         }
 
         /* Modal Styles */
@@ -4023,44 +5096,73 @@ const ScheduleView = ({
           }
 
           .day-empty-slot {
-            min-height: 120px;
-            padding: 22px 16px;
-            border: 1.5px dashed var(--border-color);
+            min-height: 80px;
+            padding: 16px 12px;
+            border: 1px dashed var(--border-color);
             background: rgba(0, 0, 0, 0.015);
             border-radius: var(--radius-lg);
-            gap: 8px;
+            gap: 4px;
+            user-select: none;
           }
 
           [data-theme="dark"] .day-empty-slot {
             background: rgba(255, 255, 255, 0.02);
-            border-color: rgba(255, 255, 255, 0.12);
+            border-color: rgba(255, 255, 255, 0.08);
           }
 
           .empty-slot-text {
-            font-size: 0.9rem;
-            font-weight: 600;
-            color: var(--text-secondary);
+            font-size: 0.85rem;
+            font-weight: 500;
+            color: var(--text-tertiary);
           }
 
-          .empty-slot-plus {
-            opacity: 1 !important;
-            font-size: 0.82rem;
-            font-weight: 700;
-            padding: 6px 14px;
-            background: rgba(0, 113, 227, 0.08);
-            border-radius: var(--radius-full);
-            color: var(--apple-blue);
+          /* Mobile Extra Lessons Section */
+          .extra-lessons-section {
+            padding: 14px 12px 16px;
+            border-radius: var(--radius-lg);
+            gap: 12px;
           }
 
-          [data-theme="dark"] .empty-slot-plus {
-            background: rgba(138, 180, 248, 0.15);
-            color: #8AB4F8;
+          .extra-lessons-header {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 10px;
+          }
+
+          .extra-lessons-header-actions {
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+          }
+
+          .extra-lessons-header-actions .extra-section-add-btn {
+            flex: 1;
+            justify-content: center;
+          }
+
+          .extra-lesson-slim-pill {
+            min-width: 260px;
+            max-width: 300px;
+            padding: 8px 12px;
+          }
+
+          .extra-lessons-empty-strip {
+            padding: 14px;
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 12px;
+          }
+
+          .extra-empty-action-btn {
+            width: 100%;
+            justify-content: center;
           }
 
           /* Modals responsive adjustments */
           .schedule-modal-box,
           .student-list-modal-box,
-          .extra-lesson-modal-box {
+          .extra-lesson-modal-box,
+          .extra-lesson-detail-modal-box {
             max-width: 100% !important;
             width: 100% !important;
             box-sizing: border-box !important;
