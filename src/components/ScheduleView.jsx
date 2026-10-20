@@ -3401,45 +3401,18 @@ const ScheduleView = ({
           border-radius: var(--radius-md, 8px);
         }
 
-        /* Horizontal Scrollable Track */
+        /* Extra Lessons Grid Layout (wrapping rows) */
         .extra-lessons-scroll-container {
           width: 100%;
-          overflow-x: auto;
-          overflow-y: hidden;
-          padding-bottom: 6px;
-          -webkit-overflow-scrolling: touch;
-          scrollbar-width: thin;
-        }
-
-        .extra-lessons-scroll-container::-webkit-scrollbar {
-          height: 6px;
-        }
-
-        .extra-lessons-scroll-container::-webkit-scrollbar-track {
-          background: rgba(0, 0, 0, 0.03);
-          border-radius: 4px;
-        }
-
-        .extra-lessons-scroll-container::-webkit-scrollbar-thumb {
-          background: rgba(0, 0, 0, 0.15);
-          border-radius: 4px;
-        }
-
-        [data-theme="dark"] .extra-lessons-scroll-container::-webkit-scrollbar-track {
-          background: rgba(255, 255, 255, 0.03);
-        }
-
-        [data-theme="dark"] .extra-lessons-scroll-container::-webkit-scrollbar-thumb {
-          background: rgba(255, 255, 255, 0.15);
+          overflow: visible;
         }
 
         .extra-lessons-scroll-track {
-          display: flex;
-          align-items: stretch;
+          display: grid;
+          grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
           gap: 12px;
-          width: max-content;
-          min-width: 100%;
-          padding: 2px 2px;
+          width: 100%;
+          padding: 2px 0;
         }
 
         /* Slim Pill Card */
@@ -3451,9 +3424,9 @@ const ScheduleView = ({
           border: 1px solid var(--border-color);
           border-radius: var(--radius-lg, 12px);
           padding: 9px 14px;
-          min-width: 290px;
-          max-width: 360px;
-          flex-shrink: 0;
+          min-width: 0;
+          width: 100%;
+          box-sizing: border-box;
           cursor: pointer;
           box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
           transition: transform 0.18s cubic-bezier(0.16, 1, 0.3, 1),
@@ -4988,9 +4961,14 @@ const ScheduleView = ({
             justify-content: center;
           }
 
+          .extra-lessons-scroll-track {
+            grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+            gap: 10px;
+          }
+
           .extra-lesson-slim-pill {
-            min-width: 260px;
-            max-width: 300px;
+            min-width: 0;
+            max-width: none;
             padding: 8px 12px;
           }
 
@@ -5088,6 +5066,12 @@ const ScheduleView = ({
           }
 
           .today-cards-row {
+            grid-template-columns: 1fr;
+          }
+        }
+
+        @media (max-width: 600px) {
+          .extra-lessons-scroll-track {
             grid-template-columns: 1fr;
           }
         }
