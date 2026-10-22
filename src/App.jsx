@@ -5,6 +5,7 @@ import GroupsList from './components/GroupsList';
 import GroupDetail from './components/GroupDetail';
 import Leaderboard from './components/Leaderboard';
 import Settings from './components/Settings';
+import TeacherFinanceView from './components/TeacherFinanceView';
 import Attendance from './components/Attendance';
 import ScheduleView from './components/ScheduleView';
 import AdminDashboard from './components/admin/AdminDashboard';
@@ -2888,6 +2889,14 @@ function App() {
             onDeleteAttendance={handleDeleteAttendance}
             showToast={showToast}
             extraLessons={filteredExtraLessons}
+          />
+        );
+      case 'finance':
+        return (
+          <TeacherFinanceView
+            groups={filteredGroups}
+            students={filteredStudents}
+            showToast={showToast}
           />
         );
       case 'settings':
