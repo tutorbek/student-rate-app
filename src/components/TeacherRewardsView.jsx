@@ -229,9 +229,6 @@ export default function TeacherRewardsView({
       <div className="page-header flex-col-mobile">
         <div>
           <h2 className="page-title">Oylik Sovg'alar Musobaqasi</h2>
-          <p className="page-subtitle">
-            Oyning oxirgi kuni kim 1-o'rinda bo'lsa, o'sha o'quvchi sovg'ani yutib oladi.
-          </p>
         </div>
 
         <div className="rewards-header-actions">
@@ -270,9 +267,9 @@ export default function TeacherRewardsView({
 
               <div className="reward-card-body">
                 <h3 className="reward-card-title">{rewards.kids.title}</h3>
-                <p className="reward-card-desc">
-                  {rewards.kids.description || "Oy oxirida Kids toifasida 1-o'rinni egallagan o'quvchiga topshiriladi."}
-                </p>
+                {rewards.kids.description ? (
+                  <p className="reward-card-desc">{rewards.kids.description}</p>
+                ) : null}
 
                 {/* Flat leader line - NO nested card box */}
                 <div className="reward-leader-line">
@@ -315,9 +312,6 @@ export default function TeacherRewardsView({
           ) : (
             <div className="reward-empty-flat-state">
               <h4 className="empty-title">Kids uchun sovg'a belgilanmagan</h4>
-              <p className="empty-desc">
-                Ushbu oy uchun Kids toifasiga hali sovg'a belgilanmagan.
-              </p>
               <button
                 type="button"
                 className="btn btn-secondary btn-sm scale-active"
@@ -347,9 +341,9 @@ export default function TeacherRewardsView({
 
               <div className="reward-card-body">
                 <h3 className="reward-card-title">{rewards.teens.title}</h3>
-                <p className="reward-card-desc">
-                  {rewards.teens.description || "Oy oxirida Teens toifasida 1-o'rinni egallagan o'quvchiga topshiriladi."}
-                </p>
+                {rewards.teens.description ? (
+                  <p className="reward-card-desc">{rewards.teens.description}</p>
+                ) : null}
 
                 {/* Flat leader line - NO nested card box */}
                 <div className="reward-leader-line">
@@ -392,9 +386,6 @@ export default function TeacherRewardsView({
           ) : (
             <div className="reward-empty-flat-state">
               <h4 className="empty-title">Teens uchun sovg'a belgilanmagan</h4>
-              <p className="empty-desc">
-                Ushbu oy uchun Teens toifasiga hali sovg'a belgilanmagan.
-              </p>
               <button
                 type="button"
                 className="btn btn-secondary btn-sm scale-active"
@@ -411,10 +402,7 @@ export default function TeacherRewardsView({
       <div className="glass-card rewards-standings-card">
         <div className="standings-card-header">
           <div className="standings-header-text">
-            <h3 className="standings-card-title">Hozirgi Peshqadamlar (1-O'rin Da'vogarlari)</h3>
-            <p className="standings-card-subtitle">
-              Oyning oxirgi kuni kim 1-o'rinda bo'lsa, o'sha sovg'ani yutib oladi. Qolganlarga hech narsa yo'q.
-            </p>
+            <h3 className="standings-card-title">Top 5 Da'vogarlari</h3>
           </div>
 
           <div className="tab-control-brutalist">
@@ -430,14 +418,14 @@ export default function TeacherRewardsView({
               className={`tab-btn-brutalist ${activeLeaderboardTab === 'kids' ? 'active' : ''}`}
               onClick={() => setActiveLeaderboardTab('kids')}
             >
-              Kids ({kidsRanking.length})
+              Kids
             </button>
             <button
               type="button"
               className={`tab-btn-brutalist ${activeLeaderboardTab === 'teens' ? 'active' : ''}`}
               onClick={() => setActiveLeaderboardTab('teens')}
             >
-              Teens ({teensRanking.length})
+              Teens
             </button>
           </div>
         </div>
@@ -448,8 +436,7 @@ export default function TeacherRewardsView({
           {(activeLeaderboardTab === 'both' || activeLeaderboardTab === 'kids') && (
             <div className="standings-category-col">
               <div className="standings-col-heading">
-                <span className="col-heading-title kids-color">Kids Top 5 Da'vogarlari</span>
-                <span className="col-heading-count">{kidsRanking.length} o'quvchi</span>
+                <span className="col-heading-title kids-color">Kids</span>
               </div>
 
               {kidsRanking.length > 0 && kidsRanking[0].monthlyScore > 0 ? (
@@ -484,8 +471,7 @@ export default function TeacherRewardsView({
           {(activeLeaderboardTab === 'both' || activeLeaderboardTab === 'teens') && (
             <div className="standings-category-col">
               <div className="standings-col-heading">
-                <span className="col-heading-title teens-color">Teens Top 5 Da'vogarlari</span>
-                <span className="col-heading-count">{teensRanking.length} o'quvchi</span>
+                <span className="col-heading-title teens-color">Teens</span>
               </div>
 
               {teensRanking.length > 0 && teensRanking[0].monthlyScore > 0 ? (

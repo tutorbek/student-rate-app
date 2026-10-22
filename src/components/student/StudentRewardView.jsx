@@ -118,9 +118,6 @@ export default function StudentRewardView({
       <div className="reward-page-header">
         <div className="reward-page-title-wrap">
           <h2 className="reward-page-title">Oylik Sovg'a Musobaqasi</h2>
-          <p className="reward-page-subtitle">
-            Oyning oxirgi kuni kim 1-o'rinda bo'lsa, o'sha sovg'ani yutib oladi. Qolgan o'rinlarga sovg'a berilmaydi.
-          </p>
         </div>
 
         {/* Month countdown pill */}
@@ -159,9 +156,9 @@ export default function StudentRewardView({
 
             <h3 className="gift-headline-title">{activeGift.title}</h3>
 
-            <p className="gift-description-text">
-              {activeGift.description || "Oy oxirida o'z toifasida eng ko'p Like to'plab 1-o'rinni egallagan yagona o'quvchiga tantanali topshiriladi."}
-            </p>
+            {activeGift.description ? (
+              <p className="gift-description-text">{activeGift.description}</p>
+            ) : null}
 
             {/* Current Leader Banner */}
             <div className="gift-leader-preview-banner">

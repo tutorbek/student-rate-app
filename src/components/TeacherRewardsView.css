@@ -340,12 +340,6 @@
   color: var(--apple-purple);
 }
 
-.col-heading-count {
-  font-size: 0.8rem;
-  font-weight: 500;
-  color: var(--text-tertiary);
-}
-
 /* Standings Table Rows (Flat unboxed table) */
 .standings-table {
   display: flex;
