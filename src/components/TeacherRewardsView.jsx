@@ -237,16 +237,16 @@ export default function TeacherRewardsView({
 
   return (
     <div className="teacher-rewards-container animate-fadeIn">
-      {/* 1. Page Header (Single "+ Sovg'a Belgilash" action button, no icon boxes or cluttered pills) */}
-      <div className="rewards-page-header">
-        <div className="rewards-header-title-wrap">
-          <h1 className="rewards-main-title">Oylik Sovg'alar Musobaqasi</h1>
-          <p className="rewards-main-subtitle">
+      {/* 1. Page Header (Standard Apple Minimalist Layout) */}
+      <div className="page-header flex-col-mobile">
+        <div>
+          <h2 className="page-title">Oylik Sovg'alar Musobaqasi</h2>
+          <p className="page-subtitle">
             Oyning oxirgi kuni kim 1-o'rinda bo'lsa, o'sha o'quvchi sovg'ani yutib oladi.
           </p>
         </div>
 
-        <div className="rewards-header-actions-wrap">
+        <div className="rewards-header-actions">
           <div className="header-countdown-badge">
             <span>{currentMonthName} oyi:</span>
             <strong>{daysRemaining} kun qoldi</strong>
@@ -254,7 +254,7 @@ export default function TeacherRewardsView({
 
           <button
             type="button"
-            className="header-add-gift-primary-btn scale-active"
+            className="btn btn-primary scale-active"
             onClick={() => handleOpenAddModal('kids')}
           >
             <span>+ Sovg'a Belgilash</span>
@@ -262,39 +262,40 @@ export default function TeacherRewardsView({
         </div>
       </div>
 
-      {/* 2. Two Main Category Gift Cards (Kids & Teens) */}
+      {/* 2. Two Main Category Gift Cards (Kids & Teens) - Single clean glass-card each */}
       <div className="rewards-grid-row">
         {/* KIDS REWARD CARD */}
-        <div className="reward-category-card">
+        <div className="glass-card reward-category-card">
           <div className="reward-category-card-header">
-            <span className="category-clean-title kids-title">Kids Toifasi</span>
-            <span className="reward-points-volt-badge">
-              1-O'rin Sovg'asi
-            </span>
+            <span className="category-tag-badge kids-tag">Kids Toifasi</span>
+            <span className="reward-target-badge">1-O'rin Sovg'asi</span>
           </div>
 
           {rewards?.kids ? (
-            <div className="reward-card-body">
-              <div className="reward-media-box">
-                <img src={rewards.kids.image} alt={rewards.kids.title} loading="lazy" />
-              </div>
+            <div className="reward-card-content">
+              <img
+                src={rewards.kids.image}
+                alt={rewards.kids.title}
+                className="reward-card-img"
+                loading="lazy"
+              />
 
-              <div className="reward-content-box">
+              <div className="reward-card-body">
                 <h3 className="reward-card-title">{rewards.kids.title}</h3>
                 <p className="reward-card-desc">
                   {rewards.kids.description || "Oy oxirida Kids toifasida 1-o'rinni egallagan o'quvchiga topshiriladi."}
                 </p>
 
-                {/* Current Leader Tag */}
-                <div className="reward-leader-preview-banner">
+                {/* Flat leader line - NO nested card box */}
+                <div className="reward-leader-line">
                   {kidsLeader ? (
-                    <div className="leader-avatar-circle">
-                      {renderAvatar(kidsLeader.emoji, 32)}
+                    <div className="reward-leader-avatar">
+                      {renderAvatar(kidsLeader.emoji, 26)}
                     </div>
                   ) : null}
-                  <div className="leader-preview-text">
-                    <span className="leader-role-tag">Hozirgi 1-o'rin da'vogari:</span>
-                    <strong className="leader-name-tag">
+                  <div className="reward-leader-text">
+                    <span className="reward-leader-prefix">Hozirgi 1-o'rin da'vogari:</span>{' '}
+                    <strong className="reward-leader-name">
                       {kidsLeader && kidsLeader.monthlyScore > 0
                         ? `${kidsLeader.name} (${kidsLeader.monthlyScore} Like)`
                         : "Bu oyda hali ball berilmagan"}
@@ -305,14 +306,14 @@ export default function TeacherRewardsView({
                 <div className="reward-card-actions-row">
                   <button
                     type="button"
-                    className="reward-action-btn edit-btn scale-active"
+                    className="btn btn-secondary btn-sm scale-active"
                     onClick={() => handleOpenEditModal('kids')}
                   >
                     <span>Tahrirlash</span>
                   </button>
                   <button
                     type="button"
-                    className="reward-action-btn delete-btn scale-active"
+                    className="btn btn-danger btn-sm scale-active"
                     onClick={() => {
                       triggerHaptic('light');
                       setDeleteCategoryConfirm('kids');
@@ -324,46 +325,54 @@ export default function TeacherRewardsView({
               </div>
             </div>
           ) : (
-            <div className="reward-empty-clean-card">
+            <div className="reward-empty-flat-state">
               <h4 className="empty-title">Kids uchun sovg'a belgilanmagan</h4>
               <p className="empty-desc">
                 Ushbu oy uchun Kids toifasiga hali sovg'a belgilanmagan.
               </p>
+              <button
+                type="button"
+                className="btn btn-secondary btn-sm scale-active"
+                onClick={() => handleOpenAddModal('kids')}
+              >
+                <span>+ Sovg'a kiritish</span>
+              </button>
             </div>
           )}
         </div>
 
         {/* TEENS REWARD CARD */}
-        <div className="reward-category-card">
+        <div className="glass-card reward-category-card">
           <div className="reward-category-card-header">
-            <span className="category-clean-title teens-title">Teens Toifasi</span>
-            <span className="reward-points-volt-badge">
-              1-O'rin Sovg'asi
-            </span>
+            <span className="category-tag-badge teens-tag">Teens Toifasi</span>
+            <span className="reward-target-badge">1-O'rin Sovg'asi</span>
           </div>
 
           {rewards?.teens ? (
-            <div className="reward-card-body">
-              <div className="reward-media-box">
-                <img src={rewards.teens.image} alt={rewards.teens.title} loading="lazy" />
-              </div>
+            <div className="reward-card-content">
+              <img
+                src={rewards.teens.image}
+                alt={rewards.teens.title}
+                className="reward-card-img"
+                loading="lazy"
+              />
 
-              <div className="reward-content-box">
+              <div className="reward-card-body">
                 <h3 className="reward-card-title">{rewards.teens.title}</h3>
                 <p className="reward-card-desc">
                   {rewards.teens.description || "Oy oxirida Teens toifasida 1-o'rinni egallagan o'quvchiga topshiriladi."}
                 </p>
 
-                {/* Current Leader Tag */}
-                <div className="reward-leader-preview-banner">
+                {/* Flat leader line - NO nested card box */}
+                <div className="reward-leader-line">
                   {teensLeader ? (
-                    <div className="leader-avatar-circle">
-                      {renderAvatar(teensLeader.emoji, 32)}
+                    <div className="reward-leader-avatar">
+                      {renderAvatar(teensLeader.emoji, 26)}
                     </div>
                   ) : null}
-                  <div className="leader-preview-text">
-                    <span className="leader-role-tag">Hozirgi 1-o'rin da'vogari:</span>
-                    <strong className="leader-name-tag">
+                  <div className="reward-leader-text">
+                    <span className="reward-leader-prefix">Hozirgi 1-o'rin da'vogari:</span>{' '}
+                    <strong className="reward-leader-name">
                       {teensLeader && teensLeader.monthlyScore > 0
                         ? `${teensLeader.name} (${teensLeader.monthlyScore} Like)`
                         : "Bu oyda hali ball berilmagan"}
@@ -374,14 +383,14 @@ export default function TeacherRewardsView({
                 <div className="reward-card-actions-row">
                   <button
                     type="button"
-                    className="reward-action-btn edit-btn scale-active"
+                    className="btn btn-secondary btn-sm scale-active"
                     onClick={() => handleOpenEditModal('teens')}
                   >
                     <span>Tahrirlash</span>
                   </button>
                   <button
                     type="button"
-                    className="reward-action-btn delete-btn scale-active"
+                    className="btn btn-danger btn-sm scale-active"
                     onClick={() => {
                       triggerHaptic('light');
                       setDeleteCategoryConfirm('teens');
@@ -393,45 +402,51 @@ export default function TeacherRewardsView({
               </div>
             </div>
           ) : (
-            <div className="reward-empty-clean-card">
+            <div className="reward-empty-flat-state">
               <h4 className="empty-title">Teens uchun sovg'a belgilanmagan</h4>
               <p className="empty-desc">
                 Ushbu oy uchun Teens toifasiga hali sovg'a belgilanmagan.
               </p>
+              <button
+                type="button"
+                className="btn btn-secondary btn-sm scale-active"
+                onClick={() => handleOpenAddModal('teens')}
+              >
+                <span>+ Sovg'a kiritish</span>
+              </button>
             </div>
           )}
         </div>
       </div>
 
-      {/* 3. Monthly Leaders Section (Who is currently leading) */}
-      <div className="rewards-race-section">
-        <div className="race-section-header">
-          <div>
-            <span className="race-section-badge">{currentMonthName} oyi yetakchilari</span>
-            <h2 className="race-section-title">Hozirgi Peshqadamlar (1-O'rin Da'vogarlari)</h2>
-            <p className="race-section-subtitle">
-              Oyning oxirgi sanasi kuni kim 1-o'rinda bo'lsa, o'sha sovg'ani yutib oladi. Qolganlarga hech narsa yo'q.
+      {/* 3. Monthly Leaders Section - Exactly ONE glass-card, direct elements inside */}
+      <div className="glass-card rewards-standings-card">
+        <div className="standings-card-header">
+          <div className="standings-header-text">
+            <h3 className="standings-card-title">Hozirgi Peshqadamlar (1-O'rin Da'vogarlari)</h3>
+            <p className="standings-card-subtitle">
+              Oyning oxirgi kuni kim 1-o'rinda bo'lsa, o'sha sovg'ani yutib oladi. Qolganlarga hech narsa yo'q.
             </p>
           </div>
 
-          <div className="race-filter-tabs">
+          <div className="tab-control-brutalist">
             <button
               type="button"
-              className={`race-tab-btn ${activeLeaderboardTab === 'both' ? 'active' : ''}`}
+              className={`tab-btn-brutalist ${activeLeaderboardTab === 'both' ? 'active' : ''}`}
               onClick={() => setActiveLeaderboardTab('both')}
             >
               Barchasi
             </button>
             <button
               type="button"
-              className={`race-tab-btn ${activeLeaderboardTab === 'kids' ? 'active' : ''}`}
+              className={`tab-btn-brutalist ${activeLeaderboardTab === 'kids' ? 'active' : ''}`}
               onClick={() => setActiveLeaderboardTab('kids')}
             >
               Kids ({kidsRanking.length})
             </button>
             <button
               type="button"
-              className={`race-tab-btn ${activeLeaderboardTab === 'teens' ? 'active' : ''}`}
+              className={`tab-btn-brutalist ${activeLeaderboardTab === 'teens' ? 'active' : ''}`}
               onClick={() => setActiveLeaderboardTab('teens')}
             >
               Teens ({teensRanking.length})
@@ -439,56 +454,61 @@ export default function TeacherRewardsView({
           </div>
         </div>
 
-        {/* Leaders Split Grid */}
-        <div className="race-leaders-split-grid">
-          {/* KIDS LEADER BOX */}
+        {/* Flat Columns Grid - NO category-race-card boxes, NO hero profile boxes, NO rank item boxes! */}
+        <div className={`standings-columns-grid ${activeLeaderboardTab === 'both' ? 'split' : 'single'}`}>
+          {/* KIDS COLUMN */}
           {(activeLeaderboardTab === 'both' || activeLeaderboardTab === 'kids') && (
-            <div className="category-race-card">
-              <div className="race-card-top-head">
-                <span className="category-clean-title kids-title">Kids Yetakchisi</span>
-                <span className="race-points-counter">
-                  {kidsLeader?.monthlyScore || 0} Like
-                </span>
+            <div className="standings-category-col">
+              <div className="standings-col-heading">
+                <span className="col-heading-title kids-color">Kids Yetakchisi</span>
+                <span className="col-heading-score">{kidsLeader?.monthlyScore || 0} Like</span>
               </div>
 
               {kidsLeader && kidsLeader.monthlyScore > 0 ? (
                 <>
-                  <div className="race-hero-profile-box">
-                    <div className="race-hero-avatar-wrap">
-                      <div className="race-hero-avatar">
-                        {renderAvatar(kidsLeader.emoji, 56, { priority: 'high', eager: true })}
+                  {/* Hero Leader Row (Flat, unboxed) */}
+                  <div className="standings-hero-row">
+                    <div className="standings-hero-avatar-wrap">
+                      <div className="standings-hero-avatar">
+                        {renderAvatar(kidsLeader.emoji, 44, { priority: 'high', eager: true })}
                       </div>
-                      <span className="race-crown-badge">1</span>
+                      <span className="standings-hero-rank-badge">1</span>
                     </div>
 
-                    <div className="race-hero-text">
-                      <h4 className="race-hero-name">{kidsLeader.name}</h4>
-                      <span className="race-hero-group">{kidsLeader.groupName}</span>
-                      <div className="race-lead-margin-tag">
+                    <div className="standings-hero-info">
+                      <div className="standings-hero-name-row">
+                        <span className="standings-hero-name">{kidsLeader.name}</span>
+                        <span className="standings-hero-group">{kidsLeader.groupName}</span>
+                      </div>
+                      <div className="standings-hero-lead-margin">
                         {kidsMargin > 0
                           ? `2-o'rindan ${kidsMargin} Like oldinda`
                           : "Yetakchilik uchun teng kurash"}
                       </div>
                     </div>
+
+                    <span className="standings-hero-points">
+                      {kidsLeader.monthlyScore} Like
+                    </span>
                   </div>
 
-                  {/* Top 5 Runner-ups ranking table */}
-                  <div className="race-top-list-box">
-                    <span className="top-list-title">Kids Top 5 Da'vogarlari:</span>
-                    <div className="race-rank-items-list">
+                  {/* Top 5 Runner-ups (Flat clean table rows) */}
+                  <div className="standings-list-section">
+                    <span className="standings-list-label">Kids Top 5 Da'vogarlari:</span>
+                    <div className="standings-table">
                       {kidsRanking.slice(0, 5).map((student, idx) => (
-                        <div key={student.id} className={`race-rank-item ${idx === 0 ? 'is-first' : ''}`}>
-                          <span className={`rank-index-badge rank-${idx + 1}`}>
+                        <div key={student.id} className="standings-table-row">
+                          <span className={`rank-badge ${idx === 0 ? 'rank-gold' : idx === 1 ? 'rank-silver' : idx === 2 ? 'rank-bronze' : ''}`}>
                             {idx + 1}
                           </span>
-                          <div className="rank-item-avatar">
+                          <div className="standings-row-avatar">
                             {renderAvatar(student.emoji, 28)}
                           </div>
-                          <div className="rank-item-info">
-                            <span className="rank-item-name">{student.name}</span>
-                            <span className="rank-item-group">{student.groupName}</span>
+                          <div className="standings-row-info">
+                            <span className="standings-row-name">{student.name}</span>
+                            <span className="standings-row-group">{student.groupName}</span>
                           </div>
-                          <span className="rank-item-points">
+                          <span className="standings-row-points">
                             {student.monthlyScore} Like
                           </span>
                         </div>
@@ -497,61 +517,66 @@ export default function TeacherRewardsView({
                   </div>
                 </>
               ) : (
-                <div className="race-empty-state">
+                <div className="standings-empty-state">
                   <p>Kids guruhlarida bu oyda hali Like berilmagan.</p>
                 </div>
               )}
             </div>
           )}
 
-          {/* TEENS LEADER BOX */}
+          {/* TEENS COLUMN */}
           {(activeLeaderboardTab === 'both' || activeLeaderboardTab === 'teens') && (
-            <div className="category-race-card">
-              <div className="race-card-top-head">
-                <span className="category-clean-title teens-title">Teens Yetakchisi</span>
-                <span className="race-points-counter">
-                  {teensLeader?.monthlyScore || 0} Like
-                </span>
+            <div className="standings-category-col">
+              <div className="standings-col-heading">
+                <span className="col-heading-title teens-color">Teens Yetakchisi</span>
+                <span className="col-heading-score">{teensLeader?.monthlyScore || 0} Like</span>
               </div>
 
               {teensLeader && teensLeader.monthlyScore > 0 ? (
                 <>
-                  <div className="race-hero-profile-box">
-                    <div className="race-hero-avatar-wrap">
-                      <div className="race-hero-avatar">
-                        {renderAvatar(teensLeader.emoji, 56, { priority: 'high', eager: true })}
+                  {/* Hero Leader Row (Flat, unboxed) */}
+                  <div className="standings-hero-row">
+                    <div className="standings-hero-avatar-wrap">
+                      <div className="standings-hero-avatar">
+                        {renderAvatar(teensLeader.emoji, 44, { priority: 'high', eager: true })}
                       </div>
-                      <span className="race-crown-badge">1</span>
+                      <span className="standings-hero-rank-badge">1</span>
                     </div>
 
-                    <div className="race-hero-text">
-                      <h4 className="race-hero-name">{teensLeader.name}</h4>
-                      <span className="race-hero-group">{teensLeader.groupName}</span>
-                      <div className="race-lead-margin-tag">
+                    <div className="standings-hero-info">
+                      <div className="standings-hero-name-row">
+                        <span className="standings-hero-name">{teensLeader.name}</span>
+                        <span className="standings-hero-group">{teensLeader.groupName}</span>
+                      </div>
+                      <div className="standings-hero-lead-margin">
                         {teensMargin > 0
                           ? `2-o'rindan ${teensMargin} Like oldinda`
                           : "Yetakchilik uchun teng kurash"}
                       </div>
                     </div>
+
+                    <span className="standings-hero-points">
+                      {teensLeader.monthlyScore} Like
+                    </span>
                   </div>
 
-                  {/* Top 5 Runner-ups ranking table */}
-                  <div className="race-top-list-box">
-                    <span className="top-list-title">Teens Top 5 Da'vogarlari:</span>
-                    <div className="race-rank-items-list">
+                  {/* Top 5 Runner-ups (Flat clean table rows) */}
+                  <div className="standings-list-section">
+                    <span className="standings-list-label">Teens Top 5 Da'vogarlari:</span>
+                    <div className="standings-table">
                       {teensRanking.slice(0, 5).map((student, idx) => (
-                        <div key={student.id} className={`race-rank-item ${idx === 0 ? 'is-first' : ''}`}>
-                          <span className={`rank-index-badge rank-${idx + 1}`}>
+                        <div key={student.id} className="standings-table-row">
+                          <span className={`rank-badge ${idx === 0 ? 'rank-gold' : idx === 1 ? 'rank-silver' : idx === 2 ? 'rank-bronze' : ''}`}>
                             {idx + 1}
                           </span>
-                          <div className="rank-item-avatar">
+                          <div className="standings-row-avatar">
                             {renderAvatar(student.emoji, 28)}
                           </div>
-                          <div className="rank-item-info">
-                            <span className="rank-item-name">{student.name}</span>
-                            <span className="rank-item-group">{student.groupName}</span>
+                          <div className="standings-row-info">
+                            <span className="standings-row-name">{student.name}</span>
+                            <span className="standings-row-group">{student.groupName}</span>
                           </div>
-                          <span className="rank-item-points">
+                          <span className="standings-row-points">
                             {student.monthlyScore} Like
                           </span>
                         </div>
@@ -560,7 +585,7 @@ export default function TeacherRewardsView({
                   </div>
                 </>
               ) : (
-                <div className="race-empty-state">
+                <div className="standings-empty-state">
                   <p>Teens guruhlarida bu oyda hali Like berilmagan.</p>
                 </div>
               )}
