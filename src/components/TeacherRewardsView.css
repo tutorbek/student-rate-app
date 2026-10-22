@@ -340,116 +340,13 @@
   color: var(--apple-purple);
 }
 
-.col-heading-score {
-  font-size: 0.86rem;
-  font-weight: 700;
-  color: var(--apple-blue);
-}
-
-/* Hero Row (Unboxed, direct on card surface) */
-.standings-hero-row {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  padding: 10px 4px 14px;
-  border-bottom: 1px solid var(--border-color-subtle, rgba(0, 0, 0, 0.06));
-}
-
-.standings-hero-avatar-wrap {
-  position: relative;
-  flex-shrink: 0;
-}
-
-.standings-hero-avatar {
-  width: 44px;
-  height: 44px;
-  border-radius: 12px;
-  overflow: hidden;
-  background: var(--bg-secondary);
-  border: 1px solid var(--border-color);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.standings-hero-rank-badge {
-  position: absolute;
-  bottom: -4px;
-  right: -4px;
-  width: 18px;
-  height: 18px;
-  border-radius: 50%;
-  background: var(--volt-accent, #D8F10A);
-  color: #0D0E03;
-  font-weight: 800;
-  font-size: 0.68rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border: 1.5px solid var(--bg-card);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
-}
-
-.standings-hero-info {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  min-width: 0;
-  flex: 1;
-}
-
-.standings-hero-name-row {
-  display: flex;
-  align-items: baseline;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-
-.standings-hero-name {
-  font-size: 1.02rem;
-  font-weight: 700;
-  color: var(--text-primary);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.standings-hero-group {
+.col-heading-count {
   font-size: 0.8rem;
-  color: var(--text-secondary);
-}
-
-.standings-hero-lead-margin {
-  font-size: 0.76rem;
-  font-weight: 600;
-  color: var(--apple-green);
-}
-
-.standings-hero-points {
-  font-size: 0.95rem;
-  font-weight: 700;
-  color: var(--apple-blue);
-  flex-shrink: 0;
-  font-variant-numeric: tabular-nums;
+  font-weight: 500;
+  color: var(--text-tertiary);
 }
 
 /* Standings Table Rows (Flat unboxed table) */
-.standings-list-section {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.standings-list-label {
-  font-size: 0.74rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: var(--text-tertiary);
-  margin-top: 4px;
-  margin-bottom: 2px;
-}
-
 .standings-table {
   display: flex;
   flex-direction: column;
@@ -459,7 +356,7 @@
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 8px 6px;
+  padding: 10px 8px;
   border-bottom: 1px solid var(--border-color-subtle, rgba(0, 0, 0, 0.05));
   border-radius: var(--radius-sm, 6px);
   transition: background var(--transition-fast);

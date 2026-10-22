@@ -118,18 +118,6 @@ export default function TeacherRewardsView({
   const kidsLeader = kidsRanking[0] && kidsRanking[0].monthlyScore > 0 ? kidsRanking[0] : (kidsRanking[0] || null);
   const teensLeader = teensRanking[0] && teensRanking[0].monthlyScore > 0 ? teensRanking[0] : (teensRanking[0] || null);
 
-  const kidsMargin = useMemo(() => {
-    if (!kidsLeader || kidsLeader.monthlyScore === 0) return 0;
-    const runnerUp = kidsRanking[1];
-    return kidsLeader.monthlyScore - (runnerUp ? runnerUp.monthlyScore : 0);
-  }, [kidsLeader, kidsRanking]);
-
-  const teensMargin = useMemo(() => {
-    if (!teensLeader || teensLeader.monthlyScore === 0) return 0;
-    const runnerUp = teensRanking[1];
-    return teensLeader.monthlyScore - (runnerUp ? runnerUp.monthlyScore : 0);
-  }, [teensLeader, teensRanking]);
-
   // Open modal for Adding a new gift (Single header button)
   const handleOpenAddModal = (initialCategory = 'kids') => {
     triggerHaptic('light');
@@ -454,68 +442,36 @@ export default function TeacherRewardsView({
           </div>
         </div>
 
-        {/* Flat Columns Grid - NO category-race-card boxes, NO hero profile boxes, NO rank item boxes! */}
+        {/* Flat Columns Grid - Top 5 Standings directly */}
         <div className={`standings-columns-grid ${activeLeaderboardTab === 'both' ? 'split' : 'single'}`}>
           {/* KIDS COLUMN */}
           {(activeLeaderboardTab === 'both' || activeLeaderboardTab === 'kids') && (
             <div className="standings-category-col">
               <div className="standings-col-heading">
-                <span className="col-heading-title kids-color">Kids Yetakchisi</span>
-                <span className="col-heading-score">{kidsLeader?.monthlyScore || 0} Like</span>
+                <span className="col-heading-title kids-color">Kids Top 5 Da'vogarlari</span>
+                <span className="col-heading-count">{kidsRanking.length} o'quvchi</span>
               </div>
 
-              {kidsLeader && kidsLeader.monthlyScore > 0 ? (
-                <>
-                  {/* Hero Leader Row (Flat, unboxed) */}
-                  <div className="standings-hero-row">
-                    <div className="standings-hero-avatar-wrap">
-                      <div className="standings-hero-avatar">
-                        {renderAvatar(kidsLeader.emoji, 44, { priority: 'high', eager: true })}
+              {kidsRanking.length > 0 && kidsRanking[0].monthlyScore > 0 ? (
+                <div className="standings-table">
+                  {kidsRanking.slice(0, 5).map((student, idx) => (
+                    <div key={student.id} className="standings-table-row">
+                      <span className={`rank-badge ${idx === 0 ? 'rank-gold' : idx === 1 ? 'rank-silver' : idx === 2 ? 'rank-bronze' : ''}`}>
+                        {idx + 1}
+                      </span>
+                      <div className="standings-row-avatar">
+                        {renderAvatar(student.emoji, 28)}
                       </div>
-                      <span className="standings-hero-rank-badge">1</span>
-                    </div>
-
-                    <div className="standings-hero-info">
-                      <div className="standings-hero-name-row">
-                        <span className="standings-hero-name">{kidsLeader.name}</span>
-                        <span className="standings-hero-group">{kidsLeader.groupName}</span>
+                      <div className="standings-row-info">
+                        <span className="standings-row-name">{student.name}</span>
+                        <span className="standings-row-group">{student.groupName}</span>
                       </div>
-                      <div className="standings-hero-lead-margin">
-                        {kidsMargin > 0
-                          ? `2-o'rindan ${kidsMargin} Like oldinda`
-                          : "Yetakchilik uchun teng kurash"}
-                      </div>
+                      <span className="standings-row-points">
+                        {student.monthlyScore} Like
+                      </span>
                     </div>
-
-                    <span className="standings-hero-points">
-                      {kidsLeader.monthlyScore} Like
-                    </span>
-                  </div>
-
-                  {/* Top 5 Runner-ups (Flat clean table rows) */}
-                  <div className="standings-list-section">
-                    <span className="standings-list-label">Kids Top 5 Da'vogarlari:</span>
-                    <div className="standings-table">
-                      {kidsRanking.slice(0, 5).map((student, idx) => (
-                        <div key={student.id} className="standings-table-row">
-                          <span className={`rank-badge ${idx === 0 ? 'rank-gold' : idx === 1 ? 'rank-silver' : idx === 2 ? 'rank-bronze' : ''}`}>
-                            {idx + 1}
-                          </span>
-                          <div className="standings-row-avatar">
-                            {renderAvatar(student.emoji, 28)}
-                          </div>
-                          <div className="standings-row-info">
-                            <span className="standings-row-name">{student.name}</span>
-                            <span className="standings-row-group">{student.groupName}</span>
-                          </div>
-                          <span className="standings-row-points">
-                            {student.monthlyScore} Like
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </>
+                  ))}
+                </div>
               ) : (
                 <div className="standings-empty-state">
                   <p>Kids guruhlarida bu oyda hali Like berilmagan.</p>
@@ -528,62 +484,30 @@ export default function TeacherRewardsView({
           {(activeLeaderboardTab === 'both' || activeLeaderboardTab === 'teens') && (
             <div className="standings-category-col">
               <div className="standings-col-heading">
-                <span className="col-heading-title teens-color">Teens Yetakchisi</span>
-                <span className="col-heading-score">{teensLeader?.monthlyScore || 0} Like</span>
+                <span className="col-heading-title teens-color">Teens Top 5 Da'vogarlari</span>
+                <span className="col-heading-count">{teensRanking.length} o'quvchi</span>
               </div>
 
-              {teensLeader && teensLeader.monthlyScore > 0 ? (
-                <>
-                  {/* Hero Leader Row (Flat, unboxed) */}
-                  <div className="standings-hero-row">
-                    <div className="standings-hero-avatar-wrap">
-                      <div className="standings-hero-avatar">
-                        {renderAvatar(teensLeader.emoji, 44, { priority: 'high', eager: true })}
+              {teensRanking.length > 0 && teensRanking[0].monthlyScore > 0 ? (
+                <div className="standings-table">
+                  {teensRanking.slice(0, 5).map((student, idx) => (
+                    <div key={student.id} className="standings-table-row">
+                      <span className={`rank-badge ${idx === 0 ? 'rank-gold' : idx === 1 ? 'rank-silver' : idx === 2 ? 'rank-bronze' : ''}`}>
+                        {idx + 1}
+                      </span>
+                      <div className="standings-row-avatar">
+                        {renderAvatar(student.emoji, 28)}
                       </div>
-                      <span className="standings-hero-rank-badge">1</span>
-                    </div>
-
-                    <div className="standings-hero-info">
-                      <div className="standings-hero-name-row">
-                        <span className="standings-hero-name">{teensLeader.name}</span>
-                        <span className="standings-hero-group">{teensLeader.groupName}</span>
+                      <div className="standings-row-info">
+                        <span className="standings-row-name">{student.name}</span>
+                        <span className="standings-row-group">{student.groupName}</span>
                       </div>
-                      <div className="standings-hero-lead-margin">
-                        {teensMargin > 0
-                          ? `2-o'rindan ${teensMargin} Like oldinda`
-                          : "Yetakchilik uchun teng kurash"}
-                      </div>
+                      <span className="standings-row-points">
+                        {student.monthlyScore} Like
+                      </span>
                     </div>
-
-                    <span className="standings-hero-points">
-                      {teensLeader.monthlyScore} Like
-                    </span>
-                  </div>
-
-                  {/* Top 5 Runner-ups (Flat clean table rows) */}
-                  <div className="standings-list-section">
-                    <span className="standings-list-label">Teens Top 5 Da'vogarlari:</span>
-                    <div className="standings-table">
-                      {teensRanking.slice(0, 5).map((student, idx) => (
-                        <div key={student.id} className="standings-table-row">
-                          <span className={`rank-badge ${idx === 0 ? 'rank-gold' : idx === 1 ? 'rank-silver' : idx === 2 ? 'rank-bronze' : ''}`}>
-                            {idx + 1}
-                          </span>
-                          <div className="standings-row-avatar">
-                            {renderAvatar(student.emoji, 28)}
-                          </div>
-                          <div className="standings-row-info">
-                            <span className="standings-row-name">{student.name}</span>
-                            <span className="standings-row-group">{student.groupName}</span>
-                          </div>
-                          <span className="standings-row-points">
-                            {student.monthlyScore} Like
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </>
+                  ))}
+                </div>
               ) : (
                 <div className="standings-empty-state">
                   <p>Teens guruhlarida bu oyda hali Like berilmagan.</p>
