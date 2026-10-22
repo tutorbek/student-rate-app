@@ -2638,24 +2638,26 @@ html[data-theme="dark"] .landing-root .nav-lang-item.active,
 .landing-root .cta-main {
   display: flex;
   flex-direction: column;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
-  text-align: center;
+  text-align: left;
   margin: auto 0;
   gap: clamp(1rem, 2.2vh, 1.75rem);
   position: relative;
   z-index: 2;
+  width: 100%;
+  max-width: min(840px, 62vw);
 }
 
 .landing-root .cta-headline {
   font-family: var(--d);
   font-weight: 800;
   font-size: clamp(2rem, 4.2vw, 3.4rem);
-  line-height: 1.18;
+  line-height: 1.15;
   letter-spacing: -.03em;
-  max-width: 24ch;
-  margin: 0 auto;
-  text-align: center;
+  max-width: 100%;
+  margin: 0;
+  text-align: left;
   color: var(--k);
 }
 
@@ -2677,19 +2679,23 @@ html[data-theme="dark"] .landing-root .nav-lang-item.active,
 /* Hand-drawn Directional Doodle Arrow */
 .landing-root .cta-action-wrap {
   position: relative;
-  align-self: center;
+  align-self: flex-start;
   display: flex;
   flex-direction: column;
-  align-items: center;
+  align-items: flex-start;
   gap: 0.75rem;
   margin-top: 0.5rem;
+}
+
+.landing-root .cta-action-wrap .more {
+  align-self: flex-start;
 }
 
 .landing-root .cta-btn-box {
   position: relative;
   display: inline-flex;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
 }
 
 .landing-root .cta-doodle-arrow-wrap {
@@ -2716,8 +2722,14 @@ html[data-theme="dark"] .landing-root .nav-lang-item.active,
   font-weight: 500;
   color: #64748B;
   margin: 0;
-  text-align: center;
+  text-align: left;
   letter-spacing: -0.01em;
+}
+
+@media (max-width: 900px) {
+  .landing-root .cta-main {
+    max-width: 100%;
+  }
 }
 
 @media (max-width: 640px) {
@@ -2729,13 +2741,13 @@ html[data-theme="dark"] .landing-root .nav-lang-item.active,
   }
 }
 
-/* footer: clean centered stack where copyright sits directly under social buttons */
+/* footer: clean left-aligned stack where all elements align on the same line */
 .landing-root .foot {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
+  align-items: flex-start;
+  justify-content: flex-start;
+  text-align: left;
   width: 100%;
   scroll-margin-top: var(--nav-h);
   position: relative;
@@ -2892,9 +2904,10 @@ html[data-theme="dark"] .landing-root .price-primary-btn:hover {
 .landing-root .foot-inner {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  text-align: center;
+  align-items: flex-start;
+  text-align: left;
   gap: 0.75rem;
+  width: 100%;
 }
 
 .landing-root .foot-inner .lab {
@@ -2902,6 +2915,7 @@ html[data-theme="dark"] .landing-root .price-primary-btn:hover {
   font-size: 0.75rem;
   letter-spacing: 0.06em;
   opacity: 0.65;
+  text-align: left;
 }
 
 .landing-root .foot nav {
@@ -2909,7 +2923,7 @@ html[data-theme="dark"] .landing-root .price-primary-btn:hover {
   flex-direction: row;
   flex-wrap: wrap;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
   gap: 0.8rem clamp(1.2rem, 2.5vw, 2.5rem);
   font: 700 1.05rem/1.2 var(--d);
   letter-spacing: -.02em;
@@ -2922,6 +2936,7 @@ html[data-theme="dark"] .landing-root .price-primary-btn:hover {
   white-space: nowrap;
   letter-spacing: -0.01em;
   margin-top: 0.2rem;
+  text-align: left;
 }
 
 
@@ -3123,7 +3138,8 @@ html[data-theme="dark"] .landing-root .price-primary-btn:hover {
     font-size: clamp(2.8rem, 5vw, 4.4rem);
     line-height: 1.05;
     letter-spacing: -.03em;
-    margin-left: -.03em;
+    margin-left: 0;
+    text-align: left;
   }
 
 

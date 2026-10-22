@@ -1374,12 +1374,6 @@ const GroupsList = ({
           flex-direction: column;
         }
 
-        .category-modal-card:hover {
-          border-color: rgba(0, 113, 227, 0.4);
-          background: var(--bg-card, #ffffff);
-          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
-        }
-
         .category-modal-card.selected {
           border-color: var(--apple-blue, #0171E3);
           background: rgba(0, 113, 227, 0.06);
@@ -1389,11 +1383,6 @@ const GroupsList = ({
         [data-theme="dark"] .category-modal-card {
           background: rgba(255, 255, 255, 0.04);
           border-color: rgba(255, 255, 255, 0.1);
-        }
-
-        [data-theme="dark"] .category-modal-card:hover {
-          background: rgba(255, 255, 255, 0.08);
-          border-color: rgba(138, 180, 248, 0.4);
         }
 
         [data-theme="dark"] .category-modal-card.selected {

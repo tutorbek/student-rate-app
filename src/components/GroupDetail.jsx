@@ -1755,12 +1755,6 @@ const GroupDetail = ({ group, allGroups = [], students, transactions, quickTags,
           flex-direction: column;
         }
 
-        .category-modal-card:hover {
-          border-color: rgba(0, 113, 227, 0.4);
-          background: var(--bg-card, #ffffff);
-          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
-        }
-
         .category-modal-card.selected {
           border-color: var(--apple-blue, #0171E3);
           background: rgba(0, 113, 227, 0.06);
@@ -1770,11 +1764,6 @@ const GroupDetail = ({ group, allGroups = [], students, transactions, quickTags,
         [data-theme="dark"] .category-modal-card {
           background: rgba(255, 255, 255, 0.04);
           border-color: rgba(255, 255, 255, 0.1);
-        }
-
-        [data-theme="dark"] .category-modal-card:hover {
-          background: rgba(255, 255, 255, 0.08);
-          border-color: rgba(138, 180, 248, 0.4);
         }
 
         [data-theme="dark"] .category-modal-card.selected {
@@ -2285,10 +2274,6 @@ const GroupDetail = ({ group, allGroups = [], students, transactions, quickTags,
           touch-action: manipulation;
         }
 
-        .quick-tag-card:hover {
-          background: #F5F5F7;
-        }
-
         .quick-tag-card.selected {
           background: #1D1D1F;
           color: #FFFFFF;
@@ -2714,11 +2699,6 @@ const GroupDetail = ({ group, allGroups = [], students, transactions, quickTags,
           background: #202124 !important;
           border-color: #363739 !important;
           color: #E8EAED !important;
-        }
-
-        [data-theme="dark"] .quick-tag-card:hover {
-          background: #303134 !important;
-          border-color: #5F6368 !important;
         }
 
         [data-theme="dark"] .quick-tag-card.selected {

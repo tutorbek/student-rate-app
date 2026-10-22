@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
+import { useModalDismiss } from '../../hooks/useModalDismiss';
 import { renderAvatar } from '../../utils/studentAvatars';
 import { getOrCreateDeviceId } from '../../utils/deviceId';
 import { LockIcon, XIcon, LightbulbIcon } from './StudentIcons';
@@ -54,17 +55,6 @@ export default function StudentProfileSelectView({
   const nameInputRef = useRef(null);
   const pinInputRef = useRef(null);
   const confirmPinInputRef = useRef(null);
-
-  // Keyboard navigation & Escape key dismiss
-  useEffect(() => {
-    const handleKeyDown = (e) => {
-      if (e.key === 'Escape' && selectedStudent) {
-        handleBackToList();
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [selectedStudent]);
 
   useEffect(() => {
     try {
@@ -151,6 +141,9 @@ export default function StudentProfileSelectView({
       nameInputRef.current?.focus();
     }, 100);
   };
+
+  // Keyboard navigation, virtual keyboard awareness & Escape dismiss
+  useModalDismiss(Boolean(selectedStudent), handleBackToList);
 
   // Submit PIN for existing student
   const handleVerifyPin = (codeOverride) => {
@@ -1022,11 +1015,6 @@ export default function StudentProfileSelectView({
           cursor: pointer;
           text-align: left;
           box-shadow: none;
-          transition: transform 0.12s ease, background-color 0.15s ease, border-color 0.15s ease;
-        }
-
-        .profile-student-card:hover {
-          background: var(--bg-card-hover);
         }
 
         .profile-student-avatar-box {
@@ -1140,12 +1128,6 @@ export default function StudentProfileSelectView({
           display: flex;
           align-items: center;
           justify-content: center;
-          transition: transform 0.15s ease, color 0.15s ease;
-        }
-
-        .profile-student-card:hover .profile-student-chevron {
-          color: var(--apple-blue, #0171E3);
-          transform: translateX(2px);
         }
 
         /* Debounce Typing Hint */
@@ -1276,24 +1258,55 @@ export default function StudentProfileSelectView({
           justify-content: center;
           padding: 16px;
           padding-top: max(16px, env(safe-area-inset-top, 0px));
-          padding-bottom: max(16px, env(safe-area-inset-bottom, 0px));
+          padding-bottom: max(16px, calc(env(safe-area-inset-bottom, 0px) + var(--kb-height, 0px)));
           box-sizing: border-box;
           overflow-y: auto;
+          overscroll-behavior: contain;
           -webkit-overflow-scrolling: touch;
         }
 
         .profile-pin-modal {
           width: 100%;
           max-width: 400px;
-          max-height: calc(100dvh - 32px);
+          max-height: calc(100vh - 32px - var(--kb-height, 0px));
+          max-height: calc(100dvh - 32px - var(--kb-height, 0px));
           background: var(--bg-card);
           border-radius: 24px;
           box-shadow: var(--shadow-modal, 0 20px 48px rgba(0, 0, 0, 0.45));
           border: 1px solid var(--border-color);
           overflow-y: auto;
+          overscroll-behavior: contain;
+          -webkit-overflow-scrolling: touch;
           display: flex;
           flex-direction: column;
           color: var(--text-primary);
+        }
+
+        @media (max-width: 640px) {
+          .profile-pin-overlay {
+            align-items: flex-start;
+            justify-content: flex-start;
+            padding: 12px;
+            padding-top: max(12px, env(safe-area-inset-top, 12px));
+            padding-bottom: max(16px, calc(env(safe-area-inset-bottom, 16px) + var(--kb-height, 0px)));
+          }
+
+          .profile-pin-modal {
+            max-height: calc(100vh - 24px - var(--kb-height, 0px));
+            max-height: calc(100dvh - 24px - var(--kb-height, 0px));
+            margin-top: 6px;
+            margin-bottom: auto;
+          }
+
+          .has-keyboard-open .profile-pin-overlay {
+            align-items: flex-start !important;
+            padding-top: max(8px, env(safe-area-inset-top, 8px)) !important;
+            padding-bottom: max(12px, var(--kb-height, 0px)) !important;
+          }
+
+          .has-keyboard-open .profile-pin-modal {
+            margin-top: 0 !important;
+          }
         }
 
         .profile-pin-header {

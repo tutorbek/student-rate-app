@@ -1915,11 +1915,6 @@ const ScheduleView = ({
           border-color: var(--card-border-dark, #363739) !important;
         }
 
-        .today-lesson-card:hover {
-          transform: translateY(-2px);
-          box-shadow: var(--shadow-md);
-        }
-
         .today-card-left {
           display: flex;
           align-items: center;
@@ -2288,11 +2283,6 @@ const ScheduleView = ({
           color: #5F6368 !important;
         }
 
-        .schedule-lesson-card:hover {
-          transform: translateY(-2px);
-          box-shadow: var(--shadow-md);
-        }
-
         /* Extra Lesson Card Styling */
         .schedule-lesson-card.extra-lesson-card {
           background: #FFFFFF !important;
@@ -2350,11 +2340,6 @@ const ScheduleView = ({
           background: rgba(138, 180, 248, 0.12) !important;
           color: #8AB4F8 !important;
           border-color: rgba(138, 180, 248, 0.25) !important;
-        }
-
-        .schedule-lesson-card.extra-lesson-card:hover {
-          border-color: var(--apple-blue, #0171E3) !important;
-          box-shadow: 0 4px 16px rgba(1, 113, 227, 0.2);
         }
 
         .extra-lesson-top-row {

@@ -117,7 +117,7 @@ body {
 }
 
 /* Prevent iOS Safari automatic viewport zoom on form inputs */
-@media screen and (max-width: 768px) {
+@media screen and (max-width: 900px) {
   input,
   input[type="text"],
   input[type="password"],
@@ -126,9 +126,22 @@ body {
   input[type="search"],
   input[type="tel"],
   input[type="url"],
+  input[type="month"],
+  input[type="date"],
+  input[type="time"],
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
   select,
   textarea,
-  .form-input {
+  .form-input,
+  .profile-name-input,
+  .modern-text-input,
+  .students-search-input,
+  .extra-student-search-input,
+  .calc-student-search-input,
+  .amount-large-input,
+  .time24-input-field,
+  .pin-clean-input,
+  .profile-pin-sr-input {
     font-size: 16px !important;
   }
 }
@@ -163,13 +176,6 @@ html, body, #root, * {
   border: 1px solid var(--border-color);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-sm);
-  transition: box-shadow var(--transition-fast);
-}
-
-@media (hover: hover) and (pointer: fine) {
-  .glass-card:hover {
-    box-shadow: var(--shadow-md);
-  }
 }
 
 @media (max-width: 768px) {
@@ -423,7 +429,9 @@ select:focus-visible,
 
 
 /* Modals Global Styling */
-.modal-overlay {
+.modal-overlay,
+.modal-backdrop,
+.leads-modal-overlay {
   position: fixed;
   inset: 0;
   background: rgba(0, 0, 0, 0.45);
@@ -441,10 +449,13 @@ select:focus-visible,
   justify-content: center;
 }
 
-.modal-content {
+.modal-content,
+.modal-card,
+.leads-modal-card {
   position: relative;
   width: 100%;
   max-width: 500px;
+  max-height: min(620px, calc(100vh - 48px));
   max-height: min(620px, calc(100dvh - 48px));
   height: auto;
   margin: auto;
@@ -462,9 +473,11 @@ select:focus-visible,
 }
 
 /* Small Confirmation Modals */
-.modal-content.modal-confirm {
+.modal-content.modal-confirm,
+.modal-card.delete-confirm-modal {
   height: auto;
   min-height: unset;
+  max-height: calc(100vh - 48px);
   max-height: calc(100dvh - 48px);
   max-width: 440px;
   padding: 24px 22px 20px;
@@ -474,6 +487,7 @@ select:focus-visible,
 .modal-content.modal-fixed-height,
 .modal-content.student-absent-history-modal,
 .modal-content.journal-day-modal {
+  height: min(620px, calc(100vh - 48px));
   height: min(620px, calc(100dvh - 48px));
 }
 
@@ -483,23 +497,33 @@ select:focus-visible,
 }
 
 /* Modal Internal Sections */
-.modal-header-fixed {
+.modal-header-fixed,
+.modal-header,
+.leads-modal-header,
+.cert-modal-header {
   flex-shrink: 0;
   position: relative;
   margin-bottom: 14px;
   padding-right: 36px;
+  z-index: 2;
 }
 
-.modal-body-scrollable {
+.modal-body-scrollable,
+.modal-body,
+.leads-modal-form,
+.cert-modal-body {
   flex: 1 1 auto;
   min-height: 0;
   overflow-y: auto;
   overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
   padding-right: 4px;
   margin-bottom: 8px;
 }
 
-.modal-content > form {
+.modal-content > form,
+.modal-card > form,
+.leads-modal-card > form {
   display: flex;
   flex-direction: column;
   flex: 1 1 auto;
@@ -509,10 +533,14 @@ select:focus-visible,
 
 .modal-actions-fixed,
 .modal-actions,
+.modal-footer,
 .modal-content > .modal-actions,
 .modal-content > form > .modal-actions,
+.modal-card > .modal-footer,
+.modal-card > form > .modal-footer,
 .student-list-modal-footer,
 .modal-actions-footer,
+.leads-modal-actions,
 .cert-modal-actions {
   flex-shrink: 0;
   margin-top: auto;
@@ -520,6 +548,8 @@ select:focus-visible,
   display: flex;
   gap: 10px;
   justify-content: flex-end;
+  position: relative;
+  z-index: 2;
 }
 
 /* Smooth sleek scrollbars for modal scrollable containers */
@@ -602,24 +632,76 @@ select:focus-visible,
 }
 
 @media (max-width: 900px) {
-  .modal-overlay {
+  .modal-overlay,
+  .modal-backdrop,
+  .leads-modal-overlay {
     padding: 16px;
     padding-top: max(16px, env(safe-area-inset-top, 0px));
-    padding-bottom: max(20px, env(safe-area-inset-bottom, 20px));
+    padding-bottom: max(20px, calc(env(safe-area-inset-bottom, 20px) + var(--kb-height, 0px)));
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+    touch-action: pan-y;
   }
 
-  .modal-content {
+  .modal-content,
+  .modal-card,
+  .leads-modal-card {
     max-width: 100%;
     width: 100%;
-    max-height: min(620px, calc(100dvh - 40px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 20px)));
+    max-height: min(620px, calc(100vh - 40px - var(--kb-height, 0px) - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 20px)));
+    max-height: min(620px, calc(100dvh - 40px - var(--kb-height, 0px) - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 20px)));
     border-radius: var(--radius-lg);
     padding: 20px 16px 16px;
+    margin: auto;
   }
 
-  .modal-content.modal-confirm {
+  .modal-content.modal-confirm,
+  .modal-card.delete-confirm-modal {
     height: auto;
-    max-height: calc(100dvh - 40px);
+    max-height: calc(100vh - 40px - var(--kb-height, 0px));
+    max-height: calc(100dvh - 40px - var(--kb-height, 0px));
     max-width: 440px;
+  }
+}
+
+@media (max-width: 640px) {
+  .modal-overlay,
+  .modal-backdrop,
+  .leads-modal-overlay {
+    padding: 12px;
+    padding-top: max(12px, env(safe-area-inset-top, 12px));
+    padding-bottom: max(16px, calc(env(safe-area-inset-bottom, 16px) + var(--kb-height, 0px)));
+    align-items: flex-start; /* Dock near top to avoid keyboard overlap */
+    justify-content: flex-start;
+  }
+
+  .modal-content,
+  .modal-card,
+  .leads-modal-card {
+    max-height: calc(100vh - 24px - var(--kb-height, 0px));
+    max-height: calc(100dvh - 24px - var(--kb-height, 0px));
+    margin-top: 6px;
+    margin-bottom: auto;
+  }
+
+  /* Specific style when virtual keyboard is active */
+  .has-keyboard-open .modal-overlay,
+  .has-keyboard-open .modal-backdrop,
+  .has-keyboard-open .leads-modal-overlay {
+    align-items: flex-start !important;
+    justify-content: flex-start !important;
+    padding-top: max(8px, env(safe-area-inset-top, 8px)) !important;
+    padding-bottom: max(12px, var(--kb-height, 0px)) !important;
+  }
+
+  .has-keyboard-open .modal-content,
+  .has-keyboard-open .modal-card,
+  .has-keyboard-open .leads-modal-card {
+    margin-top: 0 !important;
+    margin-bottom: auto !important;
+    max-height: calc(100vh - 16px - var(--kb-height, 0px)) !important;
+    max-height: calc(100dvh - 16px - var(--kb-height, 0px)) !important;
   }
 }
 
@@ -1213,12 +1295,6 @@ button:focus-visible, a:focus-visible, [role="button"]:focus-visible {
   background: var(--bg-card);
   border-color: var(--border-color);
   box-shadow: var(--shadow-sm);
-}
-
-@media (hover: hover) and (pointer: fine) {
-  [data-theme="dark"] .glass-card:hover {
-    box-shadow: var(--shadow-md);
-  }
 }
 
 /* Dark Buttons */
@@ -1952,10 +2028,6 @@ button:focus-visible, a:focus-visible, [role="button"]:focus-visible {
   border-color: #3C4043;
 }
 
-[data-theme="dark"] .student-card-modern:hover {
-  border-color: #5F6368;
-}
-
 [data-theme="dark"] .btn-points-action {
   background: #303134;
   border-color: #494C50;
@@ -2060,11 +2132,6 @@ button:focus-visible, a:focus-visible, [role="button"]:focus-visible {
   border-color: #3C4043;
 }
 
-[data-theme="dark"] .tag-card-modern:hover,
-[data-theme="dark"] .trash-item-card:hover {
-  background: #292A2D;
-}
-
 /* Theme Selector Cards in Settings */
 .theme-selector-grid {
   display: grid;
@@ -2088,11 +2155,6 @@ button:focus-visible, a:focus-visible, [role="button"]:focus-visible {
   display: flex;
   flex-direction: column;
   gap: 10px;
-  transition: all var(--transition-fast);
-}
-
-.theme-option-card:hover {
-  border-color: var(--apple-blue);
 }
 
 .theme-option-card.active {
@@ -2224,12 +2286,6 @@ button:focus-visible, a:focus-visible, [role="button"]:focus-visible {
   background: #FFFFFF;
   border: 1px solid rgba(0, 0, 0, 0.06);
   box-shadow: var(--shadow-sm);
-  transition: transform var(--transition-fast), box-shadow var(--transition-fast);
-}
-
-.landing-feature-card:hover {
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-md);
 }
 
 .landing-support-divider {
@@ -2468,11 +2524,7 @@ button:focus-visible, a:focus-visible, [role="button"]:focus-visible {
   .stacking-card-frame {
     transform-origin: center top;
     will-change: transform;
-    transition: transform 0.2s ease, border-color 0.2s ease;
-  }
-
-  .stacking-card-frame:hover {
-    border-color: rgba(255, 255, 255, 0.35);
+    transition: transform 0.2s ease;
   }
 }
 

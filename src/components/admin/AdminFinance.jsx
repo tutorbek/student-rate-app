@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useModalDismiss } from '../../hooks/useModalDismiss';
 
 const UZBEK_MONTHS = [
@@ -1168,15 +1169,15 @@ const AdminFinance = ({
       )}
 
       {/* MODAL 4: DEFAULT FEE CONFIG MODAL */}
-      {feeConfigModal && (
-        <div className="modal-backdrop" onClick={() => setFeeConfigModal(false)}>
+      {feeConfigModal && typeof document !== 'undefined' && createPortal(
+        <div className="modal-overlay modal-backdrop" onClick={() => setFeeConfigModal(false)}>
           <div
-            className="modal-card fee-config-modal"
+            className="modal-content modal-card fee-config-modal"
             onClick={(e) => e.stopPropagation()}
             role="dialog"
             aria-modal="true"
           >
-            <div className="modal-header">
+            <div className="modal-header modal-header-fixed">
               <h3 className="modal-title">Standart Oylik To'lovni Sozlash</h3>
               <button
                 type="button"
@@ -1188,7 +1189,7 @@ const AdminFinance = ({
               </button>
             </div>
 
-            <div className="modal-body">
+            <div className="modal-body modal-body-scrollable">
               <div className="form-group">
                 <label className="form-label">Standart to'lov summasi (so'm):</label>
                 <input
@@ -1216,7 +1217,7 @@ const AdminFinance = ({
               </div>
             </div>
 
-            <div className="modal-footer">
+            <div className="modal-footer modal-actions-fixed">
               <button
                 type="button"
                 className="btn btn-secondary scale-active"
@@ -1233,7 +1234,8 @@ const AdminFinance = ({
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* Component Styles */}
@@ -1742,11 +1744,6 @@ const AdminFinance = ({
           align-items: center;
           justify-content: space-between;
           gap: 16px;
-          transition: transform 0.15s ease, box-shadow 0.15s ease;
-        }
-
-        .finance-student-card:hover {
-          box-shadow: 0 4px 14px rgba(0, 0, 0, 0.06);
         }
 
         @media (max-width: 900px) {
@@ -2192,15 +2189,15 @@ const CheckoutModal = ({
     }
   };
 
-  return (
-    <div className="modal-backdrop" onClick={onClose}>
+  const modalContent = (
+    <div className="modal-overlay modal-backdrop" onClick={onClose}>
       <div
-        className="modal-card checkout-modal-card"
+        className="modal-content modal-card checkout-modal-card"
         onClick={(e) => e.stopPropagation()}
         role="dialog"
         aria-modal="true"
       >
-        <div className="modal-header">
+        <div className="modal-header modal-header-fixed">
           <div className="checkout-modal-title-box">
             <h3 className="modal-title">To'lov Qabul Qilish</h3>
             <span className="checkout-student-sub">
@@ -2213,7 +2210,7 @@ const CheckoutModal = ({
         </div>
 
         <form onSubmit={handleFormSubmit}>
-          <div className="modal-body checkout-modal-body">
+          <div className="modal-body modal-body-scrollable checkout-modal-body">
             {/* Student Debt Summary Banner */}
             <div className="checkout-debt-banner">
               <div className="banner-left">
@@ -2328,7 +2325,7 @@ const CheckoutModal = ({
             </div>
           </div>
 
-          <div className="modal-footer">
+          <div className="modal-footer modal-actions-fixed">
             <button
               type="button"
               className="btn btn-secondary scale-active"
@@ -2516,6 +2513,8 @@ const CheckoutModal = ({
       </div>
     </div>
   );
+
+  return typeof document !== 'undefined' ? createPortal(modalContent, document.body) : modalContent;
 };
 
 // ==========================================
@@ -2533,22 +2532,22 @@ const DeleteConfirmModal = ({ payment, onClose, onConfirm }) => {
     }
   };
 
-  return (
-    <div className="modal-backdrop" onClick={onClose}>
+  const modalContent = (
+    <div className="modal-overlay modal-backdrop" onClick={onClose}>
       <div
-        className="modal-card delete-confirm-modal"
+        className="modal-content modal-card modal-confirm delete-confirm-modal"
         onClick={(e) => e.stopPropagation()}
         role="dialog"
         aria-modal="true"
       >
-        <div className="modal-header">
+        <div className="modal-header modal-header-fixed">
           <h3 className="modal-title text-red">To'lovni Bekor Qilish</h3>
           <button type="button" className="modal-close-btn" onClick={onClose} aria-label="Yopish">
             ✕
           </button>
         </div>
 
-        <div className="modal-body">
+        <div className="modal-body modal-body-scrollable">
           <p className="modal-description">
             Ushbu to'lovni o'chirishni tasdiqlaysizmi? O'quvchining qarz balansi qayta hisoblanadi.
           </p>
@@ -2636,6 +2635,8 @@ const DeleteConfirmModal = ({ payment, onClose, onConfirm }) => {
       </div>
     </div>
   );
+
+  return typeof document !== 'undefined' ? createPortal(modalContent, document.body) : modalContent;
 };
 
 // ==========================================
@@ -2657,15 +2658,15 @@ const PhoneEditModal = ({ studentItem, onClose, onSave }) => {
     }
   };
 
-  return (
-    <div className="modal-backdrop" onClick={onClose}>
+  const modalContent = (
+    <div className="modal-overlay modal-backdrop" onClick={onClose}>
       <div
-        className="modal-card phone-edit-modal"
+        className="modal-content modal-card phone-edit-modal"
         onClick={(e) => e.stopPropagation()}
         role="dialog"
         aria-modal="true"
       >
-        <div className="modal-header">
+        <div className="modal-header modal-header-fixed">
           <h3 className="modal-title">Telefon Raqamlarini Kiritish</h3>
           <button type="button" className="modal-close-btn" onClick={onClose} aria-label="Yopish">
             ✕
@@ -2673,7 +2674,7 @@ const PhoneEditModal = ({ studentItem, onClose, onSave }) => {
         </div>
 
         <form onSubmit={handleSubmit}>
-          <div className="modal-body">
+          <div className="modal-body modal-body-scrollable">
             <p className="modal-description">
               <strong>{student.name}</strong> ({studentItem.groupName}) uchun telefon raqamlarini yangilang:
             </p>
@@ -2701,7 +2702,7 @@ const PhoneEditModal = ({ studentItem, onClose, onSave }) => {
             </div>
           </div>
 
-          <div className="modal-footer">
+          <div className="modal-footer modal-actions-fixed">
             <button
               type="button"
               className="btn btn-secondary scale-active"
@@ -2729,6 +2730,8 @@ const PhoneEditModal = ({ studentItem, onClose, onSave }) => {
       </div>
     </div>
   );
+
+  return typeof document !== 'undefined' ? createPortal(modalContent, document.body) : modalContent;
 };
 
 export default AdminFinance;

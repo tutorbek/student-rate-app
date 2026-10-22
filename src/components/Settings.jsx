@@ -1596,7 +1596,7 @@ const Settings = ({
       {showAddCertModal && typeof document !== 'undefined' && createPortal(
         <div className="sheet-backdrop animate-backdropFadeIn" onClick={() => setShowAddCertModal(false)}>
           <div className="sheet-container cert-add-dialog animate-slideUp" onClick={(e) => e.stopPropagation()}>
-            <div className="cert-modal-header">
+            <div className="cert-modal-header modal-header-fixed">
               <h3 className="cert-modal-title">Yangi sertifikat qo'shish</h3>
               <button
                 type="button"
@@ -1608,7 +1608,7 @@ const Settings = ({
               </button>
             </div>
 
-            <div className="cert-modal-body">
+            <div className="cert-modal-body modal-body-scrollable">
               {/* Image Preview & Upload */}
               <div className="cert-upload-area">
                 {certImageInput ? (
@@ -1659,7 +1659,7 @@ const Settings = ({
               </div>
             </div>
 
-            <div className="cert-modal-actions">
+            <div className="cert-modal-actions modal-actions-fixed">
               <button
                 type="button"
                 className="dialog-btn cancel"
@@ -2306,13 +2306,7 @@ const Settings = ({
           border: 1px solid rgba(0, 0, 0, 0.06);
           border-radius: 12px;
           box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
-          transition: all var(--transition-fast);
           box-sizing: border-box;
-        }
-
-        .tag-card-modern:hover {
-          border-color: rgba(0, 0, 0, 0.15);
-          box-shadow: 0 3px 8px rgba(0, 0, 0, 0.04);
         }
 
         .tag-display-row {
@@ -2818,10 +2812,6 @@ const Settings = ({
           width: 100%;
         }
 
-        .modern-profile-card:hover {
-          border-color: rgba(0, 0, 0, 0.1);
-        }
-
         .card-header-clean {
           display: flex;
           align-items: center;
@@ -3147,12 +3137,6 @@ const Settings = ({
           background: #FAFAFC;
           border: 1px solid rgba(0, 0, 0, 0.06);
           border-radius: var(--radius-md, 12px);
-          transition: border-color var(--transition-fast, 0.2s ease), transform var(--transition-fast, 0.2s ease);
-        }
-
-        .cert-edit-item-card:hover {
-          border-color: rgba(0, 0, 0, 0.15);
-          transform: translateY(-1px);
         }
 
         .cert-edit-thumbnail {
@@ -3229,13 +3213,6 @@ const Settings = ({
           border-radius: 12px;
           cursor: pointer;
           min-height: 72px;
-          transition: all 0.2s ease;
-        }
-
-        .cert-add-dashed-card:hover {
-          background: rgba(0, 113, 227, 0.04);
-          border-color: var(--apple-blue, #0171E3);
-          color: var(--apple-blue, #0171E3);
         }
 
         .cert-add-icon-circle {
@@ -3247,11 +3224,6 @@ const Settings = ({
           align-items: center;
           justify-content: center;
           color: inherit;
-        }
-
-        .cert-add-dashed-card:hover .cert-add-icon-circle {
-          background: var(--apple-blue, #0171E3);
-          color: #FFFFFF;
         }
 
         .cert-add-text {
@@ -3755,11 +3727,6 @@ const Settings = ({
           box-shadow: none;
         }
 
-        [data-theme="dark"] .tag-card-modern:hover {
-          border-color: #5F6368;
-          background: #26282B;
-        }
-
         [data-theme="dark"] .tag-name-text {
           color: #E8EAED;
         }
@@ -4026,12 +3993,6 @@ const Settings = ({
           background: #202124;
           border-color: #363739;
           color: #9AA0A6;
-        }
-
-        [data-theme="dark"] .cert-add-dashed-card:hover {
-          background: rgba(138, 180, 248, 0.08);
-          border-color: #8AB4F8;
-          color: #8AB4F8;
         }
 
         [data-theme="dark"] .cert-add-icon-circle {

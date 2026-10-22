@@ -767,7 +767,7 @@ const TeacherFinanceView = ({ groups = [], students = [], showToast = () => {} }
             onClick={(e) => e.stopPropagation()}
           >
             {/* Modal Header */}
-            <div className="calc-student-modal-header">
+            <div className="calc-student-modal-header modal-header-fixed">
               <div className="calc-student-modal-head-left">
                 <div className="calc-student-modal-group-icon avatar-circle">
                   {renderGroupIcon(selectedCalcGroup.icon, 24)}
@@ -848,7 +848,7 @@ const TeacherFinanceView = ({ groups = [], students = [], showToast = () => {} }
             )}
 
             {/* Students List Body */}
-            <div className="calc-student-modal-body">
+            <div className="calc-student-modal-body modal-body-scrollable">
               {displayedCalcStudents.length > 0 ? (
                 <div className="calc-students-list">
                   {displayedCalcStudents.map((student, idx) => (
@@ -893,7 +893,7 @@ const TeacherFinanceView = ({ groups = [], students = [], showToast = () => {} }
             </div>
 
             {/* Modal Footer */}
-            <div className="calc-student-modal-footer">
+            <div className="calc-student-modal-footer modal-actions-fixed">
               <span className="calc-modal-footer-note">
                 Jami: <strong>{selectedCalcGroup.count} ta</strong> o'quvchi
               </span>

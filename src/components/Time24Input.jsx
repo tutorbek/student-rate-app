@@ -191,6 +191,12 @@ const Time24Input = ({
           font-weight: 600;
         }
 
+        @media (max-width: 900px) {
+          .time24-input-field {
+            font-size: 16px !important;
+          }
+        }
+
         .time24-trigger-btn {
           position: absolute;
           right: 8px;

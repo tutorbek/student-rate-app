@@ -1069,11 +1069,6 @@
   border-radius: var(--radius-md, 10px);
   background: var(--bg-card);
   border: 1px solid var(--border-color-subtle);
-  transition: background 0.15s ease;
-}
-
-.calc-student-card:hover {
-  background: var(--bg-secondary);
 }
 
 .calc-student-idx {
@@ -1754,10 +1749,6 @@
 [data-theme="dark"] .calc-student-card {
   background: #202124;
   border-color: rgba(255, 255, 255, 0.08);
-}
-
-[data-theme="dark"] .calc-student-card:hover {
-  background: #28292D;
 }
 
 [data-theme="dark"] .calc-student-share-pill {

@@ -13,14 +13,7 @@
   box-sizing: border-box;
   cursor: pointer;
   position: relative;
-  transition: transform 0.15s ease, border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.02);
-}
-
-.teacher-showcase-card:hover {
-  transform: translateY(-1px);
-  border-color: rgba(0, 0, 0, 0.15);
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.04);
 }
 
 .teacher-showcase-card:active {
@@ -31,10 +24,6 @@
   background: var(--bg-card, #202124);
   border-color: rgba(255, 255, 255, 0.08);
   box-shadow: 0 1px 6px rgba(0, 0, 0, 0.2);
-}
-
-[data-theme="dark"] .teacher-showcase-card:hover {
-  border-color: rgba(255, 255, 255, 0.16);
 }
 
 .showcase-card-inner {
@@ -586,12 +575,6 @@
   border-color: rgba(255, 255, 255, 0.08);
 }
 
-.teacher-cert-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-  border-color: rgba(0, 113, 227, 0.4);
-}
-
 .cert-card-img-wrap {
   width: 100%;
   height: 84px;
@@ -625,11 +608,6 @@
   align-items: center;
   justify-content: center;
   opacity: 0;
-  transition: opacity 0.15s ease;
-}
-
-.teacher-cert-card:hover .cert-zoom-overlay {
-  opacity: 1;
 }
 
 .cert-card-caption {

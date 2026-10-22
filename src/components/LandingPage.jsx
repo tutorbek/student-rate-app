@@ -32,8 +32,21 @@ export default function LandingPage({
 
     if (!elements.length) return;
 
+    const checkActiveSection = () => {
+      const scrollY = window.pageYOffset || window.scrollY || document.documentElement.scrollTop || 0;
+      // If user has scrolled to the bottom of the page, Contact (aloqa) is always active
+      const isAtBottom = window.innerHeight + scrollY >= document.documentElement.scrollHeight - 70;
+      if (isAtBottom) {
+        setActiveNav('aloqa');
+        return true;
+      }
+      return false;
+    };
+
     const observer = new IntersectionObserver(
       (entries) => {
+        if (checkActiveSection()) return;
+
         const visibleEntries = entries.filter((entry) => entry.isIntersecting);
         if (visibleEntries.length > 0) {
           visibleEntries.sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top);
@@ -41,13 +54,24 @@ export default function LandingPage({
         }
       },
       {
-        rootMargin: '-15% 0px -65% 0px',
+        rootMargin: '-15% 0px -55% 0px',
         threshold: 0,
       }
     );
 
     elements.forEach((el) => observer.observe(el));
-    return () => observer.disconnect();
+
+    const handleScroll = () => {
+      checkActiveSection();
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    checkActiveSection();
+
+    return () => {
+      observer.disconnect();
+      window.removeEventListener('scroll', handleScroll);
+    };
   }, []);
 
   // Smooth scroll directly so section top lands flush against sticky navbar bottom
@@ -75,6 +99,12 @@ export default function LandingPage({
 
   const handleNavClick = (e, hash) => {
     e.preventDefault();
+    if (hash && hash.startsWith('#')) {
+      const id = hash.slice(1);
+      if (['imkoniyatlar', 'narx', 'savollar', 'aloqa'].includes(id)) {
+        setActiveNav(id);
+      }
+    }
     scrollToTarget(hash);
   };
 
@@ -1331,7 +1361,7 @@ export default function LandingPage({
         </section>
 
         {/* 10. FINAL CTA + FOOTER (white) */}
-        <section className="sc cta" id="boglanish" data-bg="w" data-scene="final">
+        <section className="sc cta" id="aloqa" data-bg="w" data-scene="final">
           {/* Bottom Organic Teal Wave Blob Accent (User inspired) */}
           <div className="cta-organic-blob-wrap" aria-hidden="true">
             <svg
@@ -1388,7 +1418,7 @@ export default function LandingPage({
               <p className="cta-subnote">{t('final_cta_sub')}</p>
             </div>
           </div>
-          <footer className="foot" id="aloqa">
+          <footer className="foot">
             <div className="foot-inner">
               <p className="lab">{t('foot_lab')}</p>
               <nav aria-label={t('foot_lab')}>

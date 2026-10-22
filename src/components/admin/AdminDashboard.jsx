@@ -471,12 +471,6 @@ const AdminDashboard = ({
           align-items: center;
           justify-content: space-between;
           border-radius: var(--radius-lg);
-          transition: transform var(--transition-fast), box-shadow var(--transition-fast);
-        }
-
-        .admin-stat-card:hover {
-          transform: translateY(-2px);
-          box-shadow: var(--shadow-md);
         }
 
         .admin-stat-label {

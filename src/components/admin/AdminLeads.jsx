@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import { useModalDismiss } from '../../hooks/useModalDismiss';
 import {
   LEAD_STATUSES,
@@ -809,15 +810,15 @@ const AdminLeads = ({
       </section>
 
       {/* MODAL 1: Add or Edit Lead Modal */}
-      {leadModal && (
-        <div className="leads-modal-overlay" onClick={() => !isProcessing && setLeadModal(null)}>
+      {leadModal && typeof document !== 'undefined' && createPortal(
+        <div className="leads-modal-overlay modal-overlay" onClick={() => !isProcessing && setLeadModal(null)}>
           <div
-            className="leads-modal-card glass-card"
+            className="leads-modal-card modal-content glass-card"
             onClick={(e) => e.stopPropagation()}
             role="dialog"
             aria-modal="true"
           >
-            <div className="leads-modal-header">
+            <div className="leads-modal-header modal-header-fixed">
               <div className="modal-title-box">
                 <h3 className="leads-modal-title">
                   {leadModal.mode === 'create' ? "Yangi Lid Qo'shish" : "Lidni Tahrirlash"}
@@ -833,7 +834,7 @@ const AdminLeads = ({
               </button>
             </div>
 
-            <form onSubmit={handleSaveLead} className="leads-modal-form">
+            <form onSubmit={handleSaveLead} className="leads-modal-form modal-body-scrollable">
               {/* Ismi */}
               <div className="form-group">
                 <label className="form-label">
@@ -993,7 +994,7 @@ const AdminLeads = ({
               </div>
 
               {/* Modal Actions */}
-              <div className="leads-modal-actions">
+              <div className="leads-modal-actions modal-actions-fixed">
                 <button
                   type="button"
                   className="btn btn-secondary scale-active"
@@ -1012,19 +1013,20 @@ const AdminLeads = ({
               </div>
             </form>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* MODAL 2: Convert Lead to Student Modal */}
-      {convertModal && (
-        <div className="leads-modal-overlay" onClick={() => !isProcessing && setConvertModal(null)}>
+      {convertModal && typeof document !== 'undefined' && createPortal(
+        <div className="leads-modal-overlay modal-overlay" onClick={() => !isProcessing && setConvertModal(null)}>
           <div
-            className="leads-modal-card glass-card"
+            className="leads-modal-card modal-content glass-card"
             onClick={(e) => e.stopPropagation()}
             role="dialog"
             aria-modal="true"
           >
-            <div className="leads-modal-header">
+            <div className="leads-modal-header modal-header-fixed">
               <div className="modal-title-box">
                 <h3 className="leads-modal-title">Guruhga Qabul Qilish</h3>
                 <p className="leads-modal-sub">
@@ -1041,7 +1043,7 @@ const AdminLeads = ({
               </button>
             </div>
 
-            <form onSubmit={handleExecuteConvert} className="leads-modal-form">
+            <form onSubmit={handleExecuteConvert} className="leads-modal-form modal-body-scrollable">
               {/* O'quvchi F.I.Sh */}
               <div className="form-group">
                 <label className="form-label">
@@ -1167,14 +1169,15 @@ const AdminLeads = ({
               </div>
             </form>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* MODAL 3: Delete Confirmation Modal */}
-      {deleteModal && (
-        <div className="leads-modal-overlay" onClick={() => !isProcessing && setDeleteModal(null)}>
+      {deleteModal && typeof document !== 'undefined' && createPortal(
+        <div className="leads-modal-overlay modal-overlay" onClick={() => !isProcessing && setDeleteModal(null)}>
           <div
-            className="leads-modal-card glass-card delete-confirm-card"
+            className="leads-modal-card modal-content glass-card delete-confirm-card modal-confirm"
             onClick={(e) => e.stopPropagation()}
             role="dialog"
             aria-modal="true"
@@ -1183,7 +1186,7 @@ const AdminLeads = ({
               {deleteModal.lead?.name || 'Lid'}ni o'chirishni tasdiqlaysizmi?
             </h3>
 
-            <div className="leads-modal-actions" style={{ justifyContent: 'center' }}>
+            <div className="leads-modal-actions modal-actions-fixed" style={{ justifyContent: 'center' }}>
               <button
                 type="button"
                 className="btn btn-secondary scale-active"
@@ -1202,7 +1205,8 @@ const AdminLeads = ({
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* Scoped CSS Styles for AdminLeads */}
@@ -1490,11 +1494,6 @@ const AdminLeads = ({
           padding: 1.25rem;
           border-radius: var(--radius-lg);
           border-left: 4px solid var(--border-color-card);
-          transition: transform var(--transition-fast), box-shadow var(--transition-fast);
-        }
-        .lead-item-card:hover {
-          transform: translateY(-2px);
-          box-shadow: var(--shadow-md);
         }
         .lead-item-card.status-new {
           border-left-color: var(--apple-orange, #FF9500);
@@ -1847,14 +1846,48 @@ const AdminLeads = ({
         .leads-modal-card {
           width: 100%;
           max-width: 580px;
-          max-height: 90vh;
-          overflow-y: auto;
+          max-height: min(640px, calc(100vh - 48px));
+          max-height: min(640px, calc(100dvh - 48px));
+          display: flex;
+          flex-direction: column;
+          overflow: hidden;
           background: var(--bg-card);
           border: 1px solid var(--border-color);
           border-radius: var(--radius-xl);
           padding: 1.5rem;
           box-shadow: var(--shadow-modal);
           animation: leadsScaleUp 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        @media (max-width: 640px) {
+          .leads-modal-overlay {
+            padding: 12px;
+            padding-top: max(12px, env(safe-area-inset-top, 12px));
+            padding-bottom: max(16px, calc(env(safe-area-inset-bottom, 16px) + var(--kb-height, 0px)));
+            align-items: flex-start;
+            justify-content: flex-start;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+          }
+
+          .leads-modal-card {
+            max-height: calc(100vh - 24px - var(--kb-height, 0px));
+            max-height: calc(100dvh - 24px - var(--kb-height, 0px));
+            padding: 1.25rem 1rem;
+            margin-top: 6px;
+            margin-bottom: auto;
+          }
+
+          .has-keyboard-open .leads-modal-overlay {
+            align-items: flex-start !important;
+            padding-top: max(8px, env(safe-area-inset-top, 8px)) !important;
+            padding-bottom: max(12px, var(--kb-height, 0px)) !important;
+          }
+
+          .has-keyboard-open .leads-modal-card {
+            margin-top: 0 !important;
+            max-height: calc(100vh - 16px - var(--kb-height, 0px)) !important;
+            max-height: calc(100dvh - 16px - var(--kb-height, 0px)) !important;
+          }
         }
         @keyframes leadsScaleUp {
           from { transform: scale(0.96); opacity: 0; }
