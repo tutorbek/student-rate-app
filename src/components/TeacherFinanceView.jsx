@@ -329,7 +329,8 @@ const TeacherFinanceView = ({ groups = [], students = [], showToast = () => {} }
           <section className="glass-card settings-card calc-main-card">
             <div className="card-header-flex calc-header-clean">
               <div>
-                <h3 className="card-title" style={{ margin: 0 }}>Daromad hisobi</h3>
+                <h3 className="card-title">Daromad hisobi</h3>
+                <span className="calc-header-sub">O'quvchilar va to'lovlar asosida daromad prognozi</span>
               </div>
 
               {activeStudentsCount > 0 && (
@@ -340,8 +341,12 @@ const TeacherFinanceView = ({ groups = [], students = [], showToast = () => {} }
                     setCalcStudentCount(activeStudentsCount);
                     showToast(`Faol o'quvchilar soni (${activeStudentsCount}) o'rnatildi`, 'success');
                   }}
+                  title="Tizimdagi joriy faol o'quvchilar sonini o'rnatish"
                 >
-                  Tizimdan: {activeStudentsCount}
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.3" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67" />
+                  </svg>
+                  <span>Tizimdan: <strong>{activeStudentsCount} ta</strong></span>
                 </button>
               )}
             </div>
@@ -1114,38 +1119,65 @@ const TeacherFinanceView = ({ groups = [], students = [], showToast = () => {} }
           border-color: rgba(99, 102, 241, 0.35);
         }
 
+        /* Card Header & Title Defaults */
+        .card-header-flex {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          gap: 14px;
+          margin-bottom: 16px;
+          width: 100%;
+        }
+
+        .card-title {
+          font-size: 1.08rem;
+          font-weight: 700;
+          color: var(--text-primary, #1D1D1F);
+          letter-spacing: -0.01em;
+          margin: 0;
+        }
+
         /* Minimalist Teacher Earnings Calculator */
         .calc-main-card {
           margin-bottom: 18px;
         }
 
         .calc-header-clean {
-          margin-bottom: 16px;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 20px;
+          padding-bottom: 14px;
+          border-bottom: 1px solid var(--border-color, rgba(0, 0, 0, 0.06));
         }
 
         .calc-header-sub {
-          font-size: 0.74rem;
-          color: var(--text-tertiary);
+          font-size: 0.76rem;
+          color: var(--text-tertiary, #86868B);
           display: block;
-          margin-top: 2px;
+          margin-top: 3px;
         }
 
         .calc-sync-pill {
-          padding: 6px 13px;
+          padding: 6px 14px;
           font-size: 0.78rem;
           font-weight: 600;
           border-radius: var(--radius-full, 9999px);
-          background: #F2F4F7;
-          border: 1px solid rgba(0, 0, 0, 0.08);
-          color: var(--text-primary);
+          background: rgba(0, 113, 227, 0.08);
+          border: 1px solid rgba(0, 113, 227, 0.2);
+          color: #0071E3;
           cursor: pointer;
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
           transition: all 0.15s ease;
           white-space: nowrap;
+          user-select: none;
         }
 
         .calc-sync-pill:hover {
-          background: #E4E7EC;
-          border-color: rgba(0, 0, 0, 0.15);
+          background: rgba(0, 113, 227, 0.15);
+          border-color: rgba(0, 113, 227, 0.35);
         }
 
         .calc-split-container {
@@ -1972,7 +2004,12 @@ const TeacherFinanceView = ({ groups = [], students = [], showToast = () => {} }
         }
 
         .calc-groups-head {
-          margin-bottom: 12px;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 14px;
+          padding-bottom: 12px;
+          border-bottom: 1px solid var(--border-color, rgba(0, 0, 0, 0.06));
         }
 
         .calc-groups-head-sub {
@@ -2774,14 +2811,24 @@ const TeacherFinanceView = ({ groups = [], students = [], showToast = () => {} }
 
         }
         /* Dark Mode Calculator Overrides */
-        [data-theme="dark"] .calc-sync-pill {
-          background: #202124;
-          border-color: #363739;
+        [data-theme="dark"] .card-title {
           color: #E8EAED;
         }
 
+        [data-theme="dark"] .calc-header-clean,
+        [data-theme="dark"] .calc-groups-head {
+          border-bottom-color: rgba(255, 255, 255, 0.08);
+        }
+
+        [data-theme="dark"] .calc-sync-pill {
+          background: rgba(138, 180, 248, 0.12);
+          border-color: rgba(138, 180, 248, 0.3);
+          color: #8AB4F8;
+        }
+
         [data-theme="dark"] .calc-sync-pill:hover {
-          background: #303134;
+          background: rgba(138, 180, 248, 0.2);
+          border-color: rgba(138, 180, 248, 0.45);
         }
 
         [data-theme="dark"] .calc-input-block {
