@@ -142,7 +142,6 @@ const Time24Input = ({
           className={`time24-trigger-btn ${isOpen ? 'active' : ''}`}
           onClick={() => !disabled && setIsOpen(!isOpen)}
           tabIndex={-1}
-          title="24 soatlik vaqtni tanlash"
         >
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <circle cx="12" cy="12" r="10" />

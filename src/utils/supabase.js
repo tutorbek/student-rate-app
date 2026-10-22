@@ -95,7 +95,7 @@ export const saveToSupabase = async (teacherId, data, isExplicitReset = false) =
 /**
  * Update a student's avatar in Supabase safely.
  */
-export const updateStudentAvatarInSupabase = async (teacherId, studentId, newAvatarKey, studentName = null) => {
+export const updateStudentAvatarInSupabase = async (teacherId, studentId, newAvatarKey, studentName = null, newUnlockedAvatars = null) => {
   try {
     if (!teacherId || !studentId || !newAvatarKey) return false;
 
@@ -119,10 +119,14 @@ export const updateStudentAvatarInSupabase = async (teacherId, studentId, newAva
       const matchName = studentName && (s.name || '').trim().toLowerCase() === studentName.trim().toLowerCase();
       if (matchId || matchName) {
         hasMatch = true;
-        return {
+        const updatedStudent = {
           ...s,
           emoji: newAvatarKey,
         };
+        if (Array.isArray(newUnlockedAvatars)) {
+          updatedStudent.unlockedAvatars = newUnlockedAvatars;
+        }
+        return updatedStudent;
       }
       return s;
     });
@@ -138,6 +142,82 @@ export const updateStudentAvatarInSupabase = async (teacherId, studentId, newAva
     return true;
   } catch (err) {
     console.error('[Supabase] Failed to update student avatar:', err);
+    return false;
+  }
+};
+
+/**
+ * Records an avatar unlock purchase: creates negative transaction and adds avatarKey to student.unlockedAvatars.
+ */
+export const recordStudentAvatarPurchaseInSupabase = async (
+  teacherId,
+  studentId,
+  avatarKey,
+  price,
+  avatarName = null,
+  studentName = null
+) => {
+  try {
+    if (!teacherId || !studentId || !avatarKey) return false;
+
+    const { data: row, error: fetchErr } = await supabase
+      .from('appdata')
+      .select('data')
+      .eq('teacher_id', teacherId)
+      .maybeSingle();
+
+    if (fetchErr) throw fetchErr;
+    if (!row || !row.data) return false;
+
+    const currentData = row.data;
+    const currentStudents = currentData.students || [];
+    const currentTransactions = currentData.transactions || [];
+
+    const targetIdStr = String(studentId);
+    let hasMatch = false;
+
+    const updatedStudents = currentStudents.map((s) => {
+      const matchId = String(s.id) === targetIdStr;
+      const matchName = studentName && (s.name || '').trim().toLowerCase() === studentName.trim().toLowerCase();
+      if (matchId || matchName) {
+        hasMatch = true;
+        const prevUnlocked = Array.isArray(s.unlockedAvatars) ? s.unlockedAvatars : [];
+        const nextUnlocked = prevUnlocked.includes(avatarKey) ? prevUnlocked : [...prevUnlocked, avatarKey];
+        return {
+          ...s,
+          emoji: avatarKey,
+          unlockedAvatars: nextUnlocked,
+        };
+      }
+      return s;
+    });
+
+    if (!hasMatch) return false;
+
+    const newTx = {
+      id: Math.random().toString(36).substring(2, 11),
+      studentId: targetIdStr,
+      amount: -Math.abs(Number(price) || 0),
+      comment: `Avatar ochildi: ${avatarName || 'Yangi avatar'}`,
+      timestamp: new Date().toISOString(),
+    };
+
+    const updatedTransactions = [...currentTransactions, newTx];
+
+    const updatedData = {
+      ...currentData,
+      students: updatedStudents,
+      transactions: updatedTransactions,
+    };
+
+    const { error: upsertErr } = await supabase
+      .from('appdata')
+      .upsert({ teacher_id: teacherId, data: updatedData });
+
+    if (upsertErr) throw upsertErr;
+    return { success: true, newTx };
+  } catch (err) {
+    console.error('[Supabase] Failed to record student avatar purchase:', err);
     return false;
   }
 };
@@ -411,27 +491,36 @@ export const verifyGroupPassword = async (password) => {
   const cleanPassword = password.trim().toLowerCase();
 
   try {
-    // 1. Look up in group_passwords
-    const { data: row, error } = await supabase
+    const timeoutPromise = (ms) =>
+      new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('Supabase request timed out')), ms)
+      );
+
+    // 1. Look up in group_passwords (fast single-row index query with 3.5s timeout)
+    const queryGroup = supabase
       .from('group_passwords')
-      .select('*')
+      .select('password, teacher_id, group_id')
       .eq('password', cleanPassword)
       .maybeSingle();
+
+    const { data: row, error } = await Promise.race([queryGroup, timeoutPromise(3500)]);
 
     if (error || !row) {
       return null; // Not found in registry
     }
 
-    // 2. Fetch the corresponding teacher's appdata
-    const { data: teacherRow, error: tErr } = await supabase
+    // 2. Fetch the corresponding teacher's appdata (with 4s timeout)
+    const queryTeacher = supabase
       .from('appdata')
       .select('data')
       .eq('teacher_id', row.teacher_id)
       .maybeSingle();
 
+    const { data: teacherRow, error: tErr } = await Promise.race([queryTeacher, timeoutPromise(4000)]);
+
     if (tErr || !teacherRow || !teacherRow.data) {
-      // Teacher row missing - purge orphaned password
-      await deregisterGroupPassword(cleanPassword);
+      // Teacher row missing - purge orphaned password in background
+      deregisterGroupPassword(cleanPassword).catch(() => {});
       return null;
     }
 
@@ -441,8 +530,8 @@ export const verifyGroupPassword = async (password) => {
     );
 
     if (!matchedGroup) {
-      // Group does not exist or has been deleted - purge orphaned password
-      await deregisterGroupPassword(cleanPassword);
+      // Group does not exist or has been deleted - purge orphaned password in background
+      deregisterGroupPassword(cleanPassword).catch(() => {});
       return null;
     }
 
@@ -450,7 +539,8 @@ export const verifyGroupPassword = async (password) => {
       teacherId: row.teacher_id,
       groupId: row.group_id,
       groupName: matchedGroup.name || '',
-      group: matchedGroup
+      group: matchedGroup,
+      teacherData: teacherRow.data
     };
   } catch (err) {
     console.error('[Supabase] Failed to verify group password:', err);
@@ -557,6 +647,7 @@ export const loadAllTeachersFromSupabase = async (teacherIds = ['teacher1', 'tea
         teacherProfile: null,
         leads: [],
         extraLessons: [],
+        rewards: { kids: null, teens: null },
         updatedAt: null
       };
     });
@@ -574,6 +665,7 @@ export const loadAllTeachersFromSupabase = async (teacherIds = ['teacher1', 'tea
             teacherProfile: row.data.teacherProfile || null,
             leads: row.data.leads || [],
             extraLessons: row.data.extraLessons || [],
+            rewards: row.data.rewards || { kids: null, teens: null },
             updatedAt: row.updated_at || null
           };
         }

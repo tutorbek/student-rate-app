@@ -291,7 +291,7 @@ const GroupDetail = ({ group, allGroups = [], students, transactions, quickTags,
     setEditStudentName('');
     setEditStudentPhone('');
     setEditStudentParentPhone('');
-    setEditStudentEmoji('🚀');
+    setEditStudentEmoji(AVATAR_GALLERY_IMAGES[0].path);
     setEditStudentColor(COLOR_OPTIONS[0].value);
     if (isMoved && targetGroup) {
       showToast(`${editStudentName.trim()} muvaffaqiyatli "${targetGroup.name}" guruhiga ko'chirildi!`, "success");
@@ -384,7 +384,6 @@ const GroupDetail = ({ group, allGroups = [], students, transactions, quickTags,
                     cursor: onUpdateGroup ? 'pointer' : 'default'
                   }}
                   onClick={onUpdateGroup ? handleOpenCategoryModal : undefined}
-                  title={onUpdateGroup ? "Guruh toifasini o'zgartirish uchun bosing" : undefined}
                 >
                   {getGroupCategory(group) === 'kids' ? 'Kids' : 'Teens'}
                 </span>
@@ -507,7 +506,6 @@ const GroupDetail = ({ group, allGroups = [], students, transactions, quickTags,
                 type="button"
                 className="student-search-clear-btn scale-active"
                 onClick={() => setStudentSearchQuery('')}
-                title="Qidiruvni tozalash"
                 aria-label="Qidiruvni tozalash"
               >
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round">
@@ -545,11 +543,11 @@ const GroupDetail = ({ group, allGroups = [], students, transactions, quickTags,
                       <span className="score-num">{student.totalScore >= 0 ? `+${student.totalScore}` : student.totalScore}</span>
                       <span className="score-label">Like</span>
                       {student.pin ? (
-                        <span className="student-device-bound-pill" title="4 xonali PIN o'rnatilgan">
+                        <span className="student-device-bound-pill">
                           🔒 PIN faol
                         </span>
                       ) : (
-                        <span className="student-device-unbound-pill" title="PIN hali o'rnatilmagan" style={{ fontSize: '0.68rem', padding: '1px 6px', borderRadius: '6px', background: 'rgba(0,0,0,0.05)', color: 'var(--text-tertiary)' }}>
+                        <span className="student-device-unbound-pill" style={{ fontSize: '0.68rem', padding: '1px 6px', borderRadius: '6px', background: 'rgba(0,0,0,0.05)', color: 'var(--text-tertiary)' }}>
                           🔓 PIN yo'q
                         </span>
                       )}
@@ -560,7 +558,6 @@ const GroupDetail = ({ group, allGroups = [], students, transactions, quickTags,
                 <div className="student-item-manage-btns">
                   <button 
                     className="btn btn-secondary scale-active btn-sm btn-icon-only history-btn" 
-                    title="Tarix / Profil"
                     onClick={() => setProfileStudent(student)}
                   >
                     <IconHistory size={15} />
@@ -568,7 +565,6 @@ const GroupDetail = ({ group, allGroups = [], students, transactions, quickTags,
                   {userRole === 'teacher' && (
                     <button 
                       className="btn btn-secondary scale-active btn-sm btn-icon-only transfer-btn" 
-                      title="Guruhga ko'chirish"
                       onClick={() => {
                         setTransferringStudent(student);
                         setTargetGroupId(otherGroups.length > 0 ? otherGroups[0].id : '');
@@ -584,7 +580,6 @@ const GroupDetail = ({ group, allGroups = [], students, transactions, quickTags,
                   )}
                   <button 
                     className="btn btn-secondary scale-active btn-sm btn-icon-only" 
-                    title="Tahrirlash"
                     onClick={() => {
                       setEditingStudent(student);
                       setEditStudentName(student.name);
@@ -611,7 +606,6 @@ const GroupDetail = ({ group, allGroups = [], students, transactions, quickTags,
                   </button>
                   <button 
                     className="btn btn-danger scale-active btn-sm btn-icon-only" 
-                    title="O'chirish"
                     onClick={() => setConfirmDeleteId(student.id)}
                   >
                     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
@@ -710,7 +704,7 @@ const GroupDetail = ({ group, allGroups = [], students, transactions, quickTags,
 
                   {avatarTab === 'gallery' && (
                     <div className="avatar-gallery-picker-grid">
-                      {AVATAR_GALLERY_IMAGES.map((img, idx) => {
+                      {AVATAR_GALLERY_IMAGES.slice(0, 10).map((img, idx) => {
                         const isSelected = selectedEmoji === img.path || selectedEmoji === img.cdnPath || (selectedEmoji && selectedEmoji.includes(img.name));
                         return (
                           <button
@@ -932,7 +926,6 @@ const GroupDetail = ({ group, allGroups = [], students, transactions, quickTags,
                           key={idx}
                           type="button"
                           className={`quick-tag-card scale-active ${isSelected ? 'selected' : ''}`}
-                          title={`${tagObj.text} (${tagObj.points >= 0 ? '+' : ''}${tagObj.points} Like)`}
                           onClick={() => {
                             setScoreAmount(String(tagObj.points));
                             setCustomComment(tagObj.text);
@@ -1113,7 +1106,6 @@ const GroupDetail = ({ group, allGroups = [], students, transactions, quickTags,
                     onClick={() => {
                       setPinResetTarget({ id: profileStudent.id, name: profileStudent.name });
                     }}
-                    title="PIN-kodni bekor qilish"
                   >
                     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
                       <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
@@ -1184,7 +1176,13 @@ const GroupDetail = ({ group, allGroups = [], students, transactions, quickTags,
 
                   {editAvatarTab === 'gallery' && (
                     <div className="avatar-gallery-picker-grid">
-                      {AVATAR_GALLERY_IMAGES.map((img, idx) => {
+                      {AVATAR_GALLERY_IMAGES.filter((img, idx) => {
+                        if (idx < 10) return true;
+                        if (editingStudent?.unlockedAvatars && Array.isArray(editingStudent.unlockedAvatars)) {
+                          return editingStudent.unlockedAvatars.includes(img.path) || editingStudent.unlockedAvatars.includes(img.cdnPath);
+                        }
+                        return false;
+                      }).map((img, idx) => {
                         const isSelected = editStudentEmoji === img.path || editStudentEmoji === img.cdnPath || (editStudentEmoji && editStudentEmoji.includes(img.name));
                         return (
                           <button
@@ -1356,7 +1354,6 @@ const GroupDetail = ({ group, allGroups = [], students, transactions, quickTags,
                             onClick={() => {
                               setPinResetTarget({ id: editingStudent.id, name: editingStudent.name });
                             }}
-                            title="PIN-kodni bekor qilish va begona qurilmalarni chiqarish"
                           >
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
                               <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
@@ -1868,7 +1865,8 @@ const GroupDetail = ({ group, allGroups = [], students, transactions, quickTags,
 
         .student-search-input-box:focus-within {
           border-color: var(--apple-blue);
-          box-shadow: 0 0 0 3px rgba(0, 113, 227, 0.14), var(--shadow-sm);
+          box-shadow: none !important;
+          outline: none !important;
         }
 
         .student-search-icon {
@@ -2578,7 +2576,8 @@ const GroupDetail = ({ group, allGroups = [], students, transactions, quickTags,
 
         [data-theme="dark"] .student-search-input-box:focus-within {
           border-color: #8AB4F8;
-          box-shadow: 0 0 0 3px rgba(138, 180, 248, 0.18);
+          box-shadow: none !important;
+          outline: none !important;
         }
 
         [data-theme="dark"] .student-search-input {

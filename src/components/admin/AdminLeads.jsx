@@ -358,7 +358,6 @@ const AdminLeads = ({
             className="btn btn-secondary btn-sm scale-active leads-refresh-btn"
             onClick={onRefresh}
             disabled={isSyncing}
-            title="Ma'lumotlarni yangilash"
           >
             {isSyncing ? "Yuklanmoqda..." : "Yangilash"}
           </button>
@@ -482,7 +481,6 @@ const AdminLeads = ({
                 type="button"
                 className="leads-clear-search-btn"
                 onClick={() => setSearchQuery('')}
-                title="Tozalash"
               >
                 ✕
               </button>
@@ -643,7 +641,6 @@ const AdminLeads = ({
                           <a
                             href={`tel:${getDialablePhone(lead.parentPhone)}`}
                             className="phone-number phone-link"
-                            title="Ota-onasiga qo'ng'iroq qilish"
                           >
                             {formatDisplayPhone(lead.parentPhone)}
                           </a>
@@ -657,7 +654,6 @@ const AdminLeads = ({
                           <a
                             href={`tel:${getDialablePhone(lead.phone)}`}
                             className="phone-number phone-link"
-                            title="O'quvchiga qo'ng'iroq qilish"
                           >
                             {formatDisplayPhone(lead.phone)}
                           </a>
@@ -720,7 +716,6 @@ const AdminLeads = ({
                               type="button"
                               className="btn-view-group-link scale-active"
                               onClick={() => setActiveTab('groups')}
-                              title="Guruhlar bo'limiga o'tish"
                             >
                               Guruh
                             </button>
@@ -738,7 +733,6 @@ const AdminLeads = ({
                         className="quick-status-select"
                         value={lead.status || 'new'}
                         onChange={(e) => handleQuickStatusChange(lead, e.target.value)}
-                        title="Statusni o'zgartirish"
                       >
                         <option value="new">Yangi ariza</option>
                         <option value="contacted">Aloqada</option>
@@ -755,7 +749,6 @@ const AdminLeads = ({
                         <a
                           href={`tel:${dialablePhone}`}
                           className="btn-lead-action btn-call scale-active"
-                          title="Telefon qilish"
                         >
                           Qo'ng'iroq
                         </a>
@@ -763,7 +756,6 @@ const AdminLeads = ({
                         <button
                           type="button"
                           className="btn-lead-action btn-call disabled"
-                          title="Telefon raqami kiritilmagan"
                           disabled
                         >
                           Qo'ng'iroq
@@ -775,7 +767,6 @@ const AdminLeads = ({
                         type="button"
                         className="btn-lead-action btn-telegram scale-active"
                         onClick={() => handleOneClickTelegram(lead)}
-                        title="Telegram orqali xabar yuborish"
                       >
                         Telegram
                       </button>
@@ -786,7 +777,6 @@ const AdminLeads = ({
                           type="button"
                           className="btn-lead-action btn-convert scale-active"
                           onClick={() => handleOpenConvertModal(lead)}
-                          title="Guruhga qabul qilish"
                         >
                           Guruhga qabul
                         </button>
@@ -797,7 +787,6 @@ const AdminLeads = ({
                         type="button"
                         className="btn-lead-action btn-secondary scale-active"
                         onClick={() => handleOpenEditModal(lead)}
-                        title="Tahrirlash"
                       >
                         Tahrirlash
                       </button>
@@ -807,7 +796,6 @@ const AdminLeads = ({
                         type="button"
                         className="btn-lead-action btn-danger scale-active"
                         onClick={() => setDeleteModal({ lead })}
-                        title="O'chirish"
                       >
                         O'chirish
                       </button>
@@ -1153,7 +1141,6 @@ const AdminLeads = ({
                       className={`color-swatch-circle scale-active ${convertColor === c.value ? 'selected' : ''}`}
                       style={{ backgroundColor: c.value }}
                       onClick={() => setConvertColor(c.value)}
-                      title={c.name}
                     />
                   ))}
                 </div>

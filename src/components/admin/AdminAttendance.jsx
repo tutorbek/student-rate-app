@@ -274,7 +274,6 @@ const AdminAttendance = ({
               type="button"
               className="btn btn-secondary btn-sm scale-active admin-btn-action"
               onClick={handleExportCSV}
-              title="Tanlangan oylik davomatni Excel (.csv) formatida yuklab olish"
             >
               <span>Excel (.csv)</span>
             </button>
@@ -283,7 +282,6 @@ const AdminAttendance = ({
               type="button"
               className="btn btn-secondary btn-sm scale-active admin-btn-action"
               onClick={() => window.print()}
-              title="Davomat hisobotini chop etish yoki PDF qilib saqlash"
             >
               <span>Chop etish / PDF</span>
             </button>

@@ -1,5 +1,5 @@
 import { getGroupPasswordsRegistry } from './supabase.js';
-import { normalizeIconUrl } from './avatarGallery.js';
+import { normalizeIconUrl, sanitizeStudentAvatar, getDefaultFreeAvatar } from './avatarGallery.js';
 
 const UZBEK_WORDS = [
   'olma', 'anor', 'uzum', 'anjir', 'orik', 'shaftoli', 'behi', 'tarvuz', 'qovun', 'bodring',
@@ -201,11 +201,12 @@ export const deleteGroup = (groups, students, transactions, groupId) => {
 // --- Students API ---
 export const addStudent = (students, name, groupId, emoji, color, phone = '', parentPhone = '') => {
   const now = new Date().toISOString();
+  const id = generateId();
   const newStudent = {
-    id: generateId(),
+    id,
     name: name.trim(),
     groupId,
-    emoji: normalizeIconUrl(emoji || 'lion'),
+    emoji: sanitizeStudentAvatar({ id, emoji: emoji || getDefaultFreeAvatar(id) }),
     color: color || '#007AFF', // Default Apple blue
     phone: phone ? String(phone).trim() : '',
     parentPhone: parentPhone ? String(parentPhone).trim() : '',

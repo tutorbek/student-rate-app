@@ -136,12 +136,12 @@ const StudentAttendanceRow = React.memo(({ student, status, wasAbsentLastLesson,
             </span>
           )}
           {student.isTransferred && (
-            <span className="prev-absent-tag transferred-tag" title="O'quvchi boshqa guruhga ko'chirilgan">
+            <span className="prev-absent-tag transferred-tag">
               Ko'chirilgan
             </span>
           )}
           {isFutureJoin && (
-            <span className="prev-absent-tag future-join-tag" title="Talaba ushbu sanadan keyin guruhga qo'shilgan">
+            <span className="prev-absent-tag future-join-tag">
               Keyin qo'shilgan
             </span>
           )}
@@ -153,7 +153,6 @@ const StudentAttendanceRow = React.memo(({ student, status, wasAbsentLastLesson,
           disabled={isFutureDate}
           className={`att-status-btn present ${status === 'present' ? 'active' : ''}`}
           onClick={() => onMarkStatus(student.id, 'present')}
-          title={isFutureDate ? "Bo'lajak sana uchun davomat belgilab bo'lmaydi" : status === 'present' ? "Bekor qilish (neytral holat)" : "Keldi deb belgilash"}
         >
           Keldi
         </button>
@@ -162,7 +161,6 @@ const StudentAttendanceRow = React.memo(({ student, status, wasAbsentLastLesson,
           disabled={isFutureDate}
           className={`att-status-btn excused ${status === 'excused' ? 'active' : ''}`}
           onClick={() => onMarkStatus(student.id, 'excused')}
-          title={isFutureDate ? "Bo'lajak sana uchun davomat belgilab bo'lmaydi" : status === 'excused' ? "Bekor qilish (neytral holat)" : "Sababli deb belgilash"}
         >
           Sababli
         </button>
@@ -171,7 +169,6 @@ const StudentAttendanceRow = React.memo(({ student, status, wasAbsentLastLesson,
           disabled={isFutureDate}
           className={`att-status-btn absent ${status === 'absent' ? 'active' : ''}`}
           onClick={() => onMarkStatus(student.id, 'absent')}
-          title={isFutureDate ? "Bo'lajak sana uchun davomat belgilab bo'lmaydi" : status === 'absent' ? "Bekor qilish (neytral holat)" : "Kelmadi deb belgilash"}
         >
           Kelmadi
         </button>
@@ -180,7 +177,6 @@ const StudentAttendanceRow = React.memo(({ student, status, wasAbsentLastLesson,
           disabled={isFutureDate}
           className={`att-status-btn late ${status === 'late' ? 'active' : ''}`}
           onClick={() => onMarkStatus(student.id, 'late')}
-          title={isFutureDate ? "Bo'lajak sana uchun davomat belgilab bo'lmaydi" : status === 'late' ? "Bekor qilish (neytral holat)" : "Kechikdi deb belgilash"}
         >
           Kechikdi
         </button>
@@ -192,7 +188,7 @@ const StudentAttendanceRow = React.memo(({ student, status, wasAbsentLastLesson,
 const Attendance = ({ groups = [], students = [], attendance = [], onSaveAttendance, onDeleteAttendance, showToast, extraLessons = [] }) => {
   const [activeTab, setActiveTab] = useState('mark'); // 'mark' | 'journal' | 'stats'
   const [selectedGroupId, setSelectedGroupId] = useState(() => {
-    const activeLesson = getCurrentActiveLessonGroup(groups, new Date(), 5, extraLessons);
+    const activeLesson = getCurrentActiveLessonGroup(groups, new Date(), 3, extraLessons);
     if (activeLesson) return activeLesson.id;
     return groups.length > 0 ? groups[0].id : '';
   });
@@ -225,7 +221,7 @@ const Attendance = ({ groups = [], students = [], attendance = [], onSaveAttenda
 
   useEffect(() => {
     if (groups.length > 0 && (!selectedGroupId || !groups.find((g) => g.id === selectedGroupId))) {
-      const activeLesson = getCurrentActiveLessonGroup(groups, new Date(), 5, extraLessons);
+      const activeLesson = getCurrentActiveLessonGroup(groups, new Date(), 3, extraLessons);
       setSelectedGroupId(activeLesson ? activeLesson.id : groups[0].id);
     }
   }, [groups, selectedGroupId, extraLessons]);
@@ -1015,9 +1011,8 @@ const Attendance = ({ groups = [], students = [], attendance = [], onSaveAttenda
                 <button type="button" className="filter-select-btn" onClick={() => setIsGroupDropdownOpen(!isGroupDropdownOpen)}>
                   <span style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
                     {selectedGroup ? selectedGroup.name : 'Guruhni tanlang'}
-                    {selectedGroup && isGroupLessonActive(selectedGroup) && (
-                      <span className="current-lesson-live-dot" style={{ fontSize: '0.68rem', padding: '1px 6px' }}>
-                        <span className="live-dot-circle" />
+                    {selectedGroup && isGroupLessonActive(selectedGroup, undefined, 3, extraLessons, undefined, groups) && (
+                      <span className="current-lesson-live-dot" style={{ fontSize: '0.68rem', padding: '1px 8px' }}>
                         Hozir darsda
                       </span>
                     )}
@@ -1029,7 +1024,7 @@ const Attendance = ({ groups = [], students = [], attendance = [], onSaveAttenda
                     <div className="custom-select-overlay" onClick={() => setIsGroupDropdownOpen(false)} />
                     <div className="custom-dropdown-list glass">
                       {groups.map((g) => {
-                        const isLive = isGroupLessonActive(g);
+                        const isLive = isGroupLessonActive(g, undefined, 3, extraLessons, undefined, groups);
                         return (
                           <div
                             key={g.id}
@@ -1044,8 +1039,7 @@ const Attendance = ({ groups = [], students = [], attendance = [], onSaveAttenda
                           >
                             <span>{g.name}</span>
                             {isLive && (
-                              <span className="current-lesson-live-dot" style={{ fontSize: '0.68rem', padding: '1px 6px' }}>
-                                <span className="live-dot-circle" />
+                              <span className="current-lesson-live-dot" style={{ fontSize: '0.68rem', padding: '1px 8px' }}>
                                 Hozir darsda
                               </span>
                             )}
@@ -1104,7 +1098,6 @@ const Attendance = ({ groups = [], students = [], attendance = [], onSaveAttenda
                               type="button"
                               className={`cal-day-cell ${isSunday ? 'day-sunday' : ''} ${!d.isCurrentMonth ? 'other-month' : ''} ${isFuture ? 'future-day' : ''} ${fullDateStr === selectedDate ? 'selected' : ''}`}
                               onClick={() => handleSelectCalendarDate(d)}
-                              title={isFuture ? "Kelgusi sana" : undefined}
                             >
                               {d.day}
                             </button>
@@ -1197,7 +1190,7 @@ const Attendance = ({ groups = [], students = [], attendance = [], onSaveAttenda
             <div className="quick-actions-main-row">
               <div className="quick-actions-summary">
                 {hasUnsavedChanges && (
-                  <span className="summary-pill pill-unsaved" title="O'zgarishlar kiritildi, saqlash tugmasini bosing">
+                  <span className="summary-pill pill-unsaved">
                     ● Saqlanmagan
                   </span>
                 )}
@@ -1219,13 +1212,6 @@ const Attendance = ({ groups = [], students = [], attendance = [], onSaveAttenda
                   className={`btn scale-active btn-sm mark-all-btn ${areAllMarkedPresent ? 'active' : 'btn-secondary'}`}
                   onClick={handleMarkAll}
                   disabled={isFutureDate}
-                  title={
-                    isFutureDate
-                      ? "Bo'lajak sana uchun davomat belgilab bo'lmaydi"
-                      : areAllMarkedPresent
-                      ? "Barcha belgilashni bekor qilish (belgilanmagan holatga qaytarish)"
-                      : "Barcha o'quvchilarni 'Keldi' deb belgilash"
-                  }
                 >
                   <IconCheck size={14} strokeWidth={2.6} /> Barchasini belgilash
                 </button>
@@ -1234,7 +1220,6 @@ const Attendance = ({ groups = [], students = [], attendance = [], onSaveAttenda
                     type="button"
                     className="btn btn-danger scale-active btn-sm quick-clear-btn"
                     onClick={handleClearCurrentDate}
-                    title="Ushbu kundagi davomatni tozalash"
                   >
                     <IconTrash size={14} /> Tozalash
                   </button>
@@ -1244,7 +1229,6 @@ const Attendance = ({ groups = [], students = [], attendance = [], onSaveAttenda
                   className={`btn scale-active btn-sm save-att-btn ${hasUnsavedChanges ? 'has-changes btn-primary' : 'btn-secondary'}`}
                   onClick={handleSaveExplicitly}
                   disabled={isFutureDate || (!hasUnsavedChanges && !isDateExplicitlyMarked)}
-                  title={isFutureDate ? "Bo'lajak sana uchun davomat saqlab bo'lmaydi" : hasUnsavedChanges ? "O'zgarishlarni bazaga saqlash" : (isDateExplicitlyMarked ? "O'zgarishlar saqlangan" : "Saqlash uchun davomat belgilang")}
                 >
                   <IconCheck size={14} strokeWidth={2.8} /> {hasUnsavedChanges ? "Saqlash" : (isDateExplicitlyMarked ? "Saqlangan" : "Saqlash")}
                 </button>
@@ -1312,13 +1296,11 @@ const Attendance = ({ groups = [], students = [], attendance = [], onSaveAttenda
                     type="button"
                     className="toolbar-group-selector-btn scale-active"
                     onClick={() => setIsJournalGroupDropdownOpen((prev) => !prev)}
-                    title="Guruhni almashtirish"
                   >
                     <span className="toolbar-group-name" style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
                       {selectedGroup ? selectedGroup.name : 'Guruhni tanlang'}
-                      {selectedGroup && isGroupLessonActive(selectedGroup) && (
-                        <span className="current-lesson-live-dot" style={{ fontSize: '0.68rem', padding: '1px 6px' }}>
-                          <span className="live-dot-circle" />
+                      {selectedGroup && isGroupLessonActive(selectedGroup, undefined, 3, extraLessons, undefined, groups) && (
+                        <span className="current-lesson-live-dot" style={{ fontSize: '0.68rem', padding: '1px 8px' }}>
                           Hozir darsda
                         </span>
                       )}
@@ -1330,7 +1312,7 @@ const Attendance = ({ groups = [], students = [], attendance = [], onSaveAttenda
                       <div className="custom-select-overlay" onClick={() => setIsJournalGroupDropdownOpen(false)} />
                       <div className="custom-dropdown-list glass">
                         {groups.map((g) => {
-                          const isLive = isGroupLessonActive(g);
+                          const isLive = isGroupLessonActive(g, undefined, 3, extraLessons, undefined, groups);
                           return (
                             <div
                               key={g.id}
@@ -1343,8 +1325,7 @@ const Attendance = ({ groups = [], students = [], attendance = [], onSaveAttenda
                             >
                               <span>{g.name}</span>
                               {isLive && (
-                                <span className="current-lesson-live-dot" style={{ fontSize: '0.68rem', padding: '1px 6px' }}>
-                                  <span className="live-dot-circle" />
+                                <span className="current-lesson-live-dot" style={{ fontSize: '0.68rem', padding: '1px 8px' }}>
                                   Hozir darsda
                                 </span>
                               )}
@@ -1364,7 +1345,6 @@ const Attendance = ({ groups = [], students = [], attendance = [], onSaveAttenda
                   type="button" 
                   className="month-nav-arrow-btn scale-active" 
                   onClick={handleJournalPrevMonth}
-                  title="Oldingi oy"
                 >
                   <IconChevronLeft size={16} />
                 </button>
@@ -1377,7 +1357,6 @@ const Attendance = ({ groups = [], students = [], attendance = [], onSaveAttenda
                       setMonthPickerYear(journalYear);
                       setIsUnifiedMonthPickerOpen((prev) => !prev);
                     }}
-                    title="Oyni tanlash"
                   >
                     <IconCalendar size={14} />
                     <span className="month-picker-label">{UZBEK_MONTHS[journalMonth]} {journalYear}</span>
@@ -1416,7 +1395,7 @@ const Attendance = ({ groups = [], students = [], attendance = [], onSaveAttenda
                                 }}
                               >
                                 <span className="month-cell-name">{mName.slice(0, 3)}</span>
-                                {hasData && <span className="month-has-data-dot" title="Dars davomati mavjud" />}
+                                {hasData && <span className="month-has-data-dot" />}
                               </button>
                             );
                           })}
@@ -1443,7 +1422,6 @@ const Attendance = ({ groups = [], students = [], attendance = [], onSaveAttenda
                   type="button" 
                   className="month-nav-arrow-btn scale-active" 
                   onClick={handleJournalNextMonth}
-                  title="Keyingi oy"
                 >
                   <IconChevronRight size={16} />
                 </button>
@@ -1454,7 +1432,6 @@ const Attendance = ({ groups = [], students = [], attendance = [], onSaveAttenda
                   type="button"
                   className="btn-today-pill scale-active"
                   onClick={handleSelectCurrentMonth}
-                  title="Joriy oyga qaytish"
                 >
                   Bu oy
                 </button>
@@ -1468,7 +1445,6 @@ const Attendance = ({ groups = [], students = [], attendance = [], onSaveAttenda
                   type="button"
                   className={`view-mode-btn ${journalViewMode === 'matrix' ? 'active' : ''}`}
                   onClick={() => setJournalViewMode('matrix')}
-                  title="Klassik davomat matritsasi"
                 >
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
                     <rect x="3" y="3" width="18" height="18" rx="2" />
@@ -1480,7 +1456,6 @@ const Attendance = ({ groups = [], students = [], attendance = [], onSaveAttenda
                   type="button"
                   className={`view-mode-btn ${journalViewMode === 'calendar' ? 'active' : ''}`}
                   onClick={() => setJournalViewMode('calendar')}
-                  title="Oylik kalendar ko'rinishi"
                 >
                   <IconCalendar size={14} />
                   <span>Kalendar</span>
@@ -1493,7 +1468,6 @@ const Attendance = ({ groups = [], students = [], attendance = [], onSaveAttenda
                   type="button"
                   className="btn-export-toolbar scale-active"
                   onClick={handleExportCSV}
-                  title="Oylik jurnalni Excel (.csv) formatida yuklab olish"
                 >
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
@@ -1507,7 +1481,6 @@ const Attendance = ({ groups = [], students = [], attendance = [], onSaveAttenda
                   type="button"
                   className="btn-print-toolbar scale-active"
                   onClick={handlePrint}
-                  title="Oylik jurnalni chop etish yoki PDF qilib saqlash"
                 >
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                     <polyline points="6 9 6 2 18 2 18 9" />
@@ -1565,7 +1538,6 @@ const Attendance = ({ groups = [], students = [], attendance = [], onSaveAttenda
                     type="button"
                     className="matrix-search-clear-btn"
                     onClick={() => setMatrixSearchQuery('')}
-                    title="Qidiruvni tozalash"
                   >
                     ✕
                   </button>
@@ -1614,7 +1586,6 @@ const Attendance = ({ groups = [], students = [], attendance = [], onSaveAttenda
                         <th
                           className={`sticky-col-name sortable-th ${matrixSortField === 'name' ? 'active-sort' : ''}`}
                           onClick={() => handleMatrixSort('name')}
-                          title="Ism bo'yicha saralash"
                         >
                           <div className="th-sort-content">
                             <span>O'quvchi</span>
@@ -1635,7 +1606,6 @@ const Attendance = ({ groups = [], students = [], attendance = [], onSaveAttenda
                               onClick={() => {
                                 if (session) setSelectedDayDetail(session);
                               }}
-                              title={`${dateStr} (${wd})${session ? ` • Ko'rish / Tahrirlash` : ''}`}
                             >
                               <div className="matrix-date-header-inner">
                                 <span className="matrix-date-num">{dayNum}</span>
@@ -1649,7 +1619,6 @@ const Attendance = ({ groups = [], students = [], attendance = [], onSaveAttenda
                         <th
                           className={`matrix-summary-th sortable-th ${matrixSortField === 'present' ? 'active-sort' : ''}`}
                           onClick={() => handleMatrixSort('present')}
-                          title="Kelgan darslar soni bo'yicha saralash"
                         >
                           <div className="th-sort-content">
                             <span>Kelgan</span>
@@ -1659,7 +1628,6 @@ const Attendance = ({ groups = [], students = [], attendance = [], onSaveAttenda
                         <th
                           className={`matrix-summary-th sortable-th ${matrixSortField === 'excused' ? 'active-sort' : ''}`}
                           onClick={() => handleMatrixSort('excused')}
-                          title="Sababli qoldirilgan darslar bo'yicha saralash"
                         >
                           <div className="th-sort-content">
                             <span>Sababli</span>
@@ -1669,7 +1637,6 @@ const Attendance = ({ groups = [], students = [], attendance = [], onSaveAttenda
                         <th
                           className={`matrix-summary-th sortable-th ${matrixSortField === 'absent' ? 'active-sort' : ''}`}
                           onClick={() => handleMatrixSort('absent')}
-                          title="Qoldirilgan darslar bo'yicha saralash"
                         >
                           <div className="th-sort-content">
                             <span>Kelmadi</span>
@@ -1679,7 +1646,6 @@ const Attendance = ({ groups = [], students = [], attendance = [], onSaveAttenda
                         <th
                           className={`matrix-summary-th sortable-th ${matrixSortField === 'late' ? 'active-sort' : ''}`}
                           onClick={() => handleMatrixSort('late')}
-                          title="Kechikilgan darslar soni bo'yicha saralash"
                         >
                           <div className="th-sort-content">
                             <span>Kechikdi</span>
@@ -1689,7 +1655,6 @@ const Attendance = ({ groups = [], students = [], attendance = [], onSaveAttenda
                         <th
                           className={`matrix-summary-th sortable-th ${matrixSortField === 'total' ? 'active-sort' : ''}`}
                           onClick={() => handleMatrixSort('total')}
-                          title="O'tilgan umumiy darslar soni"
                         >
                           <div className="th-sort-content">
                             <span>Jami</span>
@@ -1699,7 +1664,6 @@ const Attendance = ({ groups = [], students = [], attendance = [], onSaveAttenda
                         <th
                           className={`matrix-summary-th sortable-th ${matrixSortField === 'rating' ? 'active-sort' : ''}`}
                           onClick={() => handleMatrixSort('rating')}
-                          title="Adolatli davomat reytingi bo'yicha saralash"
                         >
                           <div className="th-sort-content">
                             <span>Davomat %</span>
@@ -1717,7 +1681,6 @@ const Attendance = ({ groups = [], students = [], attendance = [], onSaveAttenda
                             <td
                               className="sticky-col-name clickable-cell"
                               onClick={() => setSelectedStudentHistoryModal(s.student)}
-                              title="O'quvchi davomat tarixini ko'rish"
                             >
                               <div className="matrix-student-cell">
                                 <span className="student-name-text">{s.student.name}</span>
@@ -1731,7 +1694,7 @@ const Attendance = ({ groups = [], students = [], attendance = [], onSaveAttenda
                               const isMember = isStudentInGroupAtDate(s.student, dateStr, selectedGroupId) || (status !== undefined);
                               if (!isMember) {
                                 return (
-                                  <td key={dateStr} className="matrix-cell not-member-cell" title={`${s.student.name}: Guruh a'zosi bo'lmagan`}>
+                                  <td key={dateStr} className="matrix-cell not-member-cell">
                                     <span className="matrix-badge not-member">—</span>
                                   </td>
                                 );
@@ -1744,27 +1707,21 @@ const Attendance = ({ groups = [], students = [], attendance = [], onSaveAttenda
                                   onClick={() => {
                                     if (rec) setSelectedDayDetail(rec);
                                   }}
-                                  title={`${s.student.name} • ${dateStr}: ${
-                                    status === 'present' ? 'Keldi' :
-                                    status === 'absent' ? 'Kelmadi' :
-                                    status === 'late' ? 'Kechikdi' :
-                                    status === 'excused' ? 'Sababli' : 'Belgilanmagan'
-                                  }`}
                                 >
                                   {status === 'present' ? (
-                                    <span className="matrix-badge present" title="Keldi">
+                                    <span className="matrix-badge present">
                                       <MinimalCheck />
                                     </span>
                                   ) : status === 'absent' ? (
-                                    <span className="matrix-badge absent" title="Kelmadi">
+                                    <span className="matrix-badge absent">
                                       <MinimalCross />
                                     </span>
                                   ) : status === 'late' ? (
-                                    <span className="matrix-badge late" title="Kechikdi">
+                                    <span className="matrix-badge late">
                                       <MinimalClock />
                                     </span>
                                   ) : status === 'excused' ? (
-                                    <span className="matrix-badge excused" title="Sababli">S</span>
+                                    <span className="matrix-badge excused">S</span>
                                   ) : (
                                     <span className="matrix-badge unmarked">·</span>
                                   )}
@@ -1807,7 +1764,6 @@ const Attendance = ({ groups = [], students = [], attendance = [], onSaveAttenda
                             <td className="matrix-summary-cell">
                               <span 
                                 className={`rate-pill-minimal ${s.totalLessons === 0 ? 'empty' : s.rate >= 90 ? 'good' : s.rate >= 70 ? 'avg' : 'bad'}`}
-                                title={s.totalLessons > 0 ? `Davomat foizi: ${s.rate}%, Reyting Like'i: ${s.fairScore}` : undefined}
                               >
                                 {s.totalLessons === 0 ? '—' : `${s.rate}%`}
                               </span>
@@ -1881,7 +1837,6 @@ const Attendance = ({ groups = [], students = [], attendance = [], onSaveAttenda
                           setActiveTab('mark');
                         }
                       }}
-                      title={isFuture && !hasRecordedSession ? "Bo'lajak sana" : undefined}
                     >
                       <div className="cell-top-bar">
                         <span className="cell-day-num">{d.day}</span>
@@ -2014,7 +1969,7 @@ const Attendance = ({ groups = [], students = [], attendance = [], onSaveAttenda
                         <IconCalendar size={14} />
                         <span className="date-text font-bold">{formatDisplayDate(item.date)}</span>
                         {studentModalTimeframe === 'all' && item.groupId && item.groupId !== selectedGroupId && (
-                          <span className="other-group-badge" title="Dars o'tilgan guruh">
+                          <span className="other-group-badge">
                             {groups.find(g => g.id === item.groupId)?.name || 'Boshqa guruh'}
                           </span>
                         )}
@@ -2048,7 +2003,7 @@ const Attendance = ({ groups = [], students = [], attendance = [], onSaveAttenda
                         <IconCalendar size={14} />
                         <span className="date-text font-bold">{formatDisplayDate(item.date)}</span>
                         {studentModalTimeframe === 'all' && item.groupId && item.groupId !== selectedGroupId && (
-                          <span className="other-group-badge" title="Dars o'tilgan guruh">
+                          <span className="other-group-badge">
                             {groups.find(g => g.id === item.groupId)?.name || 'Boshqa guruh'}
                           </span>
                         )}
@@ -2075,7 +2030,7 @@ const Attendance = ({ groups = [], students = [], attendance = [], onSaveAttenda
                         <IconCalendar size={14} />
                         <span className="date-text font-bold">{formatDisplayDate(item.date)}</span>
                         {studentModalTimeframe === 'all' && item.groupId && item.groupId !== selectedGroupId && (
-                          <span className="other-group-badge" title="Dars o'tilgan guruh">
+                          <span className="other-group-badge">
                             {groups.find(g => g.id === item.groupId)?.name || 'Boshqa guruh'}
                           </span>
                         )}
@@ -2794,7 +2749,8 @@ const Attendance = ({ groups = [], students = [], attendance = [], onSaveAttenda
         .attendance-search-input:focus {
           background: #FFFFFF;
           border-color: var(--apple-blue);
-          box-shadow: 0 0 0 3px rgba(0, 113, 227, 0.12);
+          box-shadow: none !important;
+          outline: none !important;
         }
 
         .search-clear-btn {
@@ -4844,7 +4800,8 @@ const Attendance = ({ groups = [], students = [], attendance = [], onSaveAttenda
         .matrix-search-input:focus {
           border-color: #3B82F6;
           background: #FFFFFF;
-          box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.15);
+          box-shadow: none !important;
+          outline: none !important;
         }
 
         .matrix-search-clear-btn {
@@ -5995,7 +5952,8 @@ const Attendance = ({ groups = [], students = [], attendance = [], onSaveAttenda
         [data-theme="dark"] .attendance-search-input:focus {
           background: #303134;
           border-color: #8AB4F8;
-          box-shadow: 0 0 0 3px rgba(138, 180, 248, 0.2);
+          box-shadow: none !important;
+          outline: none !important;
         }
 
         [data-theme="dark"] .search-clear-btn {
@@ -6850,7 +6808,8 @@ const Attendance = ({ groups = [], students = [], attendance = [], onSaveAttenda
         [data-theme="dark"] .matrix-search-input:focus {
           border-color: #8AB4F8 !important;
           background: #202124 !important;
-          box-shadow: 0 0 0 2px rgba(138, 180, 248, 0.2) !important;
+          box-shadow: none !important;
+          outline: none !important;
         }
 
         [data-theme="dark"] .matrix-search-clear-btn:hover {
@@ -7599,24 +7558,16 @@ const Attendance = ({ groups = [], students = [], attendance = [], onSaveAttenda
         .current-lesson-live-dot {
           display: inline-flex;
           align-items: center;
-          gap: 5px;
+          justify-content: center;
           font-size: 0.72rem;
           font-weight: 600;
           color: #248A3D;
           background: rgba(52, 199, 89, 0.12);
           border: 1px solid rgba(52, 199, 89, 0.3);
-          padding: 1px 7px;
+          padding: 1px 8px;
           border-radius: var(--radius-full);
           letter-spacing: 0.01em;
           white-space: nowrap;
-        }
-
-        .live-dot-circle {
-          width: 6px;
-          height: 6px;
-          border-radius: 50%;
-          background: #34C759;
-          box-shadow: 0 0 4px rgba(52, 199, 89, 0.6);
         }
 
         [data-theme="dark"] .current-lesson-live-dot {

@@ -94,7 +94,6 @@ const formatGroupScheduleBadge = (schedule, onBadgeClick) => {
         e.stopPropagation();
         if (onBadgeClick) onBadgeClick();
       }}
-      title="Dars vaqtini belgilash uchun bosing"
     >
       {daysText ? `${daysText} • ${timeText}` : timeText}
     </span>
@@ -111,6 +110,7 @@ const GroupsList = ({
   onDeleteGroup,
   showToast,
   teacherId,
+  extraLessons = [],
 }) => {
   const [showScheduleModal, setShowScheduleModal] = useState(false);
   const [scheduleTargetGroupId, setScheduleTargetGroupId] = useState(null);
@@ -323,7 +323,7 @@ const GroupsList = ({
         <div className="groups-vertical-list">
           {groups.map((group) => {
             const colorOption = getGroupColorOption(group.color);
-            const isCurrentLesson = isGroupLessonActive(group);
+            const isCurrentLesson = isGroupLessonActive(group, undefined, 3, extraLessons, undefined, groups);
             const category = getGroupCategory(group);
             return (
               <div
@@ -356,7 +356,6 @@ const GroupsList = ({
                             e.stopPropagation();
                             handleOpenScheduleForGroup(group.id);
                           }}
-                          title="Dars vaqtini belgilash uchun bosing"
                         >
                           {group.schedule.room}
                         </span>
@@ -373,13 +372,11 @@ const GroupsList = ({
                         e.stopPropagation();
                         handleOpenCategoryModal(group);
                       }}
-                      title="Guruh toifasini o'zgartirish uchun bosing"
                     >
                       {category === 'kids' ? 'Kids' : 'Teens'}
                     </span>
                     {isCurrentLesson && (
-                      <span className="current-lesson-live-dot" title="Ayni paytda dars vaqti oralig'i (5 daqiqalik bufer bilan)">
-                        <span className="live-dot-circle" />
+                      <span className="current-lesson-live-dot">
                         Hozir darsda
                       </span>
                     )}
@@ -403,7 +400,6 @@ const GroupsList = ({
                           setEditGroupIconTab('svg');
                         }
                       }}
-                      title="Guruhni tahrirlash"
                       aria-label="Guruhni tahrirlash"
                     >
                       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -815,7 +811,6 @@ const GroupsList = ({
                     <button
                       key={color.value}
                       type="button"
-                      title={color.name}
                       className={`group-color-btn scale-active ${newGroupColor === color.value ? 'selected' : ''}`}
                       style={{ backgroundColor: color.value }}
                       onClick={() => setNewGroupColor(color.value)}
@@ -1181,7 +1176,6 @@ const GroupsList = ({
                     <button
                       key={color.value}
                       type="button"
-                      title={color.name}
                       className={`group-color-btn scale-active ${editGroupColor === color.value ? 'selected' : ''}`}
                       style={{ backgroundColor: color.value }}
                       onClick={() => setEditGroupColor(color.value)}
@@ -1206,7 +1200,6 @@ const GroupsList = ({
                     setEditingGroup(null);
                     setConfirmDeleteId(idToDelete);
                   }}
-                  title="Guruhni o'chirish"
                 >
                   <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                     <polyline points="3 6 5 6 21 6" />
@@ -1845,13 +1838,13 @@ const GroupsList = ({
         .current-lesson-live-dot {
           display: inline-flex;
           align-items: center;
-          gap: 5px;
+          justify-content: center;
           font-size: 0.72rem;
           font-weight: 600;
           color: #248A3D;
           background: rgba(52, 199, 89, 0.12);
           border: 1px solid rgba(52, 199, 89, 0.3);
-          padding: 0 8px;
+          padding: 0 9px;
           height: 22px;
           box-sizing: border-box;
           border-radius: var(--radius-full);
@@ -1859,14 +1852,6 @@ const GroupsList = ({
           white-space: nowrap;
           user-select: none;
           flex-shrink: 0;
-        }
-
-        .live-dot-circle {
-          width: 6px;
-          height: 6px;
-          border-radius: 50%;
-          background: #34C759;
-          box-shadow: 0 0 4px rgba(52, 199, 89, 0.6);
         }
 
         [data-theme="dark"] .current-lesson-live-dot {

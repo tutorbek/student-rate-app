@@ -157,7 +157,9 @@ const TTS_DATES = getLessonDates(['tue', 'thu', 'sat']);
 
 let avatarIndex = 0;
 function getNextAvatar() {
-  const av = AVATAR_IMAGES[avatarIndex % AVATAR_IMAGES.length];
+  // Only the first 10 avatars are free! Default student avatars must strictly be free.
+  const freeAvatars = AVATAR_IMAGES.slice(0, 10);
+  const av = freeAvatars[avatarIndex % freeAvatars.length];
   avatarIndex++;
   return av;
 }
@@ -594,7 +596,7 @@ export async function seedAllTeachers() {
       parentPhone: s.parentPhone || `+998 ${parentNum.slice(0, 2)} ${parentNum.slice(2, 5)} ${parentNum.slice(5, 7)} ${parentNum.slice(7, 9)}`,
       monthlyFee: 400000,
       pin: s.pin || String(1000 + Math.floor(Math.random() * 9000)),
-      emoji: (s.emoji && s.emoji.length > 5) ? s.emoji : getNextAvatar()
+      emoji: getNextAvatar()
     };
   });
 

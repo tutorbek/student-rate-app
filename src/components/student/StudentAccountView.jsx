@@ -42,10 +42,13 @@ export default function StudentAccountView({
   onAddGroup = null,
   onRemoveGroup = null,
   onUpdateAvatar = null,
+  onUnlockAvatar = null,
+  totalPinnedScore = 0,
   onSetStudentPin = null,
   _onClaimStudentDevice = null,
   onSelectProfile = null,
   _handleClearProfilePin = null,
+  onSwitchProfile = null,
   _theme = 'light',
   _toggleTheme = null,
   onLogout = null,
@@ -505,6 +508,8 @@ export default function StudentAccountView({
         pinnedStudent={pinnedStudent}
         currentGroup={currentGroup}
         onSaveAvatar={onUpdateAvatar}
+        onUnlockAvatar={onUnlockAvatar}
+        totalScore={totalPinnedScore}
         onBack={() => setAvatarPickerActive(false)}
         showToast={showToast}
       />
@@ -542,7 +547,7 @@ export default function StudentAccountView({
           </span>
         </div>
 
-        {pinnedStudent ? (
+        {pinnedStudent && (
           <button
             type="button"
             className="user-card-edit-btn"
@@ -550,24 +555,12 @@ export default function StudentAccountView({
               triggerHaptic('light');
               setAvatarPickerActive(true);
             }}
-            title="Profil rasmini almashtirish"
             aria-label="Profil rasmini almashtirish"
           >
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M12 20h9" />
               <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
             </svg>
-          </button>
-        ) : (
-          <button
-            type="button"
-            className="user-card-pick-btn"
-            onClick={() => {
-              triggerHaptic('light');
-              setIsStudentListModalOpen(true);
-            }}
-          >
-            Tanlash ▾
           </button>
         )}
       </section>
@@ -577,13 +570,17 @@ export default function StudentAccountView({
         <h4 className="settings-section-heading">SOZLAMALAR VA BO'LIMLAR</h4>
 
         <div className="settings-menu-card">
-          {/* Row 1: Profilni tanlash (Sheet modal trigger for clean UX) */}
+          {/* Row 1: Profilni almashtirish */}
           <button
             type="button"
             className="settings-menu-row"
             onClick={() => {
               triggerHaptic('light');
-              setIsStudentListModalOpen(true);
+              if (onSwitchProfile) {
+                onSwitchProfile();
+              } else {
+                setIsStudentListModalOpen(true);
+              }
             }}
           >
             <div className="settings-menu-icon-box green">
@@ -593,10 +590,10 @@ export default function StudentAccountView({
               </svg>
             </div>
             <div className="settings-menu-text">
-              <span className="settings-menu-title">Profilni tanlash</span>
+              <span className="settings-menu-title">Profilni almashtirish</span>
               <span className="settings-menu-subtitle">
                 {pinnedStudent
-                  ? `${pinnedStudent.name} faol • ${groupStudents.length} ta o'quvchi`
+                  ? `${pinnedStudent.name} • Guruhdagi ${groupStudents.length} ta o'quvchi`
                   : `Guruhdagi ${groupStudents.length} ta o'quvchi`}
               </span>
             </div>
@@ -952,7 +949,6 @@ export default function StudentAccountView({
                               type="button"
                               className="group-delete-btn"
                               onClick={() => setConfirmRemoveId(grp.id)}
-                              title="Guruhni ajratish"
                               aria-label="Guruhni ajratish"
                             >
                               O'chirish

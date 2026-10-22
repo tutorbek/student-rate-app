@@ -599,7 +599,6 @@ const AdminFinance = ({
               className="btn btn-secondary scale-active admin-refresh-btn"
               onClick={onRefresh}
               disabled={isSyncing}
-              title="Ma'lumotlarni yangilash"
             >
               <span>{isSyncing ? "Yangilanmoqda..." : "Yangilash"}</span>
             </button>
@@ -609,7 +608,6 @@ const AdminFinance = ({
             type="button"
             className="btn btn-secondary scale-active"
             onClick={handleExportCSV}
-            title="Oylik kassa hisobotini CSV faylida yuklab olish"
           >
             <span>CSV Eksport</span>
           </button>
@@ -623,7 +621,6 @@ const AdminFinance = ({
             type="button"
             className="month-nav-btn scale-active"
             onClick={handlePrevMonth}
-            title="Oldingi oy"
             aria-label="Oldingi oy"
           >
             ‹
@@ -639,7 +636,6 @@ const AdminFinance = ({
             type="button"
             className="month-nav-btn scale-active"
             onClick={handleNextMonth}
-            title="Keyingi oy"
             aria-label="Keyingi oy"
           >
             ›
@@ -666,7 +662,6 @@ const AdminFinance = ({
               setCustomDefaultFeeInput(defaultMonthlyFee);
               setFeeConfigModal(true);
             }}
-            title="Oylik to'lov standartini o'zgartirish"
           >
             <span>O'zgartirish</span>
           </button>
@@ -918,7 +913,6 @@ const AdminFinance = ({
                             type="button"
                             className="phone-edit-icon-btn scale-active"
                             onClick={() => setPhoneModal({ isOpen: true, studentItem: item })}
-                            title="Telefon raqamlarini tahrirlash"
                           >
                             Tahrirlash
                           </button>
@@ -965,7 +959,6 @@ const AdminFinance = ({
                         type="button"
                         className="btn btn-primary btn-sm scale-active finance-pay-btn"
                         onClick={() => setCheckoutModal({ isOpen: true, studentItem: item })}
-                        title="To'lov qabul qilish"
                       >
                         <span>To'lov qabul qilish</span>
                       </button>
@@ -975,7 +968,6 @@ const AdminFinance = ({
                         <a
                           href={`tel:${dialablePhone}`}
                           className="btn btn-secondary btn-sm scale-active finance-call-btn"
-                          title={`Qo'ng'iroq qilish: ${formatDisplayPhone(displayPhone)}`}
                         >
                           <span>Qo'ng'iroq</span>
                         </a>
@@ -984,7 +976,6 @@ const AdminFinance = ({
                           type="button"
                           className="btn btn-secondary btn-sm scale-active finance-call-btn disabled"
                           onClick={() => setPhoneModal({ isOpen: true, studentItem: item })}
-                          title="Telefon raqami kiritilmagan, kiritish uchun bosing"
                         >
                           <span>Tel yo'q</span>
                         </button>
@@ -996,7 +987,6 @@ const AdminFinance = ({
                           type="button"
                           className="btn btn-secondary btn-sm scale-active finance-tg-btn"
                           onClick={() => handleSendTelegramReminder(item)}
-                          title="Telegram orqali qarzdorlik eslatmasini jo'natish (matn nusxalanadi)"
                         >
                           <span>Eslatma</span>
                         </button>
@@ -1116,7 +1106,6 @@ const AdminFinance = ({
                         type="button"
                         className="history-delete-btn scale-active"
                         onClick={() => setDeleteConfirmModal({ isOpen: true, payment: p })}
-                        title="To'lovni bekor qilish / o'chirish"
                         aria-label="O'chirish"
                       >
                         O'chirish

@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { getStartOfToday, getStartOfMonth, getStartOfLastMonth, getEndOfLastMonth, getGroupCategory } from '../../utils/db';
 import { renderAvatar } from '../../utils/studentAvatars';
+import ProjectLikeIcon from '../common/ProjectLikeIcon';
 
 const triggerHaptic = (style = 'light') => {
   try {
@@ -12,15 +13,8 @@ const triggerHaptic = (style = 'light') => {
   } catch {}
 };
 
-// SVG Icons tailored to match design mockup
-const RedHeartIcon = ({ size = 13 }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="#F43F5E" stroke="#F43F5E" strokeWidth="0.5" style={{ flexShrink: 0 }}>
-    <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
-  </svg>
-);
-
 const CrownIcon = ({ size = 32 }) => (
-  <div className="realistic-animated-crown" title="1-o'rin Toji">
+  <div className="realistic-animated-crown">
     <svg
       width={size}
       height={Math.round(size * 0.78)}
@@ -196,36 +190,6 @@ const CrownIcon = ({ size = 32 }) => (
   </div>
 );
 
-const TrophyIcon = ({ size = 20 }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="#0171E3" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
-    <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6" />
-    <path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18" />
-    <path d="M4 22h16" />
-    <path d="M10 14.66V17c0 .55-.45 1-1 1H7c-.55 0-1-.45-1-1v-2.34" />
-    <path d="M18 14.66V17c0 .55-.45 1-1 1h-2c-.55 0-1-.45-1-1v-2.34" />
-    <path d="M6 4h12a2 2 0 0 1 2 2v3a6 6 0 0 1-6 6h-4a6 6 0 0 1-6-6V6a2 2 0 0 1 2-2z" />
-  </svg>
-);
-
-const StarIcon = ({ size = 18 }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="#94A3B8" stroke="#94A3B8" strokeWidth="1" style={{ flexShrink: 0 }}>
-    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
-  </svg>
-);
-
-const MedalCheckIcon = ({ size = 18 }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="#64748B" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
-    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-    <polyline points="9 12 11 14 15 10" />
-  </svg>
-);
-
-const ZapIcon = ({ size = 18 }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="#0171E3" stroke="#0171E3" strokeWidth="1" style={{ flexShrink: 0 }}>
-    <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
-  </svg>
-);
-
 const formatPodiumName = (student, isPinned) => {
   if (!student) return '—';
   if (isPinned) return 'Siz';
@@ -248,8 +212,8 @@ export default function StudentRatingView({
   connectedGroups: _connectedGroups = [],
   onSwitchGroup: _onSwitchGroup,
   initialTimeframe = null,
-  attendanceRate = null,
-  onOpenProfilePicker = null,
+  attendanceRate: _attendanceRate = null,
+  onOpenProfilePicker: _onOpenProfilePicker = null,
 }) {
   const activePinnedStudent = useMemo(() => {
     if (pinnedStudent) return pinnedStudent;
@@ -386,7 +350,7 @@ export default function StudentRatingView({
     });
 
     const displayed = scope === 'top10'
-      ? fullRanked.filter((s) => s.score > 0).slice(0, 10)
+      ? fullRanked.slice(0, 10)
       : fullRanked;
 
     return { rankedStudents: displayed, fullRankedList: fullRanked };
@@ -400,18 +364,22 @@ export default function StudentRatingView({
     if (!hasAnyPoints) {
       return { first: null, second: null, third: null };
     }
-    const first = (fullRankedList || []).find((s) => s.rank === 1 && s.score > 0) || null;
-    const second = (fullRankedList || []).find((s) => s.rank === 2 && s.score > 0) || null;
-    const third = (fullRankedList || []).find((s) => s.rank === 3 && s.score > 0) || null;
-    return { first, second, third };
+    const withPoints = (fullRankedList || []).filter((s) => s.score > 0);
+    return {
+      first: withPoints[0] || null,
+      second: withPoints[1] || null,
+      third: withPoints[2] || null,
+    };
   }, [hasAnyPoints, fullRankedList]);
 
   const otherStudents = useMemo(() => {
-    if (scope === 'top10') {
-      return (rankedStudents || []).filter((s) => s.rank && s.rank >= 4 && s.score > 0);
+    if (hasAnyPoints) {
+      const withPoints = (fullRankedList || []).filter((s) => s.score > 0);
+      const podiumIds = new Set([withPoints[0]?.id, withPoints[1]?.id, withPoints[2]?.id].filter(Boolean).map(String));
+      return (rankedStudents || []).filter((s) => !podiumIds.has(String(s.id)));
     }
-    return (rankedStudents || []).filter((s) => s.rank && s.rank >= 4);
-  }, [rankedStudents, scope]);
+    return rankedStudents || [];
+  }, [hasAnyPoints, fullRankedList, rankedStudents]);
 
   const currentPinnedId = useMemo(() => {
     return pinnedStudentId ? String(pinnedStudentId) : (activePinnedStudent ? String(activePinnedStudent.id) : null);
@@ -422,8 +390,8 @@ export default function StudentRatingView({
     const found = (fullRankedList || []).find((s) => String(s.id) === currentPinnedId);
     if (!found) return null;
 
-    const top10WithScore = (fullRankedList || []).filter((s) => s.score > 0).slice(0, 10);
-    const isInTop10 = top10WithScore.some((s) => String(s.id) === currentPinnedId);
+    const top10List = (fullRankedList || []).slice(0, 10);
+    const isInTop10 = top10List.some((s) => String(s.id) === currentPinnedId);
 
     return {
       rank: found.rank,
@@ -434,48 +402,14 @@ export default function StudentRatingView({
     };
   }, [currentPinnedId, fullRankedList]);
 
-  const percentileBadge = useMemo(() => {
-    if (!pinnedStudentRankInfo?.rank) return null;
-    const r = pinnedStudentRankInfo.rank;
-    if (r === 1) return 'Lider';
-    if (r <= 3) return 'Top 5%';
-    const total = fullRankedList.length || 1;
-    const pct = Math.round((r / total) * 100);
-    if (pct <= 10) return 'Top 10%';
-    if (pct <= 20) return 'Top 20%';
-    return `Top ${pct}%`;
-  }, [pinnedStudentRankInfo, fullRankedList]);
-
-  const motivationData = useMemo(() => {
-    if (!pinnedStudentRankInfo?.rank) {
-      return {
-        title: "Reytingda yuqoriga ko'tariling",
-        sub: "Uy vazifasini vaqtida topshirib yana Like oling!",
-      };
-    }
-    const r = pinnedStudentRankInfo.rank;
-    if (r === 1) {
-      return {
-        title: "1-o'rinda peshqadamsiz! Barakalla!",
-        sub: "O'rningizni saqlab qolish uchun faol bo'lishda davom eting!",
-      };
-    }
-    const aheadStudent = (fullRankedList || []).find((s) => s.rank === r - 1);
-    const needed = aheadStudent ? Math.max(1, (aheadStudent.score + 1) - (pinnedStudentRankInfo.score || 0)) : 1;
-    return {
-      title: `${r - 1}-o'ringa chiqish uchun +${needed} Like kerak`,
-      sub: "Uy vazifasini vaqtida topshirib yana Like oling!",
-    };
-  }, [pinnedStudentRankInfo, fullRankedList]);
-
-  const otherHeaderTitle = useMemo(() => {
-    if (scope === 'top10') {
-      const maxRank = otherStudents.length > 0 ? Math.min(10, Math.max(...otherStudents.map((s) => s.rank || 0))) : 10;
-      return `Boshqa o'rinlar (#4 – #${maxRank})`;
-    }
-    const maxRank = otherStudents.length > 0 ? Math.max(...otherStudents.map((s) => s.rank || 0)) : 4;
-    return `Boshqa o'rinlar (#4 – #${maxRank})`;
-  }, [scope, otherStudents]);
+  const isPinnedOutsideTop10 = useMemo(() => {
+    if (scope !== 'top10' || !currentPinnedId || !pinnedStudentRankInfo) return false;
+    if (podiumTop3.first && String(podiumTop3.first.id) === currentPinnedId) return false;
+    if (podiumTop3.second && String(podiumTop3.second.id) === currentPinnedId) return false;
+    if (podiumTop3.third && String(podiumTop3.third.id) === currentPinnedId) return false;
+    const inOther = (otherStudents || []).some((s) => String(s.id) === currentPinnedId);
+    return !inOther;
+  }, [scope, currentPinnedId, pinnedStudentRankInfo, podiumTop3, otherStudents]);
 
   return (
     <div className="rating-view-wrapper animate-fadeIn">
@@ -491,7 +425,7 @@ export default function StudentRatingView({
           role="tab"
           aria-selected={scope === 'top10'}
         >
-          Top 10
+          {currentCategory === 'kids' ? 'Kids TOP 10' : 'Teens TOP 10'}
         </button>
         <button
           type="button"
@@ -551,14 +485,7 @@ export default function StudentRatingView({
         </button>
       </div>
 
-      {/* 3. Eyebrow Subtitle */}
-      <p className="rating-eyebrow-subtitle">
-        {scope === 'top10'
-          ? "Ustozning barcha guruhlari bo'yicha TOP 10"
-          : `${group?.name || 'Guruh'} bo'yicha reyting`}
-      </p>
-
-      {/* 4. White Podium Stage Card */}
+      {/* 3. Podium Stage Card */}
       <div className="rating-podium-card">
         {/* 2nd Place (Left) */}
         <div className="podium-pillar pillar-2">
@@ -569,16 +496,18 @@ export default function StudentRatingView({
               <div className="podium-empty-avatar">—</div>
             )}
           </div>
-          <span className="podium-person-name" title={podiumTop3.second?.name || ''}>
+          <span className="podium-person-name">
             {formatPodiumName(podiumTop3.second, currentPinnedId && String(podiumTop3.second?.id) === currentPinnedId)}
           </span>
+          {scope === 'top10' && podiumTop3.second?.groupName && (
+            <span className="podium-group-tag">{podiumTop3.second.groupName}</span>
+          )}
           <div className="podium-score-pill">
-            <RedHeartIcon size={13} />
+            <ProjectLikeIcon size={13} />
             <span className="podium-score-num">{podiumTop3.second?.score || 0}</span>
           </div>
           <div className="podium-pedestal-box pedestal-silver">
-            <StarIcon size={18} />
-            <span className="pedestal-rank-tag">2-o'rin</span>
+            <span className="pedestal-rank-tag">2</span>
           </div>
         </div>
 
@@ -594,16 +523,18 @@ export default function StudentRatingView({
               <div className="podium-empty-avatar">—</div>
             )}
           </div>
-          <span className="podium-person-name name-first" title={podiumTop3.first?.name || ''}>
+          <span className="podium-person-name name-first">
             {formatPodiumName(podiumTop3.first, currentPinnedId && String(podiumTop3.first?.id) === currentPinnedId)}
           </span>
+          {scope === 'top10' && podiumTop3.first?.groupName && (
+            <span className="podium-group-tag">{podiumTop3.first.groupName}</span>
+          )}
           <div className="podium-score-pill">
-            <RedHeartIcon size={13} />
+            <ProjectLikeIcon size={14} glow />
             <span className="podium-score-num">{podiumTop3.first?.score || 0}</span>
           </div>
           <div className="podium-pedestal-box pedestal-gold">
-            <TrophyIcon size={20} />
-            <span className="pedestal-rank-tag tag-leader">Lider</span>
+            <span className="pedestal-rank-tag tag-leader">1</span>
           </div>
         </div>
 
@@ -616,82 +547,23 @@ export default function StudentRatingView({
               <div className="podium-empty-avatar">—</div>
             )}
           </div>
-          <span className="podium-person-name" title={podiumTop3.third?.name || ''}>
+          <span className="podium-person-name">
             {formatPodiumName(podiumTop3.third, currentPinnedId && String(podiumTop3.third?.id) === currentPinnedId)}
           </span>
+          {scope === 'top10' && podiumTop3.third?.groupName && (
+            <span className="podium-group-tag">{podiumTop3.third.groupName}</span>
+          )}
           <div className="podium-score-pill">
-            <RedHeartIcon size={13} />
+            <ProjectLikeIcon size={13} />
             <span className="podium-score-num">{podiumTop3.third?.score || 0}</span>
           </div>
           <div className="podium-pedestal-box pedestal-bronze">
-            <MedalCheckIcon size={18} />
-            <span className="pedestal-rank-tag">3-o'rin</span>
+            <span className="pedestal-rank-tag">3</span>
           </div>
         </div>
       </div>
 
-      {/* 5. Personal Standing Hero Card (Blue Gradient) */}
-      {pinnedStudentRankInfo ? (
-        <div className="rating-blue-hero-card">
-          <div className="blue-hero-top-row">
-            <div className="blue-hero-user-info">
-              <div className="blue-hero-avatar">
-                {renderAvatar(activePinnedStudent?.emoji || pinnedStudent?.emoji, 44, { priority: 'high', eager: true })}
-              </div>
-              <div className="blue-hero-titles">
-                <h3 className="blue-hero-name">{pinnedStudentRankInfo.name}</h3>
-                <span className="blue-hero-rank-sub">
-                  {`Sizning o'rningiz: #${pinnedStudentRankInfo.rank || '—'} o'rin`}
-                </span>
-              </div>
-            </div>
-            {percentileBadge && (
-              <span className="blue-hero-badge">
-                {percentileBadge}
-              </span>
-            )}
-          </div>
-
-          <div className="blue-hero-stats-box">
-            <div className="blue-hero-stat-col">
-              <span className="blue-stat-label">Jami Like</span>
-              <span className="blue-stat-val">{pinnedStudentRankInfo.score || 0}</span>
-            </div>
-            <div className="blue-hero-stat-col">
-              <span className="blue-stat-label">Davomat</span>
-              <span className="blue-stat-val val-cyan">{attendanceRate || "—"}</span>
-            </div>
-          </div>
-        </div>
-      ) : (
-        <div
-          className="rating-unpinned-prompt-card"
-          onClick={() => {
-            triggerHaptic('light');
-            if (onOpenProfilePicker) onOpenProfilePicker();
-          }}
-          role="button"
-          tabIndex={0}
-        >
-          <div className="unpinned-prompt-avatar-wrap">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-              <circle cx="12" cy="7" r="4" />
-            </svg>
-          </div>
-          <div className="unpinned-prompt-text-wrap">
-            <h4 className="unpinned-prompt-title">Profilingizni tanlang</h4>
-            <p className="unpinned-prompt-desc">O'z o'rningiz va ballaringizni ko'rish uchun profilingizni belgilang</p>
-          </div>
-        </div>
-      )}
-
-      {/* 6. Section Header */}
-      <div className="new-other-ranks-header">
-        <h3 className="new-other-ranks-title">{otherHeaderTitle}</h3>
-      </div>
-
-      {/* 7. Rankings List Cards (#4 through #10) */}
+      {/* 4. Rankings List Cards (#4 and below) */}
       <div className="rating-items-stream">
         {otherStudents.length > 0 ? (
           otherStudents.map((st) => {
@@ -699,21 +571,25 @@ export default function StudentRatingView({
             return (
               <div key={st.id} className={`rating-item-card ${isMe ? 'is-me' : ''}`}>
                 <div className="item-card-left">
-                  <span className="item-card-rank">#{st.rank}</span>
+                  <span className="item-card-rank">
+                    {st.rank ? `#${st.rank}` : '—'}
+                  </span>
                   <div className="item-card-avatar">
                     {renderAvatar(st.emoji, 38)}
                   </div>
                   <div className="item-card-text">
                     <span className="item-card-name">
-                      {st.name} {isMe ? '(Siz)' : ''}
+                      {st.name}
                     </span>
-                    <span className="item-card-group">
-                      {st.groupName || group?.name || 'Guruh'}
-                    </span>
+                    {scope === 'top10' && st.groupName && (
+                      <span className="item-card-group-badge">
+                        {st.groupName}
+                      </span>
+                    )}
                   </div>
                 </div>
                 <div className="item-card-score-pill">
-                  <RedHeartIcon size={13} />
+                  <ProjectLikeIcon size={13} />
                   <span className="item-card-score-num">{st.score}</span>
                 </div>
               </div>
@@ -724,17 +600,34 @@ export default function StudentRatingView({
             <span>Boshqa o'rinlar mavjud emas</span>
           </div>
         )}
-      </div>
 
-      {/* 8. Motivational Hint Card (Bottom) */}
-      <div className="rating-hint-motivation-card">
-        <div className="motivation-zap-circle">
-          <ZapIcon size={18} />
-        </div>
-        <div className="motivation-text-wrap">
-          <span className="motivation-title-line">{motivationData.title}</span>
-          <span className="motivation-sub-line">{motivationData.sub}</span>
-        </div>
+        {/* If pinned student is outside top 10, show their position cleanly at the bottom */}
+        {isPinnedOutsideTop10 && pinnedStudentRankInfo && (
+          <div className="rating-item-card is-me pinned-self-row">
+            <div className="item-card-left">
+              <span className="item-card-rank">
+                {pinnedStudentRankInfo.rank ? `#${pinnedStudentRankInfo.rank}` : '—'}
+              </span>
+              <div className="item-card-avatar">
+                {renderAvatar(activePinnedStudent?.emoji || pinnedStudent?.emoji, 38)}
+              </div>
+              <div className="item-card-text">
+                <span className="item-card-name">
+                  {pinnedStudentRankInfo.name}
+                </span>
+                {scope === 'top10' && pinnedStudentRankInfo.groupName && (
+                  <span className="item-card-group-badge">
+                    {pinnedStudentRankInfo.groupName}
+                  </span>
+                )}
+              </div>
+            </div>
+            <div className="item-card-score-pill">
+              <ProjectLikeIcon size={13} />
+              <span className="item-card-score-num">{pinnedStudentRankInfo.score || 0}</span>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

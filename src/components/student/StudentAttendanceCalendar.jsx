@@ -267,7 +267,6 @@ export default function StudentAttendanceCalendar({
           <h3>
             {UZBEK_MONTHS[currentMonth]} {currentYear}
           </h3>
-          <span className="calendar-subtitle">Oylik davomat taqvimi</span>
         </div>
 
         <div className="calendar-month-controls">
@@ -335,7 +334,6 @@ export default function StudentAttendanceCalendar({
                 <div
                   className="calendar-stat-pill profile-action is-clickable"
                   onClick={onOpenProfilePicker}
-                  title="Shaxsiy davomatni ko'rish"
                   role="button"
                   tabIndex={0}
                 >
@@ -387,7 +385,7 @@ export default function StudentAttendanceCalendar({
             >
               <span className="day-number">{cell.day}</span>
               {cell.hasExtraLesson && (
-                <span className="cell-extra-badge" title="Extra Lesson" style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
+                <span className="cell-extra-badge" style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
                   <ZapIcon size={9} color="#FFFFFF" />
                 </span>
               )}

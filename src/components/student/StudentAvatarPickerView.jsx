@@ -1,7 +1,30 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
+import { useModalDismiss } from '../../hooks/useModalDismiss';
 import { renderAvatar, STUDENT_AVATARS } from '../../utils/studentAvatars';
-import { AVATAR_GALLERY_IMAGES } from '../../utils/avatarGallery';
+import {
+  AVATAR_GALLERY_IMAGES,
+  getAvatarGalleryPrice,
+  isAvatarGalleryFree,
+  isAvatarUnlockedForStudent,
+  sanitizeStudentAvatar,
+  getGalleryAvatarIndex,
+  FREE_GALLERY_AVATAR_COUNT,
+} from '../../utils/avatarGallery';
 import { preloadAvatars, markAvatarLoaded, isAvatarLoaded } from '../../utils/avatarCache';
+import { ProjectLikeIcon, LockIcon, UnlockIcon, XIcon } from './StudentIcons';
+
+// Pre-create instant O(1) lookup map for gallery items
+const GALLERY_ITEM_MAP = new Map(
+  AVATAR_GALLERY_IMAGES.map((img, idx) => [
+    img.id,
+    {
+      index: idx,
+      price: getAvatarGalleryPrice(idx),
+      isFree: isAvatarGalleryFree(idx),
+    },
+  ])
+);
 
 const triggerHaptic = (style = 'light') => {
   try {
@@ -17,16 +40,138 @@ export default function StudentAvatarPickerView({
   pinnedStudent = null,
   currentGroup = null,
   onSaveAvatar = null,
+  onUnlockAvatar = null,
+  totalScore = 0,
   onBack = null,
   showToast = null,
 }) {
-  // Current working avatar (preview)
-  const [selectedAvatar, setSelectedAvatar] = useState(
-    pinnedStudent?.emoji || AVATAR_GALLERY_IMAGES[0]?.path
-  );
+  // Current working avatar (preview, strictly free by default unless unlocked)
+  const [selectedAvatar, setSelectedAvatar] = useState(() => {
+    return sanitizeStudentAvatar(pinnedStudent) || AVATAR_GALLERY_IMAGES[0]?.path;
+  });
   const [avatarTab, setAvatarTab] = useState('gallery'); // 'gallery' | 'avatars'
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+
+  // Unlocked avatars tracking for this student (loaded once into memory)
+  const [localUnlockedAvatars, setLocalUnlockedAvatars] = useState(() => {
+    const s = new Set();
+    if (pinnedStudent?.unlockedAvatars && Array.isArray(pinnedStudent.unlockedAvatars)) {
+      pinnedStudent.unlockedAvatars.forEach((k) => s.add(k));
+    }
+    if (pinnedStudent?.id) {
+      try {
+        const cached = localStorage.getItem(`rsa_unlocked_avatars_${pinnedStudent.id}`);
+        if (cached) {
+          const parsed = JSON.parse(cached);
+          if (Array.isArray(parsed)) {
+            parsed.forEach((k) => s.add(k));
+          }
+        }
+      } catch {}
+    }
+    return s;
+  });
+
+  // Modal item for unlocking
+  const [unlockModalItem, setUnlockModalItem] = useState(null);
+  const [isUnlocking, setIsUnlocking] = useState(false);
+  const overlayRef = useRef(null);
+
+  // Standard modal dismissal & zero-shift body + html scroll locking
+  useModalDismiss(Boolean(unlockModalItem), () => {
+    if (!isUnlocking) {
+      setUnlockModalItem(null);
+    }
+  });
+
+  // Non-passive event listener on the modal overlay to prevent touchmove & wheel event leakage to background
+  useEffect(() => {
+    if (!unlockModalItem) return;
+    const el = overlayRef.current;
+    if (!el) return;
+
+    const preventTouch = (e) => {
+      // If the event target is the overlay itself or within a non-scrolling modal, block the gesture
+      if (e.target === el || !e.target.closest?.('.picker-scrollable')) {
+        e.preventDefault();
+      }
+    };
+
+    el.addEventListener('touchmove', preventTouch, { passive: false });
+    return () => {
+      el.removeEventListener('touchmove', preventTouch);
+    };
+  }, [unlockModalItem]);
+
+  // Helper: check if a gallery item is unlocked (pure in-memory O(1) checks)
+  const isItemUnlocked = (img, originalIndex) => {
+    if (isAvatarGalleryFree(originalIndex)) return true;
+    if (localUnlockedAvatars.has(img.path) || localUnlockedAvatars.has(img.cdnPath) || localUnlockedAvatars.has(img.id)) {
+      return true;
+    }
+    return isAvatarUnlockedForStudent(pinnedStudent, img.path, originalIndex, true);
+  };
+
+  const handleItemClick = (img, originalIndex, price, isUnlocked) => {
+    if (isUnlocked) {
+      handleSelect(img.path);
+    } else {
+      triggerHaptic('light');
+      setUnlockModalItem({
+        ...img,
+        price,
+        index: originalIndex,
+        seriesName: img.label ? `«${img.label}» to'plami` : `Surat ${originalIndex + 1}`,
+      });
+    }
+  };
+
+  const handleConfirmUnlock = async () => {
+    if (!unlockModalItem || !pinnedStudent) return;
+    if ((totalScore || 0) < unlockModalItem.price) {
+      if (showToast) showToast("Yetarli Like mavjud emas!", "warning");
+      return;
+    }
+
+    setIsUnlocking(true);
+    triggerHaptic('medium');
+
+    try {
+      if (onUnlockAvatar) {
+        await onUnlockAvatar(
+          unlockModalItem.path,
+          unlockModalItem.price,
+          pinnedStudent.id,
+          unlockModalItem.label || `Surat ${unlockModalItem.index + 1}`,
+          pinnedStudent.name
+        );
+      } else if (onSaveAvatar) {
+        onSaveAvatar(unlockModalItem.path, pinnedStudent.id, pinnedStudent.name);
+      }
+
+      setLocalUnlockedAvatars((prev) => {
+        const next = new Set(prev);
+        next.add(unlockModalItem.path);
+        return next;
+      });
+
+      setSelectedAvatar(unlockModalItem.path);
+
+      if (showToast) {
+        showToast(`«${unlockModalItem.label || 'Avatar'}» muvaffaqiyatli ochildi!`, 'success');
+      }
+
+      setUnlockModalItem(null);
+    } catch (err) {
+      console.error('Failed to unlock avatar:', err);
+      if (showToast) {
+        showToast("Xatolik yuz berdi, qaytadan urinib ko'ring", "error");
+      }
+    } finally {
+      setIsUnlocking(false);
+    }
+  };
 
   // Preload initial batch of gallery avatars immediately
   useEffect(() => {
@@ -94,6 +239,17 @@ export default function StudentAvatarPickerView({
   };
 
   const handleSave = () => {
+    // Paid gallery avatars cannot be saved unless purchased
+    const galleryIdx = getGalleryAvatarIndex(selectedAvatar);
+    if (galleryIdx >= FREE_GALLERY_AVATAR_COUNT) {
+      const unlocked =
+        localUnlockedAvatars.has(selectedAvatar) ||
+        isAvatarUnlockedForStudent(pinnedStudent, selectedAvatar, galleryIdx, true);
+      if (!unlocked) {
+        if (showToast) showToast("Ushbu avatar qulflangan, avval Like evaziga ochish lozim!", "warning");
+        return;
+      }
+    }
     triggerHaptic('medium');
     if (onSaveAvatar && pinnedStudent) {
       onSaveAvatar(selectedAvatar, pinnedStudent.id, pinnedStudent.name);
@@ -137,11 +293,11 @@ export default function StudentAvatarPickerView({
           <span className="picker-back-text">Profilga qaytish</span>
         </button>
 
-        <div className="picker-counter-badge" aria-label="114 xil avatar mavjud">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z" />
-          </svg>
-          <span>114 xil avatar</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <div className="picker-balance-badge" style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', padding: '5px 10px', borderRadius: '12px', background: 'rgba(52, 199, 89, 0.12)', border: '1px solid rgba(52, 199, 89, 0.28)', fontSize: '0.82rem', fontWeight: 700, color: '#248A3D' }}>
+            <ProjectLikeIcon size={13} color="#248A3D" />
+            <span>{totalScore || 0} Like</span>
+          </div>
         </div>
       </header>
 
@@ -165,6 +321,18 @@ export default function StudentAvatarPickerView({
           </h2>
           <span className="picker-hero-series-tag">{seriesName}</span>
         </div>
+
+        {/* Primary Save Button moved directly under selected avatar info */}
+        <button
+          type="button"
+          className="picker-save-primary-btn scale-active"
+          onClick={handleSave}
+        >
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round">
+            <polyline points="20 6 9 17 4 12" />
+          </svg>
+          <span>Tanlangan avatarni saqlash</span>
+        </button>
       </section>
 
       {/* 3. Avatar Selection Grid Card */}
@@ -183,7 +351,6 @@ export default function StudentAvatarPickerView({
               setIsSearchOpen(!isSearchOpen);
               if (isSearchOpen) setSearchQuery('');
             }}
-            title="Qidirish"
             aria-label="Qidirish"
           >
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
@@ -257,6 +424,10 @@ export default function StudentAvatarPickerView({
           {avatarTab === 'gallery' ? (
             <div className="picker-gallery-grid-4col">
               {filteredGallery.map((img, idx) => {
+                const meta = GALLERY_ITEM_MAP.get(img.id) || { index: idx, price: 0, isFree: true };
+                const price = meta.price;
+                const isUnlocked = meta.isFree || isItemUnlocked(img, meta.index);
+
                 const isSelected =
                   selectedAvatar === img.path ||
                   selectedAvatar === img.cdnPath ||
@@ -269,10 +440,9 @@ export default function StudentAvatarPickerView({
                   <button
                     key={img.id}
                     type="button"
-                    className={`picker-item-btn ${isSelected ? 'is-selected' : ''}`}
-                    onClick={() => handleSelect(img.path)}
-                    title={img.label || 'Surat'}
-                    aria-label={img.label || 'Surat'}
+                    className={`picker-item-btn ${isSelected ? 'is-selected' : ''} ${!isUnlocked ? 'is-locked' : ''}`}
+                    onClick={() => handleItemClick(img, meta.index, price, isUnlocked)}
+                    aria-label={`${img.label || 'Surat'}${!isUnlocked ? ` (${price} Like)` : ''}`}
                   >
                     <div className="picker-item-thumb">
                       <img
@@ -289,7 +459,22 @@ export default function StudentAvatarPickerView({
                         }}
                       />
                     </div>
-                    {isSelected && (
+
+                    {/* Locked Indicators */}
+                    {!isUnlocked && (
+                      <>
+                        <div className="picker-item-lock-badge" aria-label="Qulflangan">
+                          <LockIcon size={11} color="#FFF" />
+                        </div>
+                        <div className="picker-item-price-badge">
+                          <ProjectLikeIcon size={9} color="#FFD60A" />
+                          <span>{price} Like</span>
+                        </div>
+                      </>
+                    )}
+
+                    {/* Selected Check Badge (Only if unlocked) */}
+                    {isUnlocked && isSelected && (
                       <div className="picker-item-check-badge">
                         <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round">
                           <polyline points="20 6 9 17 4 12" />
@@ -313,7 +498,6 @@ export default function StudentAvatarPickerView({
                     type="button"
                     className={`picker-item-btn svg-item ${isSelected ? 'is-selected' : ''}`}
                     onClick={() => handleSelect(item.id)}
-                    title={item.label}
                     aria-label={item.label}
                   >
                     <div className="picker-item-thumb">
@@ -377,27 +561,122 @@ export default function StudentAvatarPickerView({
         </div>
       </section>
 
-      {/* 4. Bottom Action Buttons */}
-      <footer className="picker-actions-footer">
-        <button
-          type="button"
-          className="picker-save-primary-btn"
-          onClick={handleSave}
+      {/* 4. Unlock Confirmation Pop-up Modal rendered via Portal to document.body */}
+      {typeof document !== 'undefined' && unlockModalItem && createPortal(
+        <div
+          ref={overlayRef}
+          className="modal-overlay avatar-unlock-modal-overlay animate-fadeIn"
+          onClick={() => !isUnlocking && setUnlockModalItem(null)}
+          onWheel={(e) => e.stopPropagation()}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="unlock-modal-title"
         >
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round">
-            <polyline points="20 6 9 17 4 12" />
-          </svg>
-          <span>Tanlangan avatarni saqlash</span>
-        </button>
+          <div
+            className="avatar-unlock-modal animate-scaleUp"
+            onClick={(e) => e.stopPropagation()}
+            onWheel={(e) => e.stopPropagation()}
+          >
+            <div className="avatar-unlock-modal-header">
+              <h3 id="unlock-modal-title" className="avatar-unlock-modal-title">
+                Avatarni ochish
+              </h3>
+              <button
+                type="button"
+                className="avatar-unlock-close-btn"
+                disabled={isUnlocking}
+                onClick={() => setUnlockModalItem(null)}
+                aria-label="Yopish"
+              >
+                <XIcon size={14} />
+              </button>
+            </div>
 
-        <button
-          type="button"
-          className="picker-cancel-link-btn"
-          onClick={handleCancel}
-        >
-          Bekor qilish
-        </button>
-      </footer>
+            <div className="avatar-unlock-modal-body">
+              {/* Natural / Standard Size Avatar Image (not huge!) */}
+              <div className="avatar-unlock-preview-squircle">
+                <img
+                  src={unlockModalItem.path}
+                  alt={unlockModalItem.label || 'Avatar'}
+                  className="avatar-unlock-preview-img"
+                />
+              </div>
+
+              <h4 className="avatar-unlock-item-name">
+                {unlockModalItem.label || `Surat ${unlockModalItem.index + 1}`}
+              </h4>
+              <span className="avatar-unlock-series-tag">
+                {unlockModalItem.seriesName}
+              </span>
+
+              {/* Price & Balance Box */}
+              <div className="avatar-unlock-info-box">
+                <div className="avatar-unlock-price-row">
+                  <span className="avatar-unlock-price-label">Narxi:</span>
+                  <span className="avatar-unlock-price-val">
+                    <ProjectLikeIcon size={15} color="#FF9500" />
+                    <span>{unlockModalItem.price} Like</span>
+                  </span>
+                </div>
+
+                <div className="avatar-unlock-balance-row">
+                  <span className="avatar-unlock-balance-label">Sizning balansingiz:</span>
+                  <span className="avatar-unlock-balance-val">
+                    <ProjectLikeIcon size={13} color="#34C759" />
+                    <span>{totalScore || 0} Like</span>
+                  </span>
+                </div>
+
+                <div className="avatar-unlock-status-note">
+                  {(totalScore || 0) >= unlockModalItem.price ? (
+                    <span className="status-sufficient">
+                      Ochilgandan so'ng: <strong>{(totalScore || 0) - unlockModalItem.price} Like</strong> qoladi
+                    </span>
+                  ) : (
+                    <span className="status-insufficient">
+                      Yetarli Like mavjud emas (yana <strong>{unlockModalItem.price - (totalScore || 0)} Like</strong> kerak)
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="avatar-unlock-modal-actions">
+                {(totalScore || 0) >= unlockModalItem.price ? (
+                  <button
+                    type="button"
+                    className="avatar-unlock-action-primary-btn scale-active"
+                    disabled={isUnlocking}
+                    onClick={handleConfirmUnlock}
+                  >
+                    <UnlockIcon size={15} color="#FFF" />
+                    <span>{isUnlocking ? "Ochilmoqda..." : `${unlockModalItem.price} Like evaziga ochish`}</span>
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    className="avatar-unlock-action-disabled-btn"
+                    disabled
+                  >
+                    <LockIcon size={15} color="var(--text-tertiary)" />
+                    <span>Yetarli Like yo'q</span>
+                  </button>
+                )}
+
+                <button
+                  type="button"
+                  className="avatar-unlock-cancel-btn"
+                  disabled={isUnlocking}
+                  onClick={() => setUnlockModalItem(null)}
+                >
+                  Bekor qilish
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
     </div>
   );
 }

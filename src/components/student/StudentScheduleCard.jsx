@@ -223,18 +223,14 @@ export default function StudentScheduleCard({ group, extraLessons = [], studentI
         <div className="schedule-header-titles">
           <h3 className="schedule-group-name">{group?.name || "Guruh"}</h3>
           {group?.room && (
-            <span className="schedule-room-pill" title="Xona">
+            <span className="schedule-room-pill">
               <MapPinIcon size={12} />
               <span>{group.room}</span>
             </span>
           )}
         </div>
 
-        <div className="schedule-time-badge" title="Dars vaqti">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-            <circle cx="12" cy="12" r="10" />
-            <polyline points="12 6 12 12 16 14" />
-          </svg>
+        <div className="schedule-time-badge">
           <span className="schedule-time-label">Dars vaqti:</span>
           <span className="schedule-time-val">{timeText}</span>
         </div>
@@ -250,7 +246,6 @@ export default function StudentScheduleCard({ group, extraLessons = [], studentI
             <div
               key={wd.key}
               className={`native-weekday-cell ${hasClass ? 'has-class' : ''} ${hasExtra ? 'has-extra' : ''} ${isToday ? 'is-today' : ''}`}
-              title={`${wd.name}${hasClass ? " • Dars kuni" : ""}${hasExtra ? " • Extra dars kuni" : ""}${isToday ? " • Bugun" : ""}`}
             >
               <span className="cell-day-text">{wd.short}</span>
             </div>

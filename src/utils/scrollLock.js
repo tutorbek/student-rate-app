@@ -15,10 +15,14 @@ export function lockBodyScroll() {
     originalStyles = {
       bodyOverflow: document.body.style.overflow,
       htmlOverflow: document.documentElement.style.overflow,
+      bodyOverscrollBehavior: document.body.style.overscrollBehavior,
+      htmlOverscrollBehavior: document.documentElement.style.overscrollBehavior,
     };
 
     document.documentElement.style.overflow = 'hidden';
     document.body.style.overflow = 'hidden';
+    document.documentElement.style.overscrollBehavior = 'none';
+    document.body.style.overscrollBehavior = 'none';
   }
 }
 
@@ -29,6 +33,8 @@ export function unlockBodyScroll() {
   if (lockCount === 0 && originalStyles) {
     document.documentElement.style.overflow = originalStyles.htmlOverflow || '';
     document.body.style.overflow = originalStyles.bodyOverflow || '';
+    document.documentElement.style.overscrollBehavior = originalStyles.htmlOverscrollBehavior || '';
+    document.body.style.overscrollBehavior = originalStyles.bodyOverscrollBehavior || '';
     originalStyles = null;
   }
 }

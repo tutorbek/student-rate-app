@@ -4,13 +4,15 @@ import StudentScheduleCard from './StudentScheduleCard';
 import StudentTeacherShowcase from './StudentTeacherShowcase';
 import StudentAttendanceCalendar from './StudentAttendanceCalendar';
 import StudentRatingView from './StudentRatingView';
-import StudentShopComingSoon from './StudentShopComingSoon';
+import StudentRewardView from './StudentRewardView';
 import StudentAccountView from './StudentAccountView';
+import StudentProfileSelectView from './StudentProfileSelectView';
 import { renderAvatar } from '../../utils/studentAvatars';
 import { preloadAvatars, idlePreloadGalleryAvatars } from '../../utils/avatarCache';
 import { scrollToWithOffset } from '../../utils/scrollOffset';
 import { isStudentTargetedByExtraLesson } from '../../utils/scheduleUtils';
-import { ProjectLikeIcon, ZapIcon, CalendarIcon, MapPinIcon } from './StudentIcons';
+import { ZapIcon, CalendarIcon, MapPinIcon } from './StudentIcons';
+import { sanitizeStudentAvatar } from '../../utils/avatarGallery';
 import { setupTelegramFullscreen, syncTelegramMetrics } from '../../utils/telegram';
 import './StudentPortal.css';
 
@@ -81,6 +83,7 @@ export default function StudentPortal({
   onRemoveGroup,
   onLogout,
   onUpdateAvatar,
+  onUnlockAvatar,
   onSetStudentPin,
   onClaimStudentDevice,
   showToast,
@@ -89,12 +92,14 @@ export default function StudentPortal({
   teacherProfile = null,
   allTeachersData = {},
   extraLessons = [],
+  rewards = null,
+  onRequestGift = null,
 }) {
-  // Navigation Tabs: 'main' (Asosiy) | 'rating' (Reyting) | 'shop' (Do'kon) | 'profile' (Profil)
+  // Navigation Tabs: 'main' (Asosiy) | 'rating' (Reyting) | 'shop' (Sovg'a) | 'profile' (Profil)
   const [activeTab, setActiveTab] = useState(() => {
     const saved = localStorage.getItem('rsa_student_portal_tab');
-    if (saved === 'main' || saved === 'rating' || saved === 'shop' || saved === 'profile') {
-      return saved;
+    if (saved === 'main' || saved === 'rating' || saved === 'shop' || saved === 'reward' || saved === 'profile') {
+      return saved === 'reward' ? 'shop' : saved;
     }
     return 'main';
   });
@@ -150,21 +155,68 @@ export default function StudentPortal({
     return [...connectedGroupsList].sort((a, b) => String(a.id || '').localeCompare(String(b.id || '')));
   }, [connectedGroupsList]);
 
+  // All active data for the current group's teacher
+  const currentTeacherData = useMemo(() => {
+    if (currentGroup?.teacherId && allTeachersData?.[currentGroup.teacherId]) {
+      return allTeachersData[currentGroup.teacherId];
+    }
+    return null;
+  }, [currentGroup, allTeachersData]);
+
+  // Current active teacher rewards for gifts
+  const currentRewards = useMemo(() => {
+    if (rewards && (rewards.kids || rewards.teens || (Array.isArray(rewards.requests) && rewards.requests.length > 0))) {
+      return rewards;
+    }
+    if (currentTeacherData?.rewards) {
+      return currentTeacherData.rewards;
+    }
+    if (currentGroup?.teacherId && allTeachersData?.[currentGroup.teacherId]?.rewards) {
+      return allTeachersData[currentGroup.teacherId].rewards;
+    }
+    const firstTeacher = Object.values(allTeachersData || {})[0];
+    if (firstTeacher?.rewards) {
+      return firstTeacher.rewards;
+    }
+    return { kids: null, teens: null, requests: [] };
+  }, [rewards, currentTeacherData, currentGroup, allTeachersData]);
+
+  const teacherAllGroups = useMemo(() => {
+    if (currentTeacherData?.groups && currentTeacherData.groups.length > 0) {
+      return currentTeacherData.groups.filter((g) => !g.deleted);
+    }
+    return (allActiveGroups && allActiveGroups.length > 0) ? allActiveGroups : groups;
+  }, [currentTeacherData, allActiveGroups, groups]);
+
+  const teacherAllStudents = useMemo(() => {
+    if (currentTeacherData?.students && currentTeacherData.students.length > 0) {
+      return currentTeacherData.students.filter((s) => !s.deleted);
+    }
+    return (allActiveStudents && allActiveStudents.length > 0) ? allActiveStudents : students;
+  }, [currentTeacherData, allActiveStudents, students]);
+
+  const teacherAllTransactions = useMemo(() => {
+    if (currentTeacherData?.transactions && currentTeacherData.transactions.length > 0) {
+      return currentTeacherData.transactions.filter((t) => !t.deleted);
+    }
+    return (allActiveTransactions && allActiveTransactions.length > 0) ? allActiveTransactions : transactions;
+  }, [currentTeacherData, allActiveTransactions, transactions]);
+
   // Group students strictly scoped to current group
   const groupStudents = useMemo(() => {
     if (!currentGroup?.id) return [];
     const gId = String(currentGroup.id);
-    const pool = (allActiveStudents && allActiveStudents.length > 0) ? allActiveStudents : students;
+    const pool = teacherAllStudents;
     return pool.filter((s) => String(s.groupId) === gId && !s.deleted);
-  }, [currentGroup, allActiveStudents, students]);
+  }, [currentGroup, teacherAllStudents]);
 
   // Group transactions strictly scoped to current group students
   const groupTransactions = useMemo(() => {
     if (!currentGroup?.id || groupStudents.length === 0) return [];
     const validStudentIds = new Set(groupStudents.map((s) => String(s.id)));
-    const pool = (allActiveTransactions && allActiveTransactions.length > 0) ? allActiveTransactions : transactions;
+    const pool = teacherAllTransactions;
     return pool.filter((t) => !t.deleted && validStudentIds.has(String(t.studentId)));
-  }, [currentGroup, groupStudents, allActiveTransactions, transactions]);
+  }, [currentGroup, groupStudents, teacherAllTransactions]);
 
   // Group attendance strictly scoped to current group
   const groupAttendance = useMemo(() => {
@@ -175,6 +227,7 @@ export default function StudentPortal({
 
   // Pinned Student Profile
   const [pinnedOverrides, setPinnedOverrides] = useState({});
+  const [isSwitchingProfile, setIsSwitchingProfile] = useState(false);
 
   // Synchronously compute pinned student for the active group
   // Handle selecting / authenticating a student profile
@@ -218,7 +271,7 @@ export default function StudentPortal({
     if (candidateId) {
       const found = groupStudents.find((s) => String(s.id) === String(candidateId));
       if (found) {
-        return found;
+        return { ...found, emoji: sanitizeStudentAvatar(found) };
       }
     }
 
@@ -234,7 +287,7 @@ export default function StudentPortal({
           try {
             localStorage.setItem(`rsa_pinned_student_${gId}`, String(matchByName.id));
           } catch {}
-          return matchByName;
+          return { ...matchByName, emoji: sanitizeStudentAvatar(matchByName) };
         }
       }
     } catch {}
@@ -424,14 +477,24 @@ export default function StudentPortal({
     }
   };
 
-  // Uzbek formatted date for welcome card
-  const formattedToday = useMemo(() => {
-    const now = new Date();
-    const day = now.getDate();
-    const month = UZBEK_MONTHS[now.getMonth()];
-    const weekday = UZBEK_WEEKDAYS[now.getDay()];
-    return `Bugun, ${day}-${month}, ${weekday}`;
-  }, []);
+  if (!pinnedStudent || isSwitchingProfile) {
+    return (
+      <StudentProfileSelectView
+        currentGroup={currentGroup}
+        groupStudents={groupStudents}
+        onSelectProfile={(studentId, pin) => {
+          handleSelectStudentProfile(studentId, pin);
+          setIsSwitchingProfile(false);
+        }}
+        onSetStudentPin={onSetStudentPin}
+        onLogout={onLogout}
+        onCancel={pinnedStudent ? () => setIsSwitchingProfile(false) : null}
+        theme={theme}
+        toggleTheme={toggleTheme}
+        showToast={showToast}
+      />
+    );
+  }
 
   return (
     <div className="student-portal-wrapper">
@@ -445,7 +508,6 @@ export default function StudentPortal({
                 type="button"
                 className="navbar-brand-btn"
                 onClick={() => handleTabSelect('main')}
-                title="Asosiy sahifa"
                 aria-label="Asosiy sahifa"
               >
                 <span className="navbar-logo-text">
@@ -459,7 +521,7 @@ export default function StudentPortal({
               </button>
             </div>
 
-            {/* Center: Desktop-only Segmented Navigation Tabs (4 Tabs) */}
+            {/* Center: Desktop-only Segmented Navigation Tabs (3 Tabs) */}
             <div className="navbar-desktop-nav">
               <nav className="desktop-segmented-control" aria-label="Student sahifalari">
                 <button
@@ -481,14 +543,7 @@ export default function StudentPortal({
                   className={`desktop-nav-btn ${activeTab === 'shop' ? 'active' : ''}`}
                   onClick={() => handleTabSelect('shop')}
                 >
-                  Do'kon
-                </button>
-                <button
-                  type="button"
-                  className={`desktop-nav-btn ${activeTab === 'profile' ? 'active' : ''}`}
-                  onClick={() => handleTabSelect('profile')}
-                >
-                  Profil
+                  Sovg'a
                 </button>
               </nav>
             </div>
@@ -503,7 +558,6 @@ export default function StudentPortal({
                     triggerHaptic('light');
                     toggleTheme();
                   }}
-                  title="Mavzuni o'zgartirish"
                   aria-label="Mavzu"
                 >
                   {theme === 'dark' ? (
@@ -528,9 +582,8 @@ export default function StudentPortal({
 
               <button
                 type="button"
-                className="navbar-profile-avatar-btn"
+                className={`navbar-profile-avatar-btn ${activeTab === 'profile' ? 'active' : ''}`}
                 onClick={() => handleTabSelect('profile')}
-                title={pinnedStudent ? `${pinnedStudent.name} - Profil` : "Profil tanlash"}
                 aria-label={pinnedStudent ? `${pinnedStudent.name} profili` : "Profil"}
               >
                 {pinnedStudent ? (
@@ -558,141 +611,26 @@ export default function StudentPortal({
         {/* TAB 1: ASOSIY (Home) */}
         {activeTab === 'main' && (
           <div className="tab-pane-main animate-fadeIn">
-            {/* Top Welcome & Quick Stats Hero */}
-            {pinnedStudent ? (
-              <div className="home-welcome-hero">
-                <div className="welcome-greeting-row">
-                  <button
-                    type="button"
-                    className="welcome-avatar-btn"
-                    onClick={() => handleTabSelect('profile')}
-                    title="Profil sozlamalariga o'tish"
-                    aria-label="Profil sozlamalari"
-                  >
-                    <div className="welcome-avatar-circle">
-                      {renderAvatar(pinnedStudent.emoji, 48, { priority: 'high', eager: true })}
-                    </div>
-                  </button>
-                  <div className="welcome-title-col">
-                    <h2 className="welcome-title">
-                      {`Salom, ${pinnedStudent.name.split(' ')[0]}!`}
-                    </h2>
-                    <span className="welcome-date-sub">{formattedToday}</span>
-                  </div>
-
-                  {toggleTheme && (
-                    <button
-                      type="button"
-                      className="welcome-theme-toggle-btn"
-                      onClick={() => {
-                        triggerHaptic('light');
-                        toggleTheme();
-                      }}
-                      title="Mavzuni o'zgartirish"
-                      aria-label="Mavzuni o'zgartirish"
-                    >
-                      {theme === 'dark' ? (
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                          <circle cx="12" cy="12" r="5"/>
-                          <line x1="12" y1="1" x2="12" y2="3"/>
-                          <line x1="12" y1="21" x2="12" y2="23"/>
-                          <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
-                          <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
-                          <line x1="1" y1="12" x2="3" y2="12"/>
-                          <line x1="21" y1="12" x2="23" y2="12"/>
-                          <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
-                          <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
-                        </svg>
-                      ) : (
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
-                        </svg>
-                      )}
-                    </button>
-                  )}
-                </div>
-
-                {/* 2 Quick Stat Cards Row - Interactive */}
-                <div className="home-stats-grid">
-                  <button
-                    type="button"
-                    className="home-stat-card is-clickable"
-                    onClick={() => handleTabSelect('rating')}
-                    title="Reyting sahifasiga o'tish"
-                  >
-                    <span className="stat-card-eyebrow">Reyting</span>
-                    <span className="stat-card-value">
-                      {pinnedStudentRank ? `#${pinnedStudentRank} o'rin` : "—"}
-                    </span>
-                    <span className="stat-card-hint" style={{ display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
-                      <ProjectLikeIcon size={12} />
-                      <span>{totalPinnedScore} Like ›</span>
-                    </span>
-                  </button>
-
-                  <button
-                    type="button"
-                    className="home-stat-card is-clickable"
-                    onClick={() => {
-                      scrollToWithOffset('student-attendance-calendar');
-                    }}
-                    title="Davomat taqvimiga o'tish"
-                  >
-                    <span className="stat-card-eyebrow">Davomat</span>
-                    <span className="stat-card-value">
-                      {pinnedAttendanceRate || "—"}
-                    </span>
-                    <span className="stat-card-hint">
-                      {pinnedAttendanceRate ? "Bu oyda ›" : "Tarix yo'q ›"}
-                    </span>
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <div
-                className="home-welcome-hero home-unpinned-profile-hero is-clickable"
-                onClick={() => {
-                  triggerHaptic('light');
-                  handleTabSelect('profile');
-                }}
-                role="button"
-                tabIndex={0}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' || e.key === ' ') {
-                    e.preventDefault();
-                    triggerHaptic('light');
-                    handleTabSelect('profile');
-                  }
-                }}
-                title="Profilingizni tanlang"
-                aria-label="Profilingizni tanlang"
-              >
-                <div className="home-unpinned-hero-left">
-                  <div className="home-unpinned-avatar-badge">
-                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-                      <circle cx="12" cy="7" r="4" />
-                    </svg>
-                  </div>
-                  <h2 className="home-unpinned-title">Profilingizni tanlang</h2>
-                </div>
-
+            {/* Top Welcome Hero */}
+            <div className="home-welcome-hero">
+              <div className="welcome-greeting-row">
                 <button
                   type="button"
-                  className="home-unpinned-cta-btn"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    triggerHaptic('light');
-                    handleTabSelect('profile');
-                  }}
+                  className="welcome-avatar-btn"
+                  onClick={() => handleTabSelect('profile')}
+                  aria-label="Profil sozlamalari"
                 >
-                  <span>Profilni tanlash</span>
-                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                    <polyline points="9 18 15 12 9 6" />
-                  </svg>
+                  <div className="welcome-avatar-circle">
+                    {renderAvatar(pinnedStudent?.emoji, 48, { priority: 'high', eager: true })}
+                  </div>
                 </button>
+                <div className="welcome-title-col">
+                  <h2 className="welcome-title">
+                    {`Salom, ${pinnedStudent?.name ? pinnedStudent.name.split(' ')[0] : ''}!`}
+                  </h2>
+                </div>
               </div>
-            )}
+            </div>
 
             {/* Upcoming Extra Lesson Announcement Banner */}
             {upcomingGroupExtraLesson && (
@@ -762,9 +700,9 @@ export default function StudentPortal({
               key={currentGroup?.id || 'rating'}
               students={groupStudents}
               transactions={groupTransactions}
-              allStudents={allActiveStudents && allActiveStudents.length > 0 ? allActiveStudents : students}
-              allTransactions={allActiveTransactions && allActiveTransactions.length > 0 ? allActiveTransactions : transactions}
-              allGroups={allActiveGroups && allActiveGroups.length > 0 ? allActiveGroups : groups}
+              allStudents={teacherAllStudents}
+              allTransactions={teacherAllTransactions}
+              allGroups={teacherAllGroups}
               pinnedStudentId={pinnedStudentId}
               pinnedStudent={pinnedStudent}
               group={currentGroup}
@@ -777,14 +715,16 @@ export default function StudentPortal({
           </div>
         )}
 
-        {/* TAB 3: DO'KON (Shop) */}
-        {activeTab === 'shop' && (
-          <div className="tab-pane-shop animate-fadeIn">
-            <StudentShopComingSoon
+        {/* TAB 3: SOVG'A (Monthly Race & Reward) */}
+        {(activeTab === 'shop' || activeTab === 'reward') && (
+          <div className="tab-pane-reward animate-fadeIn">
+            <StudentRewardView
               pinnedStudent={pinnedStudent}
-              transactions={groupTransactions}
-              showToast={showToast}
-              onOpenProfilePicker={() => handleTabSelect('profile')}
+              currentGroup={currentGroup}
+              allStudents={teacherAllStudents}
+              allTransactions={teacherAllTransactions}
+              allGroups={teacherAllGroups}
+              rewards={currentRewards}
             />
           </div>
         )}
@@ -804,9 +744,12 @@ export default function StudentPortal({
               onAddGroup={onAddGroup}
               onRemoveGroup={onRemoveGroup}
               onUpdateAvatar={onUpdateAvatar}
+              onUnlockAvatar={onUnlockAvatar}
+              totalPinnedScore={totalPinnedScore}
               onSetStudentPin={onSetStudentPin}
               onClaimStudentDevice={onClaimStudentDevice}
               onSelectProfile={handleSelectStudentProfile}
+              onSwitchProfile={() => setIsSwitchingProfile(true)}
               handleClearProfilePin={handleClearProfilePin}
               theme={theme}
               toggleTheme={toggleTheme}
@@ -860,18 +803,20 @@ export default function StudentPortal({
 
             <button
               type="button"
-              className={`dock-tab-btn ${activeTab === 'shop' ? 'active' : ''}`}
+              className={`dock-tab-btn ${activeTab === 'shop' || activeTab === 'reward' ? 'active' : ''}`}
               onClick={() => handleTabSelect('shop')}
-              aria-label="Do'kon sahifasi"
+              aria-label="Sovg'a sahifasi"
             >
               <div className="dock-tab-icon">
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={activeTab === 'shop' ? "2.6" : "2"} strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z" />
-                  <path d="M3 6h18" />
-                  <path d="M16 10a4 4 0 0 1-8 0" />
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={activeTab === 'shop' || activeTab === 'reward' ? "2.6" : "2"} strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="20 12 20 22 4 22 4 12" />
+                  <rect x="2" y="7" width="20" height="5" />
+                  <line x1="12" y1="22" x2="12" y2="7" />
+                  <path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z" />
+                  <path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z" />
                 </svg>
               </div>
-              <span className="dock-tab-label">Do'kon</span>
+              <span className="dock-tab-label">Sovg'a</span>
             </button>
 
             <button

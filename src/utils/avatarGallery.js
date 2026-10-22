@@ -711,3 +711,148 @@ export const compressUploadedImage = (file, maxDimension = 128, quality = 0.75) 
     reader.readAsDataURL(file);
   });
 };
+
+export const FREE_GALLERY_AVATAR_COUNT = 10;
+
+/**
+ * Returns a deterministic default free avatar for a student based on their ID.
+ * Cleanly cycles through the 10 free avatars (index 0 - 9) so each student gets
+ * a stable, aesthetic free avatar.
+ */
+export const getDefaultFreeAvatar = (studentId) => {
+  if (!studentId) return AVATAR_GALLERY_IMAGES[0]?.path;
+  const str = String(studentId);
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    hash = (hash * 31 + str.charCodeAt(i)) >>> 0;
+  }
+  const freeIndex = hash % FREE_GALLERY_AVATAR_COUNT;
+  return AVATAR_GALLERY_IMAGES[freeIndex]?.path || AVATAR_GALLERY_IMAGES[0]?.path;
+};
+
+/**
+ * Finds the index of an avatar in the gallery images array. Returns -1 if not found.
+ */
+export const getGalleryAvatarIndex = (avatarKey) => {
+  if (!avatarKey) return -1;
+  const norm = normalizeIconUrl(avatarKey);
+  return AVATAR_GALLERY_IMAGES.findIndex(
+    (img) => img.path === norm || img.cdnPath === norm || img.id === norm || img.legacyPath === norm
+  );
+};
+
+/**
+ * Checks if a given avatar path / key is a paid gallery avatar (index >= 10).
+ */
+export const isPaidGalleryAvatar = (avatarKey) => {
+  const idx = getGalleryAvatarIndex(avatarKey);
+  return idx >= FREE_GALLERY_AVATAR_COUNT;
+};
+
+/**
+ * Returns the like unlock price for a gallery avatar based on its index.
+ * First 10 are free (0 likes).
+ * Next 15: 5 - 10 likes.
+ * Next 25: 15 - 30 likes.
+ * Last 19: 35 - 50 likes.
+ */
+export const getAvatarGalleryPrice = (index) => {
+  if (index < FREE_GALLERY_AVATAR_COUNT) return 0;
+  if (index < 25) return 5 + Math.round((index - 10) * (5 / 14));
+  if (index < 50) return 15 + Math.round((index - 25) * (15 / 24));
+  if (index < 69) return 35 + Math.round((index - 50) * (15 / 18));
+  return 50;
+};
+
+/**
+ * Checks if a gallery avatar at the given index is free by default.
+ */
+export const isAvatarGalleryFree = (index) => {
+  return index < FREE_GALLERY_AVATAR_COUNT;
+};
+
+/**
+ * Checks if a given avatar is unlocked for a specific student.
+ * CRITICAL RULE: A paid gallery avatar (index >= 10) is ONLY unlocked if
+ * the student has explicitly purchased it. Having it in student.emoji DOES NOT
+ * grant free access!
+ */
+export const isAvatarUnlockedForStudent = (student, avatarKey, galleryIndex, isGalleryTab = true) => {
+  if (!isGalleryTab) return true; // 3D avatars tab is 100% free
+
+  const idx =
+    galleryIndex !== undefined && galleryIndex !== null
+      ? galleryIndex
+      : getGalleryAvatarIndex(avatarKey);
+
+  // First 10 gallery avatars are 100% free
+  if (idx >= 0 && idx < FREE_GALLERY_AVATAR_COUNT) {
+    return true;
+  }
+
+  // If not a gallery item (e.g. 3D SVG icon or custom file upload), it is free
+  if (idx < 0) {
+    return true;
+  }
+
+  // It is a paid gallery avatar (idx >= 10).
+  // Strictly requires purchase proof!
+  if (!student) return false;
+
+  const normKey = normalizeIconUrl(avatarKey);
+
+  // 1. Check student's unlockedAvatars array from database
+  if (Array.isArray(student.unlockedAvatars)) {
+    const isUnlocked = student.unlockedAvatars.some(
+      (unlockedKey) => unlockedKey === avatarKey || normalizeIconUrl(unlockedKey) === normKey
+    );
+    if (isUnlocked) return true;
+  }
+
+  // 2. Check local storage cache for purchases made on this device
+  if (student.id && typeof localStorage !== 'undefined') {
+    try {
+      const cached = localStorage.getItem(`rsa_unlocked_avatars_${student.id}`);
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (Array.isArray(parsed)) {
+          const isUnlocked = parsed.some(
+            (unlockedKey) => unlockedKey === avatarKey || normalizeIconUrl(unlockedKey) === normKey
+          );
+          if (isUnlocked) return true;
+        }
+      }
+    } catch {}
+  }
+
+  return false;
+};
+
+/**
+ * Sanitizes a student's avatar.
+ * By default, all students must have free avatars.
+ * Paid avatars (index >= 10) are only preserved if actually purchased.
+ * Otherwise, falls back to the student's deterministic default free avatar.
+ */
+export const sanitizeStudentAvatar = (student) => {
+  if (!student) return AVATAR_GALLERY_IMAGES[0]?.path;
+  const currentEmoji = student.emoji ? normalizeIconUrl(student.emoji) : '';
+
+  // If no emoji is set, assign a default free avatar
+  if (!currentEmoji) {
+    return getDefaultFreeAvatar(student.id);
+  }
+
+  // Check if it's a paid gallery avatar
+  const galleryIndex = getGalleryAvatarIndex(currentEmoji);
+  if (galleryIndex >= FREE_GALLERY_AVATAR_COUNT) {
+    const isUnlocked = isAvatarUnlockedForStudent(student, currentEmoji, galleryIndex, true);
+    if (!isUnlocked) {
+      // Paid avatar that was NOT purchased -> reset to default free avatar!
+      return getDefaultFreeAvatar(student.id);
+    }
+  }
+
+  return currentEmoji;
+};
+

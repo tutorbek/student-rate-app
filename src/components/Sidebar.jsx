@@ -203,6 +203,20 @@ const Sidebar = ({ activeTab, setActiveTab, userRole, onLogout, theme, toggleThe
         </svg>
       ),
     },
+    {
+      id: 'rewards',
+      label: "Sovg'alar",
+      shortLabel: "Sovg'a",
+      icon: (
+        <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.3" strokeLinecap="round" strokeLinejoin="round">
+          <polyline points="20 12 20 22 4 22 4 12" />
+          <rect x="2" y="7" width="20" height="5" />
+          <line x1="12" y1="22" x2="12" y2="7" />
+          <path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z" />
+          <path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z" />
+        </svg>
+      ),
+    },
   ];
 
   const filteredMenuItems = menuItems.filter((item) => {
@@ -224,7 +238,6 @@ const Sidebar = ({ activeTab, setActiveTab, userRole, onLogout, theme, toggleThe
           <div
             className="sidebar-brand scale-active"
             onClick={() => setActiveTab(userRole === 'student' ? 'leaderboard' : (userRole === 'admin' ? 'dashboard' : 'schedule'))}
-            title="Bosh sahifa"
           >
             <img
               src={theme === 'dark' ? "/apple-touch-icon-dark.png" : "/apple-touch-icon.png"}
@@ -262,7 +275,6 @@ const Sidebar = ({ activeTab, setActiveTab, userRole, onLogout, theme, toggleThe
                   type="button"
                   className="sidebar-logout-btn scale-active"
                   onClick={onLogout}
-                  title="Tizimdan chiqish"
                 >
                   <span className="nav-icon"><IconLogout size={18} /></span>
                   <span className="nav-label">Chiqish</span>
@@ -289,7 +301,6 @@ const Sidebar = ({ activeTab, setActiveTab, userRole, onLogout, theme, toggleThe
                       toggleTheme();
                     }}
                     aria-label="Mavzuni o'zgartirish"
-                    title={theme === 'dark' ? "Yorug' rejim" : "Qorong'i rejim"}
                   >
                     {theme === 'dark' ? <IconSun size={14} /> : <IconMoon size={14} />}
                   </button>
@@ -301,7 +312,6 @@ const Sidebar = ({ activeTab, setActiveTab, userRole, onLogout, theme, toggleThe
                     e.stopPropagation();
                     setActiveTab('settings');
                   }}
-                  title="Profil va Sozlamalar"
                   aria-label="Sozlamalar"
                 >
                   <IconSettings size={14} />
@@ -312,7 +322,6 @@ const Sidebar = ({ activeTab, setActiveTab, userRole, onLogout, theme, toggleThe
             <div
               className="user-card-body scale-active"
               onClick={() => setActiveTab('settings')}
-              title="Profil sahifasiga o'tish"
               role="button"
               tabIndex={0}
               onKeyDown={(e) => {
@@ -324,10 +333,10 @@ const Sidebar = ({ activeTab, setActiveTab, userRole, onLogout, theme, toggleThe
             >
               {renderUserAvatar()}
               <div className="user-card-details">
-                <span className="user-card-name" title={displayName}>
+                <span className="user-card-name">
                   {displayName}
                 </span>
-                <span className="user-card-sub" title={displayTitle}>
+                <span className="user-card-sub">
                   {displayTitle}
                 </span>
               </div>
@@ -362,7 +371,6 @@ const Sidebar = ({ activeTab, setActiveTab, userRole, onLogout, theme, toggleThe
                 toggleTheme();
               }}
               aria-label="Mavzuni o'zgartirish"
-              title="Mavzuni o'zgartirish"
             >
               {theme === 'dark' ? <IconSun size={18} /> : <IconMoon size={18} />}
             </button>
@@ -376,7 +384,6 @@ const Sidebar = ({ activeTab, setActiveTab, userRole, onLogout, theme, toggleThe
                 triggerHaptic('light');
                 setActiveTab('settings');
               }}
-              title={displayName ? `${displayName} - Profil` : "Profil"}
               aria-label={displayName ? `${displayName} profili` : "Profil"}
             >
               {renderHeaderAvatar()}

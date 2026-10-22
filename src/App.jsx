@@ -7,6 +7,7 @@ import Leaderboard from './components/Leaderboard';
 import Settings from './components/Settings';
 import Attendance from './components/Attendance';
 import ScheduleView from './components/ScheduleView';
+import TeacherRewardsView from './components/TeacherRewardsView';
 import AdminDashboard from './components/admin/AdminDashboard';
 import AdminAttendance from './components/admin/AdminAttendance';
 import AdminFinance from './components/admin/AdminFinance';
@@ -29,6 +30,7 @@ import {
   loadSnapshotsFromSupabase as loadSnapshotsFromFirestore,
   saveSnapshotToSupabase as saveSnapshotToFirestore,
   updateStudentAvatarInSupabase,
+  recordStudentAvatarPurchaseInSupabase,
   setStudentPinInSupabase,
   resetStudentPinInSupabase
 } from './utils/supabase';
@@ -56,7 +58,7 @@ import {
   sanitizeAttendanceList,
   syncTransferredStudentsAttendance
 } from './utils/db';
-import { normalizeIconUrl } from './utils/avatarGallery';
+import { normalizeIconUrl, sanitizeStudentAvatar } from './utils/avatarGallery';
 import { preloadAvatars } from './utils/avatarCache';
 
 function App() {
@@ -238,6 +240,51 @@ function App() {
     }
   }, [applyThemeInstantly]);
 
+  // Universal Modal & Dialog detection to prevent fixed bottom navigation overlapping modals
+  useEffect(() => {
+    if (typeof document === 'undefined') return;
+
+    const updateModalState = () => {
+      const hasModal = Boolean(
+        document.querySelector('.modal-overlay') ||
+        document.querySelector('.modal-content') ||
+        document.querySelector('.sheet-backdrop') ||
+        document.querySelector('.profile-pin-overlay') ||
+        document.querySelector('[role="dialog"]')
+      );
+      document.body.classList.toggle('has-modal-open', hasModal);
+      document.documentElement.classList.toggle('has-modal-open', hasModal);
+    };
+
+    updateModalState();
+
+    const observer = new MutationObserver(updateModalState);
+    observer.observe(document.body, { childList: true, subtree: true });
+
+    return () => {
+      observer.disconnect();
+      document.body.classList.remove('has-modal-open');
+      document.documentElement.classList.remove('has-modal-open');
+    };
+  }, []);
+
+  // Globally disable all native browser hover tooltips across the application
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const handleMouseOver = (e) => {
+      const el = e.target && e.target.closest ? e.target.closest('[title]') : null;
+      if (el && el.tagName !== 'IFRAME') {
+        el.removeAttribute('title');
+      }
+    };
+
+    window.addEventListener('mouseover', handleMouseOver, { capture: true, passive: true });
+    return () => {
+      window.removeEventListener('mouseover', handleMouseOver, { capture: true });
+    };
+  }, []);
+
   // Initialize Telegram WebApp Fullscreen, Safe Areas, and Deep Links
   useEffect(() => {
     const cleanupTg = setupTelegramFullscreen(theme);
@@ -286,7 +333,7 @@ function App() {
     const passwordClean = loginPassword.trim().toLowerCase();
     let match = CREDENTIALS[passwordClean];
 
-    // Check custom password from teacherProfile in allTeachersData
+    // 1. Fast local checks: Check custom password from teacherProfile in allTeachersData
     if (!match && allTeachersData) {
       for (const tId of ['teacher1', 'teacher2', 'teacher3', 'teacher4']) {
         const customPwd = allTeachersData[tId]?.teacherProfile?.password?.trim()?.toLowerCase();
@@ -297,7 +344,7 @@ function App() {
       }
     }
 
-    // Check cached teacher profiles from localStorage
+    // 2. Check cached teacher profiles from localStorage
     if (!match) {
       for (const tId of ['teacher1', 'teacher2', 'teacher3', 'teacher4']) {
         try {
@@ -314,29 +361,7 @@ function App() {
       }
     }
 
-    // Check Supabase remote teacher profiles if still unauthenticated
-    if (!match) {
-      try {
-        const remoteTeachers = await loadAllTeachersFromSupabase(['teacher1', 'teacher2', 'teacher3', 'teacher4']);
-        if (remoteTeachers) {
-          for (const tId of ['teacher1', 'teacher2', 'teacher3', 'teacher4']) {
-            const remotePwd = remoteTeachers[tId]?.teacherProfile?.password?.trim()?.toLowerCase();
-            if (remotePwd && remotePwd === passwordClean) {
-              match = { role: 'teacher', teacherId: tId };
-              if (remoteTeachers[tId]?.teacherProfile) {
-                try {
-                  localStorage.setItem(`rsa_teacher_profile_${tId}`, JSON.stringify(remoteTeachers[tId].teacherProfile));
-                } catch (_) {}
-              }
-              break;
-            }
-          }
-        }
-      } catch (err) {
-        console.warn('Teacher remote credential check skipped:', err);
-      }
-    }
-
+    // If static or cached teacher/admin credentials match, log in immediately
     if (match) {
       localStorage.setItem('rsa_authenticated', 'true');
       localStorage.setItem('rsa_role', match.role);
@@ -357,55 +382,155 @@ function App() {
       }
       showToast(match.role === 'admin' ? "Admin paneliga muvaffaqiyatli kirdingiz!" : "Muvaffaqiyatli kirdingiz!", "success");
       setLoginLoading(false);
-    } else {
-      // Try to check group password registry
-      try {
-        const groupMatch = await verifyGroupPassword(passwordClean);
-        if (groupMatch) {
-          const freshGroup = {
-            teacherId: groupMatch.teacherId,
-            groupId: groupMatch.groupId,
-            groupName: groupMatch.groupName || ''
-          };
-          const updatedGroups = [freshGroup];
-
-          localStorage.setItem('rsa_authenticated', 'true');
-          localStorage.setItem('rsa_role', 'student');
-          localStorage.setItem('rsa_teacher_id', groupMatch.teacherId);
-          localStorage.setItem('rsa_student_group_id', groupMatch.groupId);
-          localStorage.setItem('rsa_student_groups', JSON.stringify(updatedGroups));
-
-          // Clear previous user's pinned identities from other groups
-          localStorage.removeItem('rsa_pinned_student_id');
-          try {
-            Object.keys(localStorage).forEach((k) => {
-              if (
-                k.startsWith('rsa_pinned_student_') &&
-                k !== `rsa_pinned_student_${groupMatch.groupId}` &&
-                k !== `rsa_pinned_student_pin_${groupMatch.groupId}`
-              ) {
-                localStorage.removeItem(k);
-              }
-            });
-          } catch (_) {}
-
-          setStudentGroups(updatedGroups);
-          setIsAuthenticated(true);
-          setUserRole('student');
-          setTeacherId(groupMatch.teacherId);
-          setStudentGroupId(groupMatch.groupId);
-          setActiveTab('leaderboard');
-
-          showToast("Guruh reytingiga muvaffaqiyatli kirdingiz!", "success");
-        } else {
-          setLoginError("Noto'g'ri parol yoki bu guruh o'chirib yuborilgan!");
-        }
-      } catch (err) {
-        console.error('Group login failed:', err);
-        setLoginError("Tizimga ulanishda xatolik yuz berdi. Internetni tekshiring.");
-      }
-      setLoginLoading(false);
+      return;
     }
+
+    // 3. PRIORITY: Check group password registry directly!
+    // (Students entering group codes are the vast majority of logins — fast single-table query)
+    try {
+      const groupMatch = await verifyGroupPassword(passwordClean);
+      if (groupMatch) {
+        const freshGroup = {
+          teacherId: groupMatch.teacherId,
+          groupId: groupMatch.groupId,
+          groupName: groupMatch.groupName || ''
+        };
+        const updatedGroups = [freshGroup];
+
+        localStorage.setItem('rsa_authenticated', 'true');
+        localStorage.setItem('rsa_role', 'student');
+        localStorage.setItem('rsa_teacher_id', groupMatch.teacherId);
+        localStorage.setItem('rsa_student_group_id', groupMatch.groupId);
+        localStorage.setItem('rsa_student_groups', JSON.stringify(updatedGroups));
+
+        // Clear previous user's pinned identities from other groups
+        localStorage.removeItem('rsa_pinned_student_id');
+        try {
+          Object.keys(localStorage).forEach((k) => {
+            if (
+              k.startsWith('rsa_pinned_student_') &&
+              k !== `rsa_pinned_student_${groupMatch.groupId}` &&
+              k !== `rsa_pinned_student_pin_${groupMatch.groupId}`
+            ) {
+              localStorage.removeItem(k);
+            }
+          });
+        } catch (_) {}
+
+        // Pre-populate data from groupMatch.teacherData to avoid redundant refetch
+        if (groupMatch.teacherData) {
+          const data = groupMatch.teacherData;
+          const loadedGroups = (data.groups || []).map((g) => ({
+            ...g,
+            icon: normalizeIconUrl(g.icon),
+          }));
+          const loadedStudents = (data.students || []).map((s) => ({
+            ...s,
+            emoji: sanitizeStudentAvatar(s),
+          }));
+          const loadedTransactions = data.transactions || [];
+          const loadedQuickTags = normalizeQuickTags(data.quickTags);
+          const loadedAttendance = sanitizeAttendanceList(data.attendance || []);
+          const { updatedAttendance: syncedAttendance } = syncTransferredStudentsAttendance(loadedStudents, loadedAttendance);
+
+          setGroups(loadedGroups);
+          setStudents(loadedStudents);
+          setTransactions(loadedTransactions);
+          setQuickTags(loadedQuickTags);
+          setAttendance(syncedAttendance);
+          setPayments(data.payments || []);
+          setExtraLessons(data.extraLessons || []);
+          if (data.teacherProfile) {
+            setTeacherProfile(data.teacherProfile);
+            try {
+              localStorage.setItem(`rsa_teacher_profile_${groupMatch.teacherId}`, JSON.stringify(data.teacherProfile));
+            } catch {}
+          }
+
+          setAllTeachersData({
+            [groupMatch.teacherId]: {
+              groups: loadedGroups,
+              students: loadedStudents,
+              transactions: loadedTransactions,
+              payments: data.payments || [],
+              quickTags: loadedQuickTags,
+              attendance: syncedAttendance,
+              teacherProfile: data.teacherProfile || null,
+              extraLessons: data.extraLessons || []
+            }
+          });
+
+          const dbState = {
+            groups: loadedGroups,
+            students: loadedStudents,
+            transactions: loadedTransactions,
+            quickTags: loadedQuickTags,
+            attendance: syncedAttendance,
+            teacherProfile: data.teacherProfile || null,
+            extraLessons: data.extraLessons || []
+          };
+          lastSavedDataRef.current = JSON.stringify(dbState);
+
+          setIsLoaded(true);
+          setSyncStatus('saved');
+          setConnectionError(false);
+        }
+
+        setStudentGroups(updatedGroups);
+        setIsAuthenticated(true);
+        setUserRole('student');
+        setTeacherId(groupMatch.teacherId);
+        setStudentGroupId(groupMatch.groupId);
+        setActiveTab('leaderboard');
+
+        showToast("Guruh reytingiga muvaffaqiyatli kirdingiz!", "success");
+        setLoginLoading(false);
+        return;
+      }
+    } catch (err) {
+      console.error('Group login failed:', err);
+    }
+
+    // 4. Fallback: Check if a teacher changed their password remotely in Supabase
+    try {
+      const remoteTeachers = await loadAllTeachersFromSupabase(['teacher1', 'teacher2', 'teacher3', 'teacher4']);
+      if (remoteTeachers) {
+        for (const tId of ['teacher1', 'teacher2', 'teacher3', 'teacher4']) {
+          const remotePwd = remoteTeachers[tId]?.teacherProfile?.password?.trim()?.toLowerCase();
+          if (remotePwd && remotePwd === passwordClean) {
+            match = { role: 'teacher', teacherId: tId };
+            if (remoteTeachers[tId]?.teacherProfile) {
+              try {
+                localStorage.setItem(`rsa_teacher_profile_${tId}`, JSON.stringify(remoteTeachers[tId].teacherProfile));
+              } catch (_) {}
+            }
+            break;
+          }
+        }
+      }
+    } catch (err) {
+      console.warn('Teacher remote credential check skipped:', err);
+    }
+
+    if (match) {
+      localStorage.setItem('rsa_authenticated', 'true');
+      localStorage.setItem('rsa_role', match.role);
+      localStorage.setItem('rsa_teacher_id', match.teacherId);
+      localStorage.removeItem('rsa_student_group_id');
+
+      setIsAuthenticated(true);
+      setUserRole(match.role);
+      setTeacherId(match.teacherId);
+      setStudentGroupId(null);
+      setActiveTab('schedule');
+      showToast("Muvaffaqiyatli kirdingiz!", "success");
+      setLoginLoading(false);
+      return;
+    }
+
+    // If still no match after checking group registry and teacher profiles
+    setLoginError("Noto'g'ri parol yoki bu guruh o'chirib yuborilgan!");
+    setLoginLoading(false);
   };
 
   // Auto-logout legacy hardcoded student sessions (no group ID = old password-based login)
@@ -497,6 +622,16 @@ function App() {
       social: { telegram: '', instagram: '' }
     };
   });
+  const [rewards, setRewards] = useState(() => {
+    try {
+      const tId = localStorage.getItem('rsa_teacher_id');
+      if (tId) {
+        const cached = localStorage.getItem(`rsa_rewards_${tId}`);
+        if (cached) return JSON.parse(cached);
+      }
+    } catch (_) {}
+    return { kids: null, teens: null, requests: [] };
+  });
   const [allTeachersData, setAllTeachersData] = useState({});
   const [selectedAdminTeacherFilter, setSelectedAdminTeacherFilter] = useState('all');
   const [isLoaded, setIsLoaded] = useState(false);
@@ -578,12 +713,13 @@ function App() {
             normalized[tId] = {
               ...t,
               groups: (t.groups || []).map(g => ({ ...g, icon: normalizeIconUrl(g.icon) })),
-              students: (t.students || []).map(s => ({ ...s, emoji: normalizeIconUrl(s.emoji) })),
+              students: (t.students || []).map(s => ({ ...s, emoji: sanitizeStudentAvatar(s) })),
               transactions: t.transactions || [],
               payments: t.payments || [],
               quickTags: normalizeQuickTags(t.quickTags),
               attendance: t.attendance || [],
               teacherProfile: t.teacherProfile || null,
+              rewards: t.rewards || { kids: null, teens: null, requests: [] },
               extraLessons: t.extraLessons || [],
               leads: t.leads || []
             };
@@ -601,6 +737,9 @@ function App() {
               setExtraLessons(currentT.extraLessons || []);
               if (currentT.teacherProfile) {
                 setTeacherProfile(currentT.teacherProfile);
+              }
+              if (currentT.rewards) {
+                setRewards(currentT.rewards);
               }
             }
           }
@@ -658,7 +797,7 @@ function App() {
         }));
         const loadedStudents = (data.students || []).map((s) => ({
           ...s,
-          emoji: normalizeIconUrl(s.emoji),
+          emoji: sanitizeStudentAvatar(s),
         }));
         const loadedTransactions = data.transactions || [];
         const loadedQuickTags = normalizeQuickTags(data.quickTags);
@@ -683,6 +822,12 @@ function App() {
           } catch {}
         }
 
+        const loadedRewards = data.rewards || { kids: null, teens: null, requests: [] };
+        setRewards(loadedRewards);
+        try {
+          localStorage.setItem(`rsa_rewards_${teacherId}`, JSON.stringify(loadedRewards));
+        } catch {}
+
         if (teacherId) {
           setAllTeachersData((prev) => ({
             ...prev,
@@ -694,6 +839,7 @@ function App() {
               quickTags: loadedQuickTags,
               attendance: syncedAttendance,
               teacherProfile: loadedTeacherProfile,
+              rewards: loadedRewards,
               extraLessons: loadedExtraLessons
             }
           }));
@@ -707,6 +853,7 @@ function App() {
           quickTags: loadedQuickTags,
           attendance: syncedAttendance,
           teacherProfile: loadedTeacherProfile,
+          rewards: loadedRewards,
           extraLessons: loadedExtraLessons
         };
         lastSavedDataRef.current = JSON.stringify(dbState);
@@ -914,6 +1061,9 @@ function App() {
         if (tData.teacherProfile) {
           setTeacherProfile(tData.teacherProfile);
         }
+        if (tData.rewards) {
+          setRewards(tData.rewards);
+        }
       } else {
         loadAllTeachersFromSupabase([target.teacherId]).then((fetched) => {
           if (fetched && fetched[target.teacherId]) {
@@ -921,11 +1071,12 @@ function App() {
             const normalizedTeacher = {
               ...t,
               groups: (t.groups || []).map(g => ({ ...g, icon: normalizeIconUrl(g.icon) })),
-              students: (t.students || []).map(s => ({ ...s, emoji: normalizeIconUrl(s.emoji) })),
+              students: (t.students || []).map(s => ({ ...s, emoji: sanitizeStudentAvatar(s) })),
               transactions: t.transactions || [],
               quickTags: normalizeQuickTags(t.quickTags),
               attendance: t.attendance || [],
-              teacherProfile: t.teacherProfile || null
+              teacherProfile: t.teacherProfile || null,
+              rewards: t.rewards || { kids: null, teens: null, requests: [] }
             };
             setAllTeachersData(prev => ({ ...prev, [target.teacherId]: normalizedTeacher }));
             setGroups(normalizedTeacher.groups || []);
@@ -934,6 +1085,9 @@ function App() {
             setAttendance(normalizedTeacher.attendance || []);
             if (normalizedTeacher.teacherProfile) {
               setTeacherProfile(normalizedTeacher.teacherProfile);
+            }
+            if (normalizedTeacher.rewards) {
+              setRewards(normalizedTeacher.rewards);
             }
           }
         });
@@ -966,6 +1120,28 @@ function App() {
           targetGroup = newGroupObj;
         }
 
+        if (groupMatch.teacherData) {
+          const data = groupMatch.teacherData;
+          const loadedGroups = (data.groups || []).map((g) => ({ ...g, icon: normalizeIconUrl(g.icon) }));
+          const loadedStudents = (data.students || []).map((s) => ({ ...s, emoji: sanitizeStudentAvatar(s) }));
+          const loadedAttendance = sanitizeAttendanceList(data.attendance || []);
+          const { updatedAttendance } = syncTransferredStudentsAttendance(loadedStudents, loadedAttendance);
+
+          setAllTeachersData((prev) => ({
+            ...prev,
+            [groupMatch.teacherId]: {
+              groups: loadedGroups,
+              students: loadedStudents,
+              transactions: data.transactions || [],
+              payments: data.payments || [],
+              quickTags: normalizeQuickTags(data.quickTags),
+              attendance: updatedAttendance,
+              teacherProfile: data.teacherProfile || null,
+              extraLessons: data.extraLessons || []
+            }
+          }));
+        }
+
         handleSwitchStudentGroup(groupMatch.groupId, targetGroup);
         return { success: true, group: groupMatch, alreadyConnected: exists };
       } else {
@@ -995,7 +1171,7 @@ function App() {
     if (!isLoaded || !isAuthenticated || !teacherId) return;
     if (userRole === 'student' || userRole === 'admin') return;
 
-    const db = { groups, students, transactions, quickTags, attendance, teacherProfile, extraLessons, payments };
+    const db = { groups, students, transactions, quickTags, attendance, teacherProfile, extraLessons, payments, rewards };
     const dbStr = JSON.stringify(db);
 
     // Instant (0ms) local cache backup to localStorage for offline protection!
@@ -1051,7 +1227,7 @@ function App() {
     }, 1500); // 1.5 second debounce
 
     return () => clearTimeout(timer);
-  }, [groups, students, transactions, quickTags, attendance, teacherProfile, extraLessons, payments, isLoaded, isAuthenticated, teacherId, userRole]);
+  }, [groups, students, transactions, quickTags, attendance, teacherProfile, extraLessons, payments, rewards, isLoaded, isAuthenticated, teacherId, userRole]);
 
 
   const handleSaveTeacherProfile = useCallback(async (updatedProfile) => {
@@ -1094,9 +1270,97 @@ function App() {
     }
   }, [groups, students, transactions, quickTags, attendance, payments, teacherId]);
 
+  const handleSaveGift = useCallback(async (category, giftData) => {
+    const updatedRewards = {
+      ...(rewards || { kids: null, teens: null, requests: [] }),
+      [category]: giftData,
+    };
+    setRewards(updatedRewards);
 
+    if (teacherId) {
+      try {
+        localStorage.setItem(`rsa_rewards_${teacherId}`, JSON.stringify(updatedRewards));
+      } catch {}
+      setAllTeachersData((prev) => {
+        if (!prev || !prev[teacherId]) return prev;
+        return {
+          ...prev,
+          [teacherId]: {
+            ...prev[teacherId],
+            rewards: updatedRewards,
+          },
+        };
+      });
 
+      const db = {
+        groups,
+        students,
+        transactions,
+        quickTags,
+        attendance,
+        payments,
+        teacherProfile,
+        extraLessons,
+        rewards: updatedRewards,
+        lastModified: new Date().toISOString(),
+      };
+      setSyncStatus('saving');
+      saveToFirestore(teacherId, db).then((success) => {
+        if (success) {
+          setSyncStatus('saved');
+          lastSavedDataRef.current = JSON.stringify(db);
+        } else {
+          setSyncStatus('offline');
+        }
+      });
+    }
+  }, [rewards, teacherId, groups, students, transactions, quickTags, attendance, payments, teacherProfile, extraLessons]);
 
+  const handleDeleteGift = useCallback(async (category) => {
+    const updatedRewards = {
+      ...(rewards || { kids: null, teens: null, requests: [] }),
+      [category]: null,
+    };
+    setRewards(updatedRewards);
+
+    if (teacherId) {
+      try {
+        localStorage.setItem(`rsa_rewards_${teacherId}`, JSON.stringify(updatedRewards));
+      } catch {}
+      setAllTeachersData((prev) => {
+        if (!prev || !prev[teacherId]) return prev;
+        return {
+          ...prev,
+          [teacherId]: {
+            ...prev[teacherId],
+            rewards: updatedRewards,
+          },
+        };
+      });
+
+      const db = {
+        groups,
+        students,
+        transactions,
+        quickTags,
+        attendance,
+        payments,
+        teacherProfile,
+        extraLessons,
+        rewards: updatedRewards,
+        lastModified: new Date().toISOString(),
+      };
+      setSyncStatus('saving');
+      saveToFirestore(teacherId, db).then((success) => {
+        if (success) {
+          setSyncStatus('saved');
+          lastSavedDataRef.current = JSON.stringify(db);
+        } else {
+          setSyncStatus('offline');
+        }
+      });
+    }
+  }, [rewards, teacherId, groups, students, transactions, quickTags, attendance, payments, teacherProfile, extraLessons]);
 
   const handleResetDatabase = async () => {
     setIsSyncing(true);
@@ -1272,6 +1536,103 @@ function App() {
     } catch (err) {
       console.warn('[Avatar Update] Background Supabase sync error:', err);
     }
+  }, [teacherId, studentGroups]);
+
+  const handleUnlockStudentAvatar = useCallback(async (newAvatarKey, price, studentId, avatarName = null, studentName = null) => {
+    if (!studentId || !newAvatarKey) return false;
+    const numPrice = Math.abs(Number(price) || 0);
+
+    const newTx = {
+      id: Math.random().toString(36).substring(2, 11),
+      studentId: String(studentId),
+      amount: -numPrice,
+      comment: `Avatar ochildi: ${avatarName || 'Yangi avatar'}`,
+      timestamp: new Date().toISOString(),
+    };
+
+    // 1. Save to local storage cache for instant offline resilience
+    try {
+      const storageKey = `rsa_unlocked_avatars_${studentId}`;
+      const existing = localStorage.getItem(storageKey);
+      const parsed = existing ? JSON.parse(existing) : [];
+      if (!parsed.includes(newAvatarKey)) {
+        parsed.push(newAvatarKey);
+        localStorage.setItem(storageKey, JSON.stringify(parsed));
+      }
+    } catch (e) {
+      console.warn('LocalStorage save failed:', e);
+    }
+
+    // 2. Optimistic update for students and transactions in local state
+    setStudents((prev) =>
+      prev.map((s) => {
+        const matchId = String(s.id) === String(studentId);
+        const matchName = studentName && (s.name || '').trim().toLowerCase() === studentName.trim().toLowerCase();
+        if (matchId || matchName) {
+          const prevUnlocked = Array.isArray(s.unlockedAvatars) ? s.unlockedAvatars : [];
+          const nextUnlocked = prevUnlocked.includes(newAvatarKey) ? prevUnlocked : [...prevUnlocked, newAvatarKey];
+          return { ...s, emoji: newAvatarKey, unlockedAvatars: nextUnlocked };
+        }
+        return s;
+      })
+    );
+
+    setTransactions((prev) => [...prev, newTx]);
+
+    // 3. Instant optimistic update in allTeachersData
+    setAllTeachersData((prev) => {
+      if (!prev || Object.keys(prev).length === 0) return prev;
+      const copy = { ...prev };
+      Object.keys(copy).forEach((tId) => {
+        const tObj = copy[tId];
+        if (tObj) {
+          const updatedStudents = Array.isArray(tObj.students)
+            ? tObj.students.map((s) => {
+                const matchId = String(s.id) === String(studentId);
+                const matchName = studentName && (s.name || '').trim().toLowerCase() === studentName.trim().toLowerCase();
+                if (matchId || matchName) {
+                  const prevUnlocked = Array.isArray(s.unlockedAvatars) ? s.unlockedAvatars : [];
+                  const nextUnlocked = prevUnlocked.includes(newAvatarKey) ? prevUnlocked : [...prevUnlocked, newAvatarKey];
+                  return { ...s, emoji: newAvatarKey, unlockedAvatars: nextUnlocked };
+                }
+                return s;
+              })
+            : tObj.students;
+
+          const updatedTxs = Array.isArray(tObj.transactions)
+            ? [...tObj.transactions, newTx]
+            : [newTx];
+
+          copy[tId] = {
+            ...tObj,
+            students: updatedStudents,
+            transactions: updatedTxs,
+          };
+        }
+      });
+      return copy;
+    });
+
+    // 4. Background Supabase sync
+    try {
+      const teachersToUpdate = new Set();
+      if (teacherId) teachersToUpdate.add(teacherId);
+      if (Array.isArray(studentGroups)) {
+        studentGroups.forEach((sg) => {
+          if (sg.teacherId) teachersToUpdate.add(sg.teacherId);
+        });
+      }
+
+      await Promise.all(
+        Array.from(teachersToUpdate).map((tId) =>
+          recordStudentAvatarPurchaseInSupabase(tId, studentId, newAvatarKey, numPrice, avatarName, studentName)
+        )
+      );
+    } catch (err) {
+      console.warn('[Avatar Purchase] Background Supabase sync error:', err);
+    }
+
+    return true;
   }, [teacherId, studentGroups]);
 
   const handleSetStudentPin = useCallback(async (studentId, pin, studentName = null, deviceId = null, targetTeacherId = null) => {
@@ -2119,7 +2480,7 @@ function App() {
       id: newStudentId,
       name: studentPayload.name.trim(),
       groupId: studentPayload.groupId,
-      emoji: normalizeIconUrl(studentPayload.emoji || 'lion'),
+      emoji: sanitizeStudentAvatar({ id: newStudentId, emoji: studentPayload.emoji }),
       color: studentPayload.color || '#007AFF',
       phone: studentPayload.phone ? String(studentPayload.phone).trim() : '',
       parentPhone: studentPayload.parentPhone ? String(studentPayload.parentPhone).trim() : '',
@@ -2428,6 +2789,7 @@ function App() {
           onAddGroup={handleAddStudentGroup}
           onRemoveGroup={handleRemoveStudentGroup}
           onUpdateAvatar={handleUpdateStudentAvatar}
+          onUnlockAvatar={handleUnlockStudentAvatar}
           onSetStudentPin={handleSetStudentPin}
           onLogout={executeLogout}
           showToast={showToast}
@@ -2436,6 +2798,7 @@ function App() {
           teacherProfile={teacherProfile}
           allTeachersData={allTeachersData}
           extraLessons={filteredExtraLessons}
+          rewards={rewards}
         />
       );
     }
@@ -2480,6 +2843,7 @@ function App() {
             onDeleteGroup={handleDeleteGroup}
             showToast={showToast}
             teacherId={teacherId}
+            extraLessons={filteredExtraLessons}
           />
         );
       case 'schedule':
@@ -2521,6 +2885,18 @@ function App() {
             onDeleteAttendance={handleDeleteAttendance}
             showToast={showToast}
             extraLessons={filteredExtraLessons}
+          />
+        );
+      case 'rewards':
+        return (
+          <TeacherRewardsView
+            rewards={rewards}
+            groups={filteredGroups}
+            students={filteredStudents}
+            transactions={filteredTransactions}
+            onSaveGift={handleSaveGift}
+            onDeleteGift={handleDeleteGift}
+            showToast={showToast}
           />
         );
       case 'settings':

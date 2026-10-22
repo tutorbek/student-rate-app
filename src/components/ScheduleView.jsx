@@ -269,6 +269,18 @@ const ScheduleView = ({
     }
   };
 
+  const handleDirectDeleteExtraLesson = (lesson) => {
+    if (!lesson || !lesson.id) return;
+    const lessonId = lesson.id;
+    onDeleteExtraLesson?.(lessonId);
+    setSelectedExtraLessonForDetail(null);
+    setExtraLessonToDelete(null);
+    if (editingExtraLesson && editingExtraLesson.id === lessonId) {
+      setShowExtraLessonModal(false);
+      setEditingExtraLesson(null);
+    }
+  };
+
   // Close dropdown whenever modal closes
   useEffect(() => {
     if (!showModal) {
@@ -631,7 +643,6 @@ const ScheduleView = ({
                               <button
                                 type="button"
                                 className="lesson-card-action-btn"
-                                title="Doimiy dars jadvalini tahrirlash"
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   handleOpenEdit(group);
@@ -694,7 +705,6 @@ const ScheduleView = ({
                 type="button"
                 className={`extra-toggle-past-btn ${showPastExtraLessons ? 'active' : ''}`}
                 onClick={() => setShowPastExtraLessons((prev) => !prev)}
-                title={showPastExtraLessons ? "Kelgusi darslar ro'yxatiga o'tish" : "O'tib ketgan darslarni ko'rish"}
               >
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                   <circle cx="12" cy="12" r="10" />
@@ -743,7 +753,6 @@ const ScheduleView = ({
                     onClick={() => setSelectedExtraLessonForDetail(extraLesson)}
                     role="button"
                     tabIndex={0}
-                    title="Batafsil ma'lumot va boshqarish uchun bosing"
                   >
                     <div className="extra-slim-date-badge">
                       <span className="extra-slim-date-main">{dateLabel}</span>
@@ -767,19 +776,19 @@ const ScheduleView = ({
                         <div className="extra-slim-group-icon">
                           {renderGroupIcon(group.icon, 14)}
                         </div>
-                        <span className="extra-slim-group-name" title={group.name}>{group.name}</span>
+                        <span className="extra-slim-group-name">{group.name}</span>
                         <span className={`group-category-pill group-category-${getGroupCategory(group)}`}>
                           {getGroupCategory(group) === 'kids' ? 'Kids' : 'Teens'}
                         </span>
                         {targetedStudentsCount !== null && (
-                          <span className="extra-slim-target-pill" title={`${targetedStudentsCount} ta tanlangan o'quvchi`}>
+                          <span className="extra-slim-target-pill">
                             {targetedStudentsCount} o'quvchi
                           </span>
                         )}
                       </div>
 
                       {extraLesson.topic && (
-                        <div className="extra-slim-topic" title={extraLesson.topic}>
+                        <div className="extra-slim-topic">
                           <span className="extra-slim-topic-dot">•</span>
                           <span className="extra-slim-topic-text">{extraLesson.topic}</span>
                         </div>
@@ -863,7 +872,7 @@ const ScheduleView = ({
                         <div className="schedule-group-pill-icon">
                           {renderGroupIcon(activeGroup.icon, 16)}
                         </div>
-                        <span className="schedule-select-group-name" title={activeGroup.name}>{activeGroup.name}</span>
+                        <span className="schedule-select-group-name">{activeGroup.name}</span>
                         <span className={`group-category-pill group-category-${getGroupCategory(activeGroup)}`}>
                           {getGroupCategory(activeGroup) === 'kids' ? 'Kids' : 'Teens'}
                         </span>
@@ -897,7 +906,7 @@ const ScheduleView = ({
                               <div className="schedule-group-pill-icon">
                                 {renderGroupIcon(g.icon, 16)}
                               </div>
-                              <span className="schedule-item-name" title={g.name}>{g.name}</span>
+                              <span className="schedule-item-name">{g.name}</span>
                               <span className={`group-category-pill group-category-${getGroupCategory(g)}`}>
                                 {getGroupCategory(g) === 'kids' ? 'Kids' : 'Teens'}
                               </span>
@@ -1079,7 +1088,7 @@ const ScheduleView = ({
                         <div className="schedule-group-pill-icon">
                           {renderGroupIcon(extraSelectedGroup.icon, 16)}
                         </div>
-                        <span className="schedule-select-group-name" title={extraSelectedGroup.name}>{extraSelectedGroup.name}</span>
+                        <span className="schedule-select-group-name">{extraSelectedGroup.name}</span>
                         <span className={`group-category-pill group-category-${getGroupCategory(extraSelectedGroup)}`}>
                           {getGroupCategory(extraSelectedGroup) === 'kids' ? 'Kids' : 'Teens'}
                         </span>
@@ -1124,7 +1133,7 @@ const ScheduleView = ({
                               <div className="schedule-group-pill-icon">
                                 {renderGroupIcon(g.icon, 16)}
                               </div>
-                              <span className="schedule-item-name" title={g.name}>{g.name}</span>
+                              <span className="schedule-item-name">{g.name}</span>
                               <span className={`group-category-pill group-category-${getGroupCategory(g)}`}>
                                 {getGroupCategory(g) === 'kids' ? 'Kids' : 'Teens'}
                               </span>
@@ -1300,9 +1309,7 @@ const ScheduleView = ({
                 <button
                   type="button"
                   className="btn-danger-outline scale-active"
-                  onClick={() => {
-                    setExtraLessonToDelete(editingExtraLesson);
-                  }}
+                  onClick={() => handleDirectDeleteExtraLesson(editingExtraLesson)}
                 >
                   O'chirish
                 </button>
@@ -1345,7 +1352,7 @@ const ScheduleView = ({
                 </div>
                 <div className="student-list-header-info">
                   <div className="student-list-title-row">
-                    <h3 className="student-list-group-name" title={selectedGroupForStudents.name}>{selectedGroupForStudents.name}</h3>
+                    <h3 className="student-list-group-name">{selectedGroupForStudents.name}</h3>
                     <span className={`group-category-pill group-category-${getGroupCategory(selectedGroupForStudents)}`}>
                       {getGroupCategory(selectedGroupForStudents) === 'kids' ? 'Kids' : 'Teens'}
                     </span>
@@ -1371,7 +1378,6 @@ const ScheduleView = ({
                 type="button"
                 className="student-list-close-btn scale-active"
                 onClick={() => setSelectedGroupForStudents(null)}
-                title="Yopish (Esc)"
               >
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                   <line x1="18" y1="6" x2="6" y2="18" />
@@ -1399,7 +1405,6 @@ const ScheduleView = ({
                     type="button"
                     className="student-list-search-clear"
                     onClick={() => setStudentSearchQuery('')}
-                    title="Tozalash"
                   >
                     ×
                   </button>
@@ -1420,7 +1425,7 @@ const ScheduleView = ({
                       <div className="compact-student-avatar avatar-circle">
                         {renderAvatar(student.emoji)}
                       </div>
-                      <span className="compact-student-name" title={student.name}>
+                      <span className="compact-student-name">
                         {student.name}
                       </span>
                     </div>
@@ -1456,7 +1461,6 @@ const ScheduleView = ({
                   setSelectedGroupForStudents(null);
                   handleOpenEdit(grp);
                 }}
-                title="Dars vaqti va kunlarini o'zgartirish"
               >
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
@@ -1510,7 +1514,6 @@ const ScheduleView = ({
               type="button"
               className="modal-close-btn"
               onClick={() => setExtraLessonToDelete(null)}
-              title="Yopish"
             >
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                 <line x1="18" y1="6" x2="6" y2="18" />
@@ -1561,7 +1564,7 @@ const ScheduleView = ({
                         >
                           {renderGroupIcon(grp.icon, 14)}
                         </span>
-                        <span className="extra-delete-group-name" title={grp.name}>
+                        <span className="extra-delete-group-name">
                           {grp.name}
                         </span>
                       </div>
@@ -1640,7 +1643,6 @@ const ScheduleView = ({
               type="button"
               className="modal-close-btn"
               onClick={() => setSelectedExtraLessonForDetail(null)}
-              title="Yopish"
             >
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                 <line x1="18" y1="6" x2="6" y2="18" />
@@ -1672,10 +1674,6 @@ const ScheduleView = ({
                   color: '#8B5CF6',
                 };
                 const groupStudents = students.filter((s) => String(s.groupId) === String(el.groupId) && !s.deleted);
-                const isCustomTarget = el.targetType === 'custom' && Array.isArray(el.studentIds) && el.studentIds.length > 0;
-                const targetedStudents = isCustomTarget
-                  ? students.filter((s) => el.studentIds.some((id) => String(id) === String(s.id)) && !s.deleted)
-                  : groupStudents;
 
                 return (
                   <>
@@ -1760,41 +1758,6 @@ const ScheduleView = ({
                         </div>
                       </div>
                     )}
-
-                    {/* Targeted Students Section */}
-                    <div className="extra-detail-section">
-                      <div className="extra-detail-section-header">
-                        <span className="extra-detail-section-title">
-                          {isCustomTarget
-                            ? `Tanlangan O'quvchilar (${targetedStudents.length} ta)`
-                            : `Guruh O'quvchilari (${targetedStudents.length} ta)`}
-                        </span>
-                        <span className={`extra-detail-audience-pill ${isCustomTarget ? 'custom' : 'all'}`}>
-                          {isCustomTarget ? "Maxsus tanlanganlar" : "Barcha o'quvchilar"}
-                        </span>
-                      </div>
-
-                      {targetedStudents.length > 0 ? (
-                        <div className="extra-detail-students-list">
-                          {targetedStudents.map((st) => (
-                            <div key={st.id} className="extra-detail-student-item">
-                              <div className="extra-detail-student-avatar">
-                                {st.avatar ? (
-                                  <img src={st.avatar} alt={st.name} />
-                                ) : (
-                                  <span>{(st.name || '?')[0].toUpperCase()}</span>
-                                )}
-                              </div>
-                              <span className="extra-detail-student-name" title={st.name}>
-                                {st.name}
-                              </span>
-                            </div>
-                          ))}
-                        </div>
-                      ) : (
-                        <div className="extra-detail-no-students">Ushbu guruhda o'quvchilar mavjud emas</div>
-                      )}
-                    </div>
                   </>
                 );
               })()}
@@ -1805,13 +1768,8 @@ const ScheduleView = ({
               <div className="extra-detail-actions-left">
                 <button
                   type="button"
-                  className="btn btn-secondary extra-detail-delete-btn"
-                  onClick={() => {
-                    const itemToDelete = selectedExtraLessonForDetail;
-                    setSelectedExtraLessonForDetail(null);
-                    setExtraLessonToDelete(itemToDelete);
-                  }}
-                  title="Extra darsni o'chirish"
+                  className="btn btn-secondary extra-detail-delete-btn scale-active"
+                  onClick={() => handleDirectDeleteExtraLesson(selectedExtraLessonForDetail)}
                 >
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                     <polyline points="3 6 5 6 21 6" />
@@ -2892,7 +2850,8 @@ const ScheduleView = ({
 
         .extra-student-search-wrap:focus-within {
           border-color: var(--apple-blue, #0171E3);
-          box-shadow: 0 0 0 2px rgba(0, 113, 227, 0.15);
+          box-shadow: none !important;
+          outline: none !important;
         }
 
         [data-theme="dark"] .extra-student-search-wrap {
@@ -2902,7 +2861,8 @@ const ScheduleView = ({
 
         [data-theme="dark"] .extra-student-search-wrap:focus-within {
           border-color: #8AB4F8;
-          box-shadow: 0 0 0 2px rgba(138, 180, 248, 0.2);
+          box-shadow: none !important;
+          outline: none !important;
         }
 
         .extra-student-search-input {
@@ -4058,7 +4018,8 @@ const ScheduleView = ({
         .schedule-custom-select-btn:hover,
         .schedule-custom-select-btn.active {
           border-color: var(--apple-blue);
-          box-shadow: 0 0 0 3px rgba(0, 113, 227, 0.12);
+          box-shadow: none !important;
+          outline: none !important;
         }
 
         .schedule-select-val {
@@ -4238,7 +4199,8 @@ const ScheduleView = ({
         [data-theme="dark"] .schedule-custom-select-btn:hover,
         [data-theme="dark"] .schedule-custom-select-btn.active {
           border-color: #8AB4F8;
-          box-shadow: 0 0 0 3px rgba(138, 180, 248, 0.18);
+          box-shadow: none !important;
+          outline: none !important;
         }
 
         [data-theme="dark"] .schedule-custom-dropdown-list {
@@ -4606,7 +4568,8 @@ const ScheduleView = ({
         .student-list-search-wrap:focus-within {
           border-color: var(--apple-blue);
           background: #FFFFFF;
-          box-shadow: 0 0 0 3px rgba(0, 113, 227, 0.1);
+          box-shadow: none !important;
+          outline: none !important;
         }
 
         [data-theme="dark"] .student-list-search-wrap {
@@ -4617,7 +4580,8 @@ const ScheduleView = ({
         [data-theme="dark"] .student-list-search-wrap:focus-within {
           background: #292A2D;
           border-color: #8AB4F8;
-          box-shadow: 0 0 0 3px rgba(138, 180, 248, 0.15);
+          box-shadow: none !important;
+          outline: none !important;
         }
 
         .student-list-search-input {

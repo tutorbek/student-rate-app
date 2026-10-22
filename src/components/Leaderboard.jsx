@@ -72,7 +72,7 @@ const Leaderboard = ({
 
   // Smart initial timeframe: If active lesson is ongoing OR if points were already awarded today, default to 'today', otherwise 'month'
   const [timeframe, setTimeframe] = useState(() => {
-    const activeLesson = getCurrentActiveLessonGroup(groups, new Date(), 5, extraLessons);
+    const activeLesson = getCurrentActiveLessonGroup(groups, new Date(), 3, extraLessons);
     if (activeLesson) return 'today';
     const startOfToday = getStartOfToday();
     const hasTodayTx = (transactions || []).some((tx) => !tx.deleted && new Date(tx.timestamp) >= startOfToday);
@@ -83,7 +83,7 @@ const Leaderboard = ({
     if (userRole === 'student') {
       return 'top10_all';
     }
-    const activeLesson = getCurrentActiveLessonGroup(groups, new Date(), 5, extraLessons);
+    const activeLesson = getCurrentActiveLessonGroup(groups, new Date(), 3, extraLessons);
     if (activeLesson) return activeLesson.id;
     return 'all';
   }, [userRole, groups, extraLessons]);
@@ -98,7 +98,7 @@ const Leaderboard = ({
       return;
     }
     if (!hasUserManuallySelectedGroupRef.current) {
-      const activeLesson = getCurrentActiveLessonGroup(groups, new Date(), 5, extraLessons);
+      const activeLesson = getCurrentActiveLessonGroup(groups, new Date(), 3, extraLessons);
       if (activeLesson) {
         setSelectedGroupId(activeLesson.id);
         setTimeframe('today');
@@ -496,9 +496,8 @@ const Leaderboard = ({
                           <span className={`group-category-pill group-category-${cat}`}>
                             {cat === 'kids' ? 'Kids' : 'Teens'}
                           </span>
-                          {isGroupLessonActive(selG) && (
-                            <span className="current-lesson-live-dot" style={{ fontSize: '0.68rem', padding: '1px 6px' }}>
-                              <span className="live-dot-circle" />
+                          {isGroupLessonActive(selG, undefined, 3, extraLessons, undefined, groups) && (
+                            <span className="current-lesson-live-dot" style={{ fontSize: '0.68rem', padding: '1px 8px' }}>
                               Hozir darsda
                             </span>
                           )}
@@ -525,7 +524,7 @@ const Leaderboard = ({
                         Barcha guruhlar
                       </div>
                       {availableGroupsForDropdown.map((g) => {
-                        const isLive = isGroupLessonActive(g);
+                        const isLive = isGroupLessonActive(g, undefined, 3, extraLessons, undefined, groups);
                         const cat = getGroupCategory(g);
                         return (
                           <div 
@@ -544,8 +543,7 @@ const Leaderboard = ({
                                 {cat === 'kids' ? 'Kids' : 'Teens'}
                               </span>
                               {isLive && (
-                                <span className="current-lesson-live-dot" style={{ fontSize: '0.68rem', padding: '1px 6px' }}>
-                                  <span className="live-dot-circle" />
+                                <span className="current-lesson-live-dot" style={{ fontSize: '0.68rem', padding: '1px 8px' }}>
                                   Hozir darsda
                                 </span>
                               )}
@@ -2518,24 +2516,16 @@ const Leaderboard = ({
         .current-lesson-live-dot {
           display: inline-flex;
           align-items: center;
-          gap: 5px;
+          justify-content: center;
           font-size: 0.72rem;
           font-weight: 600;
           color: #248A3D;
           background: rgba(52, 199, 89, 0.12);
           border: 1px solid rgba(52, 199, 89, 0.3);
-          padding: 1px 7px;
+          padding: 1px 8px;
           border-radius: var(--radius-full);
           letter-spacing: 0.01em;
           white-space: nowrap;
-        }
-
-        .live-dot-circle {
-          width: 6px;
-          height: 6px;
-          border-radius: 50%;
-          background: #34C759;
-          box-shadow: 0 0 4px rgba(52, 199, 89, 0.6);
         }
 
         [data-theme="dark"] .current-lesson-live-dot {

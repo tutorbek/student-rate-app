@@ -1031,7 +1031,6 @@ const Settings = ({
                 <div
                   className="hero-avatar-disc"
                   onClick={() => setShowAvatarModal(true)}
-                  title="Avatarni tanlash yoki o'zgartirish"
                   role="button"
                   tabIndex={0}
                 >
@@ -1047,7 +1046,6 @@ const Settings = ({
                   type="button"
                   className="hero-avatar-camera-btn scale-active"
                   onClick={() => setShowAvatarModal(true)}
-                  title="Avatarni tanlash yoki o'zgartirish"
                   aria-label="Avatarni tanlash yoki o'zgartirish"
                 >
                   <IconCamera size={14} />
@@ -1083,7 +1081,6 @@ const Settings = ({
                 className="hero-primary-save-btn scale-active"
                 onClick={handleSaveProfile}
                 disabled={isSavingProfile}
-                title="O'zgarishlarni saqlash (Ctrl+S / Cmd+S)"
               >
                 {isSavingProfile ? (
                   <>
@@ -1099,7 +1096,6 @@ const Settings = ({
                 type="button"
                 className="hero-danger-logout-btn scale-active"
                 onClick={onLogout}
-                title="Tizimdan chiqish"
               >
                 <span>Chiqish</span>
               </button>
@@ -1249,7 +1245,6 @@ const Settings = ({
                           className="achievement-remove-x"
                           onClick={() => handleRemoveAchievement(idx)}
                           aria-label="O'chirish"
-                          title="O'chirish"
                         >
                           ✕
                         </button>
@@ -1313,7 +1308,6 @@ const Settings = ({
                           type="button"
                           className="cert-edit-delete-btn"
                           onClick={() => handleRemoveCertificate(index)}
-                          title="O'chirish"
                         >
                           ✕
                         </button>
@@ -1349,7 +1343,6 @@ const Settings = ({
                     setCalcStudentCount(activeStudentsCount);
                     showToast(`Faol o'quvchilar soni (${activeStudentsCount}) o'rnatildi`, 'success');
                   }}
-                  title="Tizimdagi faol o'quvchilar sonini kiritish"
                 >
                   Tizimdan: {activeStudentsCount}
                 </button>
@@ -1650,7 +1643,6 @@ const Settings = ({
                         type="button"
                         className="calc-payout-date-badge is-clickable"
                         onClick={() => setCalPickerTarget('advance')}
-                        title="Avans sanasini tanlash"
                       >
                         Har oy {calcAdvanceDay}-kuni
                       </button>
@@ -1671,7 +1663,6 @@ const Settings = ({
                         type="button"
                         className="calc-payout-date-badge is-clickable"
                         onClick={() => setCalPickerTarget('salary')}
-                        title="Oylik sanasini tanlash"
                       >
                         Har oy {calcSalaryDay}-kuni
                       </button>
@@ -1747,7 +1738,6 @@ const Settings = ({
                     }}
                     role="button"
                     tabIndex={0}
-                    title="Guruh o'quvchilari ro'yxatini ko'rish"
                   >
                     <div className="calc-group-row-left">
                       <div className="calc-group-row-icon avatar-circle">
@@ -1893,7 +1883,7 @@ const Settings = ({
                 {normalizedTags.map((tagObj, idx) => (
                   <div key={idx} className="tag-card-modern">
                     <div className="tag-display-row">
-                      <span className="tag-name-text" title={tagObj.text}>{tagObj.text}</span>
+                      <span className="tag-name-text">{tagObj.text}</span>
                       <div className="tag-right-controls">
                         <span className={`tag-pts-pill ${tagObj.points >= 0 ? 'pts-pos' : 'pts-neg'}`}>
                           {tagObj.points >= 0 ? `+${tagObj.points}` : tagObj.points}
@@ -1902,7 +1892,6 @@ const Settings = ({
                           type="button"
                           className="tag-icon-action"
                           onClick={() => handleStartEditTag(idx, tagObj)}
-                          title="Tahrirlash"
                         >
                           <IconEdit size={14} />
                         </button>
@@ -1910,7 +1899,6 @@ const Settings = ({
                           type="button"
                           className="tag-icon-action delete-act"
                           onClick={() => handleDeleteTag(tagObj.text)}
-                          title="O'chirish"
                         >
                           <IconX size={14} />
                         </button>
@@ -2528,7 +2516,6 @@ const Settings = ({
                     setShowAvatarModal(false);
                     showToast("Avatar tanlandi!", "success");
                   }}
-                  title={img.label}
                 >
                   <img src={img.path} alt={img.label} loading="lazy" />
                 </button>
@@ -2581,7 +2568,6 @@ const Settings = ({
                   setSelectedCalcGroupId(null);
                   setCalcGroupStudentSearch('');
                 }}
-                title="Yopish (Esc)"
               >
                 <IconX size={15} />
               </button>
@@ -2627,7 +2613,6 @@ const Settings = ({
                     type="button"
                     className="calc-student-search-clear"
                     onClick={() => setCalcGroupStudentSearch('')}
-                    title="Tozalash"
                   >
                     ×
                   </button>
@@ -2646,7 +2631,7 @@ const Settings = ({
                         {renderAvatar(student.emoji, 32)}
                       </div>
                       <div className="calc-student-main">
-                        <span className="calc-student-name" title={student.name}>
+                        <span className="calc-student-name">
                           {student.name}
                         </span>
                         {student.phone && (
@@ -2720,7 +2705,6 @@ const Settings = ({
                 type="button"
                 className="cal-mini-nav-btn scale-active"
                 onClick={handlePrevCalMonth}
-                title="Oldingi oy"
                 aria-label="Oldingi oy"
               >
                 <IconChevronLeft size={14} />
@@ -2737,7 +2721,6 @@ const Settings = ({
                 type="button"
                 className="cal-mini-nav-btn scale-active"
                 onClick={handleNextCalMonth}
-                title="Keyingi oy"
                 aria-label="Keyingi oy"
               >
                 <IconChevronRight size={14} />
@@ -2772,7 +2755,6 @@ const Settings = ({
                       }
                       setCalPickerTarget(null);
                     }}
-                    title={`Har oyning ${cell.day}-kuni`}
                   >
                     {cell.day}
                   </button>
@@ -3967,7 +3949,8 @@ const Settings = ({
         .modern-text-input:focus,
         .modern-textarea-input:focus {
           border-color: var(--apple-blue, #0171E3);
-          box-shadow: 0 0 0 3px rgba(0, 113, 227, 0.12);
+          box-shadow: none !important;
+          outline: none !important;
         }
 
         .modern-textarea-input {
@@ -3996,12 +3979,13 @@ const Settings = ({
           border: 1px solid rgba(0, 0, 0, 0.12);
           border-radius: var(--radius-sm, 9px);
           overflow: hidden;
-          transition: border-color var(--transition-fast, 0.2s ease), box-shadow var(--transition-fast, 0.2s ease);
+          transition: border-color var(--transition-fast, 0.2s ease);
         }
 
         .social-input-wrap:focus-within {
           border-color: var(--apple-blue, #0171E3);
-          box-shadow: 0 0 0 3px rgba(0, 113, 227, 0.12);
+          box-shadow: none !important;
+          outline: none !important;
         }
 
         .social-input-prefix {
@@ -5694,7 +5678,8 @@ const Settings = ({
         .calc-student-search-wrap:focus-within {
           border-color: var(--apple-blue);
           background: #FFFFFF;
-          box-shadow: 0 0 0 3px rgba(0, 113, 227, 0.1);
+          box-shadow: none !important;
+          outline: none !important;
         }
 
         .calc-student-search-input {
@@ -6673,7 +6658,8 @@ const Settings = ({
         [data-theme="dark"] .modern-text-input:focus,
         [data-theme="dark"] .modern-textarea-input:focus {
           border-color: #8AB4F8;
-          box-shadow: 0 0 0 3px rgba(138, 180, 248, 0.2);
+          box-shadow: none !important;
+          outline: none !important;
         }
 
         [data-theme="dark"] .social-input-wrap {
@@ -6683,7 +6669,8 @@ const Settings = ({
 
         [data-theme="dark"] .social-input-wrap:focus-within {
           border-color: #8AB4F8;
-          box-shadow: 0 0 0 3px rgba(138, 180, 248, 0.2);
+          box-shadow: none !important;
+          outline: none !important;
         }
 
         [data-theme="dark"] .social-input-prefix {
@@ -7113,7 +7100,8 @@ const Settings = ({
         [data-theme="dark"] .calc-student-search-wrap:focus-within {
           background: #292A2D;
           border-color: #8AB4F8;
-          box-shadow: 0 0 0 3px rgba(138, 180, 248, 0.15);
+          box-shadow: none !important;
+          outline: none !important;
         }
 
         [data-theme="dark"] .calc-student-card {
