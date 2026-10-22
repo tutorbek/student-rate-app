@@ -303,7 +303,7 @@ const Leaderboard = ({
       data.push({
         ...tx,
         studentName: student ? student.name : "O'chirilgan talaba",
-        studentEmoji: student ? student.emoji : '❓',
+        studentEmoji: student ? student.emoji : 'default',
         studentColor: student ? student.color : '#8e8e93',
         groupId: groupId,
         groupName: groupId ? (groupNameMap.get(groupId) || "O'chirilgan guruh") : "O'chirilgan guruh",
@@ -384,19 +384,25 @@ const Leaderboard = ({
     let currentRank = 0;
     let lastScore = null;
     return finalData.map((student) => {
-      if (student.score !== lastScore) {
-        currentRank += 1;
-        lastScore = student.score;
+      if (student.score > 0) {
+        if (student.score !== lastScore) {
+          currentRank += 1;
+          lastScore = student.score;
+        }
+        return {
+          ...student,
+          rank: currentRank,
+        };
       }
       return {
         ...student,
-        rank: currentRank,
+        rank: '-',
       };
     });
   }, [activeStudentsPool, groupNameMap, studentScoreMap, selectedGroupId, userRole, selectedCategory, studentCategory, groupCategoryMap]);
 
   const hasAnyPoints = useMemo(() => {
-    return standings.some((s) => s.score !== 0);
+    return standings.some((s) => s.score > 0);
   }, [standings]);
 
   const handleDeleteTx = (id) => {
@@ -761,8 +767,9 @@ const Leaderboard = ({
             <div className="standings-body">
               {standings.map((student) => {
                 const rank = student.rank;
-                const isTop3 = rank <= 3 && hasAnyPoints;
-                const isFirst = rank === 1 && hasAnyPoints;
+                const hasScore = typeof rank === 'number' && student.score > 0;
+                const isTop3 = hasScore && rank <= 3;
+                const isFirst = hasScore && rank === 1;
                 const isDailyStar = timeframe === 'today' && isFirst;
                 return (
                   <div 
@@ -797,7 +804,12 @@ const Leaderboard = ({
                             {student.name}
                           </span>
                           {isDailyStar && (
-                            <span className="leaderboard-daily-star-badge">⭐ Dars yulduzi</span>
+                            <span className="leaderboard-daily-star-badge">
+                              <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor">
+                                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+                              </svg>
+                              <span>Dars yulduzi</span>
+                            </span>
                           )}
                         </div>
                         <span className="student-mobile-group">{student.groupName}</span>
@@ -1702,6 +1714,9 @@ const Leaderboard = ({
         }
 
         .leaderboard-daily-star-badge {
+          display: inline-flex;
+          align-items: center;
+          gap: 4px;
           font-size: 0.68rem;
           font-weight: 700;
           background: linear-gradient(135deg, #F59E0B, #D97706);
