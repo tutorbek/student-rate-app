@@ -11,7 +11,23 @@
   box-sizing: border-box;
 }
 
-/* 1. Header Actions (Countdown & Add Gift Button) */
+/* 1. Subbar Actions (Countdown & Add Gift Button) */
+.rewards-actions-subbar {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+@media (max-width: 600px) {
+  .rewards-actions-subbar {
+    justify-content: space-between;
+    width: 100%;
+  }
+}
+
 .rewards-header-actions {
   display: flex;
   align-items: center;

@@ -225,29 +225,30 @@ const TeacherRewardsView = forwardRef(function TeacherRewardsView({
 
   return (
     <div className="teacher-rewards-container animate-fadeIn">
-      {/* 1. Page Header (Standard Apple Minimalist Layout) */}
+      {/* 1. Page Header (Only when standalone) */}
       {!hideHeader && (
         <div className="page-header flex-col-mobile">
           <div>
             <h2 className="page-title">Oylik Sovg'alar Musobaqasi</h2>
           </div>
-
-          <div className="rewards-header-actions">
-            <div className="header-countdown-badge">
-              <span>{currentMonthName} oyi:</span>
-              <strong>{daysRemaining} kun qoldi</strong>
-            </div>
-
-            <button
-              type="button"
-              className="btn btn-primary scale-active"
-              onClick={() => handleOpenAddModal('kids')}
-            >
-              <span>+ Sovg'a Belgilash</span>
-            </button>
-          </div>
         </div>
       )}
+
+      {/* Standalone Action Subbar below header (Countdown & Add Gift Button) */}
+      <div className="rewards-actions-subbar">
+        <div className="header-countdown-badge">
+          <span>{currentMonthName} oyi:</span>
+          <strong>{daysRemaining} kun qoldi</strong>
+        </div>
+
+        <button
+          type="button"
+          className="btn btn-primary scale-active"
+          onClick={() => handleOpenAddModal('kids')}
+        >
+          <span>+ Sovg'a Belgilash</span>
+        </button>
+      </div>
 
       {/* 2. Two Main Category Gift Cards (Kids & Teens) - Single clean glass-card each */}
       <div className="rewards-grid-row">
