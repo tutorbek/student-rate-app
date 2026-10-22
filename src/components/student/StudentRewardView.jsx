@@ -1,12 +1,7 @@
 import React, { useMemo } from 'react';
-import { getGroupCategory, getStartOfMonth } from '../../utils/db';
+import { getGroupCategory, getStartOfMonth, UZ_MONTHS } from '../../utils/db';
 import { renderAvatar } from '../../utils/studentAvatars';
 import './StudentRewardView.css';
-
-const UZ_MONTHS = [
-  'Yanvar', 'Fevral', 'Mart', 'Aprel', 'May', 'Iyun',
-  'Iyul', 'Avgust', 'Sentyabr', 'Oktyabr', 'Noyabr', 'Dekabr'
-];
 
 export default function StudentRewardView({
   pinnedStudent = null,

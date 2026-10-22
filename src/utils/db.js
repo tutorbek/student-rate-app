@@ -1,6 +1,11 @@
 import { getGroupPasswordsRegistry } from './supabase.js';
 import { normalizeIconUrl, sanitizeStudentAvatar, getDefaultFreeAvatar } from './avatarGallery.js';
 
+export const UZ_MONTHS = [
+  'Yanvar', 'Fevral', 'Mart', 'Aprel', 'May', 'Iyun',
+  'Iyul', 'Avgust', 'Sentyabr', 'Oktyabr', 'Noyabr', 'Dekabr'
+];
+
 const UZBEK_WORDS = [
   'olma', 'anor', 'uzum', 'anjir', 'orik', 'shaftoli', 'behi', 'tarvuz', 'qovun', 'bodring',
   'pomidor', 'sabzi', 'piyoz', 'kartoshka', 'karam', 'sarimsak', 'qalampir', 'osh', 'palov', 'somsa',

@@ -1,10 +1,21 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { getStudentScore, getStartOfToday, getStartOfMonth, getStartOfLastMonth, getEndOfLastMonth, getGroupCategory } from '../utils/db';
+import { getStudentScore, getStartOfToday, getStartOfMonth, getStartOfLastMonth, getEndOfLastMonth, getGroupCategory, UZ_MONTHS } from '../utils/db';
 import { getCurrentActiveLessonGroup, isGroupLessonActive } from '../utils/scheduleUtils';
 import { renderAvatar } from '../utils/studentAvatars';
 import ProjectLikeIcon from './common/ProjectLikeIcon';
 import useModalDismiss from '../hooks/useModalDismiss';
+import TeacherRewardsView from './TeacherRewardsView';
+
+const IconGift = ({ size = 15 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+    <polyline points="20 12 20 22 4 22 4 12" />
+    <rect x="2" y="7" width="20" height="5" />
+    <line x1="12" y1="22" x2="12" y2="7" />
+    <path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z" />
+    <path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z" />
+  </svg>
+);
 
 const IconTrophy = ({ size = 15 }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
@@ -66,9 +77,25 @@ const Leaderboard = ({
   onDeleteTransaction,
   showToast,
   extraLessons = [],
+  rewards = { kids: null, teens: null },
+  onSaveGift,
+  onDeleteGift,
 }) => {
-  const [activeTab, setActiveTab] = useState('standings'); // 'standings' | 'history'
+  const [activeTab, setActiveTab] = useState('standings'); // 'standings' | 'history' | 'rewards'
   const hasUserManuallySelectedGroupRef = useRef(false);
+  const teacherRewardsRef = useRef(null);
+
+  // Month & Countdown for Sovg'alar tab header
+  const { currentMonthName, daysRemaining } = useMemo(() => {
+    const today = new Date();
+    const end = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+    const remaining = Math.max(0, end.getDate() - today.getDate());
+    const monthName = UZ_MONTHS ? UZ_MONTHS[today.getMonth()] : '';
+    return {
+      daysRemaining: remaining,
+      currentMonthName: monthName,
+    };
+  }, []);
 
   // Smart initial timeframe: If active lesson is ongoing OR if points were already awarded today, default to 'today', otherwise 'month'
   const [timeframe, setTimeframe] = useState(() => {
@@ -405,30 +432,62 @@ const Leaderboard = ({
     <div className="leaderboard-container">
       <div className="page-header flex-col-mobile">
         <div>
-          <h2 className="page-title">{activeTab === 'standings' ? 'Leaderboard' : "Like'lar Tarixi"}</h2>
+          <h2 className="page-title">
+            {activeTab === 'standings' ? 'Leaderboard' : (activeTab === 'history' ? "Like'lar Tarixi" : "Oylik Sovg'alar")}
+          </h2>
         </div>
 
-        <div className="tab-control-brutalist">
-          <button
-            type="button"
-            className={`tab-btn-brutalist ${activeTab === 'standings' ? 'active' : ''}`}
-            onClick={() => setActiveTab('standings')}
-          >
-            <IconTrophy size={15} />
-            <span>Reyting</span>
-          </button>
-          <button
-            type="button"
-            className={`tab-btn-brutalist ${activeTab === 'history' ? 'active' : ''}`}
-            onClick={() => setActiveTab('history')}
-          >
-            <IconScroll size={15} />
-            <span>Like'lar Tarixi</span>
-          </button>
+        <div className="leaderboard-header-actions-wrap">
+          <div className="tab-control-brutalist">
+            <button
+              type="button"
+              className={`tab-btn-brutalist ${activeTab === 'standings' ? 'active' : ''}`}
+              onClick={() => setActiveTab('standings')}
+            >
+              <IconTrophy size={15} />
+              <span>Reyting</span>
+            </button>
+            <button
+              type="button"
+              className={`tab-btn-brutalist ${activeTab === 'history' ? 'active' : ''}`}
+              onClick={() => setActiveTab('history')}
+            >
+              <IconScroll size={15} />
+              <span>Like'lar Tarixi</span>
+            </button>
+            {userRole !== 'student' && (
+              <button
+                type="button"
+                className={`tab-btn-brutalist ${activeTab === 'rewards' ? 'active' : ''}`}
+                onClick={() => setActiveTab('rewards')}
+              >
+                <IconGift size={15} />
+                <span>Sovg'alar</span>
+              </button>
+            )}
+          </div>
+
+          {activeTab === 'rewards' && userRole !== 'student' && (
+            <div className="rewards-header-actions">
+              <div className="header-countdown-badge">
+                <span>{currentMonthName} oyi:</span>
+                <strong>{daysRemaining} kun qoldi</strong>
+              </div>
+
+              <button
+                type="button"
+                className="btn btn-primary scale-active"
+                onClick={() => teacherRewardsRef.current?.openAddModal()}
+              >
+                <span>+ Sovg'a Belgilash</span>
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
-      <div className={`glass-card filters-toolbar ${userRole === 'student' ? 'student-filters-toolbar' : ''}`}>
+      {activeTab !== 'rewards' && (
+        <div className={`glass-card filters-toolbar ${userRole === 'student' ? 'student-filters-toolbar' : ''}`}>
         {userRole === 'student' ? (
           <div className="filter-item student-scope-filter-item">
             <label className="form-label">Ko'rinish</label>
@@ -693,8 +752,21 @@ const Leaderboard = ({
           </div>
         )}
       </div>
+      )}
 
-      {activeTab === 'standings' ? (
+      {activeTab === 'rewards' && userRole !== 'student' ? (
+        <TeacherRewardsView
+          ref={teacherRewardsRef}
+          rewards={rewards}
+          groups={groups}
+          students={students}
+          transactions={transactions}
+          onSaveGift={onSaveGift}
+          onDeleteGift={onDeleteGift}
+          showToast={showToast}
+          hideHeader={true}
+        />
+      ) : activeTab === 'standings' ? (
         standings.length > 0 ? (
           <div className="glass-card standings-card">
             {timeframe === 'today' && !hasAnyPoints && (
@@ -1074,6 +1146,20 @@ const Leaderboard = ({
           justify-content: space-between;
           align-items: center;
           gap: 14px;
+        }
+
+        .leaderboard-header-actions-wrap {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          flex-wrap: wrap;
+        }
+
+        .leaderboard-header-actions-wrap .rewards-header-actions {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          flex-wrap: wrap;
         }
 
         .tab-control-brutalist {
@@ -2123,6 +2209,18 @@ const Leaderboard = ({
           .flex-col-mobile {
             flex-direction: column;
             align-items: stretch;
+          }
+
+          .leaderboard-header-actions-wrap {
+            width: 100%;
+            flex-direction: column;
+            align-items: stretch;
+            gap: 10px;
+          }
+
+          .leaderboard-header-actions-wrap .rewards-header-actions {
+            width: 100%;
+            justify-content: space-between;
           }
 
           .tab-control-brutalist {

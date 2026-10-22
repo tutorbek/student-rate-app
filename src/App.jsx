@@ -7,7 +7,6 @@ import Leaderboard from './components/Leaderboard';
 import Settings from './components/Settings';
 import Attendance from './components/Attendance';
 import ScheduleView from './components/ScheduleView';
-import TeacherRewardsView from './components/TeacherRewardsView';
 import AdminDashboard from './components/admin/AdminDashboard';
 import AdminAttendance from './components/admin/AdminAttendance';
 import AdminFinance from './components/admin/AdminFinance';
@@ -77,11 +76,11 @@ function App() {
     // Teacher: default is schedule (dashboard removed)
     const sessionTab = sessionStorage.getItem('rsa_active_tab');
     if (sessionTab && sessionTab !== 'dashboard') {
-      return sessionTab;
+      return sessionTab === 'rewards' ? 'leaderboard' : sessionTab;
     }
     const savedTab = localStorage.getItem('rsa_active_tab');
     if (savedTab && savedTab !== 'dashboard') {
-      return savedTab;
+      return savedTab === 'rewards' ? 'leaderboard' : savedTab;
     }
     return 'schedule';
   });
@@ -2861,6 +2860,7 @@ function App() {
           />
         );
       case 'leaderboard':
+      case 'rewards':
         return (
           <Leaderboard
             groups={filteredGroups}
@@ -2873,6 +2873,9 @@ function App() {
             onDeleteTransaction={handleDeleteTransaction}
             showToast={showToast}
             extraLessons={filteredExtraLessons}
+            rewards={rewards}
+            onSaveGift={handleSaveGift}
+            onDeleteGift={handleDeleteGift}
           />
         );
       case 'attendance':
@@ -2885,18 +2888,6 @@ function App() {
             onDeleteAttendance={handleDeleteAttendance}
             showToast={showToast}
             extraLessons={filteredExtraLessons}
-          />
-        );
-      case 'rewards':
-        return (
-          <TeacherRewardsView
-            rewards={rewards}
-            groups={filteredGroups}
-            students={filteredStudents}
-            transactions={filteredTransactions}
-            onSaveGift={handleSaveGift}
-            onDeleteGift={handleDeleteGift}
-            showToast={showToast}
           />
         );
       case 'settings':

@@ -1,15 +1,10 @@
-import React, { useState, useMemo, useRef } from 'react';
+import React, { useState, useMemo, useRef, forwardRef, useImperativeHandle } from 'react';
 import { createPortal } from 'react-dom';
 import { compressUploadedImage } from '../utils/avatarGallery';
-import { getGroupCategory, getStartOfMonth } from '../utils/db';
+import { getGroupCategory, getStartOfMonth, UZ_MONTHS } from '../utils/db';
 import { renderAvatar } from '../utils/studentAvatars';
 import { useModalDismiss } from '../hooks/useModalDismiss';
 import './TeacherRewardsView.css';
-
-const UZ_MONTHS = [
-  'Yanvar', 'Fevral', 'Mart', 'Aprel', 'May', 'Iyun',
-  'Iyul', 'Avgust', 'Sentyabr', 'Oktyabr', 'Noyabr', 'Dekabr'
-];
 
 const triggerHaptic = (style = 'light') => {
   if (typeof window !== 'undefined' && window.Telegram?.WebApp?.HapticFeedback) {
@@ -21,7 +16,7 @@ const triggerHaptic = (style = 'light') => {
   }
 };
 
-export default function TeacherRewardsView({
+const TeacherRewardsView = forwardRef(function TeacherRewardsView({
   rewards = { kids: null, teens: null },
   groups = [],
   students = [],
@@ -29,7 +24,8 @@ export default function TeacherRewardsView({
   onSaveGift,
   onDeleteGift,
   showToast,
-}) {
+  hideHeader = false,
+}, ref) {
   const [modalMode, setModalMode] = useState(null); // 'add' | 'edit' | null
   const [targetCategory, setTargetCategory] = useState('kids'); // 'kids' | 'teens'
   const [formTitle, setFormTitle] = useState('');
@@ -136,6 +132,10 @@ export default function TeacherRewardsView({
     }
   };
 
+  useImperativeHandle(ref, () => ({
+    openAddModal: (cat = 'kids') => handleOpenAddModal(cat),
+  }));
+
   // Open modal for Editing an existing gift
   const handleOpenEditModal = (category) => {
     triggerHaptic('light');
@@ -226,26 +226,28 @@ export default function TeacherRewardsView({
   return (
     <div className="teacher-rewards-container animate-fadeIn">
       {/* 1. Page Header (Standard Apple Minimalist Layout) */}
-      <div className="page-header flex-col-mobile">
-        <div>
-          <h2 className="page-title">Oylik Sovg'alar Musobaqasi</h2>
-        </div>
-
-        <div className="rewards-header-actions">
-          <div className="header-countdown-badge">
-            <span>{currentMonthName} oyi:</span>
-            <strong>{daysRemaining} kun qoldi</strong>
+      {!hideHeader && (
+        <div className="page-header flex-col-mobile">
+          <div>
+            <h2 className="page-title">Oylik Sovg'alar Musobaqasi</h2>
           </div>
 
-          <button
-            type="button"
-            className="btn btn-primary scale-active"
-            onClick={() => handleOpenAddModal('kids')}
-          >
-            <span>+ Sovg'a Belgilash</span>
-          </button>
+          <div className="rewards-header-actions">
+            <div className="header-countdown-badge">
+              <span>{currentMonthName} oyi:</span>
+              <strong>{daysRemaining} kun qoldi</strong>
+            </div>
+
+            <button
+              type="button"
+              className="btn btn-primary scale-active"
+              onClick={() => handleOpenAddModal('kids')}
+            >
+              <span>+ Sovg'a Belgilash</span>
+            </button>
+          </div>
         </div>
-      </div>
+      )}
 
       {/* 2. Two Main Category Gift Cards (Kids & Teens) - Single clean glass-card each */}
       <div className="rewards-grid-row">
@@ -689,4 +691,6 @@ export default function TeacherRewardsView({
       )}
     </div>
   );
-}
+});
+
+export default TeacherRewardsView;
