@@ -18,61 +18,9 @@ export default function LandingPage({
     return 'en';
   });
   const [isLangMenuOpen, setIsLangMenuOpen] = useState(false);
-  const [activeNav, setActiveNav] = useState('');
 
   const activeLang = propLang || localLang;
   const t = (key) => getLandingText(key, activeLang);
-
-  // High-performance IntersectionObserver for sticky navigation active states (zero layout thrashing)
-  useEffect(() => {
-    const sectionIds = ['imkoniyatlar', 'narx', 'savollar', 'aloqa'];
-    const elements = sectionIds
-      .map((id) => document.getElementById(id))
-      .filter(Boolean);
-
-    if (!elements.length) return;
-
-    const checkActiveSection = () => {
-      const scrollY = window.pageYOffset || window.scrollY || document.documentElement.scrollTop || 0;
-      // If user has scrolled to the bottom of the page, Contact (aloqa) is always active
-      const isAtBottom = window.innerHeight + scrollY >= document.documentElement.scrollHeight - 70;
-      if (isAtBottom) {
-        setActiveNav('aloqa');
-        return true;
-      }
-      return false;
-    };
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (checkActiveSection()) return;
-
-        const visibleEntries = entries.filter((entry) => entry.isIntersecting);
-        if (visibleEntries.length > 0) {
-          visibleEntries.sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top);
-          setActiveNav(visibleEntries[0].target.id);
-        }
-      },
-      {
-        rootMargin: '-15% 0px -55% 0px',
-        threshold: 0,
-      }
-    );
-
-    elements.forEach((el) => observer.observe(el));
-
-    const handleScroll = () => {
-      checkActiveSection();
-    };
-
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    checkActiveSection();
-
-    return () => {
-      observer.disconnect();
-      window.removeEventListener('scroll', handleScroll);
-    };
-  }, []);
 
   // Smooth scroll directly so section top lands flush against sticky navbar bottom
   const scrollToTarget = useCallback((hash) => {
@@ -99,12 +47,6 @@ export default function LandingPage({
 
   const handleNavClick = (e, hash) => {
     e.preventDefault();
-    if (hash && hash.startsWith('#')) {
-      const id = hash.slice(1);
-      if (['imkoniyatlar', 'narx', 'savollar', 'aloqa'].includes(id)) {
-        setActiveNav(id);
-      }
-    }
     scrollToTarget(hash);
   };
 
@@ -260,28 +202,28 @@ export default function LandingPage({
             <a
               href="#imkoniyatlar"
               onClick={(e) => handleNavClick(e, '#imkoniyatlar')}
-              className={`nav-link-btn ${activeNav === 'imkoniyatlar' ? 'active' : ''}`}
+              className="nav-link-btn"
             >
               {t('nav_sec_modules')}
             </a>
             <a
               href="#narx"
               onClick={(e) => handleNavClick(e, '#narx')}
-              className={`nav-link-btn ${activeNav === 'narx' ? 'active' : ''}`}
+              className="nav-link-btn"
             >
               {t('nav_sec_pricing')}
             </a>
             <a
               href="#savollar"
               onClick={(e) => handleNavClick(e, '#savollar')}
-              className={`nav-link-btn ${activeNav === 'savollar' ? 'active' : ''}`}
+              className="nav-link-btn"
             >
               {t('nav_sec_faq')}
             </a>
             <a
               href="#aloqa"
               onClick={(e) => handleNavClick(e, '#aloqa')}
-              className={`nav-link-btn ${activeNav === 'aloqa' ? 'active' : ''}`}
+              className="nav-link-btn"
             >
               {t('nav_sec_contact')}
             </a>
@@ -1361,7 +1303,7 @@ export default function LandingPage({
         </section>
 
         {/* 10. FINAL CTA + FOOTER (white) */}
-        <section className="sc cta" id="aloqa" data-bg="w" data-scene="final">
+        <section className="sc cta" id="boglanish" data-bg="w" data-scene="final">
           {/* Bottom Organic Teal Wave Blob Accent (User inspired) */}
           <div className="cta-organic-blob-wrap" aria-hidden="true">
             <svg
@@ -1418,7 +1360,7 @@ export default function LandingPage({
               <p className="cta-subnote">{t('final_cta_sub')}</p>
             </div>
           </div>
-          <footer className="foot">
+          <footer className="foot" id="aloqa">
             <div className="foot-inner">
               <p className="lab">{t('foot_lab')}</p>
               <nav aria-label={t('foot_lab')}>

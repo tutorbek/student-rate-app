@@ -321,62 +321,60 @@ html.landing-page-active {
   align-items: center;
   justify-content: center;
   padding: 6px 14px;
-  border-radius: 9999px;
+  border-radius: 0;
   font-family: Outfit, -apple-system, "system-ui", sans-serif;
   font-size: 0.8125rem;
   font-weight: 500;
   letter-spacing: -0.01em;
   color: #555558;
   text-decoration: none;
-  background: transparent;
+  background: transparent !important;
   white-space: nowrap;
   user-select: none;
   cursor: pointer;
-  outline: none;
+  outline: none !important;
+  border: none !important;
+  box-shadow: none !important;
+  transform: none !important;
+  transition: none !important;
 }
 
 .landing-root .nav-link-btn:hover,
 .landing-root .nav-link-btn:active,
-.landing-root .nav-link-btn:focus {
-  background: transparent;
-  color: #555558;
-  transform: none;
-  box-shadow: none;
-  outline: none;
-}
-
+.landing-root .nav-link-btn:focus,
+.landing-root .nav-link-btn:focus-visible,
 .landing-root .nav-link-btn.active,
 .landing-root .nav-link-btn.active:hover,
 .landing-root .nav-link-btn.active:active,
-.landing-root .nav-link-btn.active:focus {
-  color: #0171E3;
-  font-weight: 600;
-  background: rgba(1, 113, 227, 0.08);
-  transform: none;
-  box-shadow: none;
+.landing-root .nav-link-btn.active:focus,
+.landing-root .nav-link-btn.active:focus-visible {
+  background: transparent !important;
+  color: #555558 !important;
+  font-weight: 500 !important;
+  transform: none !important;
+  box-shadow: none !important;
+  outline: none !important;
+  border: none !important;
 }
 
-/* Dark mode support for nav-links */
-html[data-theme="dark"] .landing-root .nav-link-btn {
-  color: #A1A1A6;
-}
-
+/* Dark mode support for nav-links: completely clean, static, zero effects */
+html[data-theme="dark"] .landing-root .nav-link-btn,
 html[data-theme="dark"] .landing-root .nav-link-btn:hover,
 html[data-theme="dark"] .landing-root .nav-link-btn:active,
-html[data-theme="dark"] .landing-root .nav-link-btn:focus {
-  background: transparent;
-  color: #A1A1A6;
-  transform: none;
-  box-shadow: none;
-  outline: none;
-}
-
+html[data-theme="dark"] .landing-root .nav-link-btn:focus,
+html[data-theme="dark"] .landing-root .nav-link-btn:focus-visible,
 html[data-theme="dark"] .landing-root .nav-link-btn.active,
 html[data-theme="dark"] .landing-root .nav-link-btn.active:hover,
 html[data-theme="dark"] .landing-root .nav-link-btn.active:active,
-html[data-theme="dark"] .landing-root .nav-link-btn.active:focus {
-  color: #2997FF;
-  background: rgba(41, 151, 255, 0.14);
+html[data-theme="dark"] .landing-root .nav-link-btn.active:focus,
+html[data-theme="dark"] .landing-root .nav-link-btn.active:focus-visible {
+  background: transparent !important;
+  color: #A1A1A6 !important;
+  font-weight: 500 !important;
+  transform: none !important;
+  box-shadow: none !important;
+  outline: none !important;
+  border: none !important;
 }
 
 .landing-root .nav-actions {
