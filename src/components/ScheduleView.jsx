@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { renderGroupIcon, getGroupColorOption } from '../utils/groupIcons';
 import { renderAvatar } from '../utils/studentAvatars';
 import { getGroupCategory } from '../utils/db';
-import Time24Input from './Time24Input';
+import Time24Input from './common/Time24Input';
 import { useModalDismiss } from '../hooks/useModalDismiss';
 
 const WEEKDAYS = [

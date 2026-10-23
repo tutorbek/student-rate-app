@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { renderAvatar } from '../utils/studentAvatars';
+import { renderAvatar } from '../../utils/studentAvatars';
 
 const triggerHaptic = (style = 'light') => {
   if (typeof window !== 'undefined' && window.Telegram?.WebApp?.HapticFeedback) {

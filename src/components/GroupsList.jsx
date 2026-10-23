@@ -6,7 +6,7 @@ import { AVATAR_GALLERY_IMAGES, isGalleryImage, compressUploadedImage } from '..
 import { markAvatarLoaded } from '../utils/avatarCache';
 import { isGroupLessonActive } from '../utils/scheduleUtils';
 import ScheduleView from './ScheduleView';
-import Time24Input from './Time24Input';
+import Time24Input from './common/Time24Input';
 import { useModalDismiss } from '../hooks/useModalDismiss';
 
 const SCHEDULE_WEEKDAYS = [

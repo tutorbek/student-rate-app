@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { createPortal } from 'react-dom';
-import Sidebar from './components/Sidebar';
+import Sidebar from './components/layout/Sidebar';
 import GroupsList from './components/GroupsList';
 import GroupDetail from './components/GroupDetail';
 import Leaderboard from './components/Leaderboard';
