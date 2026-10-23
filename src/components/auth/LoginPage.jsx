@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { getLandingText } from '../constants/landingTranslations';
-import './LandingPage.css';
+import { getLandingText } from '../../constants/landingTranslations';
+import '../landing/LandingPage.css';
 
 export default function LoginPage({
   lang: propLang,
