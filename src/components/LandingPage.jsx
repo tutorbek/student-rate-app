@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
-import { getLandingText, getPricingBreakdown } from './landingTranslations';
+import { getLandingText, getPricingBreakdown } from '../constants/landingTranslations';
 import './LandingPage.css';
 
 export default function LandingPage({

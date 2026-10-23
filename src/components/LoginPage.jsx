@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { getLandingText } from './landingTranslations';
+import { getLandingText } from '../constants/landingTranslations';
 import './LandingPage.css';
 
 export default function LoginPage({
