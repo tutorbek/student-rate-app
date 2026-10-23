@@ -1,10 +1,10 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { renderGroupIcon, getGroupColorOption } from '../utils/groupIcons';
-import { renderAvatar } from '../utils/studentAvatars';
-import { getGroupCategory } from '../utils/db';
-import Time24Input from './common/Time24Input';
-import { useModalDismiss } from '../hooks/useModalDismiss';
+import { renderGroupIcon, getGroupColorOption } from '../../utils/groupIcons';
+import { renderAvatar } from '../../utils/studentAvatars';
+import { getGroupCategory } from '../../utils/db';
+import Time24Input from '../common/Time24Input';
+import { useModalDismiss } from '../../hooks/useModalDismiss';
 
 const WEEKDAYS = [
   { key: 'mon', name: 'Dushanba', short: 'Du' },

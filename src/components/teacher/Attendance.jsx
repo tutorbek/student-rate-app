@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
-import { renderAvatar } from '../utils/studentAvatars';
-import { sanitizeAttendanceDate } from '../utils/db';
+import { renderAvatar } from '../../utils/studentAvatars';
+import { sanitizeAttendanceDate } from '../../utils/db';
 import {
   isStudentInGroupAtDate,
   calculateAttendanceRate,
@@ -9,10 +9,10 @@ import {
   calculateStudentAttendanceStats,
   calculateWeightedAttendanceMetrics,
   calculateFairAttendanceScore
-} from '../utils/attendanceUtils';
-import { exportAttendanceToCSV, printAttendanceJournal } from '../utils/exportAttendance';
-import { getCurrentActiveLessonGroup, isGroupLessonActive } from '../utils/scheduleUtils';
-import { useModalDismiss } from '../hooks/useModalDismiss';
+} from '../../utils/attendanceUtils';
+import { exportAttendanceToCSV, printAttendanceJournal } from '../../utils/exportAttendance';
+import { getCurrentActiveLessonGroup, isGroupLessonActive } from '../../utils/scheduleUtils';
+import { useModalDismiss } from '../../hooks/useModalDismiss';
 
 const UZBEK_MONTHS = [
   'Yanvar', 'Fevral', 'Mart', 'Aprel', 'May', 'Iyun',

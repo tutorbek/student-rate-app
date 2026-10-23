@@ -1,10 +1,10 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { getStudentScore, getStartOfToday, getStartOfMonth, getStartOfLastMonth, getEndOfLastMonth, getGroupCategory } from '../utils/db';
-import { getCurrentActiveLessonGroup, isGroupLessonActive } from '../utils/scheduleUtils';
-import { renderAvatar } from '../utils/studentAvatars';
-import ProjectLikeIcon from './common/ProjectLikeIcon';
-import useModalDismiss from '../hooks/useModalDismiss';
+import { getStudentScore, getStartOfToday, getStartOfMonth, getStartOfLastMonth, getEndOfLastMonth, getGroupCategory } from '../../utils/db';
+import { getCurrentActiveLessonGroup, isGroupLessonActive } from '../../utils/scheduleUtils';
+import { renderAvatar } from '../../utils/studentAvatars';
+import ProjectLikeIcon from '../common/ProjectLikeIcon';
+import useModalDismiss from '../../hooks/useModalDismiss';
 import TeacherRewardsView from './TeacherRewardsView';
 
 const IconGift = ({ size = 15 }) => (

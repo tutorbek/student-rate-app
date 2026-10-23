@@ -1,9 +1,9 @@
 import React, { useState, useMemo, useRef, forwardRef, useImperativeHandle } from 'react';
 import { createPortal } from 'react-dom';
-import { compressUploadedImage } from '../utils/avatarGallery';
-import { getGroupCategory, getStartOfMonth, UZ_MONTHS } from '../utils/db';
-import { renderAvatar } from '../utils/studentAvatars';
-import { useModalDismiss } from '../hooks/useModalDismiss';
+import { compressUploadedImage } from '../../utils/avatarGallery';
+import { getGroupCategory, getStartOfMonth, UZ_MONTHS } from '../../utils/db';
+import { renderAvatar } from '../../utils/studentAvatars';
+import { useModalDismiss } from '../../hooks/useModalDismiss';
 import './TeacherRewardsView.css';
 
 const triggerHaptic = (style = 'light') => {

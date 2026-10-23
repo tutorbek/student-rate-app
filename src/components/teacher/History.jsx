@@ -1,8 +1,8 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { renderAvatar } from '../utils/studentAvatars';
-import ProjectLikeIcon from './common/ProjectLikeIcon';
-import { useModalDismiss } from '../hooks/useModalDismiss';
+import { renderAvatar } from '../../utils/studentAvatars';
+import ProjectLikeIcon from '../common/ProjectLikeIcon';
+import { useModalDismiss } from '../../hooks/useModalDismiss';
 
 const History = ({ groups = [], students = [], transactions = [], onDeleteTransaction, showToast, userRole }) => {
   const [confirmDeleteId, setConfirmDeleteId] = useState(null);

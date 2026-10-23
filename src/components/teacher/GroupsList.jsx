@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { generateUniqueGroupPassword, getGroupCategory } from '../utils/db';
-import { GROUP_SVG_ICONS, GROUP_COLOR_OPTIONS, getGroupColorOption, renderGroupIcon } from '../utils/groupIcons';
-import { AVATAR_GALLERY_IMAGES, isGalleryImage, compressUploadedImage } from '../utils/avatarGallery';
-import { markAvatarLoaded } from '../utils/avatarCache';
-import { isGroupLessonActive } from '../utils/scheduleUtils';
+import { generateUniqueGroupPassword, getGroupCategory } from '../../utils/db';
+import { GROUP_SVG_ICONS, GROUP_COLOR_OPTIONS, getGroupColorOption, renderGroupIcon } from '../../utils/groupIcons';
+import { AVATAR_GALLERY_IMAGES, isGalleryImage, compressUploadedImage } from '../../utils/avatarGallery';
+import { markAvatarLoaded } from '../../utils/avatarCache';
+import { isGroupLessonActive } from '../../utils/scheduleUtils';
 import ScheduleView from './ScheduleView';
-import Time24Input from './common/Time24Input';
-import { useModalDismiss } from '../hooks/useModalDismiss';
+import Time24Input from '../common/Time24Input';
+import { useModalDismiss } from '../../hooks/useModalDismiss';
 
 const SCHEDULE_WEEKDAYS = [
   { key: 'mon', name: 'Dushanba', short: 'Du' },

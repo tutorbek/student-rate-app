@@ -1,12 +1,12 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { getStudentScore, normalizeQuickTags, getGroupCategory } from '../utils/db';
-import { renderGroupIcon } from '../utils/groupIcons';
-import { STUDENT_AVATARS, renderStudentAvatar as renderAvatar } from '../utils/studentAvatars';
-import { AVATAR_GALLERY_IMAGES, isGalleryImage, compressUploadedImage } from '../utils/avatarGallery';
-import { markAvatarLoaded, preloadAvatars } from '../utils/avatarCache';
-import ProjectLikeIcon from './common/ProjectLikeIcon';
-import { useModalDismiss } from '../hooks/useModalDismiss';
+import { getStudentScore, normalizeQuickTags, getGroupCategory } from '../../utils/db';
+import { renderGroupIcon } from '../../utils/groupIcons';
+import { STUDENT_AVATARS, renderStudentAvatar as renderAvatar } from '../../utils/studentAvatars';
+import { AVATAR_GALLERY_IMAGES, isGalleryImage, compressUploadedImage } from '../../utils/avatarGallery';
+import { markAvatarLoaded, preloadAvatars } from '../../utils/avatarCache';
+import ProjectLikeIcon from '../common/ProjectLikeIcon';
+import { useModalDismiss } from '../../hooks/useModalDismiss';
 
 const COLOR_OPTIONS = [
   { name: 'Oq', value: '#FFFFFF' },

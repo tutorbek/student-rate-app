@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
-import { getGroupCategory } from '../utils/db';
-import { renderGroupIcon } from '../utils/groupIcons';
-import { renderAvatar } from '../utils/studentAvatars';
-import { useModalDismiss } from '../hooks/useModalDismiss';
+import { getGroupCategory } from '../../utils/db';
+import { renderGroupIcon } from '../../utils/groupIcons';
+import { renderAvatar } from '../../utils/studentAvatars';
+import { useModalDismiss } from '../../hooks/useModalDismiss';
 import './TeacherFinanceView.css';
 
 const UZBEK_CAL_MONTHS = [

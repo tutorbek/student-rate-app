@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { createPortal } from 'react-dom';
-import { exportDatabase, DEFAULT_QUICK_TAGS, normalizeQuickTags } from '../utils/db';
-import { renderAvatar } from '../utils/studentAvatars';
-import { AVATAR_GALLERY_IMAGES } from '../utils/avatarGallery';
-import ProjectLikeIcon from './common/ProjectLikeIcon';
-import { useModalDismiss } from '../hooks/useModalDismiss';
+import { exportDatabase, DEFAULT_QUICK_TAGS, normalizeQuickTags } from '../../utils/db';
+import { renderAvatar } from '../../utils/studentAvatars';
+import { AVATAR_GALLERY_IMAGES } from '../../utils/avatarGallery';
+import ProjectLikeIcon from '../common/ProjectLikeIcon';
+import { useModalDismiss } from '../../hooks/useModalDismiss';
 
 // Minimalist SVG Icons
 const IconTag = ({ size = 15, strokeWidth = 2.2 }) => (
