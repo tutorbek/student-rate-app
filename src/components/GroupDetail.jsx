@@ -162,11 +162,9 @@ const GroupDetail = ({ group, allGroups = [], students, transactions, quickTags,
   const [selectedEmoji, setSelectedEmoji] = useState(AVATAR_GALLERY_IMAGES[0].path);
   const [selectedColor, setSelectedColor] = useState(COLOR_OPTIONS[0].value);
   const [confirmDeleteId, setConfirmDeleteId] = useState(null);
-  const [pinResetTarget, setPinResetTarget] = useState(null);
 
-  const handleConfirmResetPin = () => {
-    if (!pinResetTarget) return;
-    const { id, name } = pinResetTarget;
+  const handleExecuteResetPin = (id, name) => {
+    if (!id) return;
     if (onResetStudentPin) {
       onResetStudentPin(id, name);
     } else if (onResetStudentDevice) {
@@ -178,7 +176,6 @@ const GroupDetail = ({ group, allGroups = [], students, transactions, quickTags,
     if (editingStudent && String(editingStudent.id) === String(id)) {
       setEditingStudent((prev) => prev ? { ...prev, pin: null, deviceId: null } : null);
     }
-    setPinResetTarget(null);
     showToast?.(`${name} ning PIN-kodi bekor qilindi va begona qurilmalar chiqarildi!`, "success");
   };
 
@@ -191,7 +188,6 @@ const GroupDetail = ({ group, allGroups = [], students, transactions, quickTags,
   const isAnyGroupDetailModalOpen = Boolean(
     showAddStudentModal ||
     confirmDeleteId ||
-    pinResetTarget ||
     scoringStudent ||
     profileStudent ||
     editingStudent ||
@@ -202,8 +198,6 @@ const GroupDetail = ({ group, allGroups = [], students, transactions, quickTags,
   useModalDismiss(isAnyGroupDetailModalOpen, () => {
     if (confirmDeleteId) {
       setConfirmDeleteId(null);
-    } else if (pinResetTarget) {
-      setPinResetTarget(null);
     } else if (showCategoryModal) {
       setShowCategoryModal(false);
     } else if (transferringStudent) {
@@ -1103,9 +1097,8 @@ const GroupDetail = ({ group, allGroups = [], students, transactions, quickTags,
                   <button
                     type="button"
                     className="teacher-pin-reset-action-btn sm scale-active"
-                    onClick={() => {
-                      setPinResetTarget({ id: profileStudent.id, name: profileStudent.name });
-                    }}
+                    onClick={() => handleExecuteResetPin(profileStudent.id, profileStudent.name)}
+                    title="PIN-kodni bekor qilish"
                   >
                     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
                       <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
@@ -1351,9 +1344,8 @@ const GroupDetail = ({ group, allGroups = [], students, transactions, quickTags,
                           <button
                             type="button"
                             className="teacher-pin-reset-action-btn scale-active"
-                            onClick={() => {
-                              setPinResetTarget({ id: editingStudent.id, name: editingStudent.name });
-                            }}
+                            onClick={() => handleExecuteResetPin(editingStudent.id, editingStudent.name)}
+                            title="PIN-kodni bekor qilish"
                           >
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
                               <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
@@ -1586,84 +1578,7 @@ const GroupDetail = ({ group, allGroups = [], students, transactions, quickTags,
         document.body
       )}
 
-      {/* PIN Reset Confirmation Modal (Loyixa dizaynidagi custom modal) */}
-      {pinResetTarget && createPortal(
-        <div 
-          className="modal-overlay pin-reset-modal-overlay" 
-          onClick={() => setPinResetTarget(null)}
-        >
-          <div 
-            className="modal-content glass pin-reset-modal-content modal-confirm" 
-            onClick={(e) => e.stopPropagation()}
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="pin-reset-dialog-title"
-          >
-            <button 
-              type="button" 
-              className="modal-close-btn" 
-              onClick={() => setPinResetTarget(null)}
-              aria-label="Yopish"
-            >
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <line x1="18" y1="6" x2="6" y2="18" />
-                <line x1="6" y1="6" x2="18" y2="18" />
-              </svg>
-            </button>
 
-            <div className="pin-reset-modal-header">
-              <div className="pin-reset-modal-icon-badge">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                  <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
-                  <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-                  <line x1="8" y1="16" x2="16" y2="16" />
-                </svg>
-              </div>
-              <div className="pin-reset-modal-title-wrap">
-                <h3 id="pin-reset-dialog-title" className="modal-title pin-reset-modal-title">
-                  PIN-kodni bekor qilish
-                </h3>
-                <span className="pin-reset-student-pill">{pinResetTarget.name}</span>
-              </div>
-            </div>
-
-            <div className="pin-reset-modal-body">
-              <p className="pin-reset-main-question">
-                <strong>{pinResetTarget.name}</strong> ning PIN-kodini bekor qilmoqchimisiz?
-              </p>
-
-              <div className="pin-reset-notice-card">
-                <div className="pin-reset-notice-icon">⚠️</div>
-                <div className="pin-reset-notice-text">
-                  <strong>Diqqat:</strong> Ushbu profilga ulangan begona qurilmalar avtomatik chiqarib yuboriladi va haqiqiy o'quvchi o'ziga yangi PIN-kod o'rnatishi mumkin bo'ladi.
-                </div>
-              </div>
-            </div>
-
-            <div className="modal-actions pin-reset-modal-actions">
-              <button 
-                type="button" 
-                className="btn btn-secondary scale-active" 
-                onClick={() => setPinResetTarget(null)}
-              >
-                Bekor qilish
-              </button>
-              <button 
-                type="button" 
-                className="btn btn-danger scale-active pin-reset-confirm-action-btn" 
-                onClick={handleConfirmResetPin}
-              >
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M18.36 6.64a9 9 0 1 1-12.73 0" />
-                  <line x1="12" y1="2" x2="12" y2="12" />
-                </svg>
-                Ha, bekor qilinsin
-              </button>
-            </div>
-          </div>
-        </div>,
-        document.body
-      )}
       <style>{`
         .group-category-pill {
           display: inline-flex;
@@ -3168,154 +3083,6 @@ const GroupDetail = ({ group, allGroups = [], students, transactions, quickTags,
         [data-theme="dark"] .teacher-pin-detail-card.is-open .teacher-pin-detail-icon-wrap {
           background: rgba(255, 255, 255, 0.06);
           color: #9AA0A6;
-        }
-
-        /* PIN Reset Confirmation Modal (Loyixa dizaynidagi modal) */
-        .pin-reset-modal-overlay {
-          z-index: 2300 !important;
-          background: rgba(0, 0, 0, 0.45);
-          backdrop-filter: blur(14px);
-          -webkit-backdrop-filter: blur(14px);
-        }
-
-        .pin-reset-modal-content {
-          max-width: 440px !important;
-          padding: 24px 22px 20px !important;
-          border-radius: var(--radius-xl, 18px);
-          box-shadow: 0 24px 60px rgba(0, 0, 0, 0.25);
-        }
-
-        .pin-reset-modal-header {
-          display: flex;
-          align-items: center;
-          gap: 14px;
-          margin-bottom: 16px;
-        }
-
-        .pin-reset-modal-icon-badge {
-          width: 46px;
-          height: 46px;
-          border-radius: 13px;
-          background: rgba(255, 59, 48, 0.1);
-          color: #FF3B30;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          flex-shrink: 0;
-          border: 1px solid rgba(255, 59, 48, 0.2);
-        }
-
-        .pin-reset-modal-title-wrap {
-          display: flex;
-          flex-direction: column;
-          gap: 4px;
-          min-width: 0;
-        }
-
-        .pin-reset-modal-title {
-          margin: 0 !important;
-          padding: 0 !important;
-          border: none !important;
-          font-size: 1.15rem !important;
-          font-weight: 700 !important;
-          color: var(--text-primary);
-          line-height: 1.25;
-        }
-
-        .pin-reset-student-pill {
-          display: inline-block;
-          font-size: 0.74rem;
-          font-weight: 600;
-          color: var(--accent-blue, #0171E3);
-          background: rgba(0, 113, 227, 0.08);
-          padding: 2px 8px;
-          border-radius: 6px;
-          width: fit-content;
-        }
-
-        .pin-reset-modal-body {
-          margin-bottom: 20px;
-        }
-
-        .pin-reset-main-question {
-          margin: 0 0 12px 0;
-          font-size: 0.95rem;
-          color: var(--text-primary);
-          line-height: 1.45;
-        }
-
-        .pin-reset-main-question strong {
-          color: var(--text-primary);
-          font-weight: 700;
-        }
-
-        .pin-reset-notice-card {
-          display: flex;
-          align-items: flex-start;
-          gap: 10px;
-          background: rgba(255, 149, 0, 0.08);
-          border: 1px solid rgba(255, 149, 0, 0.22);
-          border-radius: var(--radius-md, 12px);
-          padding: 12px 14px;
-        }
-
-        .pin-reset-notice-icon {
-          font-size: 1.1rem;
-          line-height: 1.3;
-          flex-shrink: 0;
-        }
-
-        .pin-reset-notice-text {
-          font-size: 0.82rem;
-          color: var(--text-secondary);
-          line-height: 1.45;
-        }
-
-        .pin-reset-notice-text strong {
-          color: #D97706;
-          font-weight: 700;
-        }
-
-        .pin-reset-modal-actions {
-          display: flex;
-          align-items: center;
-          justify-content: flex-end;
-          gap: 10px;
-          margin-top: 0;
-          padding-top: 14px;
-          border-top: 1px solid var(--border-color);
-        }
-
-        .pin-reset-confirm-action-btn {
-          display: inline-flex;
-          align-items: center;
-          gap: 6px;
-          font-weight: 600;
-          padding: 8px 16px;
-        }
-
-        [data-theme="dark"] .pin-reset-modal-overlay {
-          background: rgba(0, 0, 0, 0.75);
-        }
-
-        [data-theme="dark"] .pin-reset-modal-icon-badge {
-          background: rgba(255, 69, 58, 0.15);
-          color: #FF453A;
-          border-color: rgba(255, 69, 58, 0.3);
-        }
-
-        [data-theme="dark"] .pin-reset-student-pill {
-          color: #2997FF;
-          background: rgba(41, 151, 255, 0.16);
-        }
-
-        [data-theme="dark"] .pin-reset-notice-card {
-          background: rgba(255, 159, 10, 0.12);
-          border-color: rgba(255, 159, 10, 0.28);
-        }
-
-        [data-theme="dark"] .pin-reset-notice-text strong {
-          color: #FBBF24;
         }
       `}</style>
     </div>

@@ -7,7 +7,7 @@ const UZBEK_MONTHS = [
   'Iyul', 'Avgust', 'Sentabr', 'Oktabr', 'Noyabr', 'Dekabr'
 ];
 
-const TEACHER_IDS = ['teacher1', 'teacher2', 'teacher3', 'teacher4'];
+const TEACHER_IDS = ['teacher1'];
 
 const formatMoneyShort = (amount) => {
   if (amount === undefined || amount === null || isNaN(amount)) return "0 so'm";

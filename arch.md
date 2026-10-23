@@ -21,7 +21,7 @@ Platforma **3 xil turdagi foydalanuvchilar** uchun xizmat qiladi:
 flowchart TB
     subgraph Clients["Foydalanuvchilar (Mijoz qatlami)"]
         A1["O'quvchi (Student)\nParol: olma, anor..."]
-        A2["O'qituvchi (Teacher)\nParol: insight, quyosh..."]
+        A2["O'qituvchi (Bekzod)\nParol: insight, beksila"]
         A3["Super Admin\nParol: hammaguruhlar"]
     end
 
@@ -78,11 +78,8 @@ Tizimda an'anaviy `email/login` tizimi o'rniga, bolalar va o'qituvchilar uchun q
 
 | Rol | Parol misollari | Huquqlari | Ko'radigan bo'limlari |
 | :--- | :--- | :--- | :--- |
-| **Super Admin** | `hammaguruhlar` | Barcha 4 o'qituvchining ma'lumotlarini o'qish, solishtirish, umumiy monitoring | `AdminDashboard`, `AdminGroups`, `AdminAttendance` |
-| **O'qituvchi 1** | `insight`, `beksila` | Faqat `teacher1` bazasini to'liq boshqarish (yozish/o'chirish) | Dars jadvali, Dashboard, Guruhlar, Reyting, Davomat, Sozlamalar |
-| **O'qituvchi 2** | `quyosh` | Faqat `teacher2` bazasini to'liq boshqarish | Barcha o'qituvchi bo'limlari |
-| **O'qituvchi 3** | `hehehe` | Faqat `teacher3` bazasini to'liq boshqarish | Barcha o'qituvchi bo'limlari |
-| **O'qituvchi 4** | `simsim` | Faqat `teacher4` bazasini to'liq boshqarish | Barcha o'qituvchi bo'limlari |
+| **Super Admin** | `hammaguruhlar` | Tizim ma'lumotlarini o'qish, monitoring | `AdminDashboard`, `AdminGroups`, `AdminAttendance` |
+| **O'qituvchi (Bekzod)** | `insight`, `beksila` | Faqat `teacher1` bazasini to'liq boshqarish (yozish/o'chirish) | Dars jadvali, Dashboard, Guruhlar, Reyting, Davomat, Sozlamalar |
 | **O'quvchi** | O'zbekcha so'z: `olma`, `anor`, `sher`... | Faqat o'z guruhining natijalarini ko'rish (Read-Only) | Faqat `Leaderboard` (o'z guruhi doirasida) |
 
 ### Autentifikatsiya Ketma-ketligi:
@@ -100,8 +97,8 @@ sequenceDiagram
     alt Agar parol 'hammaguruhlar' bo'lsa
         App->>App: role='admin', teacherId='admin'
         App-->>User: Admin Panel ochiladi
-    else Agar o'qituvchi paroli bo'lsa ('insight', 'quyosh'...)
-        App->>App: role='teacher', teacherId='teacherX'
+    else Agar o'qituvchi paroli bo'lsa ('insight', 'beksila')
+        App->>App: role='teacher', teacherId='teacher1'
         App-->>User: O'qituvchi ish stoli ochiladi ('schedule')
     else Aks holda (Student paroli bo'lishi mumkin)
         App->>Supa: SELECT * FROM group_passwords WHERE password = ?
@@ -124,7 +121,7 @@ Tizim PostgreSQL ustida qurilgan bo'lib, yuqori tezlik va moslashuvchanlik uchun
 ### 4.1. Supabase Jadvallari:
 
 1. **`appdata`** jadvali (O'qituvchilarning asosiy bazasi):
-   - `teacher_id` (`TEXT`, Primary Key) — `teacher1`, `teacher2`, `teacher3`, `teacher4`.
+   - `teacher_id` (`TEXT`, Primary Key) — `teacher1` (Bekzod).
    - `data` (`JSONB`, NOT NULL) — O'qituvchining barcha guruhlari, talabalari, tranzaksiyalari va davomatlari jamlangan ob'ekt.
    - `updated_at` (`TIMESTAMPTZ`) — Oxirgi tahrirlangan vaqt.
 
@@ -282,10 +279,7 @@ ratedStudentApp/
 │   └── index.js                     # Vercel serverless platformasi uchun backend kirish nuqtasi (server.js ni eksport qiladi)
 │
 ├── backups/                         # GitHub Actions orqali saqlanadigan o'qituvchilarning kundalik JSON nusxalari
-│   ├── teacher1.json
-│   ├── teacher2.json
-│   ├── teacher3.json
-│   └── teacher4.json
+│   └── teacher1.json
 │
 ├── public/                          # Brauzer uchun ochiq statik aktivlar
 │   ├── favicon.ico / favicon.svg    # Sayt ikonkasi
@@ -294,7 +288,7 @@ ratedStudentApp/
 │   └── avatar_image/                # O'quvchilar va guruhlar uchun 3D avatarlar to'plami
 │
 ├── scripts/
-│   └── backup_to_git.js             # Supabase dan 4 ta o'qituvchi ma'lumotlarini yuklab backups/ papkasiga yozuvchi skript
+│   └── backup_to_git.js             # Supabase dan o'qituvchi ma'lumotlarini yuklab backups/ papkasiga yozuvchi skript
 │
 ├── storage/
 │   └── db.json                      # Mahalliy ishlab chiqish (offline/local Express) uchun zaxira JSON fayl

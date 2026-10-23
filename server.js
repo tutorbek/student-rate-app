@@ -73,22 +73,9 @@ const CREDENTIALS = {
   // Super Admin
   'hammaguruhlar': { role: 'admin' },
 
-  // Teacher 1 (User)
+  // Teacher (Bekzod)
   'insight': { role: 'teacher' },
   'beksila': { role: 'teacher' },
-  'studentman': { role: 'student' },
-
-  // Teacher 2
-  'quyosh': { role: 'teacher' },
-  'salombro': { role: 'student' },
-
-  // Teacher 3
-  'hehehe': { role: 'teacher' },
-  'menman': { role: 'student' },
-
-  // Teacher 4
-  'simsim': { role: 'teacher' },
-  'nimagap': { role: 'student' },
 };
 
 // API: Verify password
@@ -183,7 +170,7 @@ const sendTelegramBackupDocument = async (teacherId, data) => {
 };
 
 const runAllBackups = async () => {
-  const teachers = ['teacher1', 'teacher2', 'teacher3', 'teacher4'];
+  const teachers = ['teacher1'];
   let successCount = 0;
 
   for (const teacherId of teachers) {

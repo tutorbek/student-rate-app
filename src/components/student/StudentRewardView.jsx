@@ -79,23 +79,35 @@ export default function StudentRewardView({
       }
     });
 
+    const assignRanks = (arr) => {
+      let currentRank = 1;
+      return arr.map((item, idx) => {
+        if (item.monthlyScore > 0) {
+          if (idx > 0 && item.monthlyScore < arr[idx - 1].monthlyScore) {
+            currentRank = idx + 1;
+          }
+          return { ...item, rank: currentRank };
+        }
+        return { ...item, rank: null };
+      });
+    };
+
     kids.sort((a, b) => b.monthlyScore - a.monthlyScore);
     teens.sort((a, b) => b.monthlyScore - a.monthlyScore);
 
-    return { kidsRanking: kids, teensRanking: teens };
+    return { kidsRanking: assignRanks(kids), teensRanking: assignRanks(teens) };
   }, [allStudents, groupsMap, studentMonthlyScores]);
 
   // Active ranking strictly according to student's category (Kids or Teens only)
   const activeRanking = studentCategory === 'kids' ? kidsRanking : teensRanking;
   const leader = activeRanking[0] && activeRanking[0].monthlyScore > 0 ? activeRanking[0] : (activeRanking[0] || null);
 
-  // Current student rank in their category
-  const studentRankIndex = useMemo(() => {
-    if (!pinnedStudent) return -1;
-    return activeRanking.findIndex((s) => String(s.id) === String(pinnedStudent.id));
+  // Current student rank in their category (Standard competition ranking)
+  const studentRank = useMemo(() => {
+    if (!pinnedStudent) return null;
+    const found = activeRanking.find((s) => String(s.id) === String(pinnedStudent.id));
+    return found?.rank ?? null;
   }, [activeRanking, pinnedStudent]);
-
-  const studentRank = studentRankIndex >= 0 ? studentRankIndex + 1 : null;
   const studentMonthlyScore = pinnedStudent ? (studentMonthlyScores[pinnedStudent.id] || 0) : 0;
   const isStudentLeader = studentRank === 1 && studentMonthlyScore > 0;
   const pointsBehind = leader && studentMonthlyScore < leader.monthlyScore
@@ -266,9 +278,9 @@ export default function StudentRewardView({
             {activeRanking.slice(0, 5).map((student, idx) => {
               const isPinned = pinnedStudent && String(student.id) === String(pinnedStudent.id);
               return (
-                <div key={student.id} className={`top5-item ${idx === 0 ? 'is-champion' : ''} ${isPinned ? 'is-me' : ''}`}>
-                  <span className={`top5-rank-badge rank-${idx + 1}`}>
-                    {idx + 1}
+                <div key={student.id} className={`top5-item ${student.rank === 1 ? 'is-champion' : ''} ${isPinned ? 'is-me' : ''}`}>
+                  <span className={`top5-rank-badge rank-${student.rank ?? (idx + 1)}`}>
+                    {student.rank ?? (idx + 1)}
                   </span>
                   <div className="top5-avatar">
                     {renderAvatar(student.emoji, 32)}

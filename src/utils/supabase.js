@@ -619,7 +619,7 @@ export const saveSnapshotToSupabase = async (teacherId, data) => {
  * Load data for all teachers from Supabase (Admin view).
  * Returns an object mapping teacherId -> teacher data.
  */
-export const loadAllTeachersFromSupabase = async (teacherIds = ['teacher1', 'teacher2', 'teacher3', 'teacher4', 'admin']) => {
+export const loadAllTeachersFromSupabase = async (teacherIds = ['teacher1', 'admin']) => {
   try {
     const timeoutPromise = new Promise((_, reject) =>
       setTimeout(() => reject(new Error('Supabase load timed out')), 6000)

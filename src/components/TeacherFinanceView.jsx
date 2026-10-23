@@ -77,7 +77,10 @@ const TeacherFinanceView = ({ groups = [], students = [], showToast = () => {} }
 
   const [calcTeacherPercent, setCalcTeacherPercent] = useState(() => {
     const saved = localStorage.getItem('teacher_calc_percent');
-    return (saved !== null && !isNaN(Number(saved)) && Number(saved) >= 0 && Number(saved) <= 100) ? Number(saved) : 50;
+    if (saved !== null && !isNaN(Number(saved))) {
+      return Math.min(70, Math.max(25, Number(saved)));
+    }
+    return 50;
   });
 
   const [calcAdvanceAmount, setCalcAdvanceAmount] = useState(() => {
@@ -300,14 +303,6 @@ const TeacherFinanceView = ({ groups = [], students = [], showToast = () => {} }
     return groupsBreakdown.reduce((sum, g) => sum + g.count, 0);
   }, [groupsBreakdown]);
 
-  const totalGroupsTeacherShare = useMemo(() => {
-    return groupsBreakdown.reduce((sum, g) => sum + g.teacherShare, 0);
-  }, [groupsBreakdown]);
-
-  // Guruhlar bo'yicha hisoblangan avans va qoldiq maosh
-  const groupsAdvanceShare = Math.round(totalGroupsTeacherShare * (advancePercentOfSalary / 100));
-  const groupsRemainingShare = Math.max(0, totalGroupsTeacherShare - groupsAdvanceShare);
-
   const isAnyModalOpen = Boolean(calPickerTarget || selectedCalcGroupId);
   useModalDismiss(isAnyModalOpen, () => {
     if (calPickerTarget) {
@@ -410,19 +405,6 @@ const TeacherFinanceView = ({ groups = [], students = [], showToast = () => {} }
                       +
                     </button>
                   </div>
-
-                  <div className="calc-chips-scroll">
-                    {[10, 15, 20, 25, 30, 40, 50, 75, 100].map((num) => (
-                      <button
-                        key={num}
-                        type="button"
-                        className={`calc-chip-clean scale-active ${Number(calcStudentCount) === num ? 'active' : ''}`}
-                        onClick={() => setCalcStudentCount(num)}
-                      >
-                        {num}
-                      </button>
-                    ))}
-                  </div>
                 </div>
 
                 {/* 2. Oylik to'lov */}
@@ -451,29 +433,6 @@ const TeacherFinanceView = ({ groups = [], students = [], showToast = () => {} }
                     />
                     <span className="calc-suffix-text">so'm</span>
                   </div>
-
-                  <div className="calc-chips-scroll">
-                    {[
-                      { label: "250k", val: 250000 },
-                      { label: "300k", val: 300000 },
-                      { label: "350k", val: 350000 },
-                      { label: "400k", val: 400000 },
-                      { label: "450k", val: 450000 },
-                      { label: "500k", val: 500000 },
-                      { label: "600k", val: 600000 },
-                      { label: "800k", val: 800000 },
-                      { label: "1M", val: 1000000 }
-                    ].map((preset) => (
-                      <button
-                        key={preset.val}
-                        type="button"
-                        className={`calc-chip-clean scale-active ${Number(calcPricePerStudent) === preset.val ? 'active' : ''}`}
-                        onClick={() => setCalcPricePerStudent(preset.val)}
-                      >
-                        {preset.label}
-                      </button>
-                    ))}
-                  </div>
                 </div>
 
                 {/* 3. Ulush */}
@@ -486,41 +445,31 @@ const TeacherFinanceView = ({ groups = [], students = [], showToast = () => {} }
                   <div className="calc-slider-wrap">
                     <input
                       type="range"
-                      min="0"
-                      max="100"
+                      min="25"
+                      max="70"
                       step="5"
                       className="calc-range-slider"
                       value={calcTeacherPercent}
                       onChange={(e) => setCalcTeacherPercent(Number(e.target.value))}
                     />
                     <div className="calc-slider-ticks">
-                      {[0, 25, 50, 75, 100].map((t) => (
-                        <span
-                          key={t}
-                          className={`calc-tick-mark ${calcTeacherPercent === t ? 'active' : ''}`}
-                          style={{
-                            left: `${t}%`,
-                            transform: t === 0 ? 'none' : t === 100 ? 'translateX(-100%)' : 'translateX(-50%)',
-                          }}
-                          onClick={() => setCalcTeacherPercent(t)}
-                        >
-                          {t}%
-                        </span>
-                      ))}
+                      {[25, 30, 40, 50, 60, 70].map((t) => {
+                        const pct = ((t - 25) / (70 - 25)) * 100;
+                        return (
+                          <span
+                            key={t}
+                            className={`calc-tick-mark ${calcTeacherPercent === t ? 'active' : ''}`}
+                            style={{
+                              left: `${pct}%`,
+                              transform: t === 25 ? 'none' : t === 70 ? 'translateX(-100%)' : 'translateX(-50%)',
+                            }}
+                            onClick={() => setCalcTeacherPercent(t)}
+                          >
+                            {t}%
+                          </span>
+                        );
+                      })}
                     </div>
-                  </div>
-
-                  <div className="calc-chips-scroll">
-                    {[30, 40, 50, 60].map((pct) => (
-                      <button
-                        key={pct}
-                        type="button"
-                        className={`calc-chip-clean scale-active ${calcTeacherPercent === pct ? 'active' : ''}`}
-                        onClick={() => setCalcTeacherPercent(pct)}
-                      >
-                        {pct}%
-                      </button>
-                    ))}
                   </div>
                 </div>
 
@@ -552,28 +501,6 @@ const TeacherFinanceView = ({ groups = [], students = [], showToast = () => {} }
                       }}
                     />
                     <span className="calc-suffix-text">so'm</span>
-                  </div>
-
-                  <div className="calc-chips-scroll">
-                    {[
-                      { label: "30%", val: Math.round(teacherShare * 0.3) },
-                      { label: "40%", val: Math.round(teacherShare * 0.4) },
-                      { label: "50%", val: Math.round(teacherShare * 0.5) },
-                      { label: "1M", val: 1000000 },
-                      { label: "1.5M", val: 1500000 },
-                      { label: "2M", val: 2000000 },
-                      { label: "2.5M", val: 2500000 },
-                      { label: "3M", val: 3000000 },
-                    ].map((preset) => (
-                      <button
-                        key={preset.label}
-                        type="button"
-                        className={`calc-chip-clean scale-active ${Number(calcAdvanceAmount) === preset.val ? 'active' : ''}`}
-                        onClick={() => setCalcAdvanceAmount(preset.val)}
-                      >
-                        {preset.label}
-                      </button>
-                    ))}
                   </div>
                 </div>
               </div>
@@ -735,21 +662,6 @@ const TeacherFinanceView = ({ groups = [], students = [], showToast = () => {} }
                   </div>
                 ))}
               </div>
-
-              <div className="calc-groups-total-bar">
-                <div className="calc-groups-total-main">
-                  <span className="lbl">Jami o'qituvchiga:</span>
-                  <span className="val">+{formatMoneyUz(totalGroupsTeacherShare)}</span>
-                </div>
-                <div className="calc-groups-payout-breakdown">
-                  <span className="calc-payout-chip advance">
-                    Avans ({calcAdvanceDay}-kuni): <strong>+{formatMoneyUz(groupsAdvanceShare)}</strong>
-                  </span>
-                  <span className="calc-payout-chip remaining">
-                    Oylik ({calcSalaryDay}-kuni): <strong>+{formatMoneyUz(groupsRemainingShare)}</strong>
-                  </span>
-                </div>
-              </div>
             </section>
           )}
 
@@ -812,11 +724,11 @@ const TeacherFinanceView = ({ groups = [], students = [], showToast = () => {} }
               </div>
               <div className="calc-student-stat-item advance-box">
                 <span className="stat-label">Avans ({calcAdvanceDay}-kuni, {advancePercentOfSalary}%)</span>
-                <span className="stat-value">+{formatMoneyUz(Math.round(selectedCalcGroup.teacherShare * (advancePercentOfSalary / 100)))}</span>
+                <span className="stat-value">+{formatMoneyUz(Math.round(selectedCalcGroup.teacherShare * (teacherShare > 0 ? advanceAmount / teacherShare : 0)))}</span>
               </div>
               <div className="calc-student-stat-item remaining-box">
                 <span className="stat-label">Qoldiq ({calcSalaryDay}-kuni, {remainingPercentOfSalary}%)</span>
-                <span className="stat-value">+{formatMoneyUz(Math.max(0, selectedCalcGroup.teacherShare - Math.round(selectedCalcGroup.teacherShare * (advancePercentOfSalary / 100))))}</span>
+                <span className="stat-value">+{formatMoneyUz(Math.max(0, selectedCalcGroup.teacherShare - Math.round(selectedCalcGroup.teacherShare * (teacherShare > 0 ? advanceAmount / teacherShare : 0))))}</span>
               </div>
             </div>
 

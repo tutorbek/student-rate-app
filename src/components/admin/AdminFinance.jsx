@@ -7,12 +7,9 @@ const UZBEK_MONTHS = [
   'Iyul', 'Avgust', 'Sentabr', 'Oktabr', 'Noyabr', 'Dekabr'
 ];
 
-const TEACHER_IDS = ['teacher1', 'teacher2', 'teacher3', 'teacher4'];
+const TEACHER_IDS = ['teacher1'];
 const TEACHER_LABELS = {
-  'teacher1': 'Teacher 1',
-  'teacher2': 'Teacher 2',
-  'teacher3': 'Teacher 3',
-  'teacher4': 'Teacher 4'
+  'teacher1': 'Bekzod',
 };
 
 // Format money in Uzbek format: "400 000 so'm"

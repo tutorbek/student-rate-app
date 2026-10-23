@@ -17,12 +17,9 @@ import {
   filterAndSortLeads
 } from '../../utils/leadsUtils';
 
-const TEACHER_IDS = ['teacher1', 'teacher2', 'teacher3', 'teacher4'];
+const TEACHER_IDS = ['teacher1'];
 const TEACHER_LABELS = {
-  'teacher1': "Bekzod (O'qituvchi 1)",
-  'teacher2': "O'qituvchi 2",
-  'teacher3': "O'qituvchi 3",
-  'teacher4': "O'qituvchi 4"
+  'teacher1': "Bekzod",
 };
 
 // Normalize date-time string to YYYY-MM-DDTHH:mm for input[type="datetime-local"] compatibility

@@ -1,20 +1,14 @@
 import { calculateSessionAttendance, calculateAttendanceRate } from './attendanceUtils.js';
 import { parseTimeToMinutes } from './scheduleUtils.js';
 
-export const TEACHER_IDS = ['teacher1', 'teacher2', 'teacher3', 'teacher4'];
+export const TEACHER_IDS = ['teacher1'];
 
 export const TEACHER_LABELS = {
-  teacher1: 'Teacher 1',
-  teacher2: 'Teacher 2',
-  teacher3: 'Teacher 3',
-  teacher4: 'Teacher 4',
+  teacher1: 'Bekzod',
 };
 
 export const DEFAULT_TEACHER_CREDENTIALS = {
   teacher1: 'insight',
-  teacher2: 'quyosh',
-  teacher3: 'hehehe',
-  teacher4: 'simsim',
 };
 
 /**

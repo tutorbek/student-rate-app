@@ -381,13 +381,12 @@ const Leaderboard = ({
 
     const finalData = isStudentTop10 ? sorted.slice(0, 10) : sorted;
 
-    let currentRank = 0;
-    let lastScore = null;
-    return finalData.map((student) => {
+    // Standard Competition Ranking (1, 2, 2, 4...)
+    let currentRank = 1;
+    return finalData.map((student, idx) => {
       if (student.score > 0) {
-        if (student.score !== lastScore) {
-          currentRank += 1;
-          lastScore = student.score;
+        if (idx > 0 && student.score < finalData[idx - 1].score) {
+          currentRank = idx + 1;
         }
         return {
           ...student,

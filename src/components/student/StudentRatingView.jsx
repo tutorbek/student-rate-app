@@ -200,6 +200,17 @@ const formatPodiumName = (student, isPinned) => {
   return parts[0] || "O'quvchi";
 };
 
+const getPodiumPillarStyle = (student, defaultSlot) => {
+  const rank = typeof student?.rank === 'number' ? student.rank : defaultSlot;
+  if (rank === 1) {
+    return { ring: 'ring-gold', pedestal: 'pedestal-gold', tagLeader: 'tag-leader' };
+  }
+  if (rank === 2) {
+    return { ring: 'ring-silver', pedestal: 'pedestal-silver', tagLeader: '' };
+  }
+  return { ring: 'ring-bronze', pedestal: 'pedestal-bronze', tagLeader: '' };
+};
+
 export default function StudentRatingView({
   students = [],
   transactions = [],
@@ -335,16 +346,14 @@ export default function StudentRatingView({
       return (a.name || '').localeCompare(b.name || '', undefined, { numeric: true, sensitivity: 'base' });
     });
 
-    let currentRank = 0;
-    let lastScore = null;
-
-    const fullRanked = list.map((s) => {
+    // Standard Competition Ranking (1, 2, 2, 4...)
+    let currentRank = 1;
+    const fullRanked = list.map((s, idx) => {
       if (s.score <= 0) {
         return { ...s, rank: null };
       }
-      if (s.score !== lastScore) {
-        currentRank += 1;
-        lastScore = s.score;
+      if (idx > 0 && s.score < list[idx - 1].score) {
+        currentRank = idx + 1;
       }
       return { ...s, rank: currentRank };
     });
@@ -489,7 +498,7 @@ export default function StudentRatingView({
       <div className="rating-podium-card">
         {/* 2nd Place (Left) */}
         <div className="podium-pillar pillar-2">
-          <div className="podium-avatar-wrapper ring-silver">
+          <div className={`podium-avatar-wrapper ${getPodiumPillarStyle(podiumTop3.second, 2).ring}`}>
             {podiumTop3.second ? (
               renderAvatar(podiumTop3.second.emoji, 52, { priority: 'high', eager: true })
             ) : (
@@ -506,8 +515,10 @@ export default function StudentRatingView({
             <ProjectLikeIcon size={13} />
             <span className="podium-score-num">{podiumTop3.second?.score || 0}</span>
           </div>
-          <div className="podium-pedestal-box pedestal-silver">
-            <span className="pedestal-rank-tag">2</span>
+          <div className={`podium-pedestal-box ${getPodiumPillarStyle(podiumTop3.second, 2).pedestal}`}>
+            <span className={`pedestal-rank-tag ${getPodiumPillarStyle(podiumTop3.second, 2).tagLeader}`}>
+              {podiumTop3.second?.rank ?? 2}
+            </span>
           </div>
         </div>
 
@@ -534,13 +545,15 @@ export default function StudentRatingView({
             <span className="podium-score-num">{podiumTop3.first?.score || 0}</span>
           </div>
           <div className="podium-pedestal-box pedestal-gold">
-            <span className="pedestal-rank-tag tag-leader">1</span>
+            <span className="pedestal-rank-tag tag-leader">
+              {podiumTop3.first?.rank ?? 1}
+            </span>
           </div>
         </div>
 
         {/* 3rd Place (Right) */}
         <div className="podium-pillar pillar-3">
-          <div className="podium-avatar-wrapper ring-bronze">
+          <div className={`podium-avatar-wrapper ${getPodiumPillarStyle(podiumTop3.third, 3).ring}`}>
             {podiumTop3.third ? (
               renderAvatar(podiumTop3.third.emoji, 52, { priority: 'high', eager: true })
             ) : (
@@ -557,8 +570,10 @@ export default function StudentRatingView({
             <ProjectLikeIcon size={13} />
             <span className="podium-score-num">{podiumTop3.third?.score || 0}</span>
           </div>
-          <div className="podium-pedestal-box pedestal-bronze">
-            <span className="pedestal-rank-tag">3</span>
+          <div className={`podium-pedestal-box ${getPodiumPillarStyle(podiumTop3.third, 3).pedestal}`}>
+            <span className={`pedestal-rank-tag ${getPodiumPillarStyle(podiumTop3.third, 3).tagLeader}`}>
+              {podiumTop3.third?.rank ?? 3}
+            </span>
           </div>
         </div>
       </div>

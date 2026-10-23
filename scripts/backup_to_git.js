@@ -15,7 +15,7 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 const BACKUPS_DIR = path.join(__dirname, '..', 'backups');
 
 const runBackups = async () => {
-  const teachers = ['teacher1', 'teacher2', 'teacher3', 'teacher4'];
+  const teachers = ['teacher1'];
   let successCount = 0;
 
   console.log('[Backup Script] Starting database download from Supabase...');

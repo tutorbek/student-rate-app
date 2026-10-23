@@ -21,16 +21,14 @@ console.log('--- RUNNING RIGOROUS PHASE 5 TEACHERS & KPI VERIFICATION SUITE ---'
 // ==========================================
 // TEST 1: Real Name & Display Initials Resolution
 // ==========================================
-assert.equal(TEACHER_IDS.length, 4, 'There must be 4 default teacher IDs');
-assert.equal(TEACHER_LABELS.teacher1, 'Teacher 1');
+assert.equal(TEACHER_IDS.length, 1, 'There must be 1 teacher ID');
+assert.equal(TEACHER_LABELS.teacher1, 'Bekzod');
 assert.equal(DEFAULT_TEACHER_CREDENTIALS.teacher1, 'insight');
 
 assert.equal(getTeacherDisplayName('teacher1', { fullName: 'Bekzod Usmonov' }), 'Bekzod Usmonov', 'Custom full name must take priority');
 assert.equal(getTeacherDisplayName('teacher1', { teacherProfile: { fullName: 'Bekzod Usmonov' } }), 'Bekzod Usmonov', 'Must support full teacherData object');
 assert.equal(getTeacherDisplayName('teacher1', { profile: { fullName: 'Bekzod U.' } }), 'Bekzod U.', 'Must support profile property');
-assert.equal(getTeacherDisplayName('teacher1', { fullName: '   ' }), 'Teacher 1', 'Whitespace full name must fall back to TEACHER_LABELS');
-assert.equal(getTeacherDisplayName('teacher2', null), 'Teacher 2', 'Null profile must fall back to TEACHER_LABELS');
-assert.equal(getTeacherDisplayName('teacher3', {}), 'Teacher 3', 'Empty profile must fall back to TEACHER_LABELS');
+assert.equal(getTeacherDisplayName('teacher1', { fullName: '   ' }), 'Bekzod', 'Whitespace full name must fall back to TEACHER_LABELS');
 assert.equal(getTeacherDisplayName('custom_t9', null), 'custom_t9', 'Unknown teacherId falls back to teacherId');
 
 assert.equal(getTeacherInitials('Bekzod Usmonov'), 'BU', 'Two words must return first letters');
@@ -451,7 +449,6 @@ console.log('✅ Test 13: Room property presence at root level verified.');
 // ==========================================
 const testCredentials = {
   insight: { role: 'teacher', teacherId: 'teacher1' },
-  quyosh: { role: 'teacher', teacherId: 'teacher2' },
 };
 
 // Simulate multi-layer login logic
@@ -461,21 +458,21 @@ const resolveLogin = (inputPassword, inMemoryData = null, localCache = {}, remot
   if (testCredentials[clean]) return testCredentials[clean];
   // 2. In-memory allTeachersData
   if (inMemoryData) {
-    for (const tId of ['teacher1', 'teacher2']) {
+    for (const tId of ['teacher1']) {
       if (inMemoryData[tId]?.teacherProfile?.password?.trim()?.toLowerCase() === clean) {
         return { role: 'teacher', teacherId: tId };
       }
     }
   }
   // 3. LocalStorage cache
-  for (const tId of ['teacher1', 'teacher2']) {
+  for (const tId of ['teacher1']) {
     if (localCache[`rsa_teacher_profile_${tId}`]?.password?.trim()?.toLowerCase() === clean) {
       return { role: 'teacher', teacherId: tId };
     }
   }
   // 4. Remote Supabase data
   if (remoteData) {
-    for (const tId of ['teacher1', 'teacher2']) {
+    for (const tId of ['teacher1']) {
       if (remoteData[tId]?.teacherProfile?.password?.trim()?.toLowerCase() === clean) {
         return { role: 'teacher', teacherId: tId };
       }
@@ -488,12 +485,12 @@ const resolveLogin = (inputPassword, inMemoryData = null, localCache = {}, remot
 assert.deepEqual(resolveLogin('INSIGHT'), { role: 'teacher', teacherId: 'teacher1' });
 // Custom password in localStorage (e.g. after logout when inMemoryData is null)
 const localProfiles = {
-  rsa_teacher_profile_teacher2: { fullName: 'Ustoz 2', password: 'custom_secret_2026' },
+  rsa_teacher_profile_teacher1: { fullName: 'Bekzod', password: 'custom_secret_2026' },
 };
-assert.deepEqual(resolveLogin('CUSTOM_SECRET_2026', null, localProfiles), { role: 'teacher', teacherId: 'teacher2' });
+assert.deepEqual(resolveLogin('CUSTOM_SECRET_2026', null, localProfiles), { role: 'teacher', teacherId: 'teacher1' });
 // Custom password in remote Supabase (e.g. fresh incognito browser)
 const remoteProfiles = {
-  teacher1: { teacherProfile: { fullName: 'Ustoz 1', password: 'remote_secret_777' } },
+  teacher1: { teacherProfile: { fullName: 'Bekzod', password: 'remote_secret_777' } },
 };
 assert.deepEqual(resolveLogin('remote_secret_777', null, {}, remoteProfiles), { role: 'teacher', teacherId: 'teacher1' });
 // Invalid password returns null

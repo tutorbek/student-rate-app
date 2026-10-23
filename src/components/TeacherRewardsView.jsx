@@ -105,10 +105,23 @@ const TeacherRewardsView = forwardRef(function TeacherRewardsView({
       }
     });
 
+    const assignRanks = (arr) => {
+      let currentRank = 1;
+      return arr.map((item, idx) => {
+        if (item.monthlyScore > 0) {
+          if (idx > 0 && item.monthlyScore < arr[idx - 1].monthlyScore) {
+            currentRank = idx + 1;
+          }
+          return { ...item, rank: currentRank };
+        }
+        return { ...item, rank: null };
+      });
+    };
+
     kids.sort((a, b) => b.monthlyScore - a.monthlyScore);
     teens.sort((a, b) => b.monthlyScore - a.monthlyScore);
 
-    return { kidsRanking: kids, teensRanking: teens };
+    return { kidsRanking: assignRanks(kids), teensRanking: assignRanks(teens) };
   }, [students, groupsMap, studentMonthlyScores]);
 
   const kidsLeader = kidsRanking[0] && kidsRanking[0].monthlyScore > 0 ? kidsRanking[0] : (kidsRanking[0] || null);
@@ -446,8 +459,8 @@ const TeacherRewardsView = forwardRef(function TeacherRewardsView({
                 <div className="standings-table">
                   {kidsRanking.slice(0, 5).map((student, idx) => (
                     <div key={student.id} className="standings-table-row">
-                      <span className={`rank-badge ${idx === 0 ? 'rank-gold' : idx === 1 ? 'rank-silver' : idx === 2 ? 'rank-bronze' : ''}`}>
-                        {idx + 1}
+                      <span className={`rank-badge ${(student.rank ?? (idx + 1)) === 1 ? 'rank-gold' : (student.rank ?? (idx + 1)) === 2 ? 'rank-silver' : (student.rank ?? (idx + 1)) === 3 ? 'rank-bronze' : ''}`}>
+                        {student.rank ?? (idx + 1)}
                       </span>
                       <div className="standings-row-avatar">
                         {renderAvatar(student.emoji, 28)}
@@ -481,8 +494,8 @@ const TeacherRewardsView = forwardRef(function TeacherRewardsView({
                 <div className="standings-table">
                   {teensRanking.slice(0, 5).map((student, idx) => (
                     <div key={student.id} className="standings-table-row">
-                      <span className={`rank-badge ${idx === 0 ? 'rank-gold' : idx === 1 ? 'rank-silver' : idx === 2 ? 'rank-bronze' : ''}`}>
-                        {idx + 1}
+                      <span className={`rank-badge ${(student.rank ?? (idx + 1)) === 1 ? 'rank-gold' : (student.rank ?? (idx + 1)) === 2 ? 'rank-silver' : (student.rank ?? (idx + 1)) === 3 ? 'rank-bronze' : ''}`}>
+                        {student.rank ?? (idx + 1)}
                       </span>
                       <div className="standings-row-avatar">
                         {renderAvatar(student.emoji, 28)}

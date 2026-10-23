@@ -401,13 +401,12 @@ export default function StudentPortal({
       .filter((s) => s.score > 0)
       .sort((a, b) => b.score - a.score);
 
-    // Dense ranking (teng ballar bir xil o'rinni egallaydi)
-    let currentRank = 0;
-    let lastScore = null;
-    for (const st of scoredStudents) {
-      if (st.score !== lastScore) {
-        currentRank += 1;
-        lastScore = st.score;
+    // Standard Competition Ranking (1, 2, 2, 4...)
+    let currentRank = 1;
+    for (let i = 0; i < scoredStudents.length; i++) {
+      const st = scoredStudents[i];
+      if (i > 0 && st.score < scoredStudents[i - 1].score) {
+        currentRank = i + 1;
       }
       if (st.id === String(pinnedStudentId)) {
         return currentRank;

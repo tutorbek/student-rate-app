@@ -316,18 +316,9 @@ function App() {
       // Super Admin
       'hammaguruhlar': { role: 'admin', teacherId: 'admin' },
 
-      // Teacher 1
+      // Teacher (Bekzod)
       'insight': { role: 'teacher', teacherId: 'teacher1' },
       'beksila': { role: 'teacher', teacherId: 'teacher1' }, // backward compatibility
-
-      // Teacher 2
-      'quyosh': { role: 'teacher', teacherId: 'teacher2' },
-
-      // Teacher 3
-      'hehehe': { role: 'teacher', teacherId: 'teacher3' },
-
-      // Teacher 4
-      'simsim': { role: 'teacher', teacherId: 'teacher4' },
     };
 
     const passwordClean = loginPassword.trim().toLowerCase();
@@ -335,7 +326,7 @@ function App() {
 
     // 1. Fast local checks: Check custom password from teacherProfile in allTeachersData
     if (!match && allTeachersData) {
-      for (const tId of ['teacher1', 'teacher2', 'teacher3', 'teacher4']) {
+      for (const tId of ['teacher1']) {
         const customPwd = allTeachersData[tId]?.teacherProfile?.password?.trim()?.toLowerCase();
         if (customPwd && customPwd === passwordClean) {
           match = { role: 'teacher', teacherId: tId };
@@ -346,7 +337,7 @@ function App() {
 
     // 2. Check cached teacher profiles from localStorage
     if (!match) {
-      for (const tId of ['teacher1', 'teacher2', 'teacher3', 'teacher4']) {
+      for (const tId of ['teacher1']) {
         try {
           const raw = localStorage.getItem(`rsa_teacher_profile_${tId}`);
           if (raw) {
@@ -493,9 +484,9 @@ function App() {
 
     // 4. Fallback: Check if a teacher changed their password remotely in Supabase
     try {
-      const remoteTeachers = await loadAllTeachersFromSupabase(['teacher1', 'teacher2', 'teacher3', 'teacher4']);
+      const remoteTeachers = await loadAllTeachersFromSupabase(['teacher1']);
       if (remoteTeachers) {
-        for (const tId of ['teacher1', 'teacher2', 'teacher3', 'teacher4']) {
+        for (const tId of ['teacher1']) {
           const remotePwd = remoteTeachers[tId]?.teacherProfile?.password?.trim()?.toLowerCase();
           if (remotePwd && remotePwd === passwordClean) {
             match = { role: 'teacher', teacherId: tId };
@@ -688,7 +679,7 @@ function App() {
 
       if (userRole === 'admin' || (userRole === 'student' && studentTeacherIds.length > 1)) {
         const idsToLoad = userRole === 'admin'
-          ? ['teacher1', 'teacher2', 'teacher3', 'teacher4', 'admin']
+          ? ['teacher1', 'admin']
           : studentTeacherIds;
 
         // Prevent redundant network refetch on simple group switch if all teacher data is already present in memory
@@ -2056,7 +2047,7 @@ function App() {
 
   const handleAdminRefresh = async () => {
     setIsSyncing(true);
-    const allData = await loadAllTeachersFromSupabase(['teacher1', 'teacher2', 'teacher3', 'teacher4', 'admin']);
+    const allData = await loadAllTeachersFromSupabase(['teacher1', 'admin']);
     if (allData) {
       const normalized = {};
       Object.keys(allData).forEach(tId => {
