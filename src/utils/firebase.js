@@ -21,12 +21,12 @@ const DEFAULT_DATA = {
   students: [],
   transactions: [],
   quickTags: [
-    'Faol ishtirok 🌟',
-    'Uy vazifasi bajardi 📚',
-    'Ajoyib javob 💡',
-    'Darsga kechikdi ⏰',
-    'Guruh ishida faollik 👥',
-    'Intizom buzilishi ⚠️',
+    'Faol ishtirok',
+    'Uy vazifasi bajardi',
+    'Ajoyib javob',
+    'Darsga kechikdi',
+    'Guruh ishida faollik',
+    'Intizom buzilishi',
   ],
 };
 

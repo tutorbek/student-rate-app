@@ -132,79 +132,15 @@ html {
   }
 }
 
-/* Animations */
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(6px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-@keyframes slideUpSheet {
-  from { transform: translate3d(0, 100%, 0); }
-  to { transform: translate3d(0, 0, 0); }
-}
-
-@keyframes slideDownSheet {
-  from { transform: translate3d(0, 0, 0); }
-  to { transform: translate3d(0, 100%, 0); }
-}
-
-@keyframes modalScaleIn {
-  from { opacity: 0; transform: translate3d(0, 14px, 0) scale3d(0.96, 0.96, 1); }
-  to { opacity: 1; transform: translate3d(0, 0, 0) scale3d(1, 1, 1); }
-}
-
-@keyframes modalScaleOut {
-  from { opacity: 1; transform: translate3d(0, 0, 0) scale3d(1, 1, 1); }
-  to { opacity: 0; transform: translate3d(0, 10px, 0) scale3d(0.96, 0.96, 1); }
-}
-
-@keyframes modalBackdropFadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-
-@keyframes modalBackdropFadeOut {
-  from { opacity: 1; }
-  to { opacity: 0; }
-}
-
-@keyframes slideDown {
-  from { opacity: 0; transform: translateY(-8px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-@keyframes shake {
-  0%, 100% { transform: translateX(0); }
-  20%, 60% { transform: translateX(-5px); }
-  40%, 80% { transform: translateX(5px); }
-}
-
-.animate-fadeIn {
-  animation: fadeIn 0.24s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-}
-
-.animate-slideUpSheet {
-  animation: slideUpSheet 0.32s cubic-bezier(0.2, 0.9, 0.2, 1) forwards;
-}
-
-.animate-slideDownSheet {
-  animation: slideDownSheet 0.24s cubic-bezier(0.25, 0.1, 0.25, 1) forwards;
-}
-
-.animate-backdropFadeIn {
-  animation: modalBackdropFadeIn 0.22s ease-out forwards;
-}
-
-.animate-backdropFadeOut {
-  animation: modalBackdropFadeOut 0.22s ease-out forwards;
-}
-
-.animate-slideDown {
-  animation: slideDown 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-}
-
+/* Instant transitions without decorative animations */
+.animate-fadeIn,
+.animate-slideUpSheet,
+.animate-slideDownSheet,
+.animate-backdropFadeIn,
+.animate-backdropFadeOut,
+.animate-slideDown,
 .animate-shake {
-  animation: shake 0.35s ease-in-out;
+  /* Instant display as per strict minimalist rules */
 }
 
 
@@ -2229,58 +2165,12 @@ html {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  filter: drop-shadow(0 4px 12px rgba(245, 158, 11, 0.45));
-  animation: crownFloating 2.8s ease-in-out infinite;
   transform-origin: center bottom;
-  will-change: transform;
 }
 
-@keyframes crownFloating {
-  0% {
-    transform: translateY(0px) rotate(0deg);
-  }
-  25% {
-    transform: translateY(-4px) rotate(-2.5deg);
-  }
-  50% {
-    transform: translateY(-1.5px) rotate(0deg);
-  }
-  75% {
-    transform: translateY(-4px) rotate(2.5deg);
-  }
-  100% {
-    transform: translateY(0px) rotate(0deg);
-  }
-}
-
-/* Diamond Sparkles Twinkle */
+/* Diamond Sparkles Static */
 .crown-sparkle-star {
-  animation: crownSparkleTwinkle 2.2s ease-in-out infinite;
   transform-origin: center;
-}
-
-.crown-sparkle-star.sparkle-top {
-  animation-delay: 0s;
-}
-
-.crown-sparkle-star.sparkle-left {
-  animation-delay: 0.75s;
-}
-
-.crown-sparkle-star.sparkle-right {
-  animation-delay: 1.5s;
-}
-
-@keyframes crownSparkleTwinkle {
-  0%, 100% {
-    opacity: 0.2;
-    transform: scale(0.6);
-  }
-  50% {
-    opacity: 1;
-    transform: scale(1.4);
-    filter: drop-shadow(0 0 3px #FFFFFF);
-  }
 }
 
 .podium-avatar-wrapper {
@@ -7393,12 +7283,11 @@ input[type="text"].picker-search-input {
     border-radius: 22px;
     box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
     max-width: 420px;
-    animation: modalScaleIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
     padding-bottom: 16px;
   }
 
   .sheet-container.is-closing {
-    animation: modalScaleOut 0.2s cubic-bezier(0.2, 0, 0.8, 0.2) forwards;
+    /* Instant close */
   }
 }
 

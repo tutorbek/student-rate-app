@@ -45,7 +45,7 @@
   --shadow-modal: 0 24px 60px rgba(0, 0, 0, 0.16), 0 4px 12px rgba(0, 0, 0, 0.05);
   
   --transition-fast: 0.15s cubic-bezier(0.16, 1, 0.3, 1);
-  --transition-normal: 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  --transition-normal: 0.15s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 [data-theme="dark"] {
@@ -443,7 +443,6 @@ select:focus-visible,
   overflow: hidden;
   overscroll-behavior: contain;
   touch-action: none;
-  animation: modalBackdropFadeIn 0.2s ease-out forwards;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -469,7 +468,6 @@ select:focus-visible,
   flex-direction: column;
   overflow: hidden;
   overscroll-behavior: contain;
-  animation: modalScaleIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 /* Small Confirmation Modals */
@@ -752,22 +750,6 @@ body:has(.profile-pin-overlay) .mobile-bottom-navbar {
   background: #FFFFFF;
   color: var(--text-primary);
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
-}
-
-@keyframes modalBackdropFadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-
-@keyframes modalScaleIn {
-  from {
-    opacity: 0;
-    transform: scale(0.95) translateY(8px);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1) translateY(0);
-  }
 }
 
 .modal-title {
@@ -1167,12 +1149,6 @@ body:has(.profile-pin-overlay) .mobile-bottom-navbar {
   border-radius: var(--radius-full);
   padding: 6px 14px;
   z-index: 9998;
-  animation: pageFadeIn 0.2s ease forwards;
-}
-
-@keyframes pulseDot {
-  0%, 100% { opacity: 1; transform: scale(1); }
-  50% { opacity: 0.4; transform: scale(0.7); }
 }
 
 .sync-dot {
@@ -1180,18 +1156,12 @@ body:has(.profile-pin-overlay) .mobile-bottom-navbar {
   height: 8px;
   background: var(--apple-green);
   border-radius: 50%;
-  animation: pulseDot 1.2s ease-in-out infinite;
   flex-shrink: 0;
 }
 
 /* Page Transition */
-@keyframes pageFadeIn {
-  from { opacity: 0; transform: translateY(4px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
 .page-fade-in {
-  animation: pageFadeIn 0.2s ease forwards;
+  /* Instant transition without decorative movement */
 }
 
 /* Touch & Focus */
@@ -1262,7 +1232,6 @@ button:focus-visible, a:focus-visible, [role="button"]:focus-visible {
   font-weight: 600;
   color: var(--text-secondary);
   letter-spacing: -0.01em;
-  animation: pulse 1.5s ease-in-out infinite;
   text-align: center;
   margin: 0;
 }
@@ -1270,11 +1239,6 @@ button:focus-visible, a:focus-visible, [role="button"]:focus-visible {
 @keyframes spin {
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
-}
-
-@keyframes pulse {
-  0%, 100% { opacity: 0.6; }
-  50% { opacity: 1; }
 }
 
 /* ==========================================================================
@@ -2379,14 +2343,8 @@ button:focus-visible, a:focus-visible, [role="button"]:focus-visible {
    Redesigned Full-Page Split Login Styles
    ======================================================== */
 
-@keyframes loginShake {
-  0%, 100% { transform: translateX(0); }
-  20%, 60% { transform: translateX(-4px); }
-  40%, 80% { transform: translateX(4px); }
-}
-
 .animate-shake {
-  animation: loginShake 0.35s ease-in-out;
+  /* Instant feedback without decorative shake */
 }
 
 .login-bg-grid {
@@ -2409,19 +2367,8 @@ button:focus-visible, a:focus-visible, [role="button"]:focus-visible {
   );
 }
 
-@keyframes slideDownNotice {
-  from {
-    opacity: 0;
-    transform: translateY(-10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
 .animate-slide-down {
-  animation: slideDownNotice 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  /* Instant display without slide */
 }
 
 /* ========================================================
@@ -2461,38 +2408,12 @@ button:focus-visible, a:focus-visible, [role="button"]:focus-visible {
   display: flow-root;
 }
 
-/* Animations for Mobile Navigation Drawer */
-@keyframes fadeInBackdrop {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-
-@keyframes slideDownDrawer {
-  from {
-    opacity: 0;
-    transform: translateY(-12px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.animate-fade-in {
-  animation: fadeInBackdrop 0.2s ease-out forwards;
-}
-
-.animate-drawer-down {
-  animation: slideDownDrawer 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-}
-
 /* Base Mobile (< 768px): Sticky stacking playing card deck */
 @media (max-width: 767px) {
   .stacking-card-item {
     position: -webkit-sticky !important;
     position: sticky !important;
     margin-bottom: var(--stack-gap, 25vh) !important;
-    will-change: transform;
   }
 
   .stacking-card-frame {
@@ -2500,8 +2421,7 @@ button:focus-visible, a:focus-visible, [role="button"]:focus-visible {
     max-height: 540px !important;
     min-height: 320px !important;
     transform-origin: center top;
-    will-change: transform;
-    transition: transform 0.2s ease, border-color 0.2s ease;
+    transition: border-color 0.15s ease;
   }
 }
 
@@ -2518,13 +2438,11 @@ button:focus-visible, a:focus-visible, [role="button"]:focus-visible {
     position: -webkit-sticky !important;
     position: sticky !important;
     margin-bottom: var(--stack-gap, 35vh) !important;
-    will-change: transform;
   }
 
   .stacking-card-frame {
     transform-origin: center top;
-    will-change: transform;
-    transition: transform 0.2s ease;
+    transition: border-color 0.15s ease;
   }
 }
 
@@ -2556,33 +2474,6 @@ button:focus-visible, a:focus-visible, [role="button"]:focus-visible {
     --stack-gap: 30vh;
     --stack-end-spacer: 50vh;
   }
-}
-
-/* Mobile Right-Side Drawer Animations */
-@keyframes slideInRightDrawer {
-  from {
-    transform: translateX(100%);
-  }
-  to {
-    transform: translateX(0);
-  }
-}
-
-@keyframes fadeBackdropIn {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
-}
-
-.animate-drawer-right {
-  animation: slideInRightDrawer 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-}
-
-.animate-backdrop-in {
-  animation: fadeBackdropIn 0.22s ease-out forwards;
 }
 
 

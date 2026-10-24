@@ -41,29 +41,30 @@ export const generateUniqueGroupPassword = async () => {
   return `guruh_${Math.random().toString(36).substring(2, 7)}`;
 };
 
-// Default Quick Tags with associated default points
+// Default Quick Tags with associated default points (clean text, no emojis)
 export const DEFAULT_QUICK_TAGS = [
-  { text: 'Uy vazifasi bajarildi 📚', points: 85 },
-  { text: 'Mustaqil izlanish 🔍', points: 50 },
-  { text: 'Uy vazifasi chala bajarildi 🔄', points: 20 },
-  { text: 'Darsga kechikdi ⏰', points: -10 },
-  { text: 'Uy vazifasi bajarilmadi ❌', points: -30 },
-  { text: 'Darsga sababsiz kelmadi 🚫', points: -40 },
+  { text: 'Uy vazifasi bajarildi', points: 85 },
+  { text: 'Mustaqil izlanish', points: 50 },
+  { text: 'Uy vazifasi chala bajarildi', points: 20 },
+  { text: 'Darsga kechikdi', points: -10 },
+  { text: 'Uy vazifasi bajarilmadi', points: -30 },
+  { text: 'Darsga sababsiz kelmadi', points: -40 },
 ];
 
 const DEFAULT_POINTS_MAP = {
-  'Uy vazifasi bajarildi 📚': 85,
-  'Uy vazifasi bajardi 📚': 85,
-  'Mustaqil izlanish 🔍': 50,
-  'Uy vazifasi chala bajarildi 🔄': 20,
-  'Darsga kechikdi ⏰': -10,
-  'Uy vazifasi bajarilmadi ❌': -30,
-  'Uy vazifasini topshirmadi ❌': -30,
-  'Darsga sababsiz kelmadi 🚫': -40,
-  'Faol ishtirok 🌟': 50,
-  'Ajoyib javob 💡': 20,
-  'Guruh ishida faollik 👥': 20,
-  'Intizom buzilishi ⚠️': -15,
+  // Clean standard tags
+  'Uy vazifasi bajarildi': 85,
+  'Uy vazifasi bajardi': 85,
+  'Mustaqil izlanish': 50,
+  'Uy vazifasi chala bajarildi': 20,
+  'Darsga kechikdi': -10,
+  'Uy vazifasi bajarilmadi': -30,
+  'Uy vazifasini topshirmadi': -30,
+  'Darsga sababsiz kelmadi': -40,
+  'Faol ishtirok': 50,
+  'Ajoyib javob': 20,
+  'Guruh ishida faollik': 20,
+  'Intizom buzilishi': -15,
 };
 
 export const normalizeQuickTag = (tag) => {
@@ -83,9 +84,12 @@ export const normalizeQuickTag = (tag) => {
 
   if (!text) return null;
 
+  // Clean any residual emojis from legacy stored tags
+  const cleanText = text.replace(/\p{Extended_Pictographic}/gu, '').trim();
+
   // If points is not a valid non-zero number, check default points map
   if (points === undefined || isNaN(points) || points === 0) {
-    const defaultPts = DEFAULT_POINTS_MAP[text];
+    const defaultPts = DEFAULT_POINTS_MAP[text] ?? DEFAULT_POINTS_MAP[cleanText];
     if (defaultPts !== undefined) {
       points = defaultPts;
     } else {
@@ -93,7 +97,7 @@ export const normalizeQuickTag = (tag) => {
     }
   }
 
-  return { text, points };
+  return { text: cleanText || text, points };
 };
 
 export const normalizeQuickTags = (tags) => {

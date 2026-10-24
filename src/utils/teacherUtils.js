@@ -62,10 +62,10 @@ export const getTeacherInitials = (name) => {
 
 /**
  * Determines attendance KPI tier based on percentage:
- * - 🟢 A'lo (>= 90%)
- * - 🟡 O'rtacha (75% - 89%)
- * - 🔴 E'tibor talab (< 75%)
- * - ⚪ Ma'lumot yo'q (no sessions)
+ * - A'lo (>= 90%)
+ * - O'rtacha (75% - 89%)
+ * - E'tibor talab (< 75%)
+ * - Ma'lumot yo'q (no sessions)
  */
 export const getTeacherKpiTier = (attendanceRate, sessionsCount = 1) => {
   if (sessionsCount === 0 || attendanceRate === null || attendanceRate === undefined || isNaN(attendanceRate)) {
@@ -75,7 +75,7 @@ export const getTeacherKpiTier = (attendanceRate, sessionsCount = 1) => {
       color: '#6B7280',
       badgeBg: 'rgba(107, 114, 128, 0.1)',
       badgeBorder: 'rgba(107, 114, 128, 0.25)',
-      icon: '⚪',
+      icon: '<svg width="12" height="12" viewBox="0 0 12 12" fill="none"><circle cx="6" cy="6" r="4.5" fill="#6B7280"/></svg>',
     };
   }
 
@@ -86,7 +86,7 @@ export const getTeacherKpiTier = (attendanceRate, sessionsCount = 1) => {
       color: '#059669',
       badgeBg: 'rgba(16, 185, 129, 0.12)',
       badgeBorder: 'rgba(16, 185, 129, 0.3)',
-      icon: '🟢',
+      icon: '<svg width="12" height="12" viewBox="0 0 12 12" fill="none"><circle cx="6" cy="6" r="4.5" fill="#059669"/></svg>',
     };
   }
 
@@ -97,7 +97,7 @@ export const getTeacherKpiTier = (attendanceRate, sessionsCount = 1) => {
       color: '#D97706',
       badgeBg: 'rgba(245, 158, 11, 0.12)',
       badgeBorder: 'rgba(245, 158, 11, 0.3)',
-      icon: '🟡',
+      icon: '<svg width="12" height="12" viewBox="0 0 12 12" fill="none"><circle cx="6" cy="6" r="4.5" fill="#D97706"/></svg>',
     };
   }
 
@@ -107,7 +107,7 @@ export const getTeacherKpiTier = (attendanceRate, sessionsCount = 1) => {
     color: '#DC2626',
     badgeBg: 'rgba(239, 68, 68, 0.12)',
     badgeBorder: 'rgba(239, 68, 68, 0.3)',
-    icon: '🔴',
+    icon: '<svg width="12" height="12" viewBox="0 0 12 12" fill="none"><circle cx="6" cy="6" r="4.5" fill="#DC2626"/></svg>',
   };
 };
 

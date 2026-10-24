@@ -45,28 +45,28 @@ console.log('✅ Test 1: Real name and display initials resolution verified.');
 // ==========================================
 const tier95 = getTeacherKpiTier(95, 10);
 assert.equal(tier95.tier, 'excellent', '95% must be excellent');
-assert.equal(tier95.icon, '🟢');
+assert.ok(tier95.icon.includes('<svg') && tier95.icon.includes('#059669'), 'Icon must be clean SVG');
 
 const tier90 = getTeacherKpiTier(90, 5);
 assert.equal(tier90.tier, 'excellent', 'Exact 90% boundary must be excellent');
 
 const tier89 = getTeacherKpiTier(89, 5);
 assert.equal(tier89.tier, 'average', '89% must be average');
-assert.equal(tier89.icon, '🟡');
+assert.ok(tier89.icon.includes('<svg') && tier89.icon.includes('#D97706'), 'Icon must be clean SVG');
 
 const tier75 = getTeacherKpiTier(75, 4);
 assert.equal(tier75.tier, 'average', 'Exact 75% boundary must be average');
 
 const tier74 = getTeacherKpiTier(74, 4);
 assert.equal(tier74.tier, 'needs_attention', '74% must be needs_attention');
-assert.equal(tier74.icon, '🔴');
+assert.ok(tier74.icon.includes('<svg') && tier74.icon.includes('#DC2626'), 'Icon must be clean SVG');
 
 const tier0 = getTeacherKpiTier(0, 2);
 assert.equal(tier0.tier, 'needs_attention', '0% with sessions must be needs_attention');
 
 const tierNoSessions = getTeacherKpiTier(100, 0);
 assert.equal(tierNoSessions.tier, 'none', '0 sessions must return none tier regardless of rate');
-assert.equal(tierNoSessions.icon, '⚪');
+assert.ok(tierNoSessions.icon.includes('<svg') && tierNoSessions.icon.includes('#6B7280'), 'Icon must be clean SVG');
 
 const tierNull = getTeacherKpiTier(null, 5);
 assert.equal(tierNull.tier, 'none', 'Null rate must return none tier');

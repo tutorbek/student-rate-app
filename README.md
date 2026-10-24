@@ -1,12 +1,12 @@
 # Epchil Robot: Rated Student App
 
-O'quv markazlari va robototexnika to'garaklari uchun mo'ljallangan talabalar reytingi (gamifikatsiya), davomat nazorati, moliya va dars jadvalini boshqaruvchi ko'p foydalanuvchili (Multi-tenant) bulutli tizim.
+O'quv markazlari va ustozlar uchun mo'ljallangan talabalar reytingi (gamifikatsiya), davomat nazorati, moliya va dars jadvalini boshqaruvchi ko'p foydalanuvchili (Multi-tenant) bulutli tizim.
 
 ---
 
 ## 🛠 Texnologik Stek
 
-- **Frontend:** React 19, Vite 8, GSAP 3.15, Lenis Smooth Scroll, Oxlint.
+- **Frontend:** React 19, Vite 8, Oxlint.
 - **Backend:** Node.js, Express 5, `pg` (PostgreSQL Client), `@supabase/supabase-js`, `node-cron`, Telegram Bot API.
 - **Bulutli Baza:** Supabase PostgreSQL.
 - **Serverless & Deploy:** Vercel serverless functions (`api/index.js` -> `server.js`).

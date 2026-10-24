@@ -407,8 +407,12 @@ const GroupsList = ({
                         <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
                       </svg>
                     </button>
-                    <button className="btn btn-secondary scale-active btn-sm" onClick={() => onSelectGroup(group.id)}>
-                      Ochish ➔
+                    <button className="btn btn-secondary scale-active btn-sm" onClick={() => onSelectGroup(group.id)} style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                      <span>Ochish</span>
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M5 12h14" />
+                        <path d="M12 5l7 7-7 7" />
+                      </svg>
                     </button>
                   </div>
                 </div>
@@ -418,7 +422,11 @@ const GroupsList = ({
         </div>
       ) : (
         <div className="glass-card empty-groups-placeholder">
-          <div className="placeholder-icon">📂</div>
+          <div className="placeholder-icon" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-tertiary)' }}>
+            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
+            </svg>
+          </div>
           <h3>Guruhlar hali qo'shilmagan</h3>
           <p>O'quvchilarni baholash uchun dastlab guruh yarating.</p>
           <button className="btn btn-primary scale-active" onClick={() => setShowAddModal(true)}>
@@ -700,8 +708,11 @@ const GroupsList = ({
                       setIsGeneratingPassword(false);
                     }}
                     disabled={isGeneratingPassword}
+                    title="Parol generatsiya qilish"
                   >
-                    🔄
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67" />
+                    </svg>
                   </button>
                 </div>
               </div>
@@ -1065,8 +1076,11 @@ const GroupsList = ({
                       const pwd = await generateUniqueGroupPassword();
                       setEditGroupPassword(pwd);
                     }}
+                    title="Parol generatsiya qilish"
                   >
-                    🔄
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67" />
+                    </svg>
                   </button>
                 </div>
               </div>

@@ -65,10 +65,10 @@ export function exportAttendanceToCSV({
   });
 
   // Summary columns
-  headerRow.push(escapeCSV('Kelgan (✔)'));
+  headerRow.push(escapeCSV('Kelgan (+)'));
   headerRow.push(escapeCSV('Sababli (S)'));
-  headerRow.push(escapeCSV('Kelmadi (❌)'));
-  headerRow.push(escapeCSV('Kechikkan (⏰)'));
+  headerRow.push(escapeCSV('Kelmadi (-)'));
+  headerRow.push(escapeCSV('Kechikkan (K)'));
   headerRow.push(escapeCSV('Jami Dars'));
   headerRow.push(escapeCSV('Davomat %'));
 
@@ -92,9 +92,9 @@ export function exportAttendanceToCSV({
         return;
       }
 
-      if (status === 'present') sRow.push(escapeCSV('✔'));
-      else if (status === 'absent') sRow.push(escapeCSV('❌'));
-      else if (status === 'late') sRow.push(escapeCSV('⏰'));
+      if (status === 'present') sRow.push(escapeCSV('+'));
+      else if (status === 'absent') sRow.push(escapeCSV('-'));
+      else if (status === 'late') sRow.push(escapeCSV('K'));
       else if (status === 'excused') sRow.push(escapeCSV('S'));
       else sRow.push(escapeCSV('·'));
     });
@@ -113,7 +113,7 @@ export function exportAttendanceToCSV({
   // 4. Daily Attendance Summary Footer Rows
   const footerRowPresent = [
     escapeCSV(''),
-    escapeCSV('Jami Kelganlar (✔)')
+    escapeCSV('Jami Kelganlar (+)')
   ];
   const footerRowExcused = [
     escapeCSV(''),
@@ -121,11 +121,11 @@ export function exportAttendanceToCSV({
   ];
   const footerRowAbsent = [
     escapeCSV(''),
-    escapeCSV('Sababsiz Kelmaganlar (❌)')
+    escapeCSV('Sababsiz Kelmaganlar (-)')
   ];
   const footerRowLate = [
     escapeCSV(''),
-    escapeCSV('Kechikkanlar (⏰)')
+    escapeCSV('Kechikkanlar (K)')
   ];
   const footerRowRate = [
     escapeCSV(''),

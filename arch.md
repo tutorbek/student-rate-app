@@ -1,387 +1,299 @@
 # "Epchil Robot: Rated Student App" — To'liq Tizim Arxitekturasi
 
-Ushbu hujjat **"Epchil Robot: Rated Student App"** platformasining butun dasturiy arxitekturasi, ma'lumotlar oqimi, xavfsizlik modeli, biznes mantiq algoritmlari va papka/fayllar strukturasini to'liq tavsiflaydi.
+Ushbu hujjat **"Epchil Robot: Rated Student App"** platformasining amaldagi dasturiy arxitekturasi, ma'lumotlar oqimi, xavfsizlik modeli, biznes mantiq algoritmlari va komponentlar strukturasini to'liq tavsiflaydi.
 
 ---
 
 ## 1. Loyiha Haqida Umumiy Tushuncha
 
-**"Epchil Robot: Rated Student App"** — o'quv markazlari va robototexnika to'garaklari uchun mo'ljallangan talabalar reytingi (gamifikatsiya), davomat nazorati va dars jadvalini boshqaruvchi ko'p foydalanuvchili (Multi-tenant) bulutli tizimdir.
+**"Epchil Robot: Rated Student App"** — o'quv markazlari va ustozlar uchun mo'ljallangan talabalar reytingi (gamifikatsiya), dars jadvali, davomat nazorati, lidlar boshqaruvi (CRM) va kurs to'lovlari hisobini yurituvchi bulutli tizimdir.
 
-Platforma **3 xil turdagi foydalanuvchilar** uchun xizmat qiladi:
-1. **Super Admin** (`admin`) — barcha 4 ta o'qituvchi ma'lumotlari, umumiy statistika va davomatni bir joydan nazorat qiladi.
-2. **O'qituvchi** (`teacher`) — o'z guruhlari, talabalari, dars jadvallari, ball/likelar berish va davomat jurnallarini mustaqil boshqaradi.
-3. **O'quvchi** (`student`) — o'z guruhiga tegishli maxsus o'zbekcha so'z-parol (masalan: `olma`, `anor`) orqali kirib, faqat o'z guruhining reyting jadvali va ballar tarixini ko'radi (boshqa guruhlar ma'lumotlaridan to'liq izolyatsiya qilingan).
+Tizim **3 xil turdagi foydalanuvchilar** uchun xizmat ko'rsatadi:
+1. **Super Admin** (`admin`) — Barcha o'qituvchilar faoliyati, umumiy o'quv markaz statistikasi, lidlar oqimi (CRM), o'qituvchilar davomati va umumiy moliyaviy hisobotlarni yagona boshqaruv panelidan nazorat qiladi.
+2. **O'qituvchi** (`teacher`) — O'z dars jadvali, guruhlari, talabalar ro'yxati, dars davomati, rag'batlantiruvchi ballar/likelar, sovg'alar do'koni va oylik to'lovlar jurnalini to'liq mustaqil boshqaradi.
+3. **O'quvchi** (`student`) — O'z guruhiga tegishli maxsus o'zbekcha so'z-parol (masalan: `olma`, `anor`) orqali kirib, shaxsiy reyting, to'plangan tangalar, unvonlar, davomat taqvimi, dars jadvali va avatar do'konidan foydalanadi (PIN-kod bilan himoyalangan profil).
 
 ---
 
-## 2. Tizimning Global Arxitekturasi (High-Level Architecture)
+## 2. Global Tizim Arxitekturasi
 
 ```mermaid
 flowchart TB
-    subgraph Clients["Foydalanuvchilar (Mijoz qatlami)"]
-        A1["O'quvchi (Student)\nParol: olma, anor..."]
-        A2["O'qituvchi (Bekzod)\nParol: insight, beksila"]
-        A3["Super Admin\nParol: hammaguruhlar"]
+    subgraph Clients["Foydalanuvchi Qatlami (Clients)"]
+        direction TB
+        C1["Super Admin\n(Parol: hammaguruhlar)"]
+        C2["O'qituvchi\n(Parol: insight, beksila)"]
+        C3["O'quvchi\n(Parol: olma, anor, va h.k.)"]
     end
 
     subgraph Frontend["Frontend SPA (React 19 + Vite 8)"]
         direction TB
-        F1["Router / View Manager (App.jsx)"]
-        F2["Landing / Login (LandingPage, LoginPage)"]
-        F3["Teacher Views:\nSchedule, Dashboard, Groups, Leaderboard, Attendance, Settings"]
-        F4["Admin Views:\nAdminDashboard, AdminGroups, AdminAttendance"]
-        F5["Student Views:\nLeaderboard (faqat o'z guruhi)"]
-        F6["Local State & Cache\n(useState, LocalStorage 0ms fallback)"]
-        F7["Debounce Sync Engine (1.5s kechikish bilan saqlash)"]
-        
+        F1["Router va View Manager\n(App.jsx)"]
+        F2["Taqdimot va Kirish\n(LandingPage, LoginPage)"]
+        F3["Admin Paneli\n(AdminDashboard, AdminLeads, AdminFinance, AdminAttendance)"]
+        F4["O'qituvchi Paneli\n(ScheduleView, GroupsList, GroupDetail, Leaderboard, Attendance, TeacherFinanceView, Settings)"]
+        F5["O'quvchi Portali\n(StudentPortal, StudentRatingView, StudentRewardView, StudentAccountView)"]
+        F6["Kesh va Lokal Holat\n(useState, LocalStorage 0ms zaxira)"]
+        F7["Sinxronizatsiya Dvigateli\n(1.5 soniyali Debounce Sync)"]
+
         F1 --> F2 & F3 & F4 & F5
         F3 & F4 & F5 <--> F6
         F6 --> F7
     end
 
-    subgraph BackendServices["Backend & Serverless API (Express 5 / Vercel)"]
+    subgraph Backend["Yordamchi Xizmatlar (Express 5 / Vercel API)"]
         B1["server.js / api/index.js"]
-        B2["/api/auth (Parollarni tekshirish)"]
-        B3["/api/db (Lokal sinov bazasi)"]
-        B4["/api/webhook & /api/run-backup (Telegram zaxiralash)"]
-        B5["node-cron (Har kuni soat 06:00 da avto-zaxira)"]
-        
-        B1 --> B2 & B3 & B4 & B5
+        B2["Avtomatik Cron Zaxiralash\n(Har kuni soat 06:00 da)"]
+        B3["Telegram Bot Xizmati\n(botService.js)"]
+        B1 --> B2 & B3
     end
 
-    subgraph CloudDB["Asosiy Bulutli Baza (Supabase PostgreSQL)"]
+    subgraph Database["Bulutli Ma'lumotlar Bazasi (Supabase PostgreSQL)"]
         DB1[("appdata\nteacher_id, data JSONB, updated_at")]
         DB2[("group_passwords\npassword, teacher_id, group_id")]
         DB3[("snapshots\nid, teacher_id, data JSONB, timestamp")]
     end
 
-    subgraph AutomatedBackups["Avtomatlashtirilgan Zaxiralash Tizimlari"]
-        TGBot["Telegram Bot API\n(Admin Telegramiga JSON fayl yuborish)"]
-        GHActions["GitHub Actions CI/CD\n(.github/workflows/db_backup.yml)"]
-        GitRepo[("GitHub Repozitoriy\nbackups/teacherX.json")]
+    subgraph Backup["Avtomatlashtirilgan Zaxira Kanallari"]
+        TG["Telegram Admin Chati\n(JSON fayl jo'natish)"]
+        GHA["GitHub Actions CI/CD\n(.github/workflows/db_backup.yml)"]
+        REPO[("GitHub Repozitoriy\nbackups/teacherX.json")]
     end
 
     Clients --> Frontend
-    F7 -- "Supabase JS SDK (HTTPS)" --> CloudDB
-    Frontend -- "API so'rovlari" --> BackendServices
-    BackendServices -- "Zaxira fayllarini yuborish" --> TGBot
-    GHActions -- "scripts/backup_to_git.js" --> CloudDB
-    GHActions -- "Avtomatik git commit/push" --> GitRepo
+    F7 -- "Supabase JS SDK (HTTPS)" --> Database
+    Frontend -- "API so'rovlari" --> Backend
+    B3 -- "Telegram API" --> TG
+    GHA -- "Avtomatik zaxira" --> Database
+    GHA -- "Git Commit / Push" --> REPO
 ```
 
 ---
 
-## 3. Foydalanuvchi Rollari va Avtorizatsiya Modeli (RBAC & Auth Flow)
+## 3. Foydalanuvchi Rollari va Avtorizatsiya Modeli (RBAC)
 
-Tizimda an'anaviy `email/login` tizimi o'rniga, bolalar va o'qituvchilar uchun qulay bo'lgan **yagona parolli (Password-Only RBAC)** tizim joriy qilingan.
+Tizimda bolalar va murabbiylar uchun murakkab login/email kiritmasdan, to'g'ridan-to'g'ri so'z-parollar orqali kirish imkonini beruvchi model amal qiladi:
 
-| Rol | Parol misollari | Huquqlari | Ko'radigan bo'limlari |
+| Rol | Kirish usuli | Ruxsat doirasi | Asosiy bo'limlar |
 | :--- | :--- | :--- | :--- |
-| **Super Admin** | `hammaguruhlar` | Tizim ma'lumotlarini o'qish, monitoring | `AdminDashboard`, `AdminGroups`, `AdminAttendance` |
-| **O'qituvchi (Bekzod)** | `insight`, `beksila` | Faqat `teacher1` bazasini to'liq boshqarish (yozish/o'chirish) | Dars jadvali, Dashboard, Guruhlar, Reyting, Davomat, Sozlamalar |
-| **O'quvchi** | O'zbekcha so'z: `olma`, `anor`, `sher`... | Faqat o'z guruhining natijalarini ko'rish (Read-Only) | Faqat `Leaderboard` (o'z guruhi doirasida) |
+| **Super Admin** | `hammaguruhlar` | Barcha o'qituvchilar ma'lumotlarini o'qish, lidlar CRM, umumiy tahlil | `AdminDashboard`, `AdminLeads`, `AdminFinance`, `AdminAttendance` |
+| **O'qituvchi** | `insight`, `beksila` | O'z guruhlari, talabalari, jadval, davomat va to'lovlarni to'liq boshqarish | `ScheduleView`, `GroupsList`, `Leaderboard`, `Attendance`, `TeacherFinanceView`, `Settings` |
+| **O'quvchi** | Guruh so'z-paroli (`olma`, `anor`...) | Faqat o'z guruhi ma'lumotlarini o'qish, avatar do'koni, shaxsiy PIN | `StudentPortal` (Reyting, Do'kon, Davomat, Jadval, Ustoz profili) |
 
-### Autentifikatsiya Ketma-ketligi:
+---
+
+## 4. Modullar va Funksional Bo'limlar Tahlili
+
+### 4.1. Super Admin Moduli
+1. **AdminDashboard:**
+   - O'quv markazining barcha faol o'qituvchilari bo'yicha umumiy statistika (guruhlar soni, talabalar soni, jami ballar).
+   - O'qituvchilar bo'yicha filtrlash va tezkor saralash.
+2. **AdminLeads (Lidlar CRM):**
+   - O'quv markaziga yangi murojaat qilgan o'quvchilar ro'yxati (Ism, telefon raqam, qiziqqan yo'nalish, status: Yangi, Sinov darsi, To'lov qildi, Bekor qilindi).
+   - Liddan to'g'ridan-to'g'ri haqiqiy o'quvchiga aylantirish (Convert to Student).
+3. **AdminFinance (Umumiy Moliya):**
+   - O'quv markazidagi barcha to'lovlar monitoringi, qarzdorliklar, oylik kurs tushumlari.
+4. **AdminAttendance (Umumiy Davomat):**
+   - Barcha o'qituvchilarning dars o'tish sifati, talabalarning darsga qatnashish foizi (KPI).
+
+### 4.2. O'qituvchi Moduli
+1. **ScheduleView (Dars Jadvali):**
+   - Haftalik interaktiv dars jadvali (Juft kunlar, Toq kunlar, Shanba-Yakshanba).
+   - Har bir darsning boshlanish va tugash vaqti, xonasi, darsga biriktirilgan talabalar soni.
+   - Qo'shimcha / qayta tayyorlov darslarini (Extra Lessons) belgilash.
+2. **GroupsList va GroupDetail (Guruhlar va Talabalar):**
+   - Guruh yaratish, tahrirlash, arxivlash va dars vaqtlarini belgilash.
+   - Talabalar ro'yxati, har bir talabaning joriy reytingi, to'plangan tangalari (coins), telefon raqami.
+   - Talabani boshqa guruhga ko'chirish (Transfer student).
+   - O'quvchi PIN-kodini tiklash / o'chirish.
+3. **Leaderboard va Rewards (Reyting va Gamifikatsiya):**
+   - Talabalarga darsdagi faolligi uchun ballar va tangalar berish (Tezkor teglar: Uy vazifasi, Faol ishtirok, Ajoyib javob va h.k.).
+   - Sovg'alar do'koni katalogini boshqarish (Sovg'a nomi, narxi tangalarda, mavjudlik soni).
+4. **Attendance (Davomat Jurnali):**
+   - Guruh bo'yicha kunlik davomat belgilash (Bor, Yo'q, Sababli, Kechikdi).
+   - Oylik davomat foizini avtomatik hisoblash.
+5. **TeacherFinanceView (O'qituvchi Moliyasi):**
+   - O'z guruhlaridagi o'quvchilarning oylik dars to'lovlarini belgilash, qarzdorlarni filtrlash.
+6. **Settings (Sozlamalar va Zaxiralar):**
+   - Tezkor baholash teglarini moslash.
+   - O'chirilgan guruhlar va o'quvchilarni savatdan qayta tiklash (Soft-delete / Restore).
+   - Baza zaxira nusxalarini yuklab olish, import qilish va avvalgi snapshot'ga qaytarish (Rollback).
+
+### 4.3. O'quvchi Portali (StudentPortal)
+1. **StudentRatingView (Reyting):**
+   - Guruh ichidagi peshqadamlar jadvali, unvonlar tizimi (Boshlang'ich, Tajribali, Professional, Usta, Afsona).
+2. **StudentRewardView (Avatar va Sovg'alar Do'koni):**
+   - To'plangan tangalarga yangi avatarlarni sotib olish.
+   - Avatar galereyasi va shaxsiy profilni bezash.
+3. **StudentAccountView (Shaxsiy Kabinet va PIN Himoya):**
+   - O'quvchi o'z profiliga 4 xonali shaxsiy PIN-kod o'rnatishi (boshqa o'quvchilar uning tangalarini sarflab yubormasligi uchun).
+4. **StudentAttendanceCalendar va ScheduleCard:**
+   - Shaxsiy davomat taqvimi va keyingi dars qachon bo'lishini ko'rsatuvchi karta.
+5. **StudentTeacherShowcase:**
+   - Guruh o'qituvchisi haqida ma'lumot, o'qituvchi bilan bog'lanish tugmalari.
+
+---
+
+## 5. Ma'lumotlar Modeli va Sxemasi
+
+Asosiy bulutli ma'lumotlar bazasi sifatida **Supabase PostgreSQL** qo'llaniladi.
+
+### 5.1. `appdata` Jadvali
+Har bir o'qituvchi uchun yagona qatorda uning barcha operatsion ma'lumotlari JSONB formatida saqlanadi:
+- `teacher_id` (VARCHAR, Primary Key) — masalan: `teacher1`.
+- `updated_at` (TIMESTAMPTZ) — Oxirgi yangilanish vaqti.
+- `data` (JSONB) — Butun ma'lumotlar daraxti:
+  ```json
+  {
+    "groups": [
+      {
+        "id": "grp_123",
+        "name": "Robo 1-bosqich",
+        "schedule": "Du-Chor-Jum 15:00",
+        "room": "Xona 3",
+        "isArchived": false
+      }
+    ],
+    "students": [
+      {
+        "id": "std_456",
+        "groupId": "grp_123",
+        "name": "Ali Valiyev",
+        "coins": 150,
+        "avatarKey": "robot-1",
+        "pinHash": "...",
+        "phone": "+998901234567"
+      }
+    ],
+    "attendance": {
+      "grp_123_2026-10-24": {
+        "std_456": "present"
+      }
+    },
+    "transactions": [
+      {
+        "id": "tx_789",
+        "studentId": "std_456",
+        "points": 10,
+        "reason": "Uy vazifasi",
+        "timestamp": 1729750000000
+      }
+    ],
+    "leads": [],
+    "payments": [],
+    "rewards": [],
+    "extraLessons": [],
+    "teacherProfile": {
+      "fullName": "Bekzod",
+      "phone": "+998...",
+      "bio": "Robototexnika ustozi"
+    }
+  }
+  ```
+
+### 5.2. `group_passwords` Jadvali
+O'quvchilarning o'z guruhiga tezkor kirishi uchun qidiruv jadvali:
+- `password` (VARCHAR, Primary Key) — Kichik harflarda yozilgan unikal o'zbekcha so'z (`olma`, `anor`).
+- `teacher_id` (VARCHAR) — Guruh tegishli bo'lgan o'qituvchi IDsi.
+- `group_id` (VARCHAR) — Guruhning unikal IDsi.
+
+### 5.3. `snapshots` Jadvali
+Har bir muhim o'zgarishdan oldingi xavfsizlik nuqtalari:
+- `id` (BIGSERIAL, Primary Key)
+- `teacher_id` (VARCHAR)
+- `data` (JSONB)
+- `timestamp` (TIMESTAMPTZ)
+
+---
+
+## 6. Sinxronizatsiya va Zaxiralash Mexanizmi
 
 ```mermaid
 sequenceDiagram
     autonumber
-    actor User as Foydalanuvchi
-    participant UI as LoginPage.jsx
-    participant App as App.jsx
-    participant Supa as Supabase (group_passwords)
+    actor Foydalanuvchi as O'qituvchi / Talaba
+    participant React as React UI State
+    participant Local as LocalStorage (0ms Kesh)
+    participant Sync as Debounce Sync (1.5s)
+    participant Cloud as Supabase Cloud DB
+    participant TG as Telegram Bot Backup
 
-    User->>UI: Parol kiritadi
-    UI->>App: handleLoginSubmit(password)
-    alt Agar parol 'hammaguruhlar' bo'lsa
-        App->>App: role='admin', teacherId='admin'
-        App-->>User: Admin Panel ochiladi
-    else Agar o'qituvchi paroli bo'lsa ('insight', 'beksila')
-        App->>App: role='teacher', teacherId='teacher1'
-        App-->>User: O'qituvchi ish stoli ochiladi ('schedule')
-    else Aks holda (Student paroli bo'lishi mumkin)
-        App->>Supa: SELECT * FROM group_passwords WHERE password = ?
-        alt Guruh paroli topilsa
-            Supa-->>App: { teacher_id, group_id }
-            App->>App: role='student', studentGroupId=group_id
-            App-->>User: O'quvchining shaxsiy guruhi Reytingi ochiladi
-        else Hech biri mos kelmasa
-            App-->>UI: "Noto'g'ri parol!" xatosi ko'rsatiladi
-        end
-    end
+    Foydalanuvchi->>React: Davomat yoki ball qo'yadi
+    React->>Local: Bir lahzada saqlash (0ms kechikish)
+    React-->>Foydalanuvchi: UI bir zumda yangilanadi (Optimistic UI)
+    Local->>Sync: 1.5 soniyalik taymerni boshlash
+    Note over Sync: Keyingi harakatlar taymerni qayta tiklaydi
+    Sync->>Cloud: Barcha ma'lumotlarni yozish (upsert)
+    Cloud-->>Sync: 200 OK (Muvaffaqiyatli saqlandi)
+    Note over Cloud,TG: Har kuni soat 06:00 da avto-zaxira
+    Cloud->>TG: Baza JSON faylini Telegram bot orqali jo'natish
 ```
 
----
-
-## 4. Ma'lumotlar Tuzilishi va Baza Arxitekturasi (Database Schema)
-
-Tizim PostgreSQL ustida qurilgan bo'lib, yuqori tezlik va moslashuvchanlik uchun **Hybrid JSONB Document Store** yondashuvidan foydalanadi.
-
-### 4.1. Supabase Jadvallari:
-
-1. **`appdata`** jadvali (O'qituvchilarning asosiy bazasi):
-   - `teacher_id` (`TEXT`, Primary Key) — `teacher1` (Bekzod).
-   - `data` (`JSONB`, NOT NULL) — O'qituvchining barcha guruhlari, talabalari, tranzaksiyalari va davomatlari jamlangan ob'ekt.
-   - `updated_at` (`TIMESTAMPTZ`) — Oxirgi tahrirlangan vaqt.
-
-2. **`group_passwords`** jadvali (Guruh parollari global reestri):
-   - `password` (`TEXT`, Primary Key) — Kichik harflardagi o'zbekcha so'z (masalan: `uzum`).
-   - `teacher_id` (`TEXT`, NOT NULL) — Guruh qaysi o'qituvchiga tegishliligi.
-   - `group_id` (`TEXT`, NOT NULL) — Ichki guruh identifikatori.
-
-3. **`snapshots`** jadvali (Orqaga qaytarish - Rollback nuqtalari):
-   - `id` (`SERIAL`, Primary Key).
-   - `teacher_id` (`TEXT`).
-   - `data` (`JSONB`) — O'sha paytdagi butun holat nusxasi (maksimal oxirgi 5 ta snapshot saqlanadi).
-   - `timestamp` (`TIMESTAMPTZ`).
+1. **Optimistic UI va 0ms Kesh:** Foydalanuvchi ball yoki davomat qo'yganida interfeys internet tezligini kutmasdan darhol yangilanadi va o'zgarishlar `localStorage` ga yoziladi.
+2. **Debounce Sync (1.5 soniya):** Har bir mayda bosishda serverga so'rov yuborilmaydi. Oxirgi harakatdan so'ng 1.5 soniya o'tgach, barcha o'zgarishlar bitta paket bo'lib Supabase'ga yuboriladi.
+3. **Avto-zaxira:** Har kuni soat 06:00 da `node-cron` orqali butun baza JSON formatida adminning Telegram botiga zaxira sifatida jo'natiladi.
 
 ---
 
-### 4.2. `appdata.data` (JSONB) Ichki Tuzilmasi
+## 7. Loyihaning Qat'iy Dizayn va Kodlash Qoidalari
 
-```json
-{
-  "groups": [
-    {
-      "id": "abc123xyz",
-      "name": "Robo-Start 1",
-      "icon": "robot",
-      "password": "olma",
-      "color": "#007AFF",
-      "schedule": {
-        "days": ["mon", "wed", "fri"],
-        "startTime": "15:30",
-        "endTime": "17:00",
-        "room": "Xona 204"
-      },
-      "createdAt": "2026-09-01T10:00:00.000Z",
-      "deleted": false,
-      "deletedAt": null
-    }
-  ],
-  "students": [
-    {
-      "id": "st9876543",
-      "name": "Ali Valiyev",
-      "groupId": "abc123xyz",
-      "emoji": "lion",
-      "color": "#34C759",
-      "createdAt": "2026-09-01T10:05:00.000Z",
-      "joinedGroupAt": "2026-09-01T10:05:00.000Z",
-      "groupHistory": [
-        {
-          "groupId": "old_group_id",
-          "joinedAt": "2026-08-01T00:00:00.000Z",
-          "leftAt": "2026-09-01T10:05:00.000Z"
-        }
-      ],
-      "deleted": false,
-      "deletedAt": null
-    }
-  ],
-  "transactions": [
-    {
-      "id": "tx_456789",
-      "studentId": "st9876543",
-      "amount": 85,
-      "comment": "Uy vazifasi bajarildi 📚",
-      "timestamp": "2026-09-11T12:30:00.000Z",
-      "deleted": false
-    }
-  ],
-  "attendance": [
-    {
-      "id": "att_001122",
-      "groupId": "abc123xyz",
-      "date": "2026-09-11",
-      "records": {
-        "st9876543": "present"
-      },
-      "createdAt": "2026-09-11T15:35:00.000Z",
-      "updatedAt": "2026-09-11T15:40:00.000Z"
-    }
-  ],
-  "quickTags": [
-    { "text": "Uy vazifasi bajarildi 📚", "points": 85 },
-    { "text": "Mustaqil izlanish 🔍", "points": 50 },
-    { "text": "Darsga kechikdi ⏰", "points": -10 }
-  ]
-}
-```
+Platforma yuqori darajadagi professional talablarga mos kelishi uchun quyidagi qat'iy standartlarga asoslanadi:
 
-> **Soft-Delete (Yumshoq o'chirish) mexanizmi:**
-> Guruh yoki talaba o'chirilganda bazadan butunlay o'chib ketmaydi, balki `deleted: true` belgisi qo'yiladi. Bu orqali Sozlamalar bo'limidagi **"Chiqindilar qutisi" (Trash Bin)** orqali tasodifan o'chirilgan ma'lumotlarni 1 ta tugma bilan asliga qaytarish (Restore) mumkin.
+1. **Pulsatsiyalanuvchi LIVE neon taqiqlanadi:** Miltillovchi nuqtalar, neon nurlar, ko'zni charchatuvchi animatsiyalar mutlaqo yo'q. Barcha status belgilari sokin va statik Apple Minimalist uslubida.
+2. **Standart emojilar taqiqlanadi:** Interfeysda standart smartfon emojilari ishlatilmaydi. Faqat toza vektor SVG piktogrammalar qo'llaniladi.
+3. **Sun'iy intellekt (AI) shablon dizaynlari taqiqlanadi:** Binafsha-ko'k AI gradientlari, glassmorphism, nurlanuvchi yaltiroq effektlar, tartibsiz doiralar (blobs) ishlatilmaydi. Qat'iy neytral palitra va bitta asosiy urg'u rangi.
+4. **Ortiqcha animatsiyalar cheklangan:** Sahifalar va modallar bir zumda, kechikishsiz almashadi. Faqat 150ms dan oshmaydigan bosiq hover/focus effektlariga ruxsat berilgan.
 
 ---
 
-## 5. Ma'lumotlarni Saqlash va Sinxronizatsiya Mantig'i
-
-```mermaid
-flowchart TD
-    Change[Foydalanuvchi harakati: Ball berish / Davomat belgilash] --> SetState[React State yangilanadi]
-    SetState --> CacheSave[1. LocalStorage ga 0ms da zaxira yoziladi]
-    SetState --> GuardCheck{2. Xavfsizlik tekshiruvi:\nBaza tasodifan bo'shab qolmadimi?}
-    
-    GuardCheck -- "Ha (Xavf bor)" --> Block[Saqlash to'xtatiladi, ogohlantirish beriladi]
-    GuardCheck -- "Yo'q (Xavfsiz)" --> Debounce[3. 1.5 soniyalik Debounce taymeri]
-    
-    Debounce --> SupaSave[4. Supabase ga saqlash: saveToSupabase]
-    SupaSave -- "Muvaffaqiyatli" --> Snap[5. snapshots jadvaliga avto-snapshot qo'shish]
-    SupaSave -- "Internet yo'q" --> OfflineMode[6. Offline rejimiga o'tadi, keshdan ishlaydi]
-```
-
-1. **Debounced Cloud Sync (1.5s):** Har bir bosilgan tugma uchun darhol serverga so'rov ketmaydi. Oxirgi o'zgarishdan keyin 1.5 soniya kutib, butun o'zgarish bitta paketda Supabase'ga yuboriladi.
-2. **Accidental Wipeout Guard (Tasodifiy o'chib ketishdan himoya):** Agar brauzerda guruhlar yoki talabalar soni 0 bo'lib qolsa, lekin oldingi saqlangan bazada ma'lumotlar bo'lgan bo'lsa, tizim bulutdagi bazani bo'sh ma'lumot bilan yozib yuborishni (overwrite) avtomatik bloklaydi.
-3. **Disaster Recovery (Offline himoya):** Internet uzilib qolsa, sahifa yangilanganda ham ma'lumotlar yo'qolmaydi, balki `rsa_local_backup_${teacherId}` lokal keshidan tiklanadi.
-
----
-
-## 6. Matematik va Biznes Mantiq Algoritmlari
-
-### 1. Bayesian Fair Attendance Score (Adolatli Davomat Baholash)
-Oddiy foiz hisobida 1 ta darsga kelib 100% bo'lgan o'quvchi, 20 ta darsdan 19 tasiga kelgan (95%) tirishqoq o'quvchidan yuqori o'ringa chiqib ketadi (Simpson paradoksi). Buni oldini olish uchun `attendanceUtils.js` faylida Bayes silliqlash algoritmi qo'llanilgan:
-
-$$\text{FairScore} = \frac{\text{Present} + (\text{Late} \times 0.5) + (K \times \text{Prior})}{\text{AccountableLessons} + K} \times 100$$
-*(Bu yerda $K = 3$, Boshlang'ich kutilma $\text{Prior} = 0.70$)*
-
-### 2. Guruh Parollari Generatori
-`db.js` faylidagi `generateUniqueGroupPassword()` funksiyasi 90 ga yaqin sodda o'zbekcha so'zlar (`olma`, `anor`, `sher`, `kitob`...) reestridan foydalanadi va Supabase'dagi barcha olingan parollarni tekshirib, takrorlanmaydigan parol generatsiya qiladi.
-
-### 3. Natural Sorting (Tabiiy Saralash)
-Guruhlar ro'yxati (G1, G2, G10) oddiy matnli saralashda `G1, G10, G2` bo'lib buzilmasligi uchun `localeCompare(..., { numeric: true })` orqali tabiiy tartibda saralanadi.
-
----
-
-## 7. Zaxiralash (Backup) Tizimining 4 Pog'onali Arxitekturasi
-
-1. **Lokal Brauzer Kesh Zaxirasi:** Har bir tahrirda `localStorage`ga avto-saqlanadi.
-2. **Supabase Snapshots (Orqaga qaytarish):** O'qituvchi oxirgi 5 ta tahrir nuqtasining istalganiga 1 bosish bilan tizimni qaytara oladi (`Settings.jsx` orqali).
-3. **Telegram Bot Avto-Zaxira:** 
-   - Har kuni Toshkent vaqti bilan tonggi 06:00 da `node-cron` va Vercel Cron ishga tushadi.
-   - 4 ta o'qituvchining barcha ma'lumotlari `.json` fayl qilib Telegramdagi Administrator lichkasiga jo'natiladi.
-   - Admin xohlagan paytda Telegram botga `/backup` buyrug'ini yozib, bazaning yangi nusxasini fayl ko'rinishida olishi mumkin.
-4. **GitHub Repozitoriy Zaxirasi (Git-as-a-Backup):**
-   - `.github/workflows/db_backup.yml` orqali har kuni GitHub Actions ishga tushadi.
-   - `scripts/backup_to_git.js` orqali Supabase'dagi ma'lumotlarni tortib olib, `backups/` papkasiga yozadi va avtomatik ravishda Git commit va push qiladi.
-
----
-
-## 8. Loyihaning To'liq Folder (Papka) va Fayllar Strukturasi
+## 8. Papkalar va Fayllar Strukturasi
 
 ```
 ratedStudentApp/
-├── .github/
-│   └── workflows/
-│       └── db_backup.yml            # Har kuni avtomatik ravishda Supabase bazasini gitga commit qiluvchi GitHub Actions workflow
-│
 ├── api/
-│   └── index.js                     # Vercel serverless platformasi uchun backend kirish nuqtasi (server.js ni eksport qiladi)
-│
-├── backups/                         # GitHub Actions orqali saqlanadigan o'qituvchilarning kundalik JSON nusxalari
-│   └── teacher1.json
-│
-├── public/                          # Brauzer uchun ochiq statik aktivlar
-│   ├── favicon.ico / favicon.svg    # Sayt ikonkasi
-│   ├── site.webmanifest             # PWA (Progressive Web App) sozlamalari
-│   ├── screens/                     # Landing sahifasidagi slaydlar uchun skrinshot rasmlari
-│   └── avatar_image/                # O'quvchilar va guruhlar uchun 3D avatarlar to'plami
-│
-├── scripts/
-│   └── backup_to_git.js             # Supabase dan o'qituvchi ma'lumotlarini yuklab backups/ papkasiga yozuvchi skript
-│
-├── storage/
-│   └── db.json                      # Mahalliy ishlab chiqish (offline/local Express) uchun zaxira JSON fayl
-│
-├── src/                             # ASOSIY FRONTEND KODI
-│   ├── assets/                      # Ichki SVG va rasmlar (hero.png, react.svg...)
-│   │
-│   ├── components/                  # Asosiy React komponentlari (UI Ekranlar)
-│   │   ├── admin/                   # Super Admin uchun maxsus boshqaruv paneli
-│   │   │   ├── AdminDashboard.jsx   # Barcha 4 o'qituvchi bo'yicha jamlangan statistika, reytinglar va jadvallar
-│   │   │   ├── AdminGroups.jsx      # Barcha o'qituvchilarning guruhlarini umumiy ro'yxatda filtrlash
-│   │   │   └── AdminAttendance.jsx  # Markaz bo'yicha umumiy davomat tahlili va ko'rsatkichlari
-│   │   │
-│   │   ├── Attendance.jsx           # O'qituvchining dars davomati jurnali (kunlik belgilash, oylik matritsa, statistika)
-│   │   ├── Dashboard.jsx            # O'qituvchi Bosh sahifasi (Umumiy likelar, top o'quvchilar, statistikalar)
-│   │   ├── GroupDetail.jsx          # Guruhning ichki oynasi (O'quvchilar ro'yxati, ball qo'yish modal oynasi, ko'chirish)
-│   │   ├── GroupsList.jsx           # Guruhlar kartochkalari, yangi guruh ochish, tahrirlash, parol berish
-│   │   ├── History.jsx              # Ballar berilishi tarixi va loglari (auditorlik jurnali)
-│   │   ├── LandingPage.jsx          # Tizimga kirmaganlar uchun taqdimot sahifasi (Apple uslubidagi zamonaviy UI)
-│   │   ├── Leaderboard.jsx          # Gamifikatsiyalangan Reyting doskasi (Top-3 podium, oylik/kurs davomidagi saralash)
-│   │   ├── LoginPage.jsx            # Tizimga yagona parol orqali kirish oynasi
-│   │   ├── ScheduleView.jsx         # Interaktiv haftalik dars jadvali (Dushanba-Shanba dars soatlari va xonalar)
-│   │   ├── Settings.jsx             # Tizim sozlamalari (Teglar, ball qiymatlari, zaxira nusxalari, Chiqindilar qutisi)
-│   │   ├── Sidebar.jsx              # Navigatsiya menyusi (Desktop yuqori bar + Mobil pastki tabbar)
-│   │   └── Time24Input.jsx          # Dars soatini tanlash uchun qulay 24-soatlik maxsus vaqt kirituvchi komponent
-│   │
-│   ├── utils/                       # Yordamchi biznes-mantiq va servis funksiyalari
-│   │   ├── attendanceUtils.js       # Davomat hisoblash, Bayesian Fair Score, guruh o'zgarish sanalarini hisobga olish
-│   │   ├── avatarGallery.js         # Avatarlar ro'yxati va ularning URL manzillarini normallashtirish
-│   │   ├── db.js                    # Pok (Pure) funksiyalar: guruh/o'quvchi/ball qo'shish, o'chirish, o'zbekcha parol generatori
-│   │   ├── exportAttendance.js      # Davomat jurnalini Excel (CSV UTF-8 BOM) va PDF (Print) formatida yuklab beruvchi modul
-│   │   ├── firebase.js              # Firebase Firestore mijozi (eski bazadan ko'chirish va zaxira varianti)
-│   │   ├── groupIcons.jsx           # Guruhlar uchun rang-barang SVG va 3D ikonkalar render moduli
-│   │   ├── studentAvatars.jsx       # O'quvchilar uchun jonli kulgichlar (emoji) va avatarlar render moduli
-│   │   └── supabase.js              # Asosiy Supabase mijozi (CRUD, snapshotlar, parollar reestri, admin yuklamasi)
-│   │
-│   ├── App.css                      # Apple Design System uslubidagi umumiy klasslar va dizayn qoidalari
-│   ├── App.jsx                      # Ilovaning yuragi: State menejer, Router, Cloud sinxronizator, Toastlar
-│   ├── index.css                    # Tailwind / Global CSS o'zgaruvchilari (Dark/Light mavzu ranglari)
-│   └── main.jsx                     # React DOM ga ilovani StrictMode da render qiluvchi boshlang'ich fayl
-│
-├── arch.md                          # Loyihaning to'liq arxitektura hujjati
-├── index.html                       # HTML asosiy hujjati, shriftlar va meta teglar
-├── package.json                     # Loyiha paketlari va npm buyruqlari
-├── server.js                        # Node.js Express serveri (Telegram Bot, Supabase migratsiya, Cron, Webhooklar)
-├── vercel.json                      # Vercel serverless va cron sozlamalari
-└── vite.config.js                   # Vite sozlamalari (@vitejs/plugin-react bilan)
+│   └── index.js                   # Vercel Serverless API kirish nuqtasi
+├── backups/                       # Lokal va git zaxira fayllari
+├── public/                        # Statik rasmlar, avatarlar, manifest
+├── scripts/                       # Zaxira va skript utilitalari
+├── src/
+│   ├── assets/                    # Ilovaning statik media fayllari
+│   ├── components/
+│   │   ├── admin/                 # Super Admin paneli komponentlari
+│   │   │   ├── AdminAttendance.jsx
+│   │   │   ├── AdminDashboard.jsx
+│   │   │   ├── AdminFinance.jsx
+│   │   │   └── AdminLeads.jsx
+│   │   ├── common/                # Umumiy komponentlar (ErrorBoundary, ikonalar)
+│   │   ├── student/               # O'quvchi portali va shaxsiy kabinet
+│   │   │   ├── StudentAttendanceCalendar.jsx
+│   │   │   ├── StudentPortal.jsx
+│   │   │   ├── StudentRatingView.jsx
+│   │   │   ├── StudentRewardView.jsx
+│   │   │   └── StudentTeacherShowcase.jsx
+│   │   ├── Attendance.jsx         # O'qituvchi davomat jurnali
+│   │   ├── GroupDetail.jsx        # Guruh ichidagi talabalar va ballar
+│   │   ├── GroupsList.jsx         # O'qituvchi guruhlar ro'yxati
+│   │   ├── LandingPage.jsx        # Tashqi taqdimot va marketing sahifasi
+│   │   ├── Leaderboard.jsx        # Reyting jadvali va sovg'alar
+│   │   ├── LoginPage.jsx          # Tizimga kirish sahifasi
+│   │   ├── ScheduleView.jsx       # Interaktiv dars jadvali
+│   │   ├── Settings.jsx           # Sozlamalar va ma'lumotlar boshqaruvi
+│   │   ├── Sidebar.jsx            # Asosiy navigatsiya menyusi
+│   │   └── TeacherFinanceView.jsx # O'qituvchi to'lovlar jurnali
+│   ├── hooks/                     # Custom React hooklar (modal, keyboard)
+│   ├── utils/
+│   │   ├── attendanceUtils.js     # Davomat hisob-kitob algoritmlari
+│   │   ├── avatarGallery.js       # Avatarlar katalogi va filtrlash
+│   │   ├── db.js                  # Lokal ma'lumotlar ombori boshqaruvi
+│   │   ├── scheduleUtils.js       # Dars jadvali vaqt hisob-kitoblari
+│   │   ├── supabase.js            # Supabase API mijoz va sinxronizatsiya
+│   │   ├── teacherUtils.js        # O'qituvchi profili va KPI ko'rsatkichlari
+│   │   └── telegram.js            # Telegram WebApp integratsiyasi
+│   ├── App.jsx                    # Asosiy Router va Global State boshqaruvchisi
+│   ├── index.css                  # Global Tailwind va rang o'zgaruvchilari
+│   └── main.jsx                   # React dasturi kirish nuqtasi
+├── botService.js                  # Telegram zaxira boti xizmati
+├── package.json                   # Loyiha kutubxonalari va buyruqlari
+├── server.js                      # Express lokal serveri va cron zaxira
+└── vercel.json                    # Vercel joylashtirish va kesh konfiguratsiyasi
 ```
-
----
-
-## 9. Asosiy Fayllarning Ichki Bog'liqligi (Dependency Flow)
-
-```mermaid
-graph LR
-    subgraph Core["Asosiy Yadrolar"]
-        App["App.jsx"]
-        Server["server.js"]
-    end
-
-    subgraph Utilities["Utils (Yordamchi Funksiyalar)"]
-        SupaUtil["supabase.js"]
-        DbUtil["db.js"]
-        AttUtil["attendanceUtils.js"]
-        ExpUtil["exportAttendance.js"]
-        AvatarUtil["studentAvatars.jsx / avatarGallery.js"]
-        IconUtil["groupIcons.jsx"]
-    end
-
-    subgraph Components["UI Komponentlar"]
-        CompAttendance["Attendance.jsx"]
-        CompSchedule["ScheduleView.jsx"]
-        CompGroup["GroupDetail.jsx & GroupsList.jsx"]
-        CompLeaderboard["Leaderboard.jsx"]
-        CompAdmin["AdminDashboard.jsx"]
-        CompSettings["Settings.jsx"]
-    end
-
-    App --> SupaUtil & DbUtil & AvatarUtil
-    CompAttendance --> AttUtil & ExpUtil
-    CompAdmin --> AttUtil & AvatarUtil & IconUtil
-    CompSchedule --> IconUtil & AvatarUtil
-    CompGroup --> DbUtil & AvatarUtil & IconUtil
-    CompLeaderboard --> AvatarUtil & IconUtil
-    CompSettings --> DbUtil & SupaUtil
-    Server --> SupaUtil
-```
-
----
-
-## 10. Xulosa va Arxitektura Bahosi
-
-* **Zero Latency UX:** Ma'lumotlar avval mahalliy xotirada darhol aks etadi, so'ngra fonda sinxronlashadi — foydalanuvchi hech qanday qotishni sezmaydi.
-* **Multi-Tenancy & Privacy:** O'qituvchilar bir-birining guruhini ko'rmaydi, talabalar esa faqat o'z guruhini ko'radi.
-* **Tugallangan Backup tizimi:** Telegram, GitHub Actions, Supabase Snapshot va LocalStorage orqali 4 karra himoyalangan.
-* **Adolatli reyting matematikasi:** Kichik guruhlar va yangi qo'shilgan talabalar eski talabalar bilan adolatli musobaqalasha oladi.

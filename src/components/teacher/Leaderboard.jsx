@@ -959,7 +959,12 @@ const Leaderboard = ({
             </>
           ) : (
             <div className="empty-history">
-              <div className="placeholder-icon">⏳</div>
+              <div className="placeholder-icon" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-tertiary)' }}>
+                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="12" cy="12" r="10" />
+                  <polyline points="12 6 12 12 16 14" />
+                </svg>
+              </div>
               <h3>Harakatlar topilmadi</h3>
               <p>Hali hech qanday talaba baholanmagan.</p>
             </div>

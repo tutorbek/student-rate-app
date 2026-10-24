@@ -31,6 +31,105 @@ const IconLock = ({ size = 14, strokeWidth = 2.2 }) => (
   </svg>
 );
 
+const IconUnlock = ({ size = 14, strokeWidth = 2.2 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round">
+    <rect width="18" height="11" x="3" y="11" rx="2" ry="2" />
+    <path d="M7 11V7a5 5 0 0 1 9.9-1" />
+  </svg>
+);
+
+const IconInfo = ({ size = 14, strokeWidth = 2.2 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="12" cy="12" r="10" />
+    <line x1="12" y1="16" x2="12" y2="12" />
+    <line x1="12" y1="8" x2="12.01" y2="8" />
+  </svg>
+);
+
+const IconSearch = ({ size = 28, strokeWidth = 2 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="11" cy="11" r="8" />
+    <line x1="21" y1="21" x2="16.65" y2="16.65" />
+  </svg>
+);
+
+const renderQuickTagIcon = (text, points) => {
+  const lower = (text || '').toLowerCase();
+  if (lower.includes('vazifa') || lower.includes('kitob')) {
+    return (
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: 6, flexShrink: 0 }}>
+        <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
+        <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
+      </svg>
+    );
+  }
+  if (lower.includes('izlanish') || lower.includes('qidiruv')) {
+    return (
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: 6, flexShrink: 0 }}>
+        <circle cx="11" cy="11" r="8" />
+        <line x1="21" y1="21" x2="16.65" y2="16.65" />
+      </svg>
+    );
+  }
+  if (lower.includes('kechik') || lower.includes('vaqt')) {
+    return (
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: 6, flexShrink: 0 }}>
+        <circle cx="12" cy="12" r="10" />
+        <polyline points="12 6 12 12 16 14" />
+      </svg>
+    );
+  }
+  if (lower.includes('faol') || lower.includes('yulduz')) {
+    return (
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: 6, flexShrink: 0 }}>
+        <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+      </svg>
+    );
+  }
+  if (lower.includes('javob') || lower.includes('fikr') || lower.includes('chiroq')) {
+    return (
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: 6, flexShrink: 0 }}>
+        <path d="M9 18h6" />
+        <path d="M10 22h4" />
+        <path d="M15.09 14c.18-.98.65-1.74 1.41-2.5A4.65 4.65 0 0 0 18 8 6 6 0 0 0 6 8c0 1 .23 2.23 1.5 3.5.76.76 1.23 1.52 1.41 2.5" />
+      </svg>
+    );
+  }
+  if (lower.includes('guruh')) {
+    return (
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: 6, flexShrink: 0 }}>
+        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+        <circle cx="9" cy="7" r="4" />
+        <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+        <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+      </svg>
+    );
+  }
+  if (lower.includes('intizom') || lower.includes('ogohlantirish')) {
+    return (
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: 6, flexShrink: 0 }}>
+        <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z" />
+        <line x1="12" y1="9" x2="12" y2="13" />
+        <line x1="12" y1="17" x2="12.01" y2="17" />
+      </svg>
+    );
+  }
+  if (points < 0) {
+    return (
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: 6, flexShrink: 0 }}>
+        <circle cx="12" cy="12" r="10" />
+        <line x1="15" y1="9" x2="9" y2="15" />
+        <line x1="9" y1="9" x2="15" y2="15" />
+      </svg>
+    );
+  }
+  return (
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: 6, flexShrink: 0 }}>
+      <polyline points="20 6 9 17 4 12" />
+    </svg>
+  );
+};
+
 const IconEye = ({ size = 14, strokeWidth = 2 }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round">
     <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
@@ -537,12 +636,14 @@ const GroupDetail = ({ group, allGroups = [], students, transactions, quickTags,
                       <span className="score-num">{student.totalScore >= 0 ? `+${student.totalScore}` : student.totalScore}</span>
                       <span className="score-label">Like</span>
                       {student.pin ? (
-                        <span className="student-device-bound-pill">
-                          🔒 PIN faol
+                        <span className="student-device-bound-pill" style={{ display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
+                          <IconLock size={11} strokeWidth={2.4} />
+                          <span>PIN faol</span>
                         </span>
                       ) : (
-                        <span className="student-device-unbound-pill" style={{ fontSize: '0.68rem', padding: '1px 6px', borderRadius: '6px', background: 'rgba(0,0,0,0.05)', color: 'var(--text-tertiary)' }}>
-                          🔓 PIN yo'q
+                        <span className="student-device-unbound-pill" style={{ display: 'inline-flex', alignItems: 'center', gap: '3px', fontSize: '0.68rem', padding: '1px 6px', borderRadius: '6px', background: 'rgba(0,0,0,0.05)', color: 'var(--text-tertiary)' }}>
+                          <IconUnlock size={11} strokeWidth={2.4} />
+                          <span>PIN yo'q</span>
                         </span>
                       )}
                     </div>
@@ -614,8 +715,8 @@ const GroupDetail = ({ group, allGroups = [], students, transactions, quickTags,
           </div>
         ) : (
           <div className="glass-card empty-students-placeholder" style={{ padding: '36px 20px', textAlign: 'center' }}>
-            <div className="placeholder-icon" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.8rem', marginBottom: '8px' }}>
-              🔍
+            <div className="placeholder-icon" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '8px', color: 'var(--text-tertiary)' }}>
+              <IconSearch size={32} />
             </div>
             <h3 style={{ margin: '0 0 6px 0', fontSize: '1.05rem', fontWeight: 700, color: 'var(--text-primary)' }}>
               "{studentSearchQuery}" bo'yicha talaba topilmadi
@@ -925,7 +1026,10 @@ const GroupDetail = ({ group, allGroups = [], students, transactions, quickTags,
                             setCustomComment(tagObj.text);
                           }}
                         >
-                          <span className="quick-tag-text">{tagObj.text}</span>
+                          <span className="quick-tag-text" style={{ display: 'inline-flex', alignItems: 'center' }}>
+                            {renderQuickTagIcon(tagObj.text, tagObj.points)}
+                            <span>{tagObj.text}</span>
+                          </span>
                           <span className={`quick-tag-badge ${tagObj.points >= 0 ? 'positive' : 'negative'}`}>
                             {tagObj.points >= 0 ? `+${tagObj.points}` : tagObj.points}
                           </span>
@@ -1290,8 +1394,9 @@ const GroupDetail = ({ group, allGroups = [], students, transactions, quickTags,
                       ))}
                     </select>
                     {editStudentGroupId !== group.id && (
-                      <p style={{ margin: '6px 0 0 0', fontSize: '0.8rem', color: 'var(--primary-color, #0171E3)' }}>
-                        ℹ️ Saqlash bosilgach, talaba ushbu guruhga ko'chiriladi.
+                      <p style={{ margin: '6px 0 0 0', fontSize: '0.8rem', color: 'var(--primary-color, #0171E3)', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                        <IconInfo size={13} />
+                        <span>Saqlash bosilgach, talaba ushbu guruhga ko'chiriladi.</span>
                       </p>
                     )}
                   </div>
@@ -1479,8 +1584,9 @@ const GroupDetail = ({ group, allGroups = [], students, transactions, quickTags,
                     </div>
                   </div>
 
-                  <div className="transfer-info-box" style={{ padding: '10px 12px', background: 'var(--bg-segment, #F5F5F7)', borderRadius: 'var(--radius-md)', fontSize: '0.82rem', color: 'var(--text-secondary)', marginBottom: 8 }}>
-                    💡 Talabaning to'plagan barcha Like'lari va tranzaksiyalari yangi guruh reytingiga to'liq o'tadi.
+                  <div className="transfer-info-box" style={{ padding: '10px 12px', background: 'var(--bg-segment, #F5F5F7)', borderRadius: 'var(--radius-md)', fontSize: '0.82rem', color: 'var(--text-secondary)', marginBottom: 8, display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <IconInfo size={14} />
+                    <span>Talabaning to'plagan barcha Like'lari va tranzaksiyalari yangi guruh reytingiga to'liq o'tadi.</span>
                   </div>
                 </div>
 

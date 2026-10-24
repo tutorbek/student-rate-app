@@ -12,12 +12,12 @@ const DEFAULT_DATA = {
   payments: [],
   leads: [],
   quickTags: [
-    'Faol ishtirok 🌟',
-    'Uy vazifasi bajardi 📚',
-    'Ajoyib javob 💡',
-    'Darsga kechikdi ⏰',
-    'Guruh ishida faollik 👥',
-    'Intizom buzilishi ⚠️',
+    'Faol ishtirok',
+    'Uy vazifasi bajardi',
+    'Ajoyib javob',
+    'Darsga kechikdi',
+    'Guruh ishida faollik',
+    'Intizom buzilishi',
   ],
 };
 
