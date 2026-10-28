@@ -96,7 +96,6 @@ const ScheduleView = ({
   const [selectedDays, setSelectedDays] = useState([]);
   const [startTime, setStartTime] = useState('15:30');
   const [endTime, setEndTime] = useState('17:00');
-  const [room, setRoom] = useState('');
   const [activeGroupId, setActiveGroupId] = useState('');
   const [isGroupDropdownOpen, setIsGroupDropdownOpen] = useState(false);
   const [selectedGroupForStudents, setSelectedGroupForStudents] = useState(null);
@@ -296,13 +295,11 @@ const ScheduleView = ({
       setSelectedDays(group.schedule.days || []);
       setStartTime(group.schedule.startTime || '15:30');
       setEndTime(group.schedule.endTime || '17:00');
-      setRoom(group.schedule.room || '');
     } else {
       const guessed = guessScheduleFromName(group.name);
       setSelectedDays(defaultDay ? [defaultDay] : (guessed.days.length ? guessed.days : ['mon', 'wed', 'fri']));
       setStartTime(guessed.startTime);
       setEndTime(guessed.endTime);
-      setRoom(guessed.room);
     }
   };
 
@@ -382,11 +379,13 @@ const ScheduleView = ({
       return;
     }
 
+    const existingRoom = activeGroup?.schedule?.room || activeGroup?.room || '';
+
     const newSchedule = {
       days: selectedDays,
       startTime: startTime,
       endTime: endTime,
-      room: room.trim(),
+      room: existingRoom.trim(),
     };
 
     onUpdateGroupSchedule(activeGroupId, newSchedule);
@@ -1014,19 +1013,6 @@ const ScheduleView = ({
               </div>
             </div>
 
-            {/* Room (Optional) */}
-            <div className="form-group">
-              <label className="form-label">
-                Xona / Kabinet raqami <span style={{ opacity: 0.6, fontWeight: 400 }}>(ixtiyoriy)</span>
-              </label>
-              <input
-                type="text"
-                className="form-input"
-                placeholder="Masalan: 204-xona yoki Lab 1"
-                value={room}
-                onChange={(e) => setRoom(e.target.value)}
-              />
-              </div>
             </div>
 
             {/* Modal Actions */}
