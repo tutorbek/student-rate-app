@@ -73,6 +73,34 @@ const getDayNameUzFromDateStr = (dateStr) => {
   return found ? found.name : '';
 };
 
+// Helper: guess schedule from group name if none set
+const guessScheduleFromName = (groupName) => {
+  const safeName = groupName || '';
+  const lower = safeName.toLowerCase();
+  let days = [];
+  if (lower.includes('dushanba')) days = ['mon'];
+  else if (lower.includes('seshanba')) days = ['tue'];
+  else if (lower.includes('chorshanba')) days = ['wed'];
+  else if (lower.includes('payshanba')) days = ['thu'];
+  else if (lower.includes('juma')) days = ['fri'];
+  else if (lower.includes('yakshanba')) days = ['sun'];
+  else if (lower.includes('shanba')) days = ['sat'];
+
+  let start = '15:30';
+  let end = '17:00';
+  const timeMatch = safeName.match(/(\d{1,2})[:.](\d{2})/);
+  if (timeMatch) {
+    const h = parseInt(timeMatch[1], 10);
+    const m = timeMatch[2];
+    const startHStr = String(h).padStart(2, '0');
+    start = `${startHStr}:${m}`;
+    const endHStr = String(Math.min(23, h + 1)).padStart(2, '0');
+    end = `${endHStr}:${m === '00' ? '30' : m}`;
+  }
+
+  return { days, startTime: start, endTime: end, room: '' };
+};
+
 const ScheduleView = ({
   groups = [],
   students = [],
@@ -171,7 +199,7 @@ const ScheduleView = ({
   // Check if Sunday has any classes scheduled
   const hasSundayClasses = useMemo(() => {
     const hasRegularSun = groups.some((g) => {
-      const days = g.schedule?.days?.length ? g.schedule.days : guessScheduleFromName(g.name).days;
+      const days = g.schedule?.days?.length ? g.schedule.days : (guessScheduleFromName(g?.name)?.days || []);
       return days.includes('sun');
     });
     const hasExtraSun = (extraLessons || []).some((el) => el && el.date && getDayKeyFromDateStr(el.date) === 'sun');
@@ -204,33 +232,6 @@ const ScheduleView = ({
   // Count students in each group
   const getStudentCount = (groupId) => {
     return students.filter((s) => s.groupId === groupId).length;
-  };
-
-  // Helper: guess schedule from group name if none set
-  const guessScheduleFromName = (groupName) => {
-    const lower = (groupName || '').toLowerCase();
-    let days = [];
-    if (lower.includes('dushanba')) days = ['mon'];
-    else if (lower.includes('seshanba')) days = ['tue'];
-    else if (lower.includes('chorshanba')) days = ['wed'];
-    else if (lower.includes('payshanba')) days = ['thu'];
-    else if (lower.includes('juma')) days = ['fri'];
-    else if (lower.includes('shanba')) days = ['sat'];
-    else if (lower.includes('yakshanba')) days = ['sun'];
-
-    let start = '15:30';
-    let end = '17:00';
-    const timeMatch = groupName.match(/(\d{1,2})[:.](\d{2})/);
-    if (timeMatch) {
-      const h = parseInt(timeMatch[1], 10);
-      const m = timeMatch[2];
-      const startHStr = String(h).padStart(2, '0');
-      start = `${startHStr}:${m}`;
-      const endHStr = String(Math.min(23, h + 1)).padStart(2, '0');
-      end = `${endHStr}:${m === '00' ? '30' : m}`;
-    }
-
-    return { days, startTime: start, endTime: end, room: '' };
   };
 
   const activeGroup = useMemo(() => {
@@ -523,7 +524,7 @@ const ScheduleView = ({
     activeWeekdays.forEach((day) => {
       const regularClasses = groups
         .filter((g) => {
-          const days = g.schedule?.days?.length ? g.schedule.days : guessScheduleFromName(g.name).days;
+          const days = g.schedule?.days?.length ? g.schedule.days : (guessScheduleFromName(g?.name)?.days || []);
           return days.includes(day.key);
         })
         .map((g) => ({

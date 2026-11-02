@@ -40,19 +40,20 @@ const SCHEDULE_DAY_FULL_NAMES = {
 };
 
 const guessScheduleFromName = (groupName) => {
-  const lower = (groupName || '').toLowerCase();
+  const safeName = groupName || '';
+  const lower = safeName.toLowerCase();
   let days = [];
   if (lower.includes('dushanba')) days = ['mon'];
   else if (lower.includes('seshanba')) days = ['tue'];
   else if (lower.includes('chorshanba')) days = ['wed'];
   else if (lower.includes('payshanba')) days = ['thu'];
   else if (lower.includes('juma')) days = ['fri'];
-  else if (lower.includes('shanba')) days = ['sat'];
   else if (lower.includes('yakshanba')) days = ['sun'];
+  else if (lower.includes('shanba')) days = ['sat'];
 
   let start = '';
   let end = '';
-  const timeMatch = groupName.match(/(\d{1,2})[:.](\d{2})/);
+  const timeMatch = safeName.match(/(\d{1,2})[:.](\d{2})/);
   if (timeMatch) {
     const h = parseInt(timeMatch[1], 10);
     const m = timeMatch[2];
@@ -65,8 +66,8 @@ const guessScheduleFromName = (groupName) => {
   }
 
   // Suggest clean name without time and day
-  const cleanName = groupName
-    .replace(/\b(dushanba|seshanba|chorshanba|payshanba|juma|shanba|yakshanba)\b/gi, '')
+  const cleanName = safeName
+    .replace(/\b(dushanba|seshanba|chorshanba|payshanba|juma|yakshanba|shanba)\b/gi, '')
     .replace(/(\d{1,2})[:.](\d{2})/g, '')
     .replace(/\s+/g, ' ')
     .trim();
