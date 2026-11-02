@@ -117,6 +117,16 @@ export default function LandingPage({
     }
   };
 
+  const handleInputKeyDown = (e) => {
+    if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      handleIncrement();
+    } else if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      handleDecrement();
+    }
+  };
+
   useEffect(() => {
     const H = document.documentElement;
     H.classList.add('landing-page-active');
@@ -1061,8 +1071,14 @@ export default function LandingPage({
                     className="price-step-input"
                     type="text"
                     inputMode="numeric"
+                    size={1}
+                    min="1"
+                    max="500"
+                    pattern="[0-9]*"
+                    autoComplete="off"
                     value={tutorCount}
                     onChange={handleInputChange}
+                    onKeyDown={handleInputKeyDown}
                     onBlur={handleInputBlur}
                     aria-label={t('price_stepper_input_aria')}
                   />
@@ -1070,6 +1086,7 @@ export default function LandingPage({
                     type="button"
                     className="price-step-btn plus"
                     onClick={handleIncrement}
+                    disabled={displayCount >= 500}
                     aria-label={t('price_stepper_plus')}
                   >
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">

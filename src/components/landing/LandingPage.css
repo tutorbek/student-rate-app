@@ -1521,94 +1521,6 @@ html[data-theme="dark"] .landing-root .nav-lang-item.active,
     font-size: 0.88rem;
     line-height: 1.4;
   }
-
-  /* Price Section mobile layout */
-  .landing-root .price-sc {
-    padding: 3rem var(--px);
-    text-align: center;
-  }
-
-  .landing-root .price-head {
-    text-align: center;
-    margin-bottom: 0.5rem;
-  }
-
-  .landing-root .price-horizontal-card {
-    border-radius: 18px;
-    grid-template-columns: 1fr;
-    box-shadow: 0 10px 30px -8px rgba(15, 23, 42, 0.08);
-  }
-
-  .landing-root .price-calc-col {
-    padding: 1.25rem 1.15rem;
-    gap: 1rem;
-    text-align: left;
-    border-bottom: 1px solid rgba(0, 0, 0, 0.08);
-  }
-
-  .landing-root .price-main-display {
-    justify-content: flex-start;
-  }
-
-  .landing-root .price-amount {
-    font-size: 2.75rem;
-  }
-
-  .landing-root .price-calc-breakdown {
-    text-align: left;
-    font-size: 0.82rem;
-    background: rgba(0, 0, 0, 0.03);
-    padding: 8px 12px;
-    border-radius: 10px;
-    border: 1px solid rgba(0, 0, 0, 0.05);
-  }
-
-  .landing-root .price-stepper-box {
-    padding: 10px 12px;
-    border-radius: 12px;
-  }
-
-  .landing-root .price-stepper-label {
-    font-size: 0.9rem;
-    text-align: left;
-  }
-
-  .landing-root .price-stepper-label small {
-    text-align: left;
-  }
-
-  .landing-root .price-primary-btn {
-    width: 100%;
-    padding: 12px 20px;
-    font-size: 0.95rem;
-  }
-
-  .landing-root .price-features-col {
-    padding: 1.25rem 1.15rem;
-    text-align: left;
-    gap: 0.85rem;
-  }
-
-  .landing-root .price-features-title {
-    font-size: 1.15rem;
-    text-align: left;
-  }
-
-  .landing-root .price-features-sub {
-    font-size: 0.82rem;
-    text-align: left;
-  }
-
-  .landing-root .price-features-list {
-    gap: 0.65rem;
-    text-align: left;
-  }
-
-  .landing-root .price-feature-item {
-    font-size: 0.82rem;
-    line-height: 1.38;
-    text-align: left;
-  }
 }
 
 /* fork / audience (Designed for tutors of all kinds) */
@@ -2191,7 +2103,7 @@ html[data-theme="dark"] .landing-root .nav-lang-item.active,
 
 @media (min-width: 860px) {
   .landing-root .price-horizontal-card {
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   }
 }
 
@@ -2205,6 +2117,8 @@ html[data-theme="dark"] .landing-root .nav-lang-item.active,
   gap: clamp(0.75rem, 1.6vh, 1.15rem);
   border-bottom: 1px solid rgba(0, 0, 0, 0.06);
   box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
 }
 
 @media (min-width: 860px) {
@@ -2266,6 +2180,9 @@ html[data-theme="dark"] .landing-root .nav-lang-item.active,
   line-height: 1.35;
   color: #475569;
   margin: 0;
+  box-sizing: border-box;
+  width: 100%;
+  word-break: break-word;
 }
 
 .landing-root .price-calc-breakdown b {
@@ -2282,6 +2199,8 @@ html[data-theme="dark"] .landing-root .nav-lang-item.active,
   flex-direction: column;
   gap: 8px;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.02);
+  box-sizing: border-box;
+  width: 100%;
 }
 
 .landing-root .price-stepper-label {
@@ -2307,11 +2226,15 @@ html[data-theme="dark"] .landing-root .nav-lang-item.active,
   display: flex;
   align-items: center;
   gap: 10px;
+  box-sizing: border-box;
+  width: 100%;
 }
 
 .landing-root .price-step-btn {
   width: 38px;
   height: 38px;
+  flex-shrink: 0;
+  box-sizing: border-box;
   border-radius: 10px;
   border: 1.5px solid #E2E8F0;
   background: #F8FAFC;
@@ -2336,7 +2259,9 @@ html[data-theme="dark"] .landing-root .nav-lang-item.active,
 }
 
 .landing-root .price-step-input {
-  flex: 1;
+  flex: 1 1 0%;
+  min-width: 0;
+  width: 100%;
   height: 38px;
   border: 1.5px solid #E2E8F0;
   border-radius: 10px;
@@ -2359,6 +2284,8 @@ html[data-theme="dark"] .landing-root .nav-lang-item.active,
   display: flex;
   flex-direction: column;
   gap: 8px;
+  box-sizing: border-box;
+  width: 100%;
 }
 
 .landing-root .price-primary-btn {
@@ -2374,7 +2301,9 @@ html[data-theme="dark"] .landing-root .nav-lang-item.active,
   border-radius: 999px;
   text-decoration: none;
   cursor: pointer;
-  transition: background-color 0.2s ease;
+  box-sizing: border-box;
+  width: 100%;
+  transition: background-color 0.15s ease;
 }
 
 .landing-root .price-primary-btn:hover {
@@ -2397,6 +2326,8 @@ html[data-theme="dark"] .landing-root .nav-lang-item.active,
   justify-content: flex-start;
   gap: 0.85rem;
   box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
   text-align: left;
 }
 
@@ -2464,6 +2395,103 @@ html[data-theme="dark"] .landing-root .nav-lang-item.active,
 
 .landing-root .price-feature-desc {
   color: #475569;
+}
+
+@media (max-width: 799px) {
+  .landing-root .price-sc {
+    padding: 3rem var(--px);
+    text-align: center;
+  }
+
+  .landing-root .price-head {
+    text-align: center;
+    margin-bottom: 0.5rem;
+  }
+
+  .landing-root .price-horizontal-card {
+    border-radius: 18px;
+    grid-template-columns: 1fr;
+    box-shadow: 0 10px 30px -8px rgba(15, 23, 42, 0.08);
+  }
+
+  .landing-root .price-calc-col {
+    padding: 1.25rem 1.15rem;
+    gap: 1rem;
+    text-align: left;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+    border-right: none;
+  }
+
+  .landing-root .price-main-display {
+    justify-content: flex-start;
+  }
+
+  .landing-root .price-amount {
+    font-size: 2.75rem;
+  }
+
+  .landing-root .price-calc-breakdown {
+    text-align: left;
+    font-size: 0.82rem;
+    background: rgba(0, 0, 0, 0.03);
+    padding: 8px 12px;
+    border-radius: 10px;
+    border: 1px solid rgba(0, 0, 0, 0.05);
+    box-sizing: border-box;
+    width: 100%;
+  }
+
+  .landing-root .price-stepper-box {
+    padding: 10px 12px;
+    border-radius: 12px;
+    box-sizing: border-box;
+    width: 100%;
+  }
+
+  .landing-root .price-stepper-label {
+    font-size: 0.9rem;
+    text-align: left;
+  }
+
+  .landing-root .price-stepper-label small {
+    text-align: left;
+  }
+
+  .landing-root .price-primary-btn {
+    width: 100%;
+    padding: 12px 20px;
+    font-size: 0.95rem;
+    box-sizing: border-box;
+  }
+
+  .landing-root .price-features-col {
+    padding: 1.25rem 1.15rem;
+    text-align: left;
+    gap: 0.85rem;
+    box-sizing: border-box;
+    width: 100%;
+  }
+
+  .landing-root .price-features-title {
+    font-size: 1.15rem;
+    text-align: left;
+  }
+
+  .landing-root .price-features-sub {
+    font-size: 0.82rem;
+    text-align: left;
+  }
+
+  .landing-root .price-features-list {
+    gap: 0.65rem;
+    text-align: left;
+  }
+
+  .landing-root .price-feature-item {
+    font-size: 0.82rem;
+    line-height: 1.38;
+    text-align: left;
+  }
 }
 
 .landing-root .tq {
