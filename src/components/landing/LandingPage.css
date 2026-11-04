@@ -38,7 +38,7 @@ html.landing-page-active {
   touch-action: manipulation;
 }
 
-.landing-root button {
+.landing-root button:not(.login-submit-btn):not(.login-google-btn) {
   font: inherit;
   color: inherit;
   background: none;
@@ -634,6 +634,95 @@ html[data-theme="dark"] .landing-root .nav-lang-item.active,
 [data-theme="dark"] .landing-root .nav-lang-item.active {
   background: #0171E3;
   color: #FFFFFF;
+}
+
+/* Login Page Action Buttons */
+.landing-root .login-submit-btn,
+.login-root .login-submit-btn {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 100% !important;
+  height: 48px !important;
+  padding: 0 24px !important;
+  border-radius: 9999px !important;
+  background: #0171E3 !important;
+  background-color: #0171E3 !important;
+  color: #FFFFFF !important;
+  border: 1px solid rgba(255, 255, 255, 0.15) !important;
+  font-family: inherit !important;
+  font-size: 14px !important;
+  font-weight: 600 !important;
+  cursor: pointer !important;
+  transition: background-color 150ms ease, border-color 150ms ease !important;
+  text-decoration: none !important;
+  box-sizing: border-box !important;
+}
+
+.landing-root .login-submit-btn:hover:not(:disabled),
+.login-root .login-submit-btn:hover:not(:disabled) {
+  background: #0077ED !important;
+  background-color: #0077ED !important;
+}
+
+.landing-root .login-submit-btn:active:not(:disabled),
+.login-root .login-submit-btn:active:not(:disabled) {
+  background: #01468E !important;
+  background-color: #01468E !important;
+}
+
+.landing-root .login-submit-btn:disabled,
+.login-root .login-submit-btn:disabled {
+  opacity: 0.6 !important;
+  cursor: not-allowed !important;
+}
+
+.landing-root .login-google-btn,
+.login-root .login-google-btn {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 12px !important;
+  width: 100% !important;
+  height: 48px !important;
+  padding: 0 16px !important;
+  border-radius: 9999px !important;
+  background: #FFFFFF !important;
+  background-color: #FFFFFF !important;
+  color: #1D1D1F !important;
+  border: 1px solid rgba(0, 0, 0, 0.15) !important;
+  font-family: inherit !important;
+  font-size: 14px !important;
+  font-weight: 500 !important;
+  cursor: pointer !important;
+  transition: background-color 150ms ease !important;
+  box-sizing: border-box !important;
+}
+
+.landing-root .login-google-btn:hover,
+.login-root .login-google-btn:hover {
+  background: rgba(0, 0, 0, 0.04) !important;
+  background-color: rgba(0, 0, 0, 0.04) !important;
+}
+
+.landing-root .login-google-btn:active,
+.login-root .login-google-btn:active {
+  background: rgba(0, 0, 0, 0.08) !important;
+  background-color: rgba(0, 0, 0, 0.08) !important;
+}
+
+html[data-theme="dark"] .landing-root .login-google-btn,
+html[data-theme="dark"] .login-root .login-google-btn {
+  background: #1C1C1E !important;
+  background-color: #1C1C1E !important;
+  color: #FFFFFF !important;
+  border: 1px solid rgba(255, 255, 255, 0.15) !important;
+}
+
+html[data-theme="dark"] .landing-root .login-google-btn:hover,
+html[data-theme="dark"] .login-root .login-google-btn:hover {
+  background: rgba(255, 255, 255, 0.08) !important;
+  background-color: rgba(255, 255, 255, 0.08) !important;
 }
 
 

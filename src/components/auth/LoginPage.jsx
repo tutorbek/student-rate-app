@@ -277,7 +277,11 @@ export default function LoginPage({
             <button
               type="submit"
               disabled={loginLoading}
-              className="w-full h-12 px-6 rounded-full bg-[#0171E3] hover:bg-[#0077ED] active:bg-[#01468E] text-white border border-transparent transition-colors duration-150 flex items-center justify-center cursor-pointer font-semibold text-sm mt-2 disabled:opacity-60 disabled:cursor-not-allowed"
+              className="login-submit-btn w-full h-12 px-6 rounded-full flex items-center justify-center font-semibold text-sm mt-2 disabled:opacity-60 disabled:cursor-not-allowed"
+              style={{
+                backgroundColor: '#0171E3',
+                color: '#FFFFFF',
+              }}
             >
               <span>
                 {loginLoading ? t('login_btn_loading') : t('login_btn_submit')}
@@ -296,7 +300,7 @@ export default function LoginPage({
             <button
               type="button"
               onClick={handleGoogleLogin}
-              className="group w-full h-12 px-4 rounded-full bg-white dark:bg-[#1C1C1E] text-[var(--text-primary)] border border-black/12 dark:border-white/15 hover:bg-black/[0.03] dark:hover:bg-white/[0.05] transition-all duration-200 flex items-center justify-center gap-3 cursor-pointer shadow-xs active:scale-[0.99] font-medium text-sm"
+              className="login-google-btn w-full h-12 px-4 rounded-full flex items-center justify-center gap-3 cursor-pointer font-medium text-sm"
             >
               <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true" className="shrink-0">
                 <path

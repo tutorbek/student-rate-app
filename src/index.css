@@ -2388,6 +2388,85 @@ button:focus-visible, a:focus-visible, [role="button"]:focus-visible {
   position: relative;
 }
 
+.login-submit-btn {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 100% !important;
+  height: 48px !important;
+  padding: 0 24px !important;
+  border-radius: 9999px !important;
+  background: #0171E3 !important;
+  background-color: #0171E3 !important;
+  color: #FFFFFF !important;
+  border: 1px solid rgba(255, 255, 255, 0.15) !important;
+  font-family: inherit !important;
+  font-size: 14px !important;
+  font-weight: 600 !important;
+  cursor: pointer !important;
+  transition: background-color 150ms ease, border-color 150ms ease !important;
+  text-decoration: none !important;
+  box-sizing: border-box !important;
+}
+
+.login-submit-btn:hover:not(:disabled) {
+  background: #0077ED !important;
+  background-color: #0077ED !important;
+}
+
+.login-submit-btn:active:not(:disabled) {
+  background: #01468E !important;
+  background-color: #01468E !important;
+}
+
+.login-submit-btn:disabled {
+  opacity: 0.6 !important;
+  cursor: not-allowed !important;
+}
+
+.login-google-btn {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 12px !important;
+  width: 100% !important;
+  height: 48px !important;
+  padding: 0 16px !important;
+  border-radius: 9999px !important;
+  background: #FFFFFF !important;
+  background-color: #FFFFFF !important;
+  color: #1D1D1F !important;
+  border: 1px solid rgba(0, 0, 0, 0.15) !important;
+  font-family: inherit !important;
+  font-size: 14px !important;
+  font-weight: 500 !important;
+  cursor: pointer !important;
+  transition: background-color 150ms ease !important;
+  box-sizing: border-box !important;
+}
+
+.login-google-btn:hover {
+  background: rgba(0, 0, 0, 0.04) !important;
+  background-color: rgba(0, 0, 0, 0.04) !important;
+}
+
+.login-google-btn:active {
+  background: rgba(0, 0, 0, 0.08) !important;
+  background-color: rgba(0, 0, 0, 0.08) !important;
+}
+
+html[data-theme="dark"] .login-google-btn {
+  background: #1C1C1E !important;
+  background-color: #1C1C1E !important;
+  color: #FFFFFF !important;
+  border: 1px solid rgba(255, 255, 255, 0.15) !important;
+}
+
+html[data-theme="dark"] .login-google-btn:hover {
+  background: rgba(255, 255, 255, 0.08) !important;
+  background-color: rgba(255, 255, 255, 0.08) !important;
+}
+
 
 .landing-root ::selection,
 .landing-root *::selection {
