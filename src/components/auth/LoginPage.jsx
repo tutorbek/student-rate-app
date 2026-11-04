@@ -273,11 +273,11 @@ export default function LoginPage({
               </div>
             )}
 
-            {/* Primary Action Button (Clean, simple white button without effects) */}
+            {/* Primary Action Button (Blue button matching 'Bosh sahifa' style) */}
             <button
               type="submit"
               disabled={loginLoading}
-              className="w-full h-12 px-6 rounded-full bg-white dark:bg-[#1C1C1E] text-[#0D0E03] dark:text-white border border-black/15 dark:border-white/20 hover:bg-black/[0.03] dark:hover:bg-white/[0.06] active:bg-black/[0.06] transition-colors duration-150 flex items-center justify-center cursor-pointer font-semibold text-sm mt-2 disabled:opacity-60 disabled:cursor-not-allowed"
+              className="w-full h-12 px-6 rounded-full bg-[#0171E3] hover:bg-[#0077ED] active:bg-[#01468E] text-white border border-transparent transition-colors duration-150 flex items-center justify-center cursor-pointer font-semibold text-sm mt-2 disabled:opacity-60 disabled:cursor-not-allowed"
             >
               <span>
                 {loginLoading ? t('login_btn_loading') : t('login_btn_submit')}
