@@ -63,14 +63,19 @@ export function syncTelegramMetrics(theme) {
       } else {
         totalHeaderHeight = 52;
       }
+      root.style.setProperty('--student-header-total-height', `${totalHeaderHeight}px`);
     } else {
-      totalHeaderHeight = 52;
+      // In standard browser or iOS standalone PWA (Add to Home Screen),
+      // do not overwrite CSS dynamic calculation with a hardcoded inline value.
+      root.style.removeProperty('--student-header-total-height');
     }
   } else {
-    totalHeaderHeight = 56;
+    if (isFullscreen || isTMA) {
+      root.style.setProperty('--student-header-total-height', `${totalHeaderHeight}px`);
+    } else {
+      root.style.removeProperty('--student-header-total-height');
+    }
   }
-
-  root.style.setProperty('--student-header-total-height', `${totalHeaderHeight}px`);
 
   // Synchronize Telegram native window background and header chrome colors
   if (tg) {

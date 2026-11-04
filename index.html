@@ -16,6 +16,12 @@
           document.documentElement.style.backgroundColor = isDark ? '#202124' : '#F5F5F7';
           document.documentElement.style.colorScheme = theme;
 
+          var isStandalone = window.navigator.standalone === true || 
+                             (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches);
+          if (isStandalone) {
+            document.documentElement.setAttribute('data-standalone', 'true');
+          }
+
           function syncFavicons(currentTheme) {
             var dark = currentTheme === 'dark';
             var cacheTag = dark ? 'dark-v2' : 'light-v2';
@@ -23,6 +29,14 @@
             var icon16Url = dark ? '/favicon-16x16-dark.png' : '/favicon-16x16.png';
             var iconSvgUrl = dark ? '/favicon-dark.svg' : '/favicon.svg';
             var appleUrl = dark ? '/apple-touch-icon-dark.png' : '/apple-touch-icon.png';
+
+            var tc = document.querySelector('meta[name="theme-color"]:not([media])');
+            if (!tc) {
+              tc = document.createElement('meta');
+              tc.setAttribute('name', 'theme-color');
+              document.head.appendChild(tc);
+            }
+            tc.setAttribute('content', dark ? '#202124' : '#F5F5F7');
 
             // Remove existing icon links to force Chromium/WebKit to re-evaluate the tab icon
             var existing = document.querySelectorAll('link[rel*="icon"]');
@@ -138,6 +152,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover, interactive-widget=resizes-content" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="theme-color" content="#F5F5F7" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#202124" media="(prefers-color-scheme: dark)" />
     
     <!-- SEO Meta Teglar -->
     <title>EPCHIL COM - Bilimni Like bilan taqdirlash va faol ta'lim platformasi</title>
