@@ -303,6 +303,43 @@ const TeacherFinanceView = ({ groups = [], students = [], showToast = () => {} }
     return groupsBreakdown.reduce((sum, g) => sum + g.count, 0);
   }, [groupsBreakdown]);
 
+  const allActiveStudents = useMemo(() => {
+    const groupMap = new Map();
+    activeGroups.forEach((g) => groupMap.set(g.id, g));
+
+    return students
+      .filter((s) => !s.deleted)
+      .map((s) => {
+        const grp = s.groupId ? groupMap.get(s.groupId) : null;
+        return {
+          ...s,
+          group: grp || null,
+          groupName: grp ? grp.name : '',
+          groupCategory: grp ? getGroupCategory(grp) : null,
+        };
+      })
+      .sort((a, b) => (a.name || '').localeCompare(b.name || '', 'uz', { numeric: true, sensitivity: 'base' }));
+  }, [students, activeGroups]);
+
+  const [studentFilterSearch, setStudentFilterSearch] = useState('');
+  const [studentGroupFilter, setStudentGroupFilter] = useState('all');
+
+  const displayedAllStudents = useMemo(() => {
+    return allActiveStudents.filter((s) => {
+      if (studentGroupFilter !== 'all' && s.groupId !== studentGroupFilter) {
+        return false;
+      }
+      if (studentFilterSearch.trim()) {
+        const q = studentFilterSearch.toLowerCase().trim();
+        const matchName = (s.name || '').toLowerCase().includes(q);
+        const matchPhone = (s.phone || '').toLowerCase().includes(q);
+        const matchGroup = (s.groupName || '').toLowerCase().includes(q);
+        if (!matchName && !matchPhone && !matchGroup) return false;
+      }
+      return true;
+    });
+  }, [allActiveStudents, studentGroupFilter, studentFilterSearch]);
+
   const isAnyModalOpen = Boolean(calPickerTarget || selectedCalcGroupId);
   useModalDismiss(isAnyModalOpen, () => {
     if (calPickerTarget) {
@@ -610,59 +647,171 @@ const TeacherFinanceView = ({ groups = [], students = [], showToast = () => {} }
             </div>
           </section>
 
-          {/* 2. Real Guruhlar Bo'yicha Minimalist Ro'yxat */}
-          {activeGroups.length > 0 && (
-            <section className="glass-card calc-groups-card">
-              <div className="card-header-flex calc-groups-head">
-                <div>
-                  <h4 className="card-title" style={{ fontSize: '1.05rem', margin: 0 }}>Guruhlar bo'yicha</h4>
-                  <span className="calc-groups-head-sub">{activeGroups.length} ta guruh</span>
-                </div>
-                <span className="calc-groups-count-badge">{totalGroupsStudents} ta o'quvchi</span>
-              </div>
+          {/* 2. Guruhlar va Studentlar Bo'yicha Taqsimot Paneli */}
+          {(activeGroups.length > 0 || allActiveStudents.length > 0) && (
+            <div className="calc-breakdown-grid">
+              {/* Guruhlar bo'yicha */}
+              {activeGroups.length > 0 && (
+                <section className="glass-card calc-groups-card">
+                  <div className="card-header-flex calc-groups-head">
+                    <div>
+                      <h4 className="card-title" style={{ fontSize: '1.05rem', margin: 0 }}>Guruhlar bo'yicha</h4>
+                      <span className="calc-groups-head-sub">{activeGroups.length} ta guruh</span>
+                    </div>
+                    <span className="calc-groups-count-badge">{totalGroupsStudents} ta o'quvchi</span>
+                  </div>
 
-              <div className="calc-groups-table">
-                {groupsBreakdown.map((grp) => (
-                  <div
-                    key={grp.id}
-                    className="calc-group-row scale-active"
-                    onClick={() => {
-                      setSelectedCalcGroupId(grp.id);
-                      setCalcGroupStudentSearch('');
-                    }}
-                    role="button"
-                    tabIndex={0}
-                  >
-                    <div className="calc-group-row-left">
-                      <div className="calc-group-row-icon avatar-circle">
-                        {renderGroupIcon(grp.icon, 18)}
-                      </div>
-                      <div className="calc-group-row-info">
-                        <div className="calc-group-row-name-wrap">
-                          <span className="calc-group-row-name">{grp.name}</span>
-                          <span className={`group-category-pill group-category-${grp.category}`}>
-                            {grp.category === 'kids' ? 'Kids' : 'Teens'}
+                  <div className="calc-groups-table">
+                    {groupsBreakdown.map((grp) => (
+                      <div
+                        key={grp.id}
+                        className="calc-group-row scale-active"
+                        onClick={() => {
+                          setSelectedCalcGroupId(grp.id);
+                          setCalcGroupStudentSearch('');
+                        }}
+                        role="button"
+                        tabIndex={0}
+                      >
+                        <div className="calc-group-row-left">
+                          <div className="calc-group-row-icon avatar-circle">
+                            {renderGroupIcon(grp.icon, 18)}
+                          </div>
+                          <div className="calc-group-row-info">
+                            <div className="calc-group-row-name-wrap">
+                              <span className="calc-group-row-name">{grp.name}</span>
+                              <span className={`group-category-pill group-category-${grp.category}`}>
+                                {grp.category === 'kids' ? 'Kids' : 'Teens'}
+                              </span>
+                            </div>
+                            <span className="calc-group-row-count">{grp.count} ta o'quvchi</span>
+                          </div>
+                        </div>
+
+                        <div className="calc-group-row-right">
+                          <div className="calc-group-row-amounts">
+                            <span className="calc-group-row-gross">{formatMoneyUz(grp.gross)}</span>
+                            <span className="calc-group-row-share">+{formatMoneyUz(grp.teacherShare)}</span>
+                          </div>
+                          <span className="calc-group-row-arrow">
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+                              <polyline points="9 18 15 12 9 6" />
+                            </svg>
                           </span>
                         </div>
-                        <span className="calc-group-row-count">{grp.count} ta o'quvchi</span>
                       </div>
-                    </div>
-
-                    <div className="calc-group-row-right">
-                      <div className="calc-group-row-amounts">
-                        <span className="calc-group-row-gross">{formatMoneyUz(grp.gross)}</span>
-                        <span className="calc-group-row-share">+{formatMoneyUz(grp.teacherShare)}</span>
-                      </div>
-                      <span className="calc-group-row-arrow">
-                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
-                          <polyline points="9 18 15 12 9 6" />
-                        </svg>
-                      </span>
-                    </div>
+                    ))}
                   </div>
-                ))}
-              </div>
-            </section>
+                </section>
+              )}
+
+              {/* Studentlar bo'yicha */}
+              {allActiveStudents.length > 0 && (
+                <section className="glass-card calc-students-card">
+                  <div className="card-header-flex calc-groups-head">
+                    <div>
+                      <h4 className="card-title" style={{ fontSize: '1.05rem', margin: 0 }}>Studentlar bo'yicha</h4>
+                      <span className="calc-groups-head-sub">{allActiveStudents.length} ta o'quvchi</span>
+                    </div>
+                    <span className="calc-groups-count-badge">+{formatMoneyUz(displayedAllStudents.length * perStudentTeacherShare)}</span>
+                  </div>
+
+                  {/* Qidiruv */}
+                  <div className="calc-student-search-wrap">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                      <circle cx="11" cy="11" r="8" />
+                      <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                    </svg>
+                    <input
+                      type="text"
+                      className="calc-student-search-input"
+                      placeholder="O'quvchini qidirish..."
+                      value={studentFilterSearch}
+                      onChange={(e) => setStudentFilterSearch(e.target.value)}
+                    />
+                    {studentFilterSearch && (
+                      <button
+                        type="button"
+                        className="calc-student-search-clear"
+                        onClick={() => setStudentFilterSearch('')}
+                        aria-label="Tozalash"
+                      >
+                        ×
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Guruh chiplari */}
+                  {activeGroups.length > 1 && (
+                    <div className="calc-filter-chips">
+                      <button
+                        type="button"
+                        className={`calc-filter-chip ${studentGroupFilter === 'all' ? 'active' : ''}`}
+                        onClick={() => setStudentGroupFilter('all')}
+                      >
+                        Barchasi ({allActiveStudents.length})
+                      </button>
+                      {activeGroups.map((g) => (
+                        <button
+                          key={g.id}
+                          type="button"
+                          className={`calc-filter-chip ${studentGroupFilter === g.id ? 'active' : ''}`}
+                          onClick={() => setStudentGroupFilter(g.id)}
+                        >
+                          {g.name}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* O'quvchilar ro'yxati */}
+                  <div className="calc-students-table">
+                    {displayedAllStudents.length > 0 ? (
+                      displayedAllStudents.map((st, idx) => (
+                        <div
+                          key={st.id}
+                          className="calc-student-item-row"
+                          onClick={() => {
+                            if (st.groupId) {
+                              setSelectedCalcGroupId(st.groupId);
+                              setCalcGroupStudentSearch(st.name);
+                            }
+                          }}
+                          role="button"
+                          tabIndex={0}
+                        >
+                          <div className="calc-student-item-left">
+                            <span className="calc-student-item-idx">{idx + 1}.</span>
+                            <div className="calc-student-item-avatar avatar-circle">
+                              {renderAvatar(st.emoji, 32)}
+                            </div>
+                            <div className="calc-student-item-info">
+                              <div className="calc-student-item-name-wrap">
+                                <span className="calc-student-item-name">{st.name}</span>
+                                {st.groupName && (
+                                  <span className={`group-category-pill group-category-${st.groupCategory || 'teens'}`}>
+                                    {st.groupName}
+                                  </span>
+                                )}
+                              </div>
+                              {st.phone && <span className="calc-student-item-sub">{st.phone}</span>}
+                            </div>
+                          </div>
+                          <div className="calc-student-item-right">
+                            <span className="calc-student-item-gross">{formatMoneyUz(calcPricePerStudent)}</span>
+                            <span className="calc-student-item-share">+{formatMoneyUz(perStudentTeacherShare)}</span>
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="calc-students-empty-inline">
+                        O'quvchi topilmadi
+                      </div>
+                    )}
+                  </div>
+                </section>
+              )}
+            </div>
           )}
 
       {/* MODAL 7: Kalkulyator Guruh O'quvchilari Ro'yxati */}
