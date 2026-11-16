@@ -61,7 +61,11 @@ const IconX = ({ size = 15, strokeWidth = 2.2 }) => (
 );
 
 const TeacherFinanceView = ({ groups = [], students = [], showToast = () => {} }) => {
-  const activeGroups = useMemo(() => groups.filter((g) => !g.deleted), [groups]);
+  const activeGroups = useMemo(() => {
+    return groups
+      .filter((g) => !g.deleted)
+      .sort((a, b) => (a.name || '').localeCompare(b.name || '', 'uz', { numeric: true, sensitivity: 'base' }));
+  }, [groups]);
   const activeStudentsCount = useMemo(() => students.filter((s) => !s.deleted).length, [students]);
 
   const [calcStudentCount, setCalcStudentCount] = useState(() => {
@@ -305,7 +309,11 @@ const TeacherFinanceView = ({ groups = [], students = [], showToast = () => {} }
 
   const allActiveStudents = useMemo(() => {
     const groupMap = new Map();
-    activeGroups.forEach((g) => groupMap.set(g.id, g));
+    const groupIndexMap = new Map();
+    activeGroups.forEach((g, idx) => {
+      groupMap.set(g.id, g);
+      groupIndexMap.set(g.id, idx);
+    });
 
     return students
       .filter((s) => !s.deleted)
@@ -316,9 +324,15 @@ const TeacherFinanceView = ({ groups = [], students = [], showToast = () => {} }
           group: grp || null,
           groupName: grp ? grp.name : '',
           groupCategory: grp ? getGroupCategory(grp) : null,
+          groupOrder: s.groupId && groupIndexMap.has(s.groupId) ? groupIndexMap.get(s.groupId) : 9999,
         };
       })
-      .sort((a, b) => (a.name || '').localeCompare(b.name || '', 'uz', { numeric: true, sensitivity: 'base' }));
+      .sort((a, b) => {
+        if (a.groupOrder !== b.groupOrder) {
+          return a.groupOrder - b.groupOrder;
+        }
+        return (a.name || '').localeCompare(b.name || '', 'uz', { numeric: true, sensitivity: 'base' });
+      });
   }, [students, activeGroups]);
 
   const [studentFilterSearch, setStudentFilterSearch] = useState('');
