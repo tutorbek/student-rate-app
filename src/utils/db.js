@@ -133,6 +133,71 @@ export const getEndOfLastMonth = () => {
   return new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59, 999);
 };
 
+// Helper: Get Local Date String in YYYY-MM-DD format
+export const getLocalDateString = (date = new Date()) => {
+  const d = date instanceof Date ? date : new Date(date);
+  if (Number.isNaN(d.getTime())) {
+    const now = new Date();
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+  }
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+};
+
+// Helper: Validate and normalize a group start date into YYYY-MM-DD
+export const sanitizeGroupStartDate = (value) => {
+  if (!value) return null;
+  if (value instanceof Date) {
+    return Number.isNaN(value.getTime()) ? null : getLocalDateString(value);
+  }
+  const str = String(value).trim();
+  if (!str) return null;
+
+  const ymdMatch = str.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (ymdMatch) {
+    const year = Number(ymdMatch[1]);
+    const month = Number(ymdMatch[2]);
+    const day = Number(ymdMatch[3]);
+    const check = new Date(year, month - 1, day);
+    if (
+      check.getFullYear() === year &&
+      check.getMonth() === month - 1 &&
+      check.getDate() === day
+    ) {
+      return `${ymdMatch[1]}-${ymdMatch[2]}-${ymdMatch[3]}`;
+    }
+    return null;
+  }
+
+  const parsed = new Date(str);
+  if (!Number.isNaN(parsed.getTime())) {
+    return getLocalDateString(parsed);
+  }
+  return null;
+};
+
+// Helper: Get group's lesson start date (falls back to createdAt for legacy groups)
+export const getGroupStartDate = (group) => {
+  if (!group) return null;
+  return sanitizeGroupStartDate(group.startDate) || sanitizeGroupStartDate(group.createdAt);
+};
+
+// Helper: Format YYYY-MM-DD as DD.MM.YYYY
+export const formatGroupStartDate = (dateStr) => {
+  const clean = sanitizeGroupStartDate(dateStr);
+  if (!clean) return null;
+  const [year, month, day] = clean.split('-');
+  return `${day}.${month}.${year}`;
+};
+
+// Helper: Format YYYY-MM-DD as "18 Noyabr 2026"
+export const formatGroupStartDateLong = (dateStr) => {
+  const clean = sanitizeGroupStartDate(dateStr);
+  if (!clean) return null;
+  const [year, month, day] = clean.split('-');
+  const monthName = UZ_MONTHS[Number(month) - 1] || month;
+  return `${Number(day)} ${monthName} ${year}`;
+};
+
 // Helper: Get Group Category ('kids' | 'teens') with backward compatibility
 export const getGroupCategory = (group) => {
   if (!group) return 'teens';
@@ -144,7 +209,7 @@ export const getGroupCategory = (group) => {
 };
 
 // --- Groups API ---
-export const addGroup = (groups, name, icon, password, color, schedule = null, category = 'teens') => {
+export const addGroup = (groups, name, icon, password, color, schedule = null, category = 'teens', startDate = undefined) => {
   const newGroup = {
     id: generateId(),
     name: name.trim(),
@@ -153,13 +218,14 @@ export const addGroup = (groups, name, icon, password, color, schedule = null, c
     color: color || '#FFFFFF',
     schedule: schedule || null,
     category: category === 'kids' ? 'kids' : 'teens',
+    startDate: sanitizeGroupStartDate(startDate) || getLocalDateString(),
     createdAt: new Date().toISOString(),
   };
   const updatedGroups = [...groups, newGroup];
   return { newGroup, updatedGroups };
 };
 
-export const updateGroup = (groups, groupId, newName, newIcon, newPassword, newColor, newSchedule, newCategory) => {
+export const updateGroup = (groups, groupId, newName, newIcon, newPassword, newColor, newSchedule, newCategory, newStartDate = undefined) => {
   let updatedGroup = null;
   const updatedGroups = groups.map((g) => {
     if (g.id === groupId) {
@@ -171,6 +237,7 @@ export const updateGroup = (groups, groupId, newName, newIcon, newPassword, newC
         color: newColor !== undefined ? newColor : (g.color || '#FFFFFF'),
         schedule: newSchedule !== undefined ? newSchedule : (g.schedule || null),
         category: newCategory !== undefined ? (newCategory === 'kids' ? 'kids' : 'teens') : (g.category || getGroupCategory(g)),
+        startDate: newStartDate !== undefined ? sanitizeGroupStartDate(newStartDate) : g.startDate,
       };
       return updatedGroup;
     }

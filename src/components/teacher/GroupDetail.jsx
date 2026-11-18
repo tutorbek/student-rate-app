@@ -1,6 +1,14 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { getStudentScore, normalizeQuickTags, getGroupCategory } from '../../utils/db';
+import {
+  getStudentScore,
+  normalizeQuickTags,
+  getGroupCategory,
+  getGroupStartDate,
+  formatGroupStartDate,
+  formatGroupStartDateLong,
+  getLocalDateString,
+} from '../../utils/db';
 import { renderGroupIcon } from '../../utils/groupIcons';
 import { STUDENT_AVATARS, renderStudentAvatar as renderAvatar } from '../../utils/studentAvatars';
 import { AVATAR_GALLERY_IMAGES, isGalleryImage, compressUploadedImage } from '../../utils/avatarGallery';
@@ -153,6 +161,20 @@ const IconCalendar = ({ size = 14, strokeWidth = 2 }) => (
   </svg>
 );
 
+const IconStartDate = ({ size = 14, strokeWidth = 2 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round">
+    <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z" />
+    <line x1="4" y1="22" x2="4" y2="15" />
+  </svg>
+);
+
+const IconEditPencil = ({ size = 12, strokeWidth = 2.1 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round">
+    <path d="M12 20h9" />
+    <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
+  </svg>
+);
+
 const WEEKDAY_ORDER = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
 
 const SCHEDULE_DAY_LABELS = {
@@ -218,6 +240,13 @@ const GroupDetail = ({ group, allGroups = [], students, transactions, quickTags,
   const [showCategoryModal, setShowCategoryModal] = useState(false);
   const [modalCategoryValue, setModalCategoryValue] = useState('teens');
 
+  const [showStartDateModal, setShowStartDateModal] = useState(false);
+  const [modalStartDate, setModalStartDate] = useState('');
+
+  const groupStartDate = useMemo(() => getGroupStartDate(group), [group]);
+  const formattedStartDate = useMemo(() => formatGroupStartDate(groupStartDate), [groupStartDate]);
+  const canEditStartDate = userRole === 'teacher' && Boolean(onUpdateGroup);
+
   const handleOpenCategoryModal = () => {
     setModalCategoryValue(group.category || getGroupCategory(group));
     setShowCategoryModal(true);
@@ -237,6 +266,35 @@ const GroupDetail = ({ group, allGroups = [], students, transactions, quickTags,
     if (success) {
       setShowCategoryModal(false);
       showToast("Guruh toifasi muvaffaqiyatli yangilandi!", "success");
+    }
+  };
+
+  const handleOpenStartDateModal = () => {
+    if (!canEditStartDate) return;
+    setModalStartDate(groupStartDate || getLocalDateString());
+    setShowStartDateModal(true);
+  };
+
+  const handleSaveStartDateModal = async (e) => {
+    if (e) e.preventDefault();
+    if (!onUpdateGroup) return;
+    if (!modalStartDate) {
+      showToast("Dars boshlangan sanani tanlang!", "error");
+      return;
+    }
+    const success = await onUpdateGroup(
+      group.id,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      modalStartDate
+    );
+    if (success) {
+      setShowStartDateModal(false);
+      showToast("Dars boshlangan sana muvaffaqiyatli yangilandi!", "success");
     }
   };
 
@@ -291,12 +349,15 @@ const GroupDetail = ({ group, allGroups = [], students, transactions, quickTags,
     profileStudent ||
     editingStudent ||
     transferringStudent ||
-    showCategoryModal
+    showCategoryModal ||
+    showStartDateModal
   );
 
   useModalDismiss(isAnyGroupDetailModalOpen, () => {
     if (confirmDeleteId) {
       setConfirmDeleteId(null);
+    } else if (showStartDateModal) {
+      setShowStartDateModal(false);
     } else if (showCategoryModal) {
       setShowCategoryModal(false);
     } else if (transferringStudent) {
@@ -569,6 +630,37 @@ const GroupDetail = ({ group, allGroups = [], students, transactions, quickTags,
                     </span>
                   )}
                 </div>
+
+                <span className="meta-separator" style={{ color: 'var(--border-color)', fontSize: '0.85rem', userSelect: 'none' }}>•</span>
+                {canEditStartDate ? (
+                  <button
+                    type="button"
+                    className="group-meta-item group-start-date-btn"
+                    onClick={handleOpenStartDateModal}
+                    title="Dars boshlangan sanani o'zgartirish"
+                  >
+                    <IconStartDate size={14} />
+                    <span>
+                      Boshlangan:{' '}
+                      <strong className={formattedStartDate ? 'group-start-date-val' : 'group-start-date-empty'}>
+                        {formattedStartDate || "Belgilanmagan"}
+                      </strong>
+                    </span>
+                    <span className="group-start-date-edit-icon" aria-hidden="true">
+                      <IconEditPencil size={12} />
+                    </span>
+                  </button>
+                ) : (
+                  <div className="group-meta-item group-start-date-static">
+                    <IconStartDate size={14} />
+                    <span>
+                      Boshlangan:{' '}
+                      <strong className={formattedStartDate ? 'group-start-date-val' : 'group-start-date-empty'}>
+                        {formattedStartDate || "Belgilanmagan"}
+                      </strong>
+                    </span>
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -1679,6 +1771,67 @@ const GroupDetail = ({ group, allGroups = [], students, transactions, quickTags,
                 Saqlash
               </button>
             </div>
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {/* Lesson Start Date Edit Modal */}
+      {showStartDateModal && createPortal(
+        <div className="modal-overlay" onClick={() => setShowStartDateModal(false)}>
+          <div className="modal-content modal-confirm" onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true" aria-labelledby="start-date-modal-title">
+            <button
+              type="button"
+              className="modal-close-btn"
+              onClick={() => setShowStartDateModal(false)}
+              aria-label="Yopish"
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18" />
+                <line x1="6" y1="6" x2="18" y2="18" />
+              </svg>
+            </button>
+            <h3 id="start-date-modal-title" className="modal-title">Dars boshlangan sana</h3>
+            <p className="start-date-modal-desc">
+              <strong>{group.name}</strong> guruhiga dars qachon boshlanganini belgilang:
+            </p>
+
+            <form onSubmit={handleSaveStartDateModal}>
+              <div className="form-group" style={{ marginBottom: 0 }}>
+                <label className="form-label" htmlFor="group-start-date-picker">Boshlangan sana</label>
+                <div className="start-date-input-row">
+                  <input
+                    id="group-start-date-picker"
+                    type="date"
+                    className="form-input group-start-date-input"
+                    value={modalStartDate}
+                    onChange={(e) => setModalStartDate(e.target.value)}
+                    required
+                  />
+                  <button
+                    type="button"
+                    className="btn btn-secondary btn-sm start-date-today-btn"
+                    onClick={() => setModalStartDate(getLocalDateString())}
+                  >
+                    Bugun
+                  </button>
+                </div>
+                {modalStartDate && (
+                  <span className="start-date-preview-text">
+                    Tanlangan sana: <strong>{formatGroupStartDateLong(modalStartDate) || modalStartDate}</strong>
+                  </span>
+                )}
+              </div>
+
+              <div className="modal-actions" style={{ marginTop: '20px' }}>
+                <button type="button" className="btn btn-secondary" onClick={() => setShowStartDateModal(false)}>
+                  Bekor qilish
+                </button>
+                <button type="submit" className="btn btn-primary">
+                  Saqlash
+                </button>
+              </div>
+            </form>
           </div>
         </div>,
         document.body
@@ -3189,6 +3342,106 @@ const GroupDetail = ({ group, allGroups = [], students, transactions, quickTags,
         [data-theme="dark"] .teacher-pin-detail-card.is-open .teacher-pin-detail-icon-wrap {
           background: rgba(255, 255, 255, 0.06);
           color: #9AA0A6;
+        }
+
+        /* Group Lesson Start Date Meta Badge & Modal */
+        .group-start-date-btn,
+        .group-start-date-static {
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          font-size: 0.85rem;
+          color: var(--text-secondary);
+          font-family: inherit;
+          line-height: 1.3;
+        }
+
+        .group-start-date-btn {
+          background: transparent;
+          border: 1px solid transparent;
+          border-radius: 6px;
+          padding: 2px 7px;
+          margin: -2px -7px;
+          cursor: pointer;
+          transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+        }
+
+        .group-start-date-btn:hover {
+          background: rgba(0, 0, 0, 0.04);
+          border-color: var(--border-color);
+          color: var(--text-primary);
+        }
+
+        .group-start-date-btn:focus-visible {
+          outline: 2px solid var(--accent-blue, #0071E3);
+          outline-offset: 2px;
+        }
+
+        .group-start-date-val {
+          color: var(--text-primary);
+          font-weight: 600;
+        }
+
+        .group-start-date-empty {
+          color: var(--text-tertiary);
+          font-weight: 500;
+        }
+
+        .group-start-date-edit-icon {
+          display: inline-flex;
+          align-items: center;
+          color: var(--text-tertiary);
+          transition: color 0.15s ease;
+        }
+
+        .group-start-date-btn:hover .group-start-date-edit-icon {
+          color: var(--text-primary);
+        }
+
+        .start-date-modal-desc {
+          margin: 0 0 16px 0;
+          font-size: 0.85rem;
+          color: var(--text-secondary);
+        }
+
+        .start-date-input-row {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+        }
+
+        .group-start-date-input {
+          flex: 1;
+          font-family: inherit;
+          color-scheme: light dark;
+        }
+
+        .start-date-today-btn {
+          flex-shrink: 0;
+          white-space: nowrap;
+        }
+
+        .start-date-preview-text {
+          display: block;
+          margin-top: 8px;
+          font-size: 0.78rem;
+          color: var(--text-secondary);
+        }
+
+        .start-date-preview-text strong {
+          color: var(--text-primary);
+        }
+
+        [data-theme="dark"] .group-start-date-btn:hover {
+          background: rgba(255, 255, 255, 0.07);
+          border-color: rgba(255, 255, 255, 0.14);
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+          .group-start-date-btn,
+          .group-start-date-edit-icon {
+            transition: none;
+          }
         }
       `}</style>
     </div>

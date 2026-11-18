@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { generateUniqueGroupPassword, getGroupCategory } from '../../utils/db';
+import { generateUniqueGroupPassword, getGroupCategory, getGroupStartDate, getLocalDateString } from '../../utils/db';
 import { GROUP_SVG_ICONS, GROUP_COLOR_OPTIONS, getGroupColorOption, renderGroupIcon } from '../../utils/groupIcons';
 import { AVATAR_GALLERY_IMAGES, isGalleryImage, compressUploadedImage } from '../../utils/avatarGallery';
 import { markAvatarLoaded } from '../../utils/avatarCache';
@@ -178,6 +178,10 @@ const GroupsList = ({
   const [newGroupCategory, setNewGroupCategory] = useState('teens');
   const [editGroupCategory, setEditGroupCategory] = useState('teens');
 
+  // Lesson start date fields (YYYY-MM-DD)
+  const [newGroupStartDate, setNewGroupStartDate] = useState(() => getLocalDateString());
+  const [editGroupStartDate, setEditGroupStartDate] = useState('');
+
   useEffect(() => {
     if (showAddModal) {
       setNewGroupPassword('Yuklanmoqda...');
@@ -191,6 +195,7 @@ const GroupsList = ({
       setNewGroupEndTime('');
       setNewGroupRoom('');
       setNewGroupCategory('teens');
+      setNewGroupStartDate(getLocalDateString());
     }
   }, [showAddModal]);
 
@@ -198,6 +203,7 @@ const GroupsList = ({
     if (editingGroup) {
       setEditGroupPassword(editingGroup.password || '');
       setEditGroupCategory(editingGroup.category || getGroupCategory(editingGroup));
+      setEditGroupStartDate(getGroupStartDate(editingGroup) || getLocalDateString());
       if (editingGroup.schedule && editingGroup.schedule.startTime) {
         setEditGroupName(editingGroup.name);
         setEditGroupDays(editingGroup.schedule?.days || []);
@@ -253,7 +259,15 @@ const GroupsList = ({
       room: newGroupRoom.trim(),
     } : null;
 
-    const success = await onAddGroup(newGroupName, newGroupIcon, newGroupPassword, newGroupColor, schedule, newGroupCategory);
+    const success = await onAddGroup(
+      newGroupName,
+      newGroupIcon,
+      newGroupPassword,
+      newGroupColor,
+      schedule,
+      newGroupCategory,
+      newGroupStartDate || getLocalDateString()
+    );
     if (success) {
       setNewGroupName('');
       setNewGroupIcon(GROUP_SVG_ICONS[0].id);
@@ -264,6 +278,7 @@ const GroupsList = ({
       setNewGroupEndTime('');
       setNewGroupRoom('');
       setNewGroupCategory('teens');
+      setNewGroupStartDate(getLocalDateString());
       setShowAddModal(false);
       showToast("Yangi guruh muvaffaqiyatli qo'shildi!", "success");
     }
@@ -293,7 +308,16 @@ const GroupsList = ({
       room: editGroupRoom.trim(),
     } : null;
 
-    const success = await onUpdateGroup(editingGroup.id, editGroupName, editGroupIcon, editGroupPassword, editGroupColor, schedule, editGroupCategory);
+    const success = await onUpdateGroup(
+      editingGroup.id,
+      editGroupName,
+      editGroupIcon,
+      editGroupPassword,
+      editGroupColor,
+      schedule,
+      editGroupCategory,
+      editGroupStartDate || undefined
+    );
     if (success) {
       setEditingGroup(null);
       setEditGroupName('');
@@ -305,6 +329,7 @@ const GroupsList = ({
       setEditGroupEndTime('');
       setEditGroupRoom('');
       setEditGroupCategory('teens');
+      setEditGroupStartDate('');
       showToast("Guruh ma'lumotlari yangilandi!", "success");
     }
   };
@@ -568,6 +593,18 @@ const GroupsList = ({
                     Kids
                   </button>
                 </div>
+              </div>
+
+              <div className="form-group">
+                <label className="form-label" htmlFor="new-group-start-date">Dars boshlangan sana</label>
+                <input
+                  id="new-group-start-date"
+                  type="date"
+                  className="form-input"
+                  value={newGroupStartDate}
+                  onChange={(e) => setNewGroupStartDate(e.target.value)}
+                  style={{ colorScheme: 'light dark' }}
+                />
               </div>
 
               {/* Schedule Section */}
@@ -940,6 +977,18 @@ const GroupsList = ({
                     Kids
                   </button>
                 </div>
+              </div>
+
+              <div className="form-group">
+                <label className="form-label" htmlFor="edit-group-start-date">Dars boshlangan sana</label>
+                <input
+                  id="edit-group-start-date"
+                  type="date"
+                  className="form-input"
+                  value={editGroupStartDate}
+                  onChange={(e) => setEditGroupStartDate(e.target.value)}
+                  style={{ colorScheme: 'light dark' }}
+                />
               </div>
 
               {/* Schedule Section */}

@@ -56,7 +56,9 @@ import {
   permanentlyDeleteStudent,
   importDatabase,
   sanitizeAttendanceList,
-  syncTransferredStudentsAttendance
+  syncTransferredStudentsAttendance,
+  getLocalDateString,
+  sanitizeGroupStartDate
 } from './utils/db';
 import { normalizeIconUrl, sanitizeStudentAvatar } from './utils/avatarGallery';
 import { preloadAvatars } from './utils/avatarCache';
@@ -1420,9 +1422,9 @@ function App() {
     return updatedRecord;
   };
 
-  const handleAddGroup = async (name, icon, password, color, schedule = null, category = 'teens') => {
+  const handleAddGroup = async (name, icon, password, color, schedule = null, category = 'teens', startDate = undefined) => {
     const cleanPwd = password.trim().toLowerCase();
-    const { newGroup, updatedGroups } = addGroup(groups, name, icon, cleanPwd, color, schedule, category);
+    const { newGroup, updatedGroups } = addGroup(groups, name, icon, cleanPwd, color, schedule, category, startDate);
 
     // Register password globally in Supabase registry
     const success = await registerGroupPassword(cleanPwd, teacherId, newGroup.id);
@@ -1829,7 +1831,7 @@ function App() {
     }
   }, [teacherId, studentGroups, showToast]);
 
-  const handleUpdateGroup = async (id, name, icon, password, color, schedule, category) => {
+  const handleUpdateGroup = async (id, name, icon, password, color, schedule, category, startDate = undefined) => {
     const group = groups.find((g) => g.id === id);
     const oldPassword = group ? group.password : '';
     const cleanNewPassword = password !== undefined ? password.trim().toLowerCase() : oldPassword;
@@ -1845,7 +1847,7 @@ function App() {
       }
     }
 
-    const { updatedGroup, updatedGroups } = updateGroup(groups, id, name, icon, cleanNewPassword, color, schedule, category);
+    const { updatedGroup, updatedGroups } = updateGroup(groups, id, name, icon, cleanNewPassword, color, schedule, category, startDate);
     setGroups(updatedGroups);
     return true;
   };
@@ -2647,6 +2649,7 @@ function App() {
         endTime: groupPayload.schedule?.endTime || '15:30',
         room: cleanRoom,
       },
+      startDate: sanitizeGroupStartDate(groupPayload.startDate) || getLocalDateString(),
       createdAt: new Date().toISOString(),
     };
 
